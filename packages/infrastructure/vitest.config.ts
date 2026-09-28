@@ -8,6 +8,7 @@ const base = createVitestConfig({
 		"src/**/*.integration.test.ts",
 		"src/database/prisma-client.ts",
 		"src/database/prisma-login-event-repository.ts",
+		"src/warehouse/warehouse-pool.ts",
 	],
 });
 

@@ -2,11 +2,16 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { MessagesProvider } from "@/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
+	facilitiesForIds,
+	placeHover,
 	resolveMapStatus,
 	toFacilityFeatureCollection,
 	useFacilitiesMapRules,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.rules";
-import { FACILITIES_LAYER_ID } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
+import {
+	CLUSTER_LAYER_ID,
+	FACILITIES_LAYER_ID,
+} from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import { EN_MESSAGES } from "@/test/messages";
 
 const mapState = vi.hoisted(() => ({
@@ -14,6 +19,8 @@ const mapState = vi.hoisted(() => ({
 	handlers: new Map<string, (...args: unknown[]) => unknown>(),
 	canvas: { style: { cursor: "" } },
 	setData: vi.fn(),
+	getClusterLeaves: vi.fn(),
+	getClusterExpansionZoom: vi.fn(),
 	setWorkerUrl: vi.fn(),
 }));
 
@@ -27,7 +34,12 @@ vi.mock("maplibre-gl", () => {
 		easeTo = vi.fn();
 		setPaintProperty = vi.fn();
 		getCanvas = vi.fn(() => mapState.canvas);
-		getSource = vi.fn(() => ({ setData: mapState.setData }));
+		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
+		getSource = vi.fn(() => ({
+			setData: mapState.setData,
+			getClusterLeaves: mapState.getClusterLeaves,
+			getClusterExpansionZoom: mapState.getClusterExpansionZoom,
+		}));
 		on = vi.fn((event: string, layerOrHandler: unknown, handler?: unknown) => {
 			const key = handler ? `${event}:${String(layerOrHandler)}` : event;
 			mapState.handlers.set(key, (handler ?? layerOrHandler) as (...args: unknown[]) => unknown);
@@ -87,6 +99,31 @@ describe("toFacilityFeatureCollection", () => {
 	});
 });
 
+describe("placeHover", () => {
+	it("keeps the card below-right unless it would leave the map", () => {
+		const size = { width: 1000, height: 800 };
+		expect(placeHover({ x: 100, y: 100 }, size)).toEqual({
+			x: 100,
+			y: 100,
+			flipX: false,
+			flipY: false,
+		});
+		expect(placeHover({ x: 900, y: 700 }, size)).toEqual({
+			x: 900,
+			y: 700,
+			flipX: true,
+			flipY: true,
+		});
+	});
+});
+
+describe("facilitiesForIds", () => {
+	it("keeps known string ids in order", () => {
+		const byId = new Map([["f1", FACILITY]]);
+		expect(facilitiesForIds(["f1", "missing", 3, undefined], byId)).toEqual([FACILITY]);
+	});
+});
+
 describe("resolveMapStatus", () => {
 	it("maps query state to a status", () => {
 		expect(resolveMapStatus(true, false)).toBe("loading");
@@ -114,8 +151,16 @@ describe("useFacilitiesMapRules", () => {
 			"http://localhost:3000/maplibre/maplibre-gl-worker.mjs",
 		);
 		expect(map?.addSource).toHaveBeenCalledWith("facilities", expect.anything());
+		expect(map?.addSource).toHaveBeenCalledWith(
+			"facilities",
+			expect.objectContaining({ cluster: true, clusterRadius: 40 }),
+		);
+		expect(map?.addLayer).toHaveBeenCalledTimes(3);
 		expect(map?.addLayer).toHaveBeenCalledWith(
 			expect.objectContaining({ id: FACILITIES_LAYER_ID, type: "circle" }),
+		);
+		expect(map?.addLayer).toHaveBeenCalledWith(
+			expect.objectContaining({ id: CLUSTER_LAYER_ID, type: "circle" }),
 		);
 		await waitFor(() =>
 			expect(mapState.setData).toHaveBeenCalledWith(
@@ -142,7 +187,14 @@ describe("useFacilitiesMapRules", () => {
 		act(() => mapState.handlers.get(`mouseenter:${FACILITIES_LAYER_ID}`)?.());
 		expect(mapState.canvas.style.cursor).toBe("pointer");
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
-		expect(result.current.hovered).toEqual({ facility: FACILITY, x: 120, y: 80 });
+		expect(result.current.hovered).toEqual({
+			kind: "facility",
+			facility: FACILITY,
+			x: 120,
+			y: 80,
+			flipX: false,
+			flipY: false,
+		});
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("missing")));
 		expect(result.current.hovered).toBeNull();
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
@@ -180,6 +232,114 @@ describe("useFacilitiesMapRules", () => {
 		);
 	});
 
+	it("lists a hovered cluster's facilities and zooms in on click", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() => expect(mapState.handlers.has(`mousemove:${CLUSTER_LAYER_ID}`)).toBe(true));
+		const map = mapState.instances[0];
+		const clusterEvent = (x: number, clusterId: unknown = 7) => ({
+			features: [
+				{
+					properties: { cluster_id: clusterId, point_count: 12 },
+					geometry: { type: "Point", coordinates: [-97.7, 30.3] },
+				},
+			],
+			point: { x, y: 40 },
+		});
+		mapState.getClusterLeaves.mockResolvedValue([{ properties: { id: "f1" } }]);
+		mapState.getClusterExpansionZoom.mockResolvedValue(9);
+
+		await act(async () => {
+			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(10));
+		});
+		expect(mapState.getClusterLeaves).toHaveBeenCalledWith(7, 8, 0);
+		expect(result.current.hovered).toEqual({
+			kind: "cluster",
+			clusterId: 7,
+			total: 12,
+			facilities: [FACILITY],
+			x: 10,
+			y: 40,
+			flipX: false,
+			flipY: false,
+		});
+
+		act(() => mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30)));
+		expect(mapState.getClusterLeaves).toHaveBeenCalledTimes(1);
+		expect(result.current.hovered).toMatchObject({ x: 30, facilities: [FACILITY] });
+
+		act(() => mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30, "bad")));
+		expect(result.current.hovered).toMatchObject({ clusterId: 7 });
+
+		await act(async () => {
+			mapState.handlers.get(`click:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30));
+		});
+		expect(result.current.hovered).toBeNull();
+		expect(map?.easeTo).toHaveBeenCalledWith({ center: [-97.7, 30.3], zoom: 9, duration: 500 });
+
+		act(() => mapState.handlers.get(`click:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30, null)));
+		expect(map?.easeTo).toHaveBeenCalledTimes(1);
+	});
+
+	it("ignores cluster results that arrive after the pointer left", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() => expect(mapState.handlers.has(`mousemove:${CLUSTER_LAYER_ID}`)).toBe(true));
+		let resolveLeaves: (value: unknown) => void = () => undefined;
+		mapState.getClusterLeaves.mockReturnValue(
+			new Promise((resolve) => {
+				resolveLeaves = resolve;
+			}),
+		);
+		mapState.getClusterExpansionZoom.mockRejectedValue(new Error("gone"));
+
+		act(() =>
+			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.({
+				features: [
+					{
+						properties: { cluster_id: 3, point_count: 4 },
+						geometry: { type: "Point", coordinates: [0, 0] },
+					},
+				],
+				point: { x: 1, y: 1 },
+			}),
+		);
+		act(() => mapState.handlers.get(`mouseleave:${CLUSTER_LAYER_ID}`)?.());
+		await act(async () => {
+			resolveLeaves([{ properties: { id: "f1" } }]);
+		});
+
+		expect(result.current.hovered).toBeNull();
+		await act(async () => {
+			mapState.handlers.get(`click:${CLUSTER_LAYER_ID}`)?.({
+				features: [
+					{
+						properties: { cluster_id: 3, point_count: 4 },
+						geometry: { type: "Point", coordinates: [0, 0] },
+					},
+				],
+				point: { x: 1, y: 1 },
+			});
+		});
+		expect(mapState.instances[0]?.easeTo).not.toHaveBeenCalled();
+
+		mapState.getClusterLeaves.mockRejectedValue(new Error("gone"));
+		await act(async () => {
+			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.({
+				features: [
+					{
+						properties: { cluster_id: 5, point_count: 4 },
+						geometry: { type: "Point", coordinates: [0, 0] },
+					},
+				],
+				point: { x: 2, y: 2 },
+			});
+		});
+		expect(result.current.hovered).toMatchObject({ clusterId: 5, facilities: [] });
+	});
+
 	it("drops a selection whose facility disappears", async () => {
 		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
@@ -208,7 +368,7 @@ describe("useFacilitiesMapRules", () => {
 
 		unmount();
 
-		expect(map?.off).toHaveBeenCalledTimes(5);
+		expect(map?.off).toHaveBeenCalledTimes(9);
 		expect(map?.remove).toHaveBeenCalled();
 	});
 

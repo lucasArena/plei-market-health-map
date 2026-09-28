@@ -15,14 +15,14 @@
 ## Testing
 
 - Tests sit next to the code as `*.test.ts(x)`. Coverage must reach 95% on lines, branches, functions, and statements in every package.
-- Domain tests are pure. Application tests use the in-memory fakes. Web tests use Testing Library, and external modules (Clerk, the container, `fetch`) are mocked.
+- Domain tests are pure. Application tests use the in-memory fakes. Web tests use Testing Library, and external modules (Auth.js, the container, `fetch`) are mocked.
 - Prisma repositories are covered by `*.integration.test.ts`, run with `pnpm --filter @market-health-map/infrastructure test:integration` against a Neon branch. They are excluded from the unit coverage gate.
 
 ## Git
 
 The full rules live in [`AGENTS.md`](../AGENTS.md). In short:
 
-- Branch from `staging` (`feat/…`, `fix/…`, `chore/…`), open a PR into `staging`, then promote with a PR from `staging` into `main`. Never push to either directly.
-- Conventional commits, with types `feat | fix | chore | docs | style | refactor | perf | test | build | ci | revert`. commitlint enforces them in the `commit-msg` hook and on every PR.
+- Branch from `staging` as `feature/…`, `hotfix/…`, `refactor/…` or `chore/…`, open a PR into `staging`, then promote with a PR from `staging` into `main`. Never push to either directly.
+- Conventional commits (`feat | fix | chore | docs | style | refactor | perf | test | build | ci | revert`), enforced by commitlint in the `commit-msg` hook.
 - `pre-commit` runs lint-staged (Biome), and `pre-push` runs `pnpm check`.
-- Merging to `main` bumps the version, updates `CHANGELOG.md`, tags `vX.Y.Z`, and deploys that tag to production.
+- A push to `staging` deploys staging. A push to `main` bumps the version from the commits since the last tag (+1 minor per feature, +1 patch per hotfix), commits `ci: bump new version …`, tags, and deploys that tag to production.

@@ -1,23 +1,22 @@
-name: CI staging
+name: CD staging
 
 on:
   push:
     branches: [staging]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: deploy-staging
+  group: cd-staging
   cancel-in-progress: false
 
 jobs:
-  ci:
-    uses: ./.github/workflows/_ci.yml
-    secrets: inherit
-
   deploy:
-    needs: ci
     uses: ./.github/workflows/_deploy-vercel.yml
     with:
       environment: staging
       vercel-environment: preview
+      ref: ${{ github.sha }}
     secrets: inherit

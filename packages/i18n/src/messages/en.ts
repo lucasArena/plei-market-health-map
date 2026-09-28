@@ -5,10 +5,24 @@ export const en: Messages = {
 		appName: "Market Health Map",
 		appDescription: "A shared view of Plei market health for internal teams.",
 	},
+	auth: {
+		subtitle: "Sign in with your Plei Google account.",
+		continueWithGoogle: "Continue with Google",
+		redirecting: "Redirecting…",
+		domainError: "{email} isn't a Plei account. Only @{domain} Google accounts can sign in.",
+		missingEmailError:
+			"Your Google account didn't share an email address, so we couldn't check it.",
+		genericError: "Sign-in failed. Please try again.",
+		accountMenu: "Account menu",
+		version: "Version {version}",
+		signOut: "Sign out",
+	},
 	map: {
 		title: "Facilities map",
 		loading: "Loading facilities…",
 		failed: "Could not load facilities.",
+		clusterCount: "{count} facilities",
+		moreFacilities: "+{count} more",
 	},
 	facility: {
 		close: "Close facility details",

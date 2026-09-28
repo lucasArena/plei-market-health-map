@@ -1,9 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
-import { UnauthorizedError } from "@market-health-map/application";
+import { ForbiddenError, UnauthorizedError } from "@market-health-map/application";
 import type { AuthenticatedPrincipal } from "@/server/api/authenticate.types";
+import { getInternalAccess } from "@/server/auth/internal-access";
 
 export async function requireUser(): Promise<AuthenticatedPrincipal> {
-	const { userId, sessionId } = await auth();
-	if (!userId || !sessionId) throw new UnauthorizedError();
-	return { userId, sessionId };
+	const access = await getInternalAccess();
+	if (access.status === "anonymous") throw new UnauthorizedError();
+	if (access.status === "denied") throw new ForbiddenError("application");
+	return { userId: access.userId, email: access.email };
 }

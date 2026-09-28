@@ -3,10 +3,23 @@ export interface Messages {
 		appName: string;
 		appDescription: string;
 	};
+	auth: {
+		subtitle: string;
+		continueWithGoogle: string;
+		redirecting: string;
+		domainError: string;
+		missingEmailError: string;
+		genericError: string;
+		accountMenu: string;
+		version: string;
+		signOut: string;
+	};
 	map: {
 		title: string;
 		loading: string;
 		failed: string;
+		clusterCount: string;
+		moreFacilities: string;
 	};
 	facility: {
 		close: string;

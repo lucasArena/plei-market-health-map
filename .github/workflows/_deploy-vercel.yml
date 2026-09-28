@@ -39,7 +39,12 @@ jobs:
       - name: Apply database migrations
         env:
           DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
-        run: pnpm db:deploy
+        run: |
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "No DATABASE_URL_UNPOOLED for this environment, skipping migrations."
+            exit 0
+          fi
+          pnpm db:deploy
       - run: pnpm add --global vercel@60.1.3
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=${{ inputs.vercel-environment }} --token="$VERCEL_TOKEN"

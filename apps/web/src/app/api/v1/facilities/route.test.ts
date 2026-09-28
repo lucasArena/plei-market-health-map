@@ -13,7 +13,7 @@ describe("GET /api/v1/facilities", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("returns facilities for a signed-in user", async () => {
-		mockRequireUser.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+		mockRequireUser.mockResolvedValue({ userId: "user_1", email: "lucas@plei.com" });
 		mockListFacilities.mockResolvedValue([{ id: "f1" }]);
 
 		const response = await GET(new Request("http://localhost/api/v1/facilities"));

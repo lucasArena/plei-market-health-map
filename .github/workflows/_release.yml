@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+    outputs:
+      tag:
+        description: The new tag, empty when no commit required a bump
+        value: ${{ jobs.release.outputs.tag }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Plan the version from commits since the last tag
+        id: plan
+        run: |
+          plan=$(node scripts/release/next-version.mjs)
+          echo "$plan"
+          echo "version=$(echo "$plan" | jq -r '.version // empty')" >> "$GITHUB_OUTPUT"
+          echo "tag=$(echo "$plan" | jq -r '.tag // empty')" >> "$GITHUB_OUTPUT"
+      - name: Commit, tag and push the new version
+        if: steps.plan.outputs.tag != ''
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+          TAG: ${{ steps.plan.outputs.tag }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm pkg set version="$VERSION"
+          git add package.json
+          git commit -m "ci: bump new version $TAG [skip ci]"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "HEAD:$BRANCH" "$TAG"

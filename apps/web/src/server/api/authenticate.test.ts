@@ -1,18 +1,29 @@
-import { UnauthorizedError } from "@market-health-map/application";
+import { ForbiddenError, UnauthorizedError } from "@market-health-map/application";
 import { requireUser } from "@/server/api/authenticate";
 
-const mockAuth = vi.fn();
+const mockAccess = vi.fn();
 
-vi.mock("@clerk/nextjs/server", () => ({ auth: () => mockAuth() }));
+vi.mock("@/server/auth/internal-access", () => ({ getInternalAccess: () => mockAccess() }));
 
 describe("requireUser", () => {
-	it("returns the signed-in principal", async () => {
-		mockAuth.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
-		await expect(requireUser()).resolves.toEqual({ userId: "user_1", sessionId: "sess_1" });
+	it("returns the signed-in Plei principal", async () => {
+		mockAccess.mockResolvedValue({
+			status: "allowed",
+			userId: "g-1",
+			email: "lucas@plei.com",
+			name: null,
+			image: null,
+		});
+		await expect(requireUser()).resolves.toEqual({ userId: "g-1", email: "lucas@plei.com" });
 	});
 
 	it("rejects anonymous requests", async () => {
-		mockAuth.mockResolvedValue({ userId: null, sessionId: null });
+		mockAccess.mockResolvedValue({ status: "anonymous" });
 		await expect(requireUser()).rejects.toBeInstanceOf(UnauthorizedError);
+	});
+
+	it("forbids accounts outside the Plei domain", async () => {
+		mockAccess.mockResolvedValue({ status: "denied", email: "a@gmail.com" });
+		await expect(requireUser()).rejects.toBeInstanceOf(ForbiddenError);
 	});
 });
