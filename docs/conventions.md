@@ -25,4 +25,4 @@ The full rules live in [`AGENTS.md`](../AGENTS.md). In short:
 - Branch from `staging` as `feature/…`, `hotfix/…`, `refactor/…` or `chore/…`, open a PR into `staging`, then promote with a PR from `staging` into `main`. Never push to either directly.
 - Conventional commits (`feat | fix | chore | docs | style | refactor | perf | test | build | ci | revert`), enforced by commitlint in the `commit-msg` hook.
 - `pre-commit` runs lint-staged (Biome), and `pre-push` runs `pnpm check`.
-- A push to `staging` or `main` bumps the version from the commits since the last tag (+1 minor per feature, +1 patch per hotfix), commits `ci: bump new version …`, tags, and deploys that tag.
+- A push to `staging` deploys staging. A push to `main` bumps the version from the commits since the last tag (+1 minor per feature, +1 patch per hotfix), commits `ci: bump new version …`, tags, and deploys that tag to production.

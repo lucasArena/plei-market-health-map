@@ -4,8 +4,8 @@ import { pathToFileURL } from "node:url";
 export const BUMP_COMMIT_PREFIX = "ci: bump new version";
 
 const MAJOR_PATTERN = /^\w+(\([^)]*\))?!:|BREAKING CHANGE/;
-const MINOR_PATTERN = /^(feat|feature)(\([^)]*\))?:|\bfrom [^\s]+\/feature\//;
-const PATCH_PATTERN = /^(fix|hotfix)(\([^)]*\))?:|\bfrom [^\s]+\/hotfix\//;
+const MINOR_PATTERN = /^(feat|feature)(\([^)]*\))?:/;
+const PATCH_PATTERN = /^(fix|hotfix)(\([^)]*\))?:/;
 const STABLE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)$/;
 
 export function classifyCommit(subject) {
@@ -20,6 +20,10 @@ export function parseVersion(tag) {
 	const match = STABLE_TAG_PATTERN.exec(tag ?? "");
 	if (!match) return { major: 0, minor: 0, patch: 0 };
 	return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) };
+}
+
+function compareVersions(left, right) {
+	return left.major - right.major || left.minor - right.minor || left.patch - right.patch;
 }
 
 export function bumpVersion(current, subjects) {
@@ -37,16 +41,11 @@ export function formatVersion({ major, minor, patch }) {
 	return `${major}.${minor}.${patch}`;
 }
 
-export function planRelease({ lastStableTag, subjects, channel, existingTags }) {
+export function planRelease({ lastStableTag, subjects }) {
 	const current = parseVersion(lastStableTag);
-	const next = bumpVersion(current, subjects);
-	const version = formatVersion(next);
+	const version = formatVersion(bumpVersion(current, subjects));
 	if (version === formatVersion(current)) return { bumped: false, version: null, tag: null };
-	if (channel === "production") return { bumped: true, version, tag: `v${version}` };
-
-	const candidates = existingTags.filter((tag) => tag.startsWith(`v${version}-rc.`));
-	const prerelease = `${version}-rc.${candidates.length + 1}`;
-	return { bumped: true, version: prerelease, tag: `v${prerelease}` };
+	return { bumped: true, version, tag: `v${version}` };
 }
 
 function git(...args) {
@@ -58,26 +57,16 @@ function lines(output) {
 }
 
 export function readGitState() {
-	const tags = lines(git("tag", "--list", "v*"));
-	const stable = tags
+	const stable = lines(git("tag", "--list", "v*"))
 		.filter((tag) => STABLE_TAG_PATTERN.test(tag))
-		.sort((a, b) => {
-			const left = parseVersion(a);
-			const right = parseVersion(b);
-			return left.major - right.major || left.minor - right.minor || left.patch - right.patch;
-		});
+		.sort((a, b) => compareVersions(parseVersion(a), parseVersion(b)));
 	const lastStableTag = stable.at(-1) ?? null;
 	const range = lastStableTag ? `${lastStableTag}..HEAD` : "HEAD";
-	return {
-		lastStableTag,
-		existingTags: tags,
-		subjects: lines(git("log", range, "--first-parent", "--format=%s")),
-	};
+	return { lastStableTag, subjects: lines(git("log", range, "--no-merges", "--format=%s")) };
 }
 
 const isCli = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 
 if (isCli) {
-	const channel = process.argv.includes("--channel=staging") ? "staging" : "production";
-	process.stdout.write(`${JSON.stringify(planRelease({ ...readGitState(), channel }))}\n`);
+	process.stdout.write(`${JSON.stringify(planRelease(readGitState()))}\n`);
 }

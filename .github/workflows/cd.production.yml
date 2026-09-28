@@ -18,7 +18,6 @@ jobs:
       contents: write
     uses: ./.github/workflows/_release.yml
     with:
-      channel: production
       branch: main
     secrets: inherit
 
