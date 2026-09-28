@@ -21,10 +21,6 @@ export interface Messages {
 		clusterCount: string;
 		moreFacilities: string;
 	};
-	facility: {
-		close: string;
-		details: string;
-	};
 	offline: {
 		title: string;
 		description: string;

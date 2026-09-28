@@ -25,10 +25,6 @@ export const ptBR: Messages = {
 		clusterCount: "{count} instalações",
 		moreFacilities: "+{count} outras",
 	},
-	facility: {
-		close: "Fechar detalhes da instalação",
-		details: "Detalhes da instalação",
-	},
 	offline: {
 		title: "Você está offline",
 		description: "Reconecte-se à internet para continuar explorando a saúde dos mercados.",

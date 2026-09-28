@@ -24,10 +24,6 @@ export const en: Messages = {
 		clusterCount: "{count} facilities",
 		moreFacilities: "+{count} more",
 	},
-	facility: {
-		close: "Close facility details",
-		details: "Facility details",
-	},
 	offline: {
 		title: "You are offline",
 		description: "Reconnect to the internet to keep exploring market health.",
