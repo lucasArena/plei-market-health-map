@@ -1,5 +1,6 @@
 {
 	"name": "market-health-map",
+	"version": "0.1.0",
 	"private": true,
 	"packageManager": "pnpm@10.23.0",
 	"engines": {
@@ -18,7 +19,8 @@
 		"db:migrate": "pnpm --filter @market-health-map/infrastructure db:migrate",
 		"db:deploy": "pnpm --filter @market-health-map/infrastructure db:deploy",
 		"check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage",
-		"prepare": "simple-git-hooks"
+		"prepare": "simple-git-hooks",
+		"release": "commit-and-tag-version"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm exec lint-staged",
@@ -33,12 +35,32 @@
 	"commitlint": {
 		"extends": [
 			"@commitlint/config-conventional"
-		]
+		],
+		"rules": {
+			"type-enum": [
+				2,
+				"always",
+				[
+					"feat",
+					"fix",
+					"chore",
+					"docs",
+					"style",
+					"refactor",
+					"perf",
+					"test",
+					"build",
+					"ci",
+					"revert"
+				]
+			]
+		}
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",
 		"@commitlint/cli": "21.2.3",
 		"@commitlint/config-conventional": "21.2.3",
+		"commit-and-tag-version": "13.2.1",
 		"lint-staged": "17.6.0",
 		"simple-git-hooks": "2.14.0",
 		"turbo": "2.11.5",
@@ -52,6 +74,11 @@
 			"simple-git-hooks",
 			"sharp",
 			"esbuild"
-		]
+		],
+		"overrides": {
+			"browserslist": ">=4.28.7",
+			"deepmerge-ts": ">=8.0.2",
+			"mysql2": ">=3.24.4"
+		}
 	}
 }

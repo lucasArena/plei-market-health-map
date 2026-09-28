@@ -23,6 +23,7 @@ export class Facility {
 			marketId: input.marketId,
 			name: guard.notEmpty(input.name, "Facility name"),
 			address: guard.notEmpty(input.address, "Facility address"),
+			location: guard.location(input.location, "Facility location"),
 			avatarUrl: input.avatarUrl?.trim() || null,
 			metrics: assertMetrics(input.metrics),
 		});
@@ -41,6 +42,10 @@ export class Facility {
 	}
 
 	toJSON(): FacilityProps {
-		return { ...this.props, metrics: { ...this.props.metrics } };
+		return {
+			...this.props,
+			location: { ...this.props.location },
+			metrics: { ...this.props.metrics },
+		};
 	}
 }

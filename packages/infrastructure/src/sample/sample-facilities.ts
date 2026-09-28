@@ -1,5 +1,5 @@
 import { createSeededRandom, distribute } from "@infra/sample/seeded-random";
-import type { FacilityProps, MarketProps } from "@market-health-map/domain";
+import type { FacilityProps, GeoPoint, MarketProps } from "@market-health-map/domain";
 import { asEntityId } from "@market-health-map/domain";
 
 const AREAS = [
@@ -47,6 +47,18 @@ export function buildFacilityNames(count: number, random: () => number): string[
 	});
 }
 
+export const SPREAD_DEGREES = 0.3;
+
+export function scatterAround(center: GeoPoint, random: () => number): GeoPoint {
+	const distance = SPREAD_DEGREES * Math.sqrt(random());
+	const angle = random() * 2 * Math.PI;
+	const longitudeScale = Math.cos((center.latitude * Math.PI) / 180);
+	return {
+		latitude: center.latitude + distance * Math.sin(angle),
+		longitude: center.longitude + (distance * Math.cos(angle)) / longitudeScale,
+	};
+}
+
 export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 	const random = createSeededRandom(market.id);
 	const count = market.metrics.facilities;
@@ -60,6 +72,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 		marketId: market.id,
 		name: names[index] as string,
 		address: `${100 + Math.floor(random() * 9800)} ${pick(STREETS, random)} St, ${market.name}, ${market.state}`,
+		location: scatterAround(market.location, random),
 		avatarUrl: null,
 		metrics: {
 			activePlayers: players[index] as number,

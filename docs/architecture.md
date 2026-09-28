@@ -19,7 +19,6 @@ Shared packages ship raw TypeScript. Next transpiles them via `transpilePackages
 | `LoginEventRepository` | `PrismaLoginEventRepository` | `InMemoryLoginEventRepository` |
 | `Clock` | `SystemClock` | `FixedClock` |
 | `IdGenerator` | `UuidGenerator` | `SequentialIdGenerator` |
-| `MarketRepository` | `SampleMarketRepository` (temporary) | `InMemoryMarketRepository` |
 | `FacilityRepository` | `SampleFacilityRepository` (temporary) | `InMemoryFacilityRepository` |
 
 `apps/web/src/server/container.ts` is the composition root. It parses the environment (`src/env.ts`, which fails fast), builds the Prisma client, and wires the use cases.
@@ -39,23 +38,19 @@ API routes call `requireUser()` (`src/server/api/authenticate.ts`), which throws
       -> LoginEventRepository.save  upsert on login_events.session_id
 ```
 
-One `login_events` row is written per Clerk session: user id, session id, email, and first-seen time. `GET /api/v1/logins?limit=` returns the most recent rows. `useRecentLogins` fetches them for the `RecentLogins` panel on the home page.
+One `login_events` row is written per Clerk session: user id, session id, email, and first-seen time. `GET /api/v1/logins?limit=` returns the most recent rows. There is no screen for them yet.
 
-## Market health map
+## Facilities map
 
 ```
-MarketHealthMap (client)  ->  useMarketHealth  ->  GET /api/v1/markets
-  -> listMarketHealth (use case, weakest markets first)
-    -> MarketRepository.listActive  ->  SampleMarketRepository (seed in infrastructure/src/sample)
+FacilitiesMap (client)  ->  useFacilities  ->  GET /api/v1/facilities
+  -> listFacilities (use case)
+    -> FacilityRepository.listAll  ->  SampleFacilityRepository (mock, infrastructure/src/sample)
 ```
 
-A `Market` has a location plus metrics: active players, games last week, facilities, and a 0–100 health score. The health status is derived from the score: `healthy` at 70 or above, `watch` at 40 or above, `at-risk` below 40.
+The home page is only the map: a full-screen MapLibre GL map on the OpenFreeMap Positron basemap (free, no key, commercial use allowed), with one dot per facility. The Plei logo floats top-left and the Clerk avatar top-right; there is no header bar. Hovering a dot shows a card with the facility's logo (colored initials until real logos exist) and name. Clicking selects it: the dot gets a dark ring, the map shifts it clear of the panel, and `FacilityPanel` opens on the right with only the logo and name. Escape or × closes it. The selection paint expressions are validated against the real MapLibre style spec in `FacilitiesMapComponent.styles.test.ts`, because the MapLibre mock in the rules tests accepts anything. Zoom controls sit bottom-right, and the OpenStreetMap credit (required by its license) is a small line bottom-left.
 
-The map is MapLibre GL on the OpenFreeMap Positron basemap (`tiles.openfreemap.org`), which is free, needs no key, has no usage limits, and allows commercial use. The heat layer is weighted by the selected metric, normalized so the top market is 1. Circle markers are colored by health status. Clicking one selects the market: the marker gets a dark ring, the map shifts it clear of the panel, and `MarketDetailPanel` opens on the right. The panel loads `GET /api/v1/markets/:id` (`getMarketDetail`, facilities sorted busiest first) and shows a skeleton while it waits. It lists the indicators at the top and the facilities below, each with an avatar (image, or colored initials when there is none). Escape or × closes it.
-
-Sample facilities are generated deterministically per market in `infrastructure/src/sample/sample-facilities.ts`, and their games and players add up to the market totals.
-
-The markets are the real Plei regions from the PleiOS catalog (`infrastructure/src/sample/plei-regions.ts`): name, state, country, currency, and facility count. Internal and test regions (Automation, L2M/M2M, Lucas, Pipelines, TEST - …) are left out. The catalog has no coordinates, so each region uses its metro center. Players, games, and health score are still generated sample values. A region with no facilities gets the gray `inactive` status. To use live data, add a repository that implements `MarketRepository` and change one line in `apps/web/src/server/container.ts`.
+The facilities are mocks. Each real Plei region (`plei-regions.ts`, test and internal regions excluded) gets as many facilities as its facility count, scattered deterministically within about 0.3° of the region's metro center. Replacing them with real facilities from the database is tracked in PROD-443.
 
 ## API conventions
 

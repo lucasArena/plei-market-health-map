@@ -81,7 +81,8 @@
 			"!**/src/generated",
 			"!**/public/sw.js",
 			"!**/public/swe-worker-*.js",
-			"!**/next-env.d.ts"
+			"!**/next-env.d.ts",
+			"!**/public/maplibre"
 		]
 	},
 	"css": {

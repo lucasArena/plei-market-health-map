@@ -7,12 +7,13 @@
 		"node": ">=24"
 	},
 	"scripts": {
-		"dev": "next dev --webpack",
-		"build": "next build --webpack",
+		"dev": "pnpm copy:maplibre && next dev --webpack",
+		"build": "pnpm copy:maplibre && next build --webpack",
 		"start": "next start",
 		"typecheck": "next typegen && tsc --noEmit",
 		"test": "vitest run",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"copy:maplibre": "node scripts/copy-maplibre-worker.mjs"
 	},
 	"dependencies": {
 		"@clerk/localizations": "3.37.9",
@@ -23,7 +24,7 @@
 		"@market-health-map/infrastructure": "workspace:*",
 		"@serwist/next": "9.5.12",
 		"@tanstack/react-query": "5.104.0",
-		"maplibre-gl": "5.24.0",
+		"maplibre-gl": "6.11.2",
 		"next": "16.3.6",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",
@@ -31,6 +32,7 @@
 		"zod": "4.6.5"
 	},
 	"devDependencies": {
+		"@maplibre/maplibre-gl-style-spec": "26.4.4",
 		"@market-health-map/config": "workspace:*",
 		"@tailwindcss/postcss": "4.3.3",
 		"@testing-library/jest-dom": "6.9.1",

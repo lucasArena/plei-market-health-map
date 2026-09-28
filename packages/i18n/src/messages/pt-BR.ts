@@ -6,47 +6,14 @@ export const ptBR: Messages = {
 		appDescription:
 			"Uma visão compartilhada da saúde dos mercados da Plei para as equipes internas.",
 	},
-	nav: {
-		map: "Mapa",
-		adoption: "Adoção",
-	},
-	logins: {
-		title: "Acessos recentes",
-		description: "Membros da equipe interna que abriram o Mapa de Saúde de Mercado.",
-		loading: "Carregando acessos…",
-		empty: "Nenhum acesso registrado ainda.",
-		failed: "Não foi possível carregar os acessos.",
-	},
 	map: {
-		title: "Saúde dos mercados",
-		legendLabel: "Legenda do mapa",
-		sampleNotice: "Dados de exemplo: as métricas reais dos mercados ainda não estão conectadas.",
-		loading: "Carregando mercados…",
-		failed: "Não foi possível carregar os mercados.",
-		metricLabel: "Métrica do mapa de calor",
-		metrics: {
-			healthScore: "Índice de saúde",
-			activePlayers: "Jogadores ativos",
-			gamesLastWeek: "Jogos na última semana",
-			facilities: "Instalações",
-		},
-		statuses: {
-			healthy: "Saudável",
-			watch: "Atenção",
-			atRisk: "Em risco",
-			inactive: "Sem instalações",
-		},
+		title: "Mapa de instalações",
+		loading: "Carregando instalações…",
+		failed: "Não foi possível carregar as instalações.",
 	},
-	marketDetail: {
-		close: "Fechar detalhes do mercado",
-		indicators: "Indicadores",
-		facilities: "Instalações",
-		facilitiesCount: "{count} instalações",
-		empty: "Nenhuma instalação neste mercado ainda.",
-		failed: "Não foi possível carregar este mercado.",
-		players: "jogadores",
-		games: "jogos/sem",
-		utilization: "ocupação",
+	facility: {
+		close: "Fechar detalhes da instalação",
+		details: "Detalhes da instalação",
 	},
 	offline: {
 		title: "Você está offline",

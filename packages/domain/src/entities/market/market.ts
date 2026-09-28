@@ -1,5 +1,4 @@
 import type {
-	GeoPoint,
 	MarketHealthStatus,
 	MarketMetrics,
 	MarketProps,
@@ -11,15 +10,6 @@ import type { EntityId } from "@domain/shared/id.types";
 export const MARKET_HEALTH_STATUSES = ["inactive", "at-risk", "watch", "healthy"] as const;
 export const HEALTHY_SCORE = 70;
 export const WATCH_SCORE = 40;
-
-function assertLocation(location: GeoPoint): GeoPoint {
-	const isLatitudeValid = location.latitude >= -90 && location.latitude <= 90;
-	const isLongitudeValid = location.longitude >= -180 && location.longitude <= 180;
-	if (!isLatitudeValid || !isLongitudeValid) {
-		throw new ValidationError("Market location must be a valid coordinate.");
-	}
-	return { ...location };
-}
 
 const ISO_CODE_PATTERN = /^[A-Z]{3}$/;
 
@@ -50,7 +40,7 @@ export class Market {
 			state: guard.notEmpty(input.state, "Market state"),
 			country: assertIsoCode(input.country, "Market country"),
 			currency: assertIsoCode(input.currency, "Market currency"),
-			location: assertLocation(input.location),
+			location: guard.location(input.location, "Market location"),
 			metrics: assertMetrics(input.metrics),
 		});
 	}

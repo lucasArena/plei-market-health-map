@@ -1,11 +1,6 @@
-import type {
-	GetMarketDetailInput,
-	ListRecentLoginsInput,
-	RecordLoginInput,
-} from "@market-health-map/application";
+import type { ListRecentLoginsInput, RecordLoginInput } from "@market-health-map/application";
 import {
-	makeGetMarketDetail,
-	makeListMarketHealth,
+	makeListFacilities,
 	makeListRecentLogins,
 	makeRecordLogin,
 } from "@market-health-map/application";
@@ -13,7 +8,6 @@ import {
 	getPrismaClient,
 	PrismaLoginEventRepository,
 	SampleFacilityRepository,
-	SampleMarketRepository,
 	SystemClock,
 	UuidGenerator,
 } from "@market-health-map/infrastructure";
@@ -32,33 +26,29 @@ function buildLogins() {
 	};
 }
 
-function buildMarkets() {
-	const markets = new SampleMarketRepository();
-	const facilities = new SampleFacilityRepository();
+function buildFacilities() {
 	return {
-		listMarketHealth: makeListMarketHealth({ markets }),
-		getMarketDetail: makeGetMarketDetail({ markets, facilities }),
+		listFacilities: makeListFacilities({ facilities: new SampleFacilityRepository() }),
 	};
 }
 
 let logins: ReturnType<typeof buildLogins> | undefined;
-let markets: ReturnType<typeof buildMarkets> | undefined;
+let facilities: ReturnType<typeof buildFacilities> | undefined;
 
 function loginModule() {
 	logins ??= buildLogins();
 	return logins;
 }
 
-function marketModule() {
-	markets ??= buildMarkets();
-	return markets;
+function facilityModule() {
+	facilities ??= buildFacilities();
+	return facilities;
 }
 
 const container = {
 	recordLogin: (input: RecordLoginInput) => loginModule().recordLogin(input),
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
-	listMarketHealth: () => marketModule().listMarketHealth(),
-	getMarketDetail: (input: GetMarketDetailInput) => marketModule().getMarketDetail(input),
+	listFacilities: () => facilityModule().listFacilities(),
 };
 
 export function getContainer() {

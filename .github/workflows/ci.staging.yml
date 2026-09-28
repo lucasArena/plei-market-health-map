@@ -2,7 +2,7 @@ name: CI staging
 
 on:
   push:
-    branches: [main]
+    branches: [staging]
   workflow_dispatch:
 
 concurrency:

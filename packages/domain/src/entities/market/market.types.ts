@@ -1,12 +1,10 @@
 import type { MARKET_HEALTH_STATUSES } from "@domain/entities/market/market";
+import type { GeoPoint } from "@domain/shared/geo-point.types";
 import type { EntityId } from "@domain/shared/id.types";
 
 export type MarketHealthStatus = (typeof MARKET_HEALTH_STATUSES)[number];
 
-export interface GeoPoint {
-	latitude: number;
-	longitude: number;
-}
+export type { GeoPoint } from "@domain/shared/geo-point.types";
 
 export interface MarketMetrics {
 	activePlayers: number;

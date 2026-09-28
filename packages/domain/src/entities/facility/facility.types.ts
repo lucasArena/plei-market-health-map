@@ -1,3 +1,4 @@
+import type { GeoPoint } from "@domain/shared/geo-point.types";
 import type { EntityId } from "@domain/shared/id.types";
 
 export interface FacilityMetrics {
@@ -11,6 +12,7 @@ export interface FacilityProps {
 	marketId: EntityId;
 	name: string;
 	address: string;
+	location: GeoPoint;
 	avatarUrl: string | null;
 	metrics: FacilityMetrics;
 }

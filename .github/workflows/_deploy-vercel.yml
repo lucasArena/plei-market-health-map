@@ -9,6 +9,10 @@ on:
       vercel-environment:
         required: true
         type: string
+      ref:
+        required: false
+        type: string
+        default: ""
 
 jobs:
   deploy:
@@ -24,6 +28,8 @@ jobs:
       IS_PRODUCTION: ${{ inputs.vercel-environment == 'production' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

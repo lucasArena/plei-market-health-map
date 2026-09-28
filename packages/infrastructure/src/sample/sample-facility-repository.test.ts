@@ -1,21 +1,42 @@
-import { buildFacilityNames, buildSampleFacilities } from "@infra/sample/sample-facilities";
+import {
+	buildFacilityNames,
+	buildSampleFacilities,
+	SPREAD_DEGREES,
+	scatterAround,
+} from "@infra/sample/sample-facilities";
 import { SampleFacilityRepository } from "@infra/sample/sample-facility-repository";
 import { SAMPLE_MARKETS } from "@infra/sample/sample-markets";
 import { createSeededRandom, distribute, hashSeed } from "@infra/sample/seeded-random";
-import { asEntityId } from "@market-health-map/domain";
 
 const AUSTIN = SAMPLE_MARKETS.find((market) => market.id === "austin");
 
 describe("SampleFacilityRepository", () => {
-	it("builds one facility per market facility count", async () => {
-		const facilities = await new SampleFacilityRepository().listByMarket(asEntityId("austin"));
-		expect(facilities).toHaveLength(AUSTIN?.metrics.facilities ?? -1);
-		expect(facilities.every((facility) => facility.marketId === "austin")).toBe(true);
+	it("builds one facility per facility counted in each region", async () => {
+		const facilities = await new SampleFacilityRepository().listAll();
+		const expected = SAMPLE_MARKETS.reduce((sum, market) => sum + market.metrics.facilities, 0);
+
+		expect(facilities).toHaveLength(expected);
+		expect(facilities.filter((facility) => facility.marketId === "austin")).toHaveLength(
+			AUSTIN?.metrics.facilities ?? -1,
+		);
 	});
 
-	it("returns nothing for an unknown market", async () => {
-		const facilities = await new SampleFacilityRepository().listByMarket(asEntityId("missing"));
-		expect(facilities).toEqual([]);
+	it("builds nothing without regions", async () => {
+		expect(await new SampleFacilityRepository([]).listAll()).toEqual([]);
+	});
+});
+
+describe("scatterAround", () => {
+	it("keeps points within the spread of the center", () => {
+		const center = { latitude: 30.27, longitude: -97.74 };
+		const random = createSeededRandom("scatter");
+		for (let index = 0; index < 50; index += 1) {
+			const point = scatterAround(center, random);
+			const latOffset = point.latitude - center.latitude;
+			const lngOffset =
+				(point.longitude - center.longitude) * Math.cos((center.latitude * Math.PI) / 180);
+			expect(Math.hypot(latOffset, lngOffset)).toBeLessThanOrEqual(SPREAD_DEGREES + 1e-9);
+		}
 	});
 });
 

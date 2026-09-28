@@ -12,12 +12,12 @@ export {
 	WATCH_SCORE,
 } from "@domain/entities/market/market";
 export type {
-	GeoPoint,
 	MarketHealthStatus,
 	MarketMetrics,
 	MarketProps,
 } from "@domain/entities/market/market.types";
 export { DomainError, ValidationError } from "@domain/shared/domain-error";
+export type { GeoPoint } from "@domain/shared/geo-point.types";
 export { guard } from "@domain/shared/guard";
 export { asEntityId } from "@domain/shared/id";
 export type { EntityId } from "@domain/shared/id.types";

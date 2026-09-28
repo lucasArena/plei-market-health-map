@@ -13,7 +13,11 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Open http://localhost:3000. You are sent to `/sign-in` (Clerk SSO, same look as PleiOS).
+Open http://localhost:3000. You are sent to `/sign-in` (Clerk SSO, same look as PleiOS), then land on the facilities map.
+
+## Contributing
+
+Branch from `staging`, use conventional commits (`feat: …`, `fix: …`, `chore: …`), and open a PR into `staging`. Production releases are PRs from `staging` into `main`. See [AGENTS.md](AGENTS.md).
 
 ## Scripts
 
@@ -26,9 +30,11 @@ Open http://localhost:3000. You are sent to `/sign-in` (Clerk SSO, same look as 
 | `pnpm test` / `pnpm test:coverage` | Vitest, with a 95% coverage gate |
 | `pnpm check` | lint + typecheck + coverage (the pre-push gate) |
 | `pnpm db:migrate` / `pnpm db:deploy` | Prisma migrations (dev / deploy) |
+| `pnpm release` | Version bump, changelog and tag (run by CI on merge to `main`) |
 
 ## Documentation
 
+- [AGENTS.md](AGENTS.md): git flow, commit rules and releases (read before contributing)
 - [CLAUDE.md](CLAUDE.md): the guide for agents and new engineers
 - [docs/architecture.md](docs/architecture.md): the layers, ports and adapters, and how login tracking works
 - [docs/conventions.md](docs/conventions.md): code, testing, and git conventions

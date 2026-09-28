@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import AdoptionPage from "@/app/(protected)/adoption/page";
 import HomePage from "@/app/(protected)/page";
 import OfflinePage from "@/app/~offline/page";
 import manifest from "@/app/manifest";
@@ -21,12 +20,8 @@ vi.mock("@clerk/nextjs", () => ({
 	},
 }));
 
-vi.mock("@/components/logins/RecentLogins/RecentLoginsComponent", () => ({
-	RecentLogins: () => <div data-testid="recent-logins" />,
-}));
-
-vi.mock("@/components/markets/MarketHealthMap/MarketHealthMapComponent", () => ({
-	MarketHealthMap: () => <div data-testid="market-health-map" />,
+vi.mock("@/components/map/FacilitiesMap/FacilitiesMapComponent", () => ({
+	FacilitiesMap: () => <div data-testid="facilities-map" />,
 }));
 
 vi.mock("@/server/i18n/get-request-locale", () => ({
@@ -45,14 +40,9 @@ describe("pages", () => {
 		expect(mockSignUp).toHaveBeenCalledWith({ appearance: CLERK_APPEARANCE });
 	});
 
-	it("renders the full-screen market map on the home page", () => {
+	it("renders the facilities map on the home page", () => {
 		render(<HomePage />);
-		expect(screen.getByTestId("market-health-map")).toBeInTheDocument();
-	});
-
-	it("renders recent sign-ins on the adoption page", () => {
-		render(<AdoptionPage />);
-		expect(screen.getByTestId("recent-logins")).toBeInTheDocument();
+		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
 	});
 
 	it("renders a localized offline fallback", async () => {

@@ -20,6 +20,9 @@
 
 ## Git
 
-- Conventional commits, enforced by commitlint on `commit-msg`.
-- Pre-commit runs `lint-staged` (Biome on staged files). Pre-push runs `pnpm check`.
-- Branch from `main` and open PRs against `main`. CI runs lint, typecheck, coverage, build, and audit.
+The full rules live in [`AGENTS.md`](../AGENTS.md). In short:
+
+- Branch from `staging` (`feat/…`, `fix/…`, `chore/…`), open a PR into `staging`, then promote with a PR from `staging` into `main`. Never push to either directly.
+- Conventional commits, with types `feat | fix | chore | docs | style | refactor | perf | test | build | ci | revert`. commitlint enforces them in the `commit-msg` hook and on every PR.
+- `pre-commit` runs lint-staged (Biome), and `pre-push` runs `pnpm check`.
+- Merging to `main` bumps the version, updates `CHANGELOG.md`, tags `vX.Y.Z`, and deploys that tag to production.

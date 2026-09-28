@@ -8,9 +8,9 @@ export default async function ProtectedLayout({
 }>) {
 	await trackCurrentLogin();
 	return (
-		<div className="flex h-dvh flex-col bg-background">
+		<main className="relative h-dvh overflow-hidden bg-background">
 			<AppHeader />
-			<main className="relative min-h-0 flex-1 overflow-auto">{children}</main>
-		</div>
+			{children}
+		</main>
 	);
 }

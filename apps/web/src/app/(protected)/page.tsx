@@ -1,5 +1,5 @@
-import { MarketHealthMap } from "@/components/markets/MarketHealthMap/MarketHealthMapComponent";
+import { FacilitiesMap } from "@/components/map/FacilitiesMap/FacilitiesMapComponent";
 
 export default function HomePage() {
-	return <MarketHealthMap />;
+	return <FacilitiesMap />;
 }

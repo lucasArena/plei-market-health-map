@@ -13,7 +13,7 @@ domain  <-  application  <-  infrastructure  <-  apps/web
 ```
 
 - `packages/domain`: pure entities (`LoginEvent`), `guard`, `DomainError`, `EntityId`. No runtime deps.
-- `packages/application`: use-case factories (`makeRecordLogin`, `makeListRecentLogins`), ports, Zod DTOs, mappers, and errors. In-memory fakes live in `src/testing`.
+- `packages/application`: use-case factories (`makeRecordLogin`, `makeListRecentLogins`, `makeListFacilities`), ports, Zod DTOs, mappers, and errors. In-memory fakes live in `src/testing`.
 - `packages/infrastructure`: Prisma 7 + Neon adapter, repositories, record mappers, `SystemClock`, and `UuidGenerator`.
 - `packages/i18n`: typed `en` and `pt-BR` catalogs, `getMessages`, and `parseAcceptLanguage`.
 - `packages/config`: shared tsconfig presets and the Vitest factory (95% thresholds).
@@ -32,7 +32,7 @@ See `docs/architecture.md` for more depth.
 - Validate every boundary with Zod. No user-facing string is hardcoded; it comes from `@market-health-map/i18n`.
 - Tests sit next to the code as `*.test.ts(x)`. Coverage must be ≥ 95% in every package. Use cases are tested with in-memory fakes, never DB mocks.
 - Biome for lint and format (tabs, double quotes, width 100). English everywhere.
-- Conventional commits (commitlint). Pre-commit runs lint-staged, and pre-push runs `pnpm check`.
+- Conventional commits (`feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert`), enforced by commitlint in the `commit-msg` hook and on PRs. Pre-commit runs lint-staged, and pre-push runs `pnpm check`. Never push to `main` or `staging` directly (see `AGENTS.md`).
 
 ## Running
 
@@ -46,9 +46,9 @@ pnpm check
 
 The single `.env` sits at the repo root. `apps/web/next.config.ts` and `packages/infrastructure/prisma.config.ts` load it explicitly.
 
-## Deploying
+## Deploying and git flow
 
-Vercel, driven by GitHub Actions. A merge to `main` deploys staging (`ci.staging.yml`). A `v*` tag deploys production after approval (`ci.production.yml`). PRs run `ci.pullrequest.yml`. All three reuse the checks in `_ci.yml`. Setup lives in `docs/deployment.md`.
+Read [`AGENTS.md`](AGENTS.md) before any git work. Feature branches go by PR into `staging`, which deploys staging (`ci.staging.yml`). A PR from `staging` into `main` releases: CI, then a version bump, `CHANGELOG.md` and tag, then a production deploy (`ci.production.yml`). PRs run `ci.pullrequest.yml` (commitlint plus `_ci.yml`). Setup lives in `docs/deployment.md`.
 
 ## Gotchas
 
@@ -57,5 +57,7 @@ Vercel, driven by GitHub Actions. A merge to `main` deploys staging (`ci.staging
 - `PrismaNeon` talks to Neon over WebSockets, so it can't connect to a plain local Postgres. Point local dev at a Neon branch.
 - The service worker must reference `self.__SW_MANIFEST` literally, so `sw.ts` uses `declare const self`.
 - The tsconfig base lives in `packages/config/tsconfig/base.json` rather than at the root. Prisma's config loader doesn't follow symlinked `extends` out of `node_modules`.
-- The market map uses sample data (`SampleMarketRepository`) until a real market data source is chosen. MapLibre needs WebGL, so tests mock `maplibre-gl`, and the map is created inside a `useEffect` via a dynamic import.
+- The map shows mock facilities (`SampleFacilityRepository`) until they come from the database (PROD-443). MapLibre needs WebGL, so tests mock `maplibre-gl`, and the map is created inside a `useEffect` via a dynamic import.
+- MapLibre v6 ships its web worker as ES modules (`maplibre-gl-worker.mjs` imports `maplibre-gl-shared.mjs`), and webpack can't bundle that. `apps/web/scripts/copy-maplibre-worker.mjs` copies both files to `public/maplibre/` (gitignored) before `dev` and `build`, and the map calls `setWorkerUrl` with that path. Don't downgrade to v5: every version before 6.4.1 has a critical XSS advisory.
+- `pnpm.overrides` in the root `package.json` pins patched transitive deps (`browserslist`, `deepmerge-ts`, `mysql2`) so `pnpm audit --prod --audit-level high` passes in CI.
 - Login tracking runs in `app/(protected)/layout.tsx` via `trackCurrentLogin()`. It is idempotent per Clerk session and never throws into the render.

@@ -6,13 +6,18 @@ Hosting is Vercel. Deploys run from GitHub Actions, never from Vercel's Git inte
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.pullrequest.yml` | Pull request to `main` | Runs `_ci.yml` |
-| `_ci.yml` | Reusable (all three pipelines) | Lint, typecheck, coverage (95%), build, audit, plus the Neon integration tests when their secrets are set |
-| `ci.staging.yml` | Push to `main`, or a manual run | CI, then migrations and a deploy to **staging** |
-| `ci.production.yml` | Tag `v*` (for example `v0.2.0`), or a manual run | CI, then migrations and a deploy to **production**, behind the `production` environment's required reviewers |
-| `_deploy-vercel.yml` | Reusable | `pnpm db:deploy` → `vercel pull` → `vercel build` → `vercel deploy --prebuilt`, then points `STAGING_DOMAIN` at the staging deploy |
+| `ci.pullrequest.yml` | PR into `staging` or `main` | commitlint on the PR's commits, then `_ci.yml` |
+| `ci.staging.yml` | Push to `staging` (a merged PR), or a manual run | `_ci.yml`, then migrations and a deploy to **staging** (Vercel Preview) |
+| `ci.production.yml` | Push to `main` (a merged PR), or a manual run | `_ci.yml` (unit tests and the rest), then **release** (bump `package.json`, write `CHANGELOG.md`, tag `vX.Y.Z`, push), then migrations and a deploy of that tag to **production** behind the `production` environment's reviewers |
+| `_ci.yml` | Reusable | Lint, typecheck, coverage (95%), build, audit, plus Neon integration tests when their secrets are set |
+| `_deploy-vercel.yml` | Reusable | Checks out the given ref, runs `pnpm db:deploy`, `vercel pull`, `vercel build`, `vercel deploy --prebuilt`, and aliases `STAGING_DOMAIN` |
 
-Staging uses Vercel's **Preview** environment and production uses **Production**. To release: `git tag v0.2.0 && git push origin v0.2.0`, then approve the run in GitHub.
+The release commit is `chore(release): vX.Y.Z [skip ci]`, so pushing it doesn't start another run. After a release, merge `main` back into `staging`. The branching and commit rules are in [`AGENTS.md`](../AGENTS.md).
+
+### Branch protection (recommended)
+
+- `main` and `staging`: require a PR and a passing `ci.pullrequest.yml`, and block direct pushes.
+- `main`: allow `github-actions[bot]` to push, so the release job can push its commit and tag. Otherwise use a deploy key or PAT in `release`.
 
 ## One-time setup
 
@@ -27,7 +32,7 @@ Staging uses Vercel's **Preview** environment and production uses **Production**
 
 - Repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 - Environment `staging`: secret `DATABASE_URL_UNPOOLED` (the staging Neon branch). Optionally add a variable `STAGING_DOMAIN`, for example `market-health-map-staging.vercel.app`.
-- Environment `production`: secret `DATABASE_URL_UNPOOLED` (the production Neon branch), plus **Required reviewers** and a deployment rule limited to `v*` tags.
+- Environment `production`: secret `DATABASE_URL_UNPOOLED` (the production Neon branch), plus **Required reviewers**.
 - Optional, for the integration job: repository secrets `NEON_TEST_DATABASE_URL` and `NEON_TEST_DATABASE_URL_UNPOOLED`.
 
 ## Runtime environment (Vercel)

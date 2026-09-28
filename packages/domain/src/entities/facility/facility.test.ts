@@ -7,6 +7,7 @@ const VALID = {
 	marketId: asEntityId("market-1"),
 	name: " Eastside Futsal ",
 	address: " 12 Main St ",
+	location: { latitude: 30.27, longitude: -97.74 },
 	avatarUrl: " https://cdn.plei.app/f1.png ",
 	metrics: { activePlayers: 120, gamesLastWeek: 30, utilization: 72 },
 };
@@ -29,6 +30,12 @@ describe("Facility", () => {
 		expect(Facility.create({ ...VALID, avatarUrl: "  " }).toJSON().avatarUrl).toBeNull();
 	});
 
+	it("rejects an invalid location", () => {
+		expect(() => Facility.create({ ...VALID, location: { latitude: 91, longitude: 0 } })).toThrow(
+			"Facility location must be a valid coordinate.",
+		);
+	});
+
 	it("rejects invalid counts", () => {
 		expect(() =>
 			Facility.create({ ...VALID, metrics: { ...VALID.metrics, gamesLastWeek: -1 } }),
@@ -48,6 +55,7 @@ describe("Facility", () => {
 		const facility = Facility.restore(VALID);
 		const json = facility.toJSON();
 		json.metrics.utilization = 0;
+		json.location.latitude = 0;
 		expect(facility.toJSON()).toEqual(VALID);
 	});
 });

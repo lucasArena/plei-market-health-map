@@ -1,4 +1,5 @@
 import { ValidationError } from "@domain/shared/domain-error";
+import type { GeoPoint } from "@domain/shared/geo-point.types";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,6 +13,14 @@ export const guard = {
 		if (value.length > max)
 			throw new ValidationError(`${field} must be at most ${max} characters.`);
 		return value;
+	},
+	location(point: GeoPoint, field: string): GeoPoint {
+		const isLatitudeValid = point.latitude >= -90 && point.latitude <= 90;
+		const isLongitudeValid = point.longitude >= -180 && point.longitude <= 180;
+		if (!isLatitudeValid || !isLongitudeValid) {
+			throw new ValidationError(`${field} must be a valid coordinate.`);
+		}
+		return { latitude: point.latitude, longitude: point.longitude };
 	},
 	email(value: string, field: string): string {
 		const normalized = guard.notEmpty(value, field).toLowerCase();

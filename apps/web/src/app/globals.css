@@ -173,10 +173,10 @@
   }
 }
 
-.market-health-map .maplibregl-ctrl-bottom-right {
+.facilities-map .maplibregl-ctrl-bottom-right {
   transition: right 200ms ease;
 }
 
-.market-health-map[data-panel-open="true"] .maplibregl-ctrl-bottom-right {
-  right: min(400px, 100%);
+.facilities-map[data-panel-open="true"] .maplibregl-ctrl-bottom-right {
+  right: min(360px, 100%);
 }
