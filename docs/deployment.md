@@ -7,9 +7,9 @@ Hosting is Vercel. Deploys run from GitHub Actions, never from Vercel's Git inte
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
 | `ci.pr.yml` | PR into `staging` or `main` | Branch-name check (`hotfix/`, `feature/`, `refactor/`, `chore/`; plus `staging` → `main`), then unit tests (`pnpm test`, `pnpm test:scripts`) |
-| `cd.staging.yml` | Push to `staging`, or a manual run | `_release.yml` (bump to `vX.Y.Z-rc.N`), then deploy that tag to **staging** (Vercel Preview) |
-| `cd.production.yml` | Push to `main`, or a manual run | `_release.yml` (bump to `vX.Y.Z`), then deploy that tag to **production** behind the `production` environment's reviewers |
-| `_release.yml` | Reusable | `scripts/release/next-version.mjs` plans the version from commits since the last stable tag, then commits `ci: bump new version vX.Y.Z [skip ci]`, tags, and pushes |
+| `cd.staging.yml` | Push to `staging`, or a manual run | Deploy the branch head to **staging** (Vercel Preview). No bump, no tag |
+| `cd.production.yml` | Push to `main`, or a manual run | `_release.yml` (bump to `vX.Y.Z` from the commits since the last tag), then deploy that tag to **production** |
+| `_release.yml` | Reusable (production only) | `scripts/release/next-version.mjs` plans the version from non-merge commits since the last tag, then commits `ci: bump new version vX.Y.Z [skip ci]`, tags, and pushes |
 | `_deploy-vercel.yml` | Reusable | Checks out the given ref, runs `pnpm db:deploy`, `vercel pull`, `vercel build`, `vercel deploy --prebuilt`, and aliases `STAGING_DOMAIN` |
 
 The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
@@ -17,7 +17,7 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 ### Branch protection (recommended)
 
 - `main` and `staging`: require a PR and a passing `ci.pr.yml`, and block direct pushes.
-- Both: allow `github-actions[bot]` to push, so `_release.yml` can push its bump commit and tag. Otherwise use a deploy key or PAT there.
+- `main`: allow `github-actions[bot]` to push, so `_release.yml` can push its bump commit and tag. Otherwise use a deploy key or PAT there.
 
 ## One-time setup
 

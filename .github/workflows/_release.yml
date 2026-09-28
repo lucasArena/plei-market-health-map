@@ -3,9 +3,6 @@ name: Release
 on:
   workflow_call:
     inputs:
-      channel:
-        required: true
-        type: string
       branch:
         required: true
         type: string
@@ -31,7 +28,7 @@ jobs:
       - name: Plan the version from commits since the last tag
         id: plan
         run: |
-          plan=$(node scripts/release/next-version.mjs --channel=${{ inputs.channel }})
+          plan=$(node scripts/release/next-version.mjs)
           echo "$plan"
           echo "version=$(echo "$plan" | jq -r '.version // empty')" >> "$GITHUB_OUTPUT"
           echo "tag=$(echo "$plan" | jq -r '.tag // empty')" >> "$GITHUB_OUTPUT"

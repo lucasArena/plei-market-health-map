@@ -13,22 +13,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    permissions:
-      contents: write
-    uses: ./.github/workflows/_release.yml
-    with:
-      channel: staging
-      branch: staging
-    secrets: inherit
-
   deploy:
-    needs: release
-    permissions:
-      contents: read
     uses: ./.github/workflows/_deploy-vercel.yml
     with:
       environment: staging
       vercel-environment: preview
-      ref: ${{ needs.release.outputs.tag || github.sha }}
+      ref: ${{ github.sha }}
     secrets: inherit

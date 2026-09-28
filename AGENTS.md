@@ -8,8 +8,8 @@ Two long-lived branches, each with its own pipeline:
 
 | Branch | Purpose | Pipeline on push |
 | --- | --- | --- |
-| `staging` | Integration and QA | `cd.staging.yml`: bump to a release candidate (`vX.Y.Z-rc.N`), tag, deploy to Vercel **staging** |
-| `main` | Production | `cd.production.yml`: bump to a stable version (`vX.Y.Z`), tag, deploy to Vercel **production** |
+| `staging` | Integration and QA | `cd.staging.yml`: deploy the branch head to Vercel **staging**. No version bump, no tag |
+| `main` | Production | `cd.production.yml`: bump the version (`vX.Y.Z`), commit, tag, deploy that tag to Vercel **production** |
 
 Rules:
 
@@ -36,24 +36,18 @@ Other hooks: `pre-commit` runs lint-staged (Biome on staged files), and `pre-pus
 
 ## Versioning and releases
 
-`scripts/release/next-version.mjs` (tests in `next-version.test.mjs`, run by `pnpm test:scripts`) reads the commits since the last **stable** tag along the branch's first-parent history (so each merged PR counts once, not once per commit inside it) and counts them:
+Only **production** is versioned. `scripts/release/next-version.mjs` (tests in `next-version.test.mjs`, run by `pnpm test:scripts`) reads the non-merge commits since the last `vX.Y.Z` tag and counts them:
 
 | Commit | Effect |
 | --- | --- |
-| `feat:` / `feature:`, or a merge from `feature/…` | **+1 minor** for each commit (patch resets) |
-| `fix:` / `hotfix:`, or a merge from `hotfix/…` | **+1 patch** for each commit |
+| `feat:` / `feature:` | **+1 minor** for each commit (patch resets) |
+| `fix:` / `hotfix:` | **+1 patch** for each commit |
 | `type!:` or `BREAKING CHANGE` | **+1 major** (minor and patch reset) |
 | `refactor`, `chore`, `docs`, … | no bump |
 
-For example, `v0.1.1` followed by 2 features and 1 hotfix gives `v0.3.1`.
+Merge commits are skipped, so a squashed PR counts once and a merged PR counts its own commits, never the merge on top. For example, `v0.1.1` followed by one feature and one hotfix gives `v0.2.1`.
 
-On a push to either branch, `_release.yml`:
-
-1. works out the next version. For `staging` that's a release candidate `vX.Y.Z-rc.N`, counted from commits. For `main` it **promotes** the newest release candidate above the last stable tag (so `v0.2.1-rc.2` ships as `v0.2.1`), falling back to counting commits when there's no candidate;
-2. sets `version` in the root `package.json` and commits it as `ci: bump new version vX.Y.Z [skip ci]`;
-3. creates an annotated tag and pushes the commit and tag to the branch.
-
-Then `_deploy-vercel.yml` deploys **that tag**. If no commit needs a bump, nothing is tagged and the branch head is deployed as is. Never edit `version` by hand.
+On a push to `main`, `_release.yml` sets `version` in the root `package.json`, commits it as `ci: bump new version vX.Y.Z [skip ci]`, creates an annotated tag, and pushes both. `_deploy-vercel.yml` then deploys **that tag**. If nothing needs a bump, nothing is tagged and `main`'s head is deployed. `staging` never bumps or tags. Never edit `version` by hand.
 
 ## Before you finish a task
 

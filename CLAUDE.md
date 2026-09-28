@@ -48,7 +48,7 @@ The single `.env` sits at the repo root. `apps/web/next.config.ts` and `packages
 
 ## Deploying and git flow
 
-Read [`AGENTS.md`](AGENTS.md) before any git work. Branches are `feature/`, `hotfix/`, `refactor/` or `chore/`, opened as PRs into `staging`. `ci.pr.yml` checks the branch name and runs the unit tests. A push to `staging` or `main` runs `cd.staging.yml` or `cd.production.yml`: bump from the commits since the last tag, commit `ci: bump new version`, tag, and deploy to Vercel. Setup lives in `docs/deployment.md`.
+Read [`AGENTS.md`](AGENTS.md) before any git work. Branches are `feature/`, `hotfix/`, `refactor/` or `chore/`, opened as PRs into `staging`. `ci.pr.yml` checks the branch name and runs the unit tests. A push to `staging` deploys staging (`cd.staging.yml`, no version). A push to `main` runs `cd.production.yml`: bump from the commits since the last tag, commit `ci: bump new version`, tag, and deploy to Vercel production. Setup lives in `docs/deployment.md`.
 
 ## Gotchas
 
