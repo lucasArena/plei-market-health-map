@@ -68,7 +68,11 @@ export function readGitState() {
 		});
 	const lastStableTag = stable.at(-1) ?? null;
 	const range = lastStableTag ? `${lastStableTag}..HEAD` : "HEAD";
-	return { lastStableTag, existingTags: tags, subjects: lines(git("log", range, "--format=%s")) };
+	return {
+		lastStableTag,
+		existingTags: tags,
+		subjects: lines(git("log", range, "--first-parent", "--format=%s")),
+	};
 }
 
 const isCli = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;

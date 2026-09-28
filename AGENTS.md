@@ -36,7 +36,7 @@ Other hooks: `pre-commit` runs lint-staged (Biome on staged files), and `pre-pus
 
 ## Versioning and releases
 
-`scripts/release/next-version.mjs` (tests in `next-version.test.mjs`, run by `pnpm test:scripts`) reads the commits since the last **stable** tag and counts them:
+`scripts/release/next-version.mjs` (tests in `next-version.test.mjs`, run by `pnpm test:scripts`) reads the commits since the last **stable** tag along the branch's first-parent history (so each merged PR counts once, not once per commit inside it) and counts them:
 
 | Commit | Effect |
 | --- | --- |
