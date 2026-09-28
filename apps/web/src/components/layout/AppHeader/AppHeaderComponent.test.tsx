@@ -2,15 +2,16 @@ import { screen } from "@testing-library/react";
 import { AppHeader } from "@/components/layout/AppHeader/AppHeaderComponent";
 import { renderWithMessages } from "@/test/render-with-messages";
 
-vi.mock("@clerk/nextjs", () => ({ UserButton: () => <div data-testid="user-button" /> }));
+vi.mock("@/server/auth/actions", () => ({ signOutOfApp: vi.fn() }));
 
 describe("AppHeader", () => {
 	it("shows only the Plei logo and the account avatar", () => {
-		renderWithMessages(<AppHeader />);
+		renderWithMessages(
+			<AppHeader user={{ name: "Lucas Arena", email: "lucas@plei.com", image: null }} />,
+		);
 
 		expect(screen.getByRole("img", { name: "Market Health Map" })).toBeInTheDocument();
-		expect(screen.getByTestId("user-button")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Account menu" })).toBeInTheDocument();
 		expect(screen.queryByRole("heading")).not.toBeInTheDocument();
-		expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
 	});
 });

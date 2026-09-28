@@ -17,6 +17,7 @@ export type {
 	MarketProps,
 } from "@domain/entities/market/market.types";
 export { DomainError, ValidationError } from "@domain/shared/domain-error";
+export { hasEmailDomain } from "@domain/shared/email-domain";
 export type { GeoPoint } from "@domain/shared/geo-point.types";
 export { guard } from "@domain/shared/guard";
 export { asEntityId } from "@domain/shared/id";

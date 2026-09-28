@@ -6,10 +6,24 @@ export const ptBR: Messages = {
 		appDescription:
 			"Uma visão compartilhada da saúde dos mercados da Plei para as equipes internas.",
 	},
+	auth: {
+		subtitle: "Entre com sua conta Google da Plei.",
+		continueWithGoogle: "Continuar com Google",
+		redirecting: "Redirecionando…",
+		domainError: "{email} não é uma conta Plei. Apenas contas Google @{domain} podem entrar.",
+		missingEmailError:
+			"Sua conta Google não compartilhou um e-mail, então não conseguimos verificá-la.",
+		genericError: "Não foi possível entrar. Tente novamente.",
+		accountMenu: "Menu da conta",
+		version: "Versão {version}",
+		signOut: "Sair",
+	},
 	map: {
 		title: "Mapa de instalações",
 		loading: "Carregando instalações…",
 		failed: "Não foi possível carregar as instalações.",
+		clusterCount: "{count} instalações",
+		moreFacilities: "+{count} outras",
 	},
 	facility: {
 		close: "Fechar detalhes da instalação",

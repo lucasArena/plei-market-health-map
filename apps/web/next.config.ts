@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import withSerwistInit from "@serwist/next";
 import { config as loadEnv } from "dotenv";
 import type { NextConfig } from "next";
 
 loadEnv({ path: "../../.env", quiet: true });
+
+const appVersion: string = JSON.parse(readFileSync("../../package.json", "utf8")).version;
 
 const withSerwist = withSerwistInit({
 	swSrc: "src/app/sw.ts",
@@ -13,6 +16,9 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+	env: {
+		NEXT_PUBLIC_APP_VERSION: appVersion,
+	},
 	transpilePackages: [
 		"@market-health-map/domain",
 		"@market-health-map/application",
@@ -21,7 +27,12 @@ const nextConfig: NextConfig = {
 	],
 	typedRoutes: true,
 	devIndicators: false,
-	serverExternalPackages: ["@prisma/client", "@prisma/adapter-neon", "@neondatabase/serverless"],
+	serverExternalPackages: [
+		"@prisma/client",
+		"@prisma/adapter-neon",
+		"@neondatabase/serverless",
+		"pg",
+	],
 	async headers() {
 		return [
 			{

@@ -1,0 +1,27 @@
+name: CD production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    uses: ./.github/workflows/_release.yml
+    with:
+      channel: production
+      branch: main
+    secrets: inherit
+
+  deploy:
+    needs: release
+    uses: ./.github/workflows/_deploy-vercel.yml
+    with:
+      environment: production
+      vercel-environment: production
+      ref: ${{ needs.release.outputs.tag || github.sha }}
+    secrets: inherit

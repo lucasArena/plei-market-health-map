@@ -1,4 +1,4 @@
-@layer theme, base, clerk, components, utilities;
+@layer theme, base, components, utilities;
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -124,54 +124,6 @@
   }
 }
 
-@layer clerk {
-  .cl-formButtonPrimary {
-    background-color: var(--primary) !important;
-    color: var(--primary-foreground) !important;
-    min-height: 36px !important;
-    font-size: 14px !important;
-    transition: background-color 0.2s ease !important;
-  }
-  
-  .cl-formButtonPrimary:hover {
-    background-color: oklch(from var(--primary) calc(l * 0.9) c h) !important;
-  }
-  
-  .cl-formButtonPrimary svg {
-    color: var(--primary-foreground) !important;
-    fill: var(--primary-foreground) !important;
-  }
-  
-  .cl-formButtonPrimary svg path {
-    fill: var(--primary-foreground) !important;
-    stroke: var(--primary-foreground) !important;
-  }
-  
-  .cl-formFieldInput {
-    font-size: 14px !important;
-  }
-  
-  .cl-formFieldLabel {
-    font-size: 14px !important;
-  }
-  
-  .cl-headerTitle {
-    font-size: 24px !important;
-  }
-  
-  .cl-headerSubtitle {
-    font-size: 14px !important;
-  }
-  
-  .cl-footerActionLink,
-  .cl-footer {
-    font-size: 14px !important;
-  }
-  
-  .cl-card {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  }
-}
 
 .facilities-map .maplibregl-ctrl-bottom-right {
   transition: right 200ms ease;
