@@ -19,7 +19,7 @@ Rules:
    - `refactor/<slug>`: internal changes with no behavior change (no bump)
    - `chore/<slug>`: tooling, deps and docs (no bump)
 2. Open a PR **into `staging`**. `ci.pr.yml` checks the branch name and runs the unit tests, and both must pass.
-3. Promote to production with a PR from **`staging` into `main`**. That is the only branch allowed without a prefix.
+3. Promote to production with a PR from **`staging` into `main`**, merged with a **merge commit** (not squash). That is the only branch allowed without a prefix. Feature and hotfix PRs into `staging` should be **squashed**.
 4. After a production release, merge `main` back into `staging`.
 
 ## Commit messages (enforced locally)
@@ -49,7 +49,7 @@ For example, `v0.1.1` followed by 2 features and 1 hotfix gives `v0.3.1`.
 
 On a push to either branch, `_release.yml`:
 
-1. works out the next version: stable `vX.Y.Z` for `main`, release candidate `vX.Y.Z-rc.N` for `staging`;
+1. works out the next version. For `staging` that's a release candidate `vX.Y.Z-rc.N`, counted from commits. For `main` it **promotes** the newest release candidate above the last stable tag (so `v0.2.1-rc.2` ships as `v0.2.1`), falling back to counting commits when there's no candidate;
 2. sets `version` in the root `package.json` and commits it as `ci: bump new version vX.Y.Z [skip ci]`;
 3. creates an annotated tag and pushes the commit and tag to the branch.
 

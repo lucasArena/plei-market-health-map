@@ -5,6 +5,7 @@ import {
 	bumpVersion,
 	classifyCommit,
 	formatVersion,
+	latestCandidateVersion,
 	parseVersion,
 	planRelease,
 } from "./next-version.mjs";
@@ -74,11 +75,34 @@ describe("planRelease", () => {
 		);
 	});
 
+	it("promotes the latest staging candidate to production", () => {
+		assert.deepEqual(
+			planRelease({
+				...base,
+				subjects: ["Merge pull request #3 from lucasArena/staging"],
+				channel: "production",
+				existingTags: ["v0.1.1", "v0.2.0-rc.1", "v0.2.1-rc.1", "v0.2.1-rc.2"],
+			}),
+			{ bumped: true, version: "0.2.1", tag: "v0.2.1" },
+		);
+	});
+
 	it("skips the release when nothing bumps", () => {
 		assert.deepEqual(planRelease({ ...base, subjects: ["chore: x"], channel: "production" }), {
 			bumped: false,
 			version: null,
 			tag: null,
+		});
+	});
+});
+
+describe("latestCandidateVersion", () => {
+	it("ignores candidates at or below the last stable version", () => {
+		assert.equal(latestCandidateVersion(["v0.1.1-rc.3", "v0.1.1"], "v0.1.1"), null);
+		assert.deepEqual(latestCandidateVersion(["v0.3.0-rc.1", "v0.10.0-rc.1", "v0.2.9"], "v0.2.9"), {
+			major: 0,
+			minor: 10,
+			patch: 0,
 		});
 	});
 });

@@ -7,6 +7,7 @@ const MAJOR_PATTERN = /^\w+(\([^)]*\))?!:|BREAKING CHANGE/;
 const MINOR_PATTERN = /^(feat|feature)(\([^)]*\))?:|\bfrom [^\s]+\/feature\//;
 const PATCH_PATTERN = /^(fix|hotfix)(\([^)]*\))?:|\bfrom [^\s]+\/hotfix\//;
 const STABLE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)$/;
+const CANDIDATE_TAG_PATTERN = /^v(\d+\.\d+\.\d+)-rc\.\d+$/;
 
 export function classifyCommit(subject) {
 	if (subject.startsWith(BUMP_COMMIT_PREFIX)) return "none";
@@ -37,9 +38,25 @@ export function formatVersion({ major, minor, patch }) {
 	return `${major}.${minor}.${patch}`;
 }
 
+function compareVersions(left, right) {
+	return left.major - right.major || left.minor - right.minor || left.patch - right.patch;
+}
+
+export function latestCandidateVersion(existingTags, lastStableTag) {
+	const stable = parseVersion(lastStableTag);
+	const candidates = existingTags
+		.map((tag) => CANDIDATE_TAG_PATTERN.exec(tag)?.[1])
+		.filter(Boolean)
+		.map((version) => parseVersion(`v${version}`))
+		.filter((version) => compareVersions(version, stable) > 0)
+		.sort(compareVersions);
+	return candidates.at(-1) ?? null;
+}
+
 export function planRelease({ lastStableTag, subjects, channel, existingTags }) {
 	const current = parseVersion(lastStableTag);
-	const next = bumpVersion(current, subjects);
+	const candidate = channel === "production" ? latestCandidateVersion(existingTags, lastStableTag) : null;
+	const next = candidate ?? bumpVersion(current, subjects);
 	const version = formatVersion(next);
 	if (version === formatVersion(current)) return { bumped: false, version: null, tag: null };
 	if (channel === "production") return { bumped: true, version, tag: `v${version}` };
@@ -61,11 +78,7 @@ export function readGitState() {
 	const tags = lines(git("tag", "--list", "v*"));
 	const stable = tags
 		.filter((tag) => STABLE_TAG_PATTERN.test(tag))
-		.sort((a, b) => {
-			const left = parseVersion(a);
-			const right = parseVersion(b);
-			return left.major - right.major || left.minor - right.minor || left.patch - right.patch;
-		});
+		.sort((a, b) => compareVersions(parseVersion(a), parseVersion(b)));
 	const lastStableTag = stable.at(-1) ?? null;
 	const range = lastStableTag ? `${lastStableTag}..HEAD` : "HEAD";
 	return {
