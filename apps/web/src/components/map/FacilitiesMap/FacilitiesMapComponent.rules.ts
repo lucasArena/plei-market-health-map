@@ -15,16 +15,15 @@ import {
 	CLUSTER_PREVIEW_LIMIT,
 	CLUSTER_RADIUS,
 	FACILITIES_LAYER_ID,
+	FACILITIES_LOGO_LAYER_ID,
 	FACILITIES_SOURCE_ID,
 	FACILITY_DOT_PAINT,
+	FACILITY_LOGO_LAYOUT,
 	HOVER_CARD_WIDTH,
 	MAP_CENTER,
 	MAP_STYLE_URL,
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
-	PANEL_WIDTH,
-	selectedStrokeColor,
-	selectedStrokeWidth,
 	UNCLUSTERED_FILTER,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import type {
@@ -33,6 +32,7 @@ import type {
 	HoverPlacement,
 	MapHover,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.types";
+import { loadPleiLogo } from "@/components/map/plei-logo-marker";
 import { useFacilities } from "@/lib/api/use-facilities";
 
 export function toFacilityFeatureCollection(
@@ -94,7 +94,6 @@ export function useFacilitiesMapRules() {
 	const query = useFacilities();
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
-	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const hoveredClusterIdRef = useRef<number | null>(null);
@@ -107,9 +106,6 @@ export function useFacilitiesMapRules() {
 		[query.data],
 	);
 	const status = resolveMapStatus(query.isPending, query.isError);
-	const selectedFacility = selectedFacilityId
-		? (facilitiesById.get(selectedFacilityId) ?? null)
-		: null;
 
 	const placementFor = useCallback((point: { x: number; y: number }) => {
 		const container = mapRef.current?.getContainer();
@@ -172,21 +168,6 @@ export function useFacilitiesMapRules() {
 		setHovered(null);
 	}, []);
 
-	const handleClick = useCallback(
-		(event: MapLayerMouseEvent) => {
-			const facility = facilityFromEvent(event);
-			if (!facility) return;
-			handleHoverEnd();
-			setSelectedFacilityId(facility.id);
-			mapRef.current?.easeTo({
-				center: [facility.location.longitude, facility.location.latitude],
-				padding: { top: 0, bottom: 0, left: 0, right: PANEL_WIDTH },
-				duration: 600,
-			});
-		},
-		[facilityFromEvent, handleHoverEnd],
-	);
-
 	const handleClusterClick = useCallback(
 		(event: MapLayerMouseEvent) => {
 			const cluster = clusterFromEvent(event);
@@ -202,11 +183,6 @@ export function useFacilitiesMapRules() {
 		[handleHoverEnd],
 	);
 
-	const closePanel = useCallback(() => {
-		setSelectedFacilityId(null);
-		mapRef.current?.easeTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
-	}, []);
-
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) return;
@@ -216,30 +192,31 @@ export function useFacilitiesMapRules() {
 		import("maplibre-gl").then(({ Map: MapLibre, NavigationControl, setWorkerUrl }) => {
 			if (isCancelled) return;
 			setWorkerUrl(new URL(MAPLIBRE_WORKER_URL, window.location.origin).href);
-			map = new MapLibre({
+			const created = new MapLibre({
 				container,
 				style: MAP_STYLE_URL,
 				center: MAP_CENTER,
 				zoom: MAP_ZOOM,
 				attributionControl: false,
 			});
-			map.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
-			map.on("load", () => {
-				map?.addSource(FACILITIES_SOURCE_ID, {
+			map = created;
+			created.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
+			created.on("load", () => {
+				created.addSource(FACILITIES_SOURCE_ID, {
 					type: "geojson",
 					data: { type: "FeatureCollection", features: [] },
 					cluster: true,
 					clusterRadius: CLUSTER_RADIUS,
 					clusterMaxZoom: CLUSTER_MAX_ZOOM,
 				});
-				map?.addLayer({
+				created.addLayer({
 					id: CLUSTER_LAYER_ID,
 					type: "circle",
 					source: FACILITIES_SOURCE_ID,
 					filter: CLUSTER_FILTER,
 					paint: CLUSTER_PAINT,
 				});
-				map?.addLayer({
+				created.addLayer({
 					id: CLUSTER_COUNT_LAYER_ID,
 					type: "symbol",
 					source: FACILITIES_SOURCE_ID,
@@ -247,15 +224,27 @@ export function useFacilitiesMapRules() {
 					layout: CLUSTER_COUNT_LAYOUT,
 					paint: CLUSTER_COUNT_PAINT,
 				});
-				map?.addLayer({
+				created.addLayer({
 					id: FACILITIES_LAYER_ID,
 					type: "circle",
 					source: FACILITIES_SOURCE_ID,
 					filter: UNCLUSTERED_FILTER,
 					paint: FACILITY_DOT_PAINT,
 				});
-				mapRef.current = map;
+				mapRef.current = created;
 				setIsMapReady(true);
+				loadPleiLogo(created)
+					.then(() => {
+						if (isCancelled) return;
+						created.addLayer({
+							id: FACILITIES_LOGO_LAYER_ID,
+							type: "symbol",
+							source: FACILITIES_SOURCE_ID,
+							filter: UNCLUSTERED_FILTER,
+							layout: FACILITY_LOGO_LAYOUT,
+						});
+					})
+					.catch(() => undefined);
 			});
 		});
 
@@ -275,21 +264,6 @@ export function useFacilitiesMapRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
-		map.setPaintProperty(
-			FACILITIES_LAYER_ID,
-			"circle-stroke-color",
-			selectedStrokeColor(selectedFacilityId),
-		);
-		map.setPaintProperty(
-			FACILITIES_LAYER_ID,
-			"circle-stroke-width",
-			selectedStrokeWidth(selectedFacilityId),
-		);
-	}, [selectedFacilityId, isMapReady]);
-
-	useEffect(() => {
-		const map = mapRef.current;
-		if (!isMapReady || !map) return;
 		const showPointer = () => {
 			map.getCanvas().style.cursor = "pointer";
 		};
@@ -298,10 +272,8 @@ export function useFacilitiesMapRules() {
 			handleHoverEnd();
 		};
 		const bindings = [
-			["mouseenter", FACILITIES_LAYER_ID, showPointer],
 			["mousemove", FACILITIES_LAYER_ID, handleHover],
-			["mouseleave", FACILITIES_LAYER_ID, hidePointer],
-			["click", FACILITIES_LAYER_ID, handleClick],
+			["mouseleave", FACILITIES_LAYER_ID, handleHoverEnd],
 			["mouseenter", CLUSTER_LAYER_ID, showPointer],
 			["mousemove", CLUSTER_LAYER_ID, handleClusterHover],
 			["mouseleave", CLUSTER_LAYER_ID, hidePointer],
@@ -313,21 +285,12 @@ export function useFacilitiesMapRules() {
 			for (const [event, layer, handler] of bindings) map.off(event, layer, handler);
 			map.off("movestart", handleHoverEnd);
 		};
-	}, [
-		handleClick,
-		handleClusterClick,
-		handleClusterHover,
-		handleHover,
-		handleHoverEnd,
-		isMapReady,
-	]);
+	}, [handleClusterClick, handleClusterHover, handleHover, handleHoverEnd, isMapReady]);
 
 	return {
-		closePanel,
 		containerRef,
 		hovered,
 		messages: messages.map,
-		selectedFacility,
 		status,
 	};
 }
