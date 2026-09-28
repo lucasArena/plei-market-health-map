@@ -1,0 +1,12 @@
+{
+	"extends": "@market-health-map/config/tsconfig/base.json",
+	"compilerOptions": {
+		"types": ["vitest/globals", "node"],
+		"paths": {
+			"@infra/*": ["./src/*"],
+			"@application/*": ["../application/src/*"],
+			"@domain/*": ["../domain/src/*"]
+		}
+	},
+	"include": ["src", "prisma.config.ts", "vitest.config.ts", "vitest.integration.config.ts"]
+}

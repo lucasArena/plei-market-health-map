@@ -1,0 +1,92 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 100
+	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": {
+					"level": "on",
+					"options": {
+						"groups": [":NODE:", ":PACKAGE:", ":ALIAS:", ":PATH:"]
+					}
+				}
+			}
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"suspicious": {
+				"noExplicitAny": "warn"
+			},
+			"complexity": {
+				"noBannedTypes": "warn"
+			},
+			"style": {
+				"noNonNullAssertion": "warn",
+				"useImportType": "error",
+				"useNodejsImportProtocol": "error"
+			},
+			"correctness": {
+				"noUnusedFunctionParameters": "warn"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "**/testing/**/*.{ts,tsx}"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off",
+						"noConfusingVoidType": "off"
+					}
+				}
+			}
+		}
+	],
+	"javascript": {
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		}
+	},
+	"files": {
+		"includes": [
+			"**/*.{js,jsx,ts,tsx,json}",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/build",
+			"!**/.turbo",
+			"!**/coverage",
+			"!**/.nyc_output",
+			"!**/drizzle",
+			"!**/*.tsbuildinfo",
+			"!**/.cache",
+			"!**/.next",
+			"!**/.nuxt",
+			"!**/.vercel",
+			"!**/.serverless",
+			"!**/.pnpm-store",
+			"!**/.local",
+			"!**/public",
+			"!**/lib/graphql/generated",
+			"!next-env.d.ts",
+			"!**/.turbo",
+			"!**/src/generated",
+			"!**/public/sw.js",
+			"!**/public/swe-worker-*.js",
+			"!**/next-env.d.ts"
+		]
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	}
+}

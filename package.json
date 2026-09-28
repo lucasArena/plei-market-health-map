@@ -1,0 +1,57 @@
+{
+	"name": "market-health-map",
+	"private": true,
+	"packageManager": "pnpm@10.23.0",
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"lint": "biome check .",
+		"format": "biome format --write .",
+		"fix": "biome check --write .",
+		"typecheck": "turbo run typecheck",
+		"test": "turbo run test",
+		"test:coverage": "turbo run test:coverage",
+		"db:generate": "pnpm --filter @market-health-map/infrastructure db:generate",
+		"db:migrate": "pnpm --filter @market-health-map/infrastructure db:migrate",
+		"db:deploy": "pnpm --filter @market-health-map/infrastructure db:deploy",
+		"check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage",
+		"prepare": "simple-git-hooks"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "pnpm exec lint-staged",
+		"commit-msg": "pnpm exec commitlint --edit \"$1\"",
+		"pre-push": "pnpm run check"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx,mjs,json,css}": [
+			"biome check --write --no-errors-on-unmatched"
+		]
+	},
+	"commitlint": {
+		"extends": [
+			"@commitlint/config-conventional"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.14",
+		"@commitlint/cli": "21.2.3",
+		"@commitlint/config-conventional": "21.2.3",
+		"lint-staged": "17.6.0",
+		"simple-git-hooks": "2.14.0",
+		"turbo": "2.11.5",
+		"typescript": "5.9.3"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@prisma/client",
+			"@prisma/engines",
+			"prisma",
+			"simple-git-hooks",
+			"sharp",
+			"esbuild"
+		]
+	}
+}

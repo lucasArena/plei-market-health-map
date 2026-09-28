@@ -1,0 +1,47 @@
+name: CI checks
+
+on:
+  workflow_call:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://app:app@localhost:5432/app
+      DATABASE_URL_UNPOOLED: postgresql://app:app@localhost:5432/app
+      SKIP_INSTALL_SIMPLE_GIT_HOOKS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:coverage
+      - run: pnpm build
+      - run: pnpm audit --prod --audit-level high
+
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.NEON_TEST_DATABASE_URL }}
+      DATABASE_URL_UNPOOLED: ${{ secrets.NEON_TEST_DATABASE_URL_UNPOOLED }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.DATABASE_URL != ''
+      - uses: pnpm/action-setup@v4
+        if: env.DATABASE_URL != ''
+      - uses: actions/setup-node@v4
+        if: env.DATABASE_URL != ''
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: env.DATABASE_URL != ''
+      - run: pnpm db:deploy
+        if: env.DATABASE_URL != ''
+      - run: pnpm --filter @market-health-map/infrastructure test:integration
+        if: env.DATABASE_URL != ''

@@ -1,0 +1,23 @@
+name: CI production
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_ci.yml
+    secrets: inherit
+
+  deploy:
+    needs: ci
+    uses: ./.github/workflows/_deploy-vercel.yml
+    with:
+      environment: production
+      vercel-environment: production
+    secrets: inherit

@@ -1,0 +1,15 @@
+{
+	"extends": "@market-health-map/config/tsconfig/nextjs.json",
+	"compilerOptions": {
+		"types": ["vitest/globals", "node"],
+		"paths": {
+			"@/*": ["./src/*"],
+			"@domain/*": ["../../packages/domain/src/*"],
+			"@application/*": ["../../packages/application/src/*"],
+			"@infra/*": ["../../packages/infrastructure/src/*"],
+			"@i18n/*": ["../../packages/i18n/src/*"]
+		}
+	},
+	"include": ["next-env.d.ts", "src", "*.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+	"exclude": ["node_modules"]
+}

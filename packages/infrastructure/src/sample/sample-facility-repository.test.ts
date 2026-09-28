@@ -1,0 +1,66 @@
+import { buildFacilityNames, buildSampleFacilities } from "@infra/sample/sample-facilities";
+import { SampleFacilityRepository } from "@infra/sample/sample-facility-repository";
+import { SAMPLE_MARKETS } from "@infra/sample/sample-markets";
+import { createSeededRandom, distribute, hashSeed } from "@infra/sample/seeded-random";
+import { asEntityId } from "@market-health-map/domain";
+
+const AUSTIN = SAMPLE_MARKETS.find((market) => market.id === "austin");
+
+describe("SampleFacilityRepository", () => {
+	it("builds one facility per market facility count", async () => {
+		const facilities = await new SampleFacilityRepository().listByMarket(asEntityId("austin"));
+		expect(facilities).toHaveLength(AUSTIN?.metrics.facilities ?? -1);
+		expect(facilities.every((facility) => facility.marketId === "austin")).toBe(true);
+	});
+
+	it("returns nothing for an unknown market", async () => {
+		const facilities = await new SampleFacilityRepository().listByMarket(asEntityId("missing"));
+		expect(facilities).toEqual([]);
+	});
+});
+
+describe("buildSampleFacilities", () => {
+	it("is deterministic and adds up to the market totals", () => {
+		if (!AUSTIN) throw new Error("Austin sample missing");
+		const first = buildSampleFacilities(AUSTIN);
+
+		expect(buildSampleFacilities(AUSTIN)).toEqual(first);
+		expect(first.reduce((sum, item) => sum + item.metrics.gamesLastWeek, 0)).toBe(
+			AUSTIN.metrics.gamesLastWeek,
+		);
+		expect(first.reduce((sum, item) => sum + item.metrics.activePlayers, 0)).toBe(
+			AUSTIN.metrics.activePlayers,
+		);
+		expect(first.every((item) => item.address.endsWith("Austin, Texas"))).toBe(true);
+		expect(new Set(first.map((item) => item.name)).size).toBe(first.length);
+	});
+});
+
+describe("buildFacilityNames", () => {
+	it("stays unique beyond the base name combinations", () => {
+		const names = buildFacilityNames(200, Math.random);
+		expect(new Set(names).size).toBe(200);
+		expect(names.some((name) => / 2$/.test(name))).toBe(true);
+		expect(names.some((name) => / 3$/.test(name))).toBe(true);
+	});
+});
+
+describe("seeded random helpers", () => {
+	it("hashes seeds consistently", () => {
+		expect(hashSeed("plei")).toBe(hashSeed("plei"));
+		expect(hashSeed("plei")).not.toBe(hashSeed("pleI"));
+	});
+
+	it("produces values in [0, 1)", () => {
+		const random = createSeededRandom("seed");
+		const values = Array.from({ length: 50 }, random);
+		expect(values.every((value) => value >= 0 && value < 1)).toBe(true);
+	});
+
+	it("distributes totals exactly, even with zero weights", () => {
+		expect(distribute(10, [1, 2, 1])).toEqual([3, 5, 2]);
+		expect(distribute(10, [1, 1, 1]).reduce((a, b) => a + b, 0)).toBe(10);
+		expect(distribute(0, [0, 0])).toEqual([0, 0]);
+		expect(distribute(10, [1, 1, 1])).toEqual([4, 3, 3]);
+	});
+});

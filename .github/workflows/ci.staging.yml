@@ -1,0 +1,23 @@
+name: CI staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_ci.yml
+    secrets: inherit
+
+  deploy:
+    needs: ci
+    uses: ./.github/workflows/_deploy-vercel.yml
+    with:
+      environment: staging
+      vercel-environment: preview
+    secrets: inherit

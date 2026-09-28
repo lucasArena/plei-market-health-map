@@ -1,0 +1,14 @@
+name: CI pull request
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-pullrequest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_ci.yml
+    secrets: inherit
