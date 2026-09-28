@@ -57,6 +57,12 @@ vi.mock("maplibre-gl", () => {
 });
 
 const mockUseFacilities = vi.fn();
+const mockLoadPleiLogo = vi.fn();
+
+vi.mock("@/components/map/plei-logo-marker", async (importOriginal) => ({
+	...(await importOriginal<object>()),
+	loadPleiLogo: (map: unknown) => mockLoadPleiLogo(map),
+}));
 
 vi.mock("@/lib/api/use-facilities", () => ({ useFacilities: () => mockUseFacilities() }));
 
@@ -138,6 +144,7 @@ describe("useFacilitiesMapRules", () => {
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
+		mockLoadPleiLogo.mockResolvedValue(undefined);
 	});
 
 	it("creates the map, adds the dot layer on load and pushes the facilities", async () => {
@@ -155,7 +162,15 @@ describe("useFacilitiesMapRules", () => {
 			"facilities",
 			expect.objectContaining({ cluster: true, clusterRadius: 40 }),
 		);
-		expect(map?.addLayer).toHaveBeenCalledTimes(3);
+		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(4));
+		expect(mockLoadPleiLogo).toHaveBeenCalledWith(map);
+		expect(map?.addLayer).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				id: "facilities-logos",
+				type: "symbol",
+				layout: expect.objectContaining({ "icon-image": "plei-logo" }),
+			}),
+		);
 		expect(map?.addLayer).toHaveBeenCalledWith(
 			expect.objectContaining({ id: FACILITIES_LAYER_ID, type: "circle" }),
 		);
@@ -171,21 +186,18 @@ describe("useFacilitiesMapRules", () => {
 		expect(result.current.messages).toBe(EN_MESSAGES.map);
 	});
 
-	it("shows a hover card, opens the panel on click and closes it", async () => {
+	it("shows a hover card for a facility, with no click action", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
 		await waitFor(() =>
 			expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
 		);
-		const map = mapState.instances[0];
 		const event = (id: unknown) => ({
 			features: [{ properties: { id } }],
 			point: { x: 120, y: 80 },
 		});
 
-		act(() => mapState.handlers.get(`mouseenter:${FACILITIES_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("pointer");
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
 		expect(result.current.hovered).toEqual({
 			kind: "facility",
@@ -197,39 +209,17 @@ describe("useFacilitiesMapRules", () => {
 		});
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("missing")));
 		expect(result.current.hovered).toBeNull();
-		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
-		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("");
-		expect(result.current.hovered).toBeNull();
 
-		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event(42)));
-		expect(result.current.selectedFacility).toBeNull();
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
 		act(() => mapState.handlers.get("movestart")?.());
 		expect(result.current.hovered).toBeNull();
-		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
-		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("f1")));
-		expect(result.current.selectedFacility).toEqual(FACILITY);
-		expect(result.current.hovered).toBeNull();
-		expect(map?.easeTo).toHaveBeenCalledWith(
-			expect.objectContaining({
-				center: [-97.74, 30.27],
-				padding: expect.objectContaining({ right: 360 }),
-			}),
-		);
-		await waitFor(() =>
-			expect(map?.setPaintProperty).toHaveBeenCalledWith(
-				FACILITIES_LAYER_ID,
-				"circle-stroke-color",
-				["case", ["==", ["get", "id"], "f1"], "#111827", "#ffffff"],
-			),
-		);
 
-		act(() => result.current.closePanel());
-		expect(result.current.selectedFacility).toBeNull();
-		expect(map?.easeTo).toHaveBeenLastCalledWith(
-			expect.objectContaining({ padding: expect.objectContaining({ right: 0 }) }),
-		);
+		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
+		expect(result.current.hovered).toBeNull();
+
+		expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(false);
+		expect(mapState.instances[0]?.setPaintProperty).not.toHaveBeenCalled();
 	});
 
 	it("lists a hovered cluster's facilities and zooms in on click", async () => {
@@ -249,6 +239,11 @@ describe("useFacilitiesMapRules", () => {
 		});
 		mapState.getClusterLeaves.mockResolvedValue([{ properties: { id: "f1" } }]);
 		mapState.getClusterExpansionZoom.mockResolvedValue(9);
+
+		act(() => mapState.handlers.get(`mouseenter:${CLUSTER_LAYER_ID}`)?.());
+		expect(mapState.canvas.style.cursor).toBe("pointer");
+		act(() => mapState.handlers.get(`mouseleave:${CLUSTER_LAYER_ID}`)?.());
+		expect(mapState.canvas.style.cursor).toBe("");
 
 		await act(async () => {
 			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(10));
@@ -340,22 +335,27 @@ describe("useFacilitiesMapRules", () => {
 		expect(result.current.hovered).toMatchObject({ clusterId: 5, facilities: [] });
 	});
 
-	it("drops a selection whose facility disappears", async () => {
-		const { result, rerender } = renderRules();
+	it("keeps the plain markers when the logo fails to load or the map is gone", async () => {
+		mockLoadPleiLogo.mockRejectedValueOnce(new Error("no image"));
+		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
-		await waitFor(() => expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(true));
-		act(() =>
-			mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.({
-				features: [{ properties: { id: "f1" } }],
-				point: { x: 0, y: 0 },
+		await act(async () => undefined);
+		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(3);
+
+		let resolveLogo: () => void = () => undefined;
+		mockLoadPleiLogo.mockReturnValueOnce(
+			new Promise<void>((resolve) => {
+				resolveLogo = resolve;
 			}),
 		);
-
-		mockUseFacilities.mockReturnValue({ data: [], isPending: false, isError: false });
-		rerender();
-
-		expect(result.current.selectedFacility).toBeNull();
+		mapState.instances.length = 0;
+		const second = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		second.unmount();
+		await act(async () => resolveLogo());
+		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(3);
 	});
 
 	it("removes the map on unmount", async () => {
@@ -364,11 +364,13 @@ describe("useFacilitiesMapRules", () => {
 		const map = mapState.instances[0];
 
 		act(() => mapState.handlers.get("load")?.());
-		await waitFor(() => expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(true));
+		await waitFor(() =>
+			expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
+		);
 
 		unmount();
 
-		expect(map?.off).toHaveBeenCalledTimes(9);
+		expect(map?.off).toHaveBeenCalledTimes(7);
 		expect(map?.remove).toHaveBeenCalled();
 	});
 

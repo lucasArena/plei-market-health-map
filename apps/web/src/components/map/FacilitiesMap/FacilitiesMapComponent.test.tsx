@@ -1,17 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { FacilitiesMap } from "@/components/map/FacilitiesMap/FacilitiesMapComponent";
 import { EN_MESSAGES } from "@/test/messages";
 
 const mockRules = vi.fn();
 
 vi.mock("maplibre-gl/dist/maplibre-gl.css", () => ({}));
-vi.mock("@/components/map/FacilityPanel/FacilityPanelComponent", () => ({
-	FacilityPanel: ({ facility, onClose }: { facility: { name: string }; onClose: () => void }) => (
-		<button type="button" onClick={onClose}>
-			panel:{facility.name}
-		</button>
-	),
-}));
 vi.mock("@/components/map/FacilitiesMap/FacilitiesMapComponent.rules", () => ({
 	useFacilitiesMapRules: () => mockRules(),
 }));
@@ -23,15 +16,12 @@ const FACILITY = {
 	avatarUrl: null,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
-const closePanel = vi.fn();
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
-		closePanel,
 		containerRef: { current: null },
 		hovered: null,
 		messages: EN_MESSAGES.map,
-		selectedFacility: null,
 		status,
 		...overrides,
 	};
@@ -69,19 +59,6 @@ describe("FacilitiesMap", () => {
 		render(<FacilitiesMap />);
 
 		expect(screen.getByRole("tooltip")).toHaveTextContent("Eastside Futsal Arena");
-	});
-
-	it("opens the panel for the selected facility", () => {
-		mockRules.mockReturnValue(rulesWith("ready", { selectedFacility: FACILITY }));
-
-		render(<FacilitiesMap />);
-
-		expect(screen.getByRole("region", { name: "Facilities map" })).toHaveAttribute(
-			"data-panel-open",
-			"true",
-		);
-		fireEvent.click(screen.getByRole("button", { name: "panel:Eastside Futsal Arena" }));
-		expect(closePanel).toHaveBeenCalled();
 	});
 
 	it.each([

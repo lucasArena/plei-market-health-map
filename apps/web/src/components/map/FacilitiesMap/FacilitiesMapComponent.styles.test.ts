@@ -8,8 +8,7 @@ import {
 	FACILITIES_LAYER_ID,
 	FACILITIES_SOURCE_ID,
 	FACILITY_DOT_PAINT,
-	selectedStrokeColor,
-	selectedStrokeWidth,
+	FACILITY_LOGO_LAYOUT,
 	UNCLUSTERED_FILTER,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 
@@ -62,6 +61,13 @@ describe("cluster styles", () => {
 						filter: UNCLUSTERED_FILTER,
 						paint: FACILITY_DOT_PAINT,
 					},
+					{
+						id: "logos",
+						type: "symbol",
+						source: FACILITIES_SOURCE_ID,
+						filter: UNCLUSTERED_FILTER,
+						layout: FACILITY_LOGO_LAYOUT,
+					},
 				],
 			}),
 		).toEqual([]);
@@ -71,15 +77,5 @@ describe("cluster styles", () => {
 describe("facility dot styles", () => {
 	it("is a valid MapLibre circle paint", () => {
 		expect(styleErrors(FACILITY_DOT_PAINT)).toEqual([]);
-	});
-
-	it.each(["f1", null])("builds valid selection expressions for %s", (facilityId) => {
-		expect(
-			styleErrors({
-				...FACILITY_DOT_PAINT,
-				"circle-stroke-color": selectedStrokeColor(facilityId),
-				"circle-stroke-width": selectedStrokeWidth(facilityId),
-			}),
-		).toEqual([]);
 	});
 });
