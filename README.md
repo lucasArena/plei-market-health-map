@@ -13,11 +13,11 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Open http://localhost:3000. You are sent to `/sign-in` (Clerk SSO, same look as PleiOS), then land on the facilities map.
+Open http://localhost:3000. You are sent to `/sign-in` (one Google SSO button; only @plei.com accounts get in), then land on the facilities map.
 
 ## Contributing
 
-Branch from `staging`, use conventional commits (`feat: …`, `fix: …`, `chore: …`), and open a PR into `staging`. Production releases are PRs from `staging` into `main`. See [AGENTS.md](AGENTS.md).
+Branch from `staging` as `feature/…`, `hotfix/…`, `refactor/…` or `chore/…`, use conventional commits (`feat: …`, `fix: …`, `chore: …`), and open a PR into `staging`. Production releases are PRs from `staging` into `main`. See [AGENTS.md](AGENTS.md).
 
 ## Scripts
 
@@ -30,7 +30,7 @@ Branch from `staging`, use conventional commits (`feat: …`, `fix: …`, `chore
 | `pnpm test` / `pnpm test:coverage` | Vitest, with a 95% coverage gate |
 | `pnpm check` | lint + typecheck + coverage (the pre-push gate) |
 | `pnpm db:migrate` / `pnpm db:deploy` | Prisma migrations (dev / deploy) |
-| `pnpm release` | Version bump, changelog and tag (run by CI on merge to `main`) |
+| `pnpm test:scripts` | Tests for the release version script |
 
 ## Documentation
 
@@ -38,5 +38,5 @@ Branch from `staging`, use conventional commits (`feat: …`, `fix: …`, `chore
 - [CLAUDE.md](CLAUDE.md): the guide for agents and new engineers
 - [docs/architecture.md](docs/architecture.md): the layers, ports and adapters, and how login tracking works
 - [docs/conventions.md](docs/conventions.md): code, testing, and git conventions
-- [docs/deployment.md](docs/deployment.md): hosting, environment variables, and Clerk setup
+- [docs/deployment.md](docs/deployment.md): hosting, environment variables, and Google SSO setup
 - [docs/agent-usage.md](docs/agent-usage.md): how agents were used on this project (a project must-have)

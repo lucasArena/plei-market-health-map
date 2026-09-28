@@ -17,7 +17,7 @@ domain  <-  application  <-  infrastructure  <-  apps/web
 - `packages/infrastructure`: Prisma 7 + Neon adapter, repositories, record mappers, `SystemClock`, and `UuidGenerator`.
 - `packages/i18n`: typed `en` and `pt-BR` catalogs, `getMessages`, and `parseAcceptLanguage`.
 - `packages/config`: shared tsconfig presets and the Vitest factory (95% thresholds).
-- `apps/web`: Next.js 16 App Router, Clerk, React Query, and the Serwist PWA. `src/server/container.ts` is the only place that creates concrete adapters.
+- `apps/web`: Next.js 16 App Router, Auth.js (Google SSO), React Query, and the Serwist PWA. `src/server/container.ts` is the only place that creates concrete adapters.
 
 See `docs/architecture.md` for more depth.
 
@@ -48,7 +48,7 @@ The single `.env` sits at the repo root. `apps/web/next.config.ts` and `packages
 
 ## Deploying and git flow
 
-Read [`AGENTS.md`](AGENTS.md) before any git work. Feature branches go by PR into `staging`, which deploys staging (`ci.staging.yml`). A PR from `staging` into `main` releases: CI, then a version bump, `CHANGELOG.md` and tag, then a production deploy (`ci.production.yml`). PRs run `ci.pullrequest.yml` (commitlint plus `_ci.yml`). Setup lives in `docs/deployment.md`.
+Read [`AGENTS.md`](AGENTS.md) before any git work. Branches are `feature/`, `hotfix/`, `refactor/` or `chore/`, opened as PRs into `staging`. `ci.pr.yml` checks the branch name and runs the unit tests. A push to `staging` or `main` runs `cd.staging.yml` or `cd.production.yml`: bump from the commits since the last tag, commit `ci: bump new version`, tag, and deploy to Vercel. Setup lives in `docs/deployment.md`.
 
 ## Gotchas
 
@@ -57,7 +57,10 @@ Read [`AGENTS.md`](AGENTS.md) before any git work. Feature branches go by PR int
 - `PrismaNeon` talks to Neon over WebSockets, so it can't connect to a plain local Postgres. Point local dev at a Neon branch.
 - The service worker must reference `self.__SW_MANIFEST` literally, so `sw.ts` uses `declare const self`.
 - The tsconfig base lives in `packages/config/tsconfig/base.json` rather than at the root. Prisma's config loader doesn't follow symlinked `extends` out of `node_modules`.
-- The map shows mock facilities (`SampleFacilityRepository`) until they come from the database (PROD-443). MapLibre needs WebGL, so tests mock `maplibre-gl`, and the map is created inside a `useEffect` via a dynamic import.
+- Facilities come from the `dataplei` warehouse through `WarehouseFacilityRepository` when `DATA_WAREHOUSE_URL` is set (read-only, cached 5 min), otherwise from mocks. Follow `~/www/plei/plei-data-catalog` (`AGENTS.md`, `tables/dim_location.yml`) before touching queries, and never select columns it tags `hide`. MapLibre needs WebGL, so tests mock `maplibre-gl`.
 - MapLibre v6 ships its web worker as ES modules (`maplibre-gl-worker.mjs` imports `maplibre-gl-shared.mjs`), and webpack can't bundle that. `apps/web/scripts/copy-maplibre-worker.mjs` copies both files to `public/maplibre/` (gitignored) before `dev` and `build`, and the map calls `setWorkerUrl` with that path. Don't downgrade to v5: every version before 6.4.1 has a critical XSS advisory.
 - `pnpm.overrides` in the root `package.json` pins patched transitive deps (`browserslist`, `deepmerge-ts`, `mysql2`) so `pnpm audit --prod --audit-level high` passes in CI.
-- Login tracking runs in `app/(protected)/layout.tsx` via `trackCurrentLogin()`. It is idempotent per Clerk session and never throws into the render.
+- Sign-in is Auth.js with Google only (`src/auth.ts`). The `signIn` callback (`evaluateSignIn`) lets in verified `@plei.com` accounts and sends everyone else back to `/sign-in?error=domain&email=…` with a message. The protected layout and `requireUser()` re-check the domain on every request.
+- `src/env.ts` validates only what the app itself reads (`DATABASE_URL`, `ALLOWED_EMAIL_DOMAIN`). Auth.js reads `AUTH_SECRET`, `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` itself. Without `AUTH_SECRET` every request fails. Without `DATABASE_URL`, login tracking warns once and skips.
+- Login tracking runs in Auth.js `events.signIn` (`trackSignIn`): one row per successful sign-in, and it never throws into the sign-in flow.
+- `src/proxy.ts` must export a function named `proxy`. With Auth.js, pass `NextAuth` a plain config object; a lazy `() => config` makes `auth(handler)` return something that is not a function.

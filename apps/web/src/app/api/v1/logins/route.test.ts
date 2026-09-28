@@ -12,7 +12,7 @@ vi.mock("@/server/container", () => ({
 describe("GET /api/v1/logins", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockRequireUser.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+		mockRequireUser.mockResolvedValue({ userId: "user_1", email: "lucas@plei.com" });
 	});
 
 	it("returns recent logins for a signed-in user", async () => {

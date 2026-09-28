@@ -52,16 +52,23 @@ describe("FacilitiesMap", () => {
 		);
 	});
 
-	it("shows the hover card with the facility logo and name next to the pointer", () => {
+	it("shows the hover card for the hovered facility", () => {
 		mockRules.mockReturnValue(
-			rulesWith("ready", { hovered: { facility: FACILITY, x: 100, y: 50 } }),
+			rulesWith("ready", {
+				hovered: {
+					kind: "facility",
+					facility: FACILITY,
+					x: 100,
+					y: 50,
+					flipX: false,
+					flipY: false,
+				},
+			}),
 		);
 
 		render(<FacilitiesMap />);
 
-		const tooltip = screen.getByRole("tooltip");
-		expect(tooltip).toHaveTextContent("EFEastside Futsal Arena");
-		expect(tooltip).toHaveStyle({ left: "114px", top: "64px" });
+		expect(screen.getByRole("tooltip")).toHaveTextContent("Eastside Futsal Arena");
 	});
 
 	it("opens the panel for the selected facility", () => {

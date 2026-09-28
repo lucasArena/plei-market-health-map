@@ -18,9 +18,9 @@
 		"db:generate": "pnpm --filter @market-health-map/infrastructure db:generate",
 		"db:migrate": "pnpm --filter @market-health-map/infrastructure db:migrate",
 		"db:deploy": "pnpm --filter @market-health-map/infrastructure db:deploy",
-		"check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage",
+		"check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run test:scripts",
 		"prepare": "simple-git-hooks",
-		"release": "commit-and-tag-version"
+		"test:scripts": "node --test \"scripts/**/*.test.mjs\""
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm exec lint-staged",
@@ -60,7 +60,6 @@
 		"@biomejs/biome": "2.5.14",
 		"@commitlint/cli": "21.2.3",
 		"@commitlint/config-conventional": "21.2.3",
-		"commit-and-tag-version": "13.2.1",
 		"lint-staged": "17.6.0",
 		"simple-git-hooks": "2.14.0",
 		"turbo": "2.11.5",

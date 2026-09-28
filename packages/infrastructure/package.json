@@ -22,11 +22,13 @@
 		"@market-health-map/domain": "workspace:*",
 		"@neondatabase/serverless": "1.1.0",
 		"@prisma/adapter-neon": "7.10.0",
-		"@prisma/client": "7.10.0"
+		"@prisma/client": "7.10.0",
+		"pg": "8.23.0"
 	},
 	"devDependencies": {
 		"@market-health-map/config": "workspace:*",
 		"@types/node": "24.19.0",
+		"@types/pg": "8.23.1",
 		"@vitest/coverage-v8": "5.0.2",
 		"dotenv": "18.0.4",
 		"prisma": "7.10.0",

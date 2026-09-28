@@ -2,21 +2,22 @@ import { render, screen } from "@testing-library/react";
 import HomePage from "@/app/(protected)/page";
 import OfflinePage from "@/app/~offline/page";
 import manifest from "@/app/manifest";
-import SignInPage from "@/app/sign-in/[[...sign-in]]/page";
-import SignUpPage from "@/app/sign-up/[[...sign-up]]/page";
-import { CLERK_APPEARANCE, CLERK_SIGN_IN_APPEARANCE } from "@/lib/clerk/clerk-appearance";
+import SignInPage from "@/app/sign-in/page";
 
-const mockSignIn = vi.fn();
-const mockSignUp = vi.fn();
+const mockAccess = vi.fn();
+const mockSignInScreen = vi.fn();
+const mockRedirect = vi.fn((url: string) => {
+	throw new Error(`redirect:${url}`);
+});
 
-vi.mock("@clerk/nextjs", () => ({
-	SignIn: (props: unknown) => {
-		mockSignIn(props);
-		return <div data-testid="clerk-sign-in" />;
-	},
-	SignUp: (props: unknown) => {
-		mockSignUp(props);
-		return <div data-testid="clerk-sign-up" />;
+vi.mock("next/navigation", () => ({ redirect: (url: string) => mockRedirect(url) }));
+vi.mock("@/server/auth/internal-access", () => ({ getInternalAccess: () => mockAccess() }));
+vi.mock("@/env", () => ({ getAllowedEmailDomain: () => "plei.com" }));
+
+vi.mock("@/components/auth/SignInScreen/SignInScreenComponent", () => ({
+	SignInScreen: (props: unknown) => {
+		mockSignInScreen(props);
+		return <div data-testid="sign-in-screen" />;
 	},
 }));
 
@@ -29,15 +30,43 @@ vi.mock("@/server/i18n/get-request-locale", () => ({
 }));
 
 describe("pages", () => {
-	it("renders the Clerk sign-in with the Plei appearance", () => {
-		render(<SignInPage />);
-		expect(screen.getByTestId("clerk-sign-in")).toBeInTheDocument();
-		expect(mockSignIn).toHaveBeenCalledWith({ appearance: CLERK_SIGN_IN_APPEARANCE });
+	beforeEach(() => vi.clearAllMocks());
+
+	it("renders the sign-in screen with the error feedback from the URL", async () => {
+		mockAccess.mockResolvedValue({ status: "anonymous" });
+
+		render(
+			await SignInPage({
+				searchParams: Promise.resolve({ error: "domain", email: "someone@gmail.com" }),
+			}),
+		);
+
+		expect(screen.getByTestId("sign-in-screen")).toBeInTheDocument();
+		expect(mockSignInScreen).toHaveBeenCalledWith({
+			error: "domain",
+			email: "someone@gmail.com",
+			domain: "plei.com",
+		});
 	});
 
-	it("renders the Clerk sign-up with the Plei appearance", () => {
-		render(<SignUpPage />);
-		expect(mockSignUp).toHaveBeenCalledWith({ appearance: CLERK_APPEARANCE });
+	it("renders the sign-in screen without feedback", async () => {
+		mockAccess.mockResolvedValue({ status: "anonymous" });
+
+		render(await SignInPage({ searchParams: Promise.resolve({}) }));
+
+		expect(mockSignInScreen).toHaveBeenCalledWith({ error: null, email: null, domain: "plei.com" });
+	});
+
+	it("sends signed-in Plei users straight to the map", async () => {
+		mockAccess.mockResolvedValue({
+			status: "allowed",
+			userId: "g-1",
+			email: "lucas@plei.com",
+			name: null,
+			image: null,
+		});
+
+		await expect(SignInPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/");
 	});
 
 	it("renders the facilities map on the home page", () => {

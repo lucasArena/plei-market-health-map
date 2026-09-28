@@ -5,16 +5,21 @@ import {
 	makeRecordLogin,
 } from "@market-health-map/application";
 import {
+	CachedFacilityRepository,
 	getPrismaClient,
+	getWarehousePool,
 	PrismaLoginEventRepository,
 	SampleFacilityRepository,
 	SystemClock,
 	UuidGenerator,
+	WarehouseFacilityRepository,
 } from "@market-health-map/infrastructure";
 import { getServerEnv } from "@/env";
 
 function buildLogins() {
-	const prisma = getPrismaClient(getServerEnv().DATABASE_URL);
+	const databaseUrl = getServerEnv().DATABASE_URL;
+	if (!databaseUrl) throw new Error("DATABASE_URL is required for login tracking.");
+	const prisma = getPrismaClient(databaseUrl);
 	const loginEvents = new PrismaLoginEventRepository(prisma);
 	return {
 		recordLogin: makeRecordLogin({
@@ -26,9 +31,18 @@ function buildLogins() {
 	};
 }
 
+function buildFacilityRepository() {
+	const warehouseUrl = getServerEnv().DATA_WAREHOUSE_URL;
+	if (!warehouseUrl) return new SampleFacilityRepository();
+	return new CachedFacilityRepository(
+		new WarehouseFacilityRepository(getWarehousePool(warehouseUrl)),
+		new SystemClock(),
+	);
+}
+
 function buildFacilities() {
 	return {
-		listFacilities: makeListFacilities({ facilities: new SampleFacilityRepository() }),
+		listFacilities: makeListFacilities({ facilities: buildFacilityRepository() }),
 	};
 }
 

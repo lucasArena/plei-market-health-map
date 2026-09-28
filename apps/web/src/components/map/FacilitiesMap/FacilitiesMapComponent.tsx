@@ -2,8 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useFacilitiesMapRules } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.rules";
-import { TOOLTIP_OFFSET } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
-import { FacilityAvatar } from "@/components/map/FacilityAvatar/FacilityAvatarComponent";
+import { FacilityHoverCard } from "@/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { FacilityPanel } from "@/components/map/FacilityPanel/FacilityPanelComponent";
 
 export function FacilitiesMap() {
@@ -28,16 +27,7 @@ export function FacilitiesMap() {
 					{overlayMessage}
 				</p>
 			)}
-			{hovered && (
-				<div
-					role="tooltip"
-					className="pointer-events-none absolute z-10 flex items-center gap-2 rounded-lg border bg-background/95 py-1.5 pr-3 pl-1.5 shadow-lg backdrop-blur"
-					style={{ left: hovered.x + TOOLTIP_OFFSET, top: hovered.y + TOOLTIP_OFFSET }}
-				>
-					<FacilityAvatar name={hovered.facility.name} avatarUrl={hovered.facility.avatarUrl} />
-					<span className="text-sm font-medium whitespace-nowrap">{hovered.facility.name}</span>
-				</div>
-			)}
+			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
 			{selectedFacility && (
 				<FacilityPanel key={selectedFacility.id} facility={selectedFacility} onClose={closePanel} />
 			)}

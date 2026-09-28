@@ -4,3 +4,6 @@ export { PrismaLoginEventRepository } from "@infra/database/prisma-login-event-r
 export { SampleFacilityRepository } from "@infra/sample/sample-facility-repository";
 export { SystemClock } from "@infra/system/system-clock";
 export { UuidGenerator } from "@infra/system/uuid-generator";
+export { CachedFacilityRepository } from "@infra/warehouse/cached-facility-repository";
+export { WarehouseFacilityRepository } from "@infra/warehouse/warehouse-facility-repository";
+export { getWarehousePool } from "@infra/warehouse/warehouse-pool";
