@@ -23,6 +23,11 @@ export const en: Messages = {
 		failed: "Could not load facilities.",
 		clusterCount: "{count} facilities",
 		moreFacilities: "+{count} more",
+		sessionHeatmapLegend: "Sessions per shaded area · last 28 days",
+		sessionHeatmapContext: "Scale updates for the current map view",
+		sessionHeatmapNoActivity: "No sessions in the current map view",
+		sessionHeatmapLowValue: "{count} sessions in a shaded area",
+		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
 	},
 	offline: {
 		title: "You are offline",

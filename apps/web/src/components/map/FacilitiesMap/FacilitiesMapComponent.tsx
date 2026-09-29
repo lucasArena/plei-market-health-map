@@ -2,11 +2,19 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useFacilitiesMapRules } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.rules";
+import { SESSION_HEATMAP_BUCKET_COLORS } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import { FacilityHoverCard } from "@/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 
 export function FacilitiesMap() {
-	const { containerRef, hovered, messages, status } = useFacilitiesMapRules();
+	const { containerRef, hasSessionHeatmap, hovered, messages, sessionScale, status } =
+		useFacilitiesMapRules();
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
+	const numberFormatter = new Intl.NumberFormat(undefined, {
+		notation: "compact",
+		maximumFractionDigits: 1,
+	});
+	const lowValue = numberFormatter.format(sessionScale.low);
+	const highValue = numberFormatter.format(sessionScale.high);
 
 	return (
 		<section aria-label={messages.title} className="absolute inset-0">
@@ -22,6 +30,52 @@ export function FacilitiesMap() {
 				</p>
 			)}
 			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
+			{hasSessionHeatmap && (
+				<div
+					data-testid="session-heatmap-legend"
+					className="absolute bottom-8 left-3 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
+				>
+					<p className="text-[11px] font-semibold tracking-tight text-foreground">
+						{messages.sessionHeatmapLegend}
+					</p>
+					<p className="mt-0.5 text-[9px] text-muted-foreground">
+						{messages.sessionHeatmapContext}
+					</p>
+					{sessionScale.high === 0 ? (
+						<p className="mt-2 text-[10px] font-medium text-muted-foreground">
+							{messages.sessionHeatmapNoActivity}
+						</p>
+					) : (
+						<div className="mt-2 flex items-center justify-between gap-3">
+							<span
+								aria-hidden="true"
+								className="min-w-7 text-[10px] tabular-nums text-muted-foreground"
+							>
+								{lowValue}
+							</span>
+							<span className="sr-only">
+								{messages.sessionHeatmapLowValue.replace("{count}", lowValue)}
+							</span>
+							<div
+								data-testid="session-heatmap-gradient"
+								className="h-2.5 flex-1 rounded-full"
+								style={{
+									backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
+								}}
+							/>
+							<span
+								aria-hidden="true"
+								className="min-w-7 text-right text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
+							>
+								{highValue}+
+							</span>
+							<span className="sr-only">
+								{messages.sessionHeatmapHighValue.replace("{count}", highValue)}
+							</span>
+						</div>
+					)}
+				</div>
+			)}
 			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"

@@ -5,6 +5,9 @@ import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "mapl
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMessages } from "@/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
+	APP_SESSION_HEATMAP_LAYER_ID,
+	APP_SESSION_HEATMAP_PAINT,
+	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_COUNT_LAYER_ID,
 	CLUSTER_COUNT_LAYOUT,
 	CLUSTER_COUNT_PAINT,
@@ -27,12 +30,20 @@ import {
 	UNCLUSTERED_FILTER,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import type {
+	AppSessionHeatmapFeatureCollection,
 	FacilitiesMapStatus,
 	FacilityFeatureCollection,
 	HoverPlacement,
 	MapHover,
+	SessionHeatmapArea,
+	SessionHeatmapBounds,
+	SessionHeatmapScale,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.types";
 import { loadPleiLogo } from "@/components/map/plei-logo-marker";
+import {
+	type AppSessionHeatmapCellView,
+	useAppSessionHeatmap,
+} from "@/lib/api/use-app-session-heatmap";
 import { useFacilities } from "@/lib/api/use-facilities";
 
 export function toFacilityFeatureCollection(
@@ -48,6 +59,91 @@ export function toFacilityFeatureCollection(
 			},
 			properties: { id: facility.id, marketId: facility.marketId, name: facility.name },
 		})),
+	};
+}
+
+export function toAppSessionHeatmapFeatureCollection(
+	cells: AppSessionHeatmapCellView[],
+	bounds?: SessionHeatmapBounds,
+): AppSessionHeatmapFeatureCollection {
+	const visibleCells = bounds
+		? cells.filter((cell) => bounds.contains([cell.lng, cell.lat]))
+		: cells;
+	const sortedWeights = visibleCells
+		.map((cell) => cell.sessionWeight)
+		.filter((weight) => weight > 0)
+		.sort((a, b) => a - b);
+	const localCeiling = sortedWeights[Math.ceil((sortedWeights.length - 1) * 0.9)] ?? 1;
+	return {
+		type: "FeatureCollection",
+		features: visibleCells.map((cell) => ({
+			type: "Feature",
+			geometry: {
+				type: "Point",
+				coordinates: [cell.lng, cell.lat],
+			},
+			properties: {
+				sessionWeight: cell.sessionWeight,
+				intensity: Math.min(1, Math.max(0.01, (cell.sessionWeight / localCeiling) ** 0.8)),
+			},
+		})),
+	};
+}
+
+export function appSessionHeatmapAreas(
+	cells: AppSessionHeatmapCellView[],
+	bounds?: SessionHeatmapBounds,
+): SessionHeatmapArea[] {
+	const visibleCells = bounds
+		? cells.filter((cell) => bounds.contains([cell.lng, cell.lat]))
+		: cells;
+	const west = bounds?.getWest?.();
+	const east = bounds?.getEast?.();
+	const south = bounds?.getSouth?.();
+	const north = bounds?.getNorth?.();
+	if (
+		west === undefined ||
+		east === undefined ||
+		south === undefined ||
+		north === undefined ||
+		east <= west ||
+		north <= south
+	) {
+		return visibleCells;
+	}
+	const areas = new Map<string, SessionHeatmapArea>();
+	for (const cell of visibleCells) {
+		const column = Math.min(23, Math.floor(((cell.lng - west) / (east - west)) * 24));
+		const row = Math.min(15, Math.floor(((cell.lat - south) / (north - south)) * 16));
+		const key = `${column}:${row}`;
+		const current = areas.get(key);
+		if (!current) {
+			areas.set(key, { ...cell });
+			continue;
+		}
+		const sessionWeight = current.sessionWeight + cell.sessionWeight;
+		areas.set(key, {
+			lat: (current.lat * current.sessionWeight + cell.lat * cell.sessionWeight) / sessionWeight,
+			lng: (current.lng * current.sessionWeight + cell.lng * cell.sessionWeight) / sessionWeight,
+			sessionWeight,
+		});
+	}
+	return [...areas.values()];
+}
+
+export function appSessionHeatmapScale(
+	cells: AppSessionHeatmapCellView[],
+	bounds?: SessionHeatmapBounds,
+): SessionHeatmapScale {
+	const sortedWeights = appSessionHeatmapAreas(cells, bounds)
+		.map((cell) => cell.sessionWeight)
+		.filter((weight) => weight > 0)
+		.sort((a, b) => a - b);
+	if (sortedWeights.length === 0) return { low: 0, high: 0 };
+	const lastIndex = sortedWeights.length - 1;
+	return {
+		low: sortedWeights[Math.floor(lastIndex * 0.1)] ?? 0,
+		high: sortedWeights[Math.ceil(lastIndex * 0.9)] ?? 0,
 	};
 }
 
@@ -89,17 +185,31 @@ function clusterFromEvent(event: MapLayerMouseEvent) {
 	};
 }
 
+const EMPTY_HEATMAP: AppSessionHeatmapFeatureCollection = {
+	type: "FeatureCollection",
+	features: [],
+};
+
 export function useFacilitiesMapRules() {
 	const { messages } = useMessages();
 	const query = useFacilities();
+	const heatmapQuery = useAppSessionHeatmap();
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
+	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const hoveredClusterIdRef = useRef<number | null>(null);
 	const featureCollection = useMemo(
 		() => toFacilityFeatureCollection(query.data ?? []),
 		[query.data],
+	);
+	const heatmapFeatureCollection = useMemo(
+		() =>
+			heatmapQuery.isError || !heatmapQuery.data
+				? EMPTY_HEATMAP
+				: toAppSessionHeatmapFeatureCollection(heatmapQuery.data),
+		[heatmapQuery.data, heatmapQuery.isError],
 	);
 	const facilitiesById = useMemo(
 		() => new Map((query.data ?? []).map((facility) => [facility.id, facility])),
@@ -183,6 +293,19 @@ export function useFacilitiesMapRules() {
 		[handleHoverEnd],
 	);
 
+	const refreshHeatmap = useCallback(() => {
+		const map = mapRef.current;
+		if (!map || heatmapQuery.isError || !heatmapQuery.data) return;
+		const bounds = map.getBounds();
+		map
+			.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)
+			?.setData(toAppSessionHeatmapFeatureCollection(heatmapQuery.data, bounds));
+		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds);
+		setSessionScale((current) =>
+			current.low === nextScale.low && current.high === nextScale.high ? current : nextScale,
+		);
+	}, [heatmapQuery.data, heatmapQuery.isError]);
+
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) return;
@@ -202,6 +325,16 @@ export function useFacilitiesMapRules() {
 			map = created;
 			created.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
 			created.on("load", () => {
+				created.addSource(APP_SESSION_HEATMAP_SOURCE_ID, {
+					type: "geojson",
+					data: EMPTY_HEATMAP,
+				});
+				created.addLayer({
+					id: APP_SESSION_HEATMAP_LAYER_ID,
+					type: "heatmap",
+					source: APP_SESSION_HEATMAP_SOURCE_ID,
+					paint: APP_SESSION_HEATMAP_PAINT,
+				});
 				created.addSource(FACILITIES_SOURCE_ID, {
 					type: "geojson",
 					data: { type: "FeatureCollection", features: [] },
@@ -264,6 +397,16 @@ export function useFacilitiesMapRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
+		if (heatmapQuery.isError || !heatmapQuery.data) {
+			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
+			return;
+		}
+		refreshHeatmap();
+	}, [heatmapQuery.data, heatmapQuery.isError, isMapReady, refreshHeatmap]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
 		const showPointer = () => {
 			map.getCanvas().style.cursor = "pointer";
 		};
@@ -281,16 +424,29 @@ export function useFacilitiesMapRules() {
 		] as const;
 		for (const [event, layer, handler] of bindings) map.on(event, layer, handler);
 		map.on("movestart", handleHoverEnd);
+		map.on("moveend", refreshHeatmap);
 		return () => {
 			for (const [event, layer, handler] of bindings) map.off(event, layer, handler);
 			map.off("movestart", handleHoverEnd);
+			map.off("moveend", refreshHeatmap);
 		};
-	}, [handleClusterClick, handleClusterHover, handleHover, handleHoverEnd, isMapReady]);
+	}, [
+		handleClusterClick,
+		handleClusterHover,
+		handleHover,
+		handleHoverEnd,
+		isMapReady,
+		refreshHeatmap,
+	]);
+
+	const hasSessionHeatmap = heatmapFeatureCollection.features.length > 0;
 
 	return {
 		containerRef,
+		hasSessionHeatmap,
 		hovered,
 		messages: messages.map,
+		sessionScale,
 		status,
 	};
 }

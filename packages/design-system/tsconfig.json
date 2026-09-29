@@ -1,0 +1,10 @@
+{
+	"extends": "@market-health-map/config/tsconfig/base.json",
+	"compilerOptions": {
+		"types": ["vitest/globals"],
+		"paths": {
+			"@design-system/*": ["./src/*"]
+		}
+	},
+	"include": ["src", "vitest.config.ts"]
+}
