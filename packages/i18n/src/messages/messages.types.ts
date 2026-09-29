@@ -26,6 +26,32 @@ export interface Messages {
 		sessionHeatmapLowValue: string;
 		sessionHeatmapHighValue: string;
 	};
+	facilityAi: {
+		generate: string;
+		downloadHint: string;
+		loading: string;
+		writing: string;
+		label: string;
+		failed: string;
+	};
+	facilityDetail: {
+		label: string;
+		close: string;
+		failed: string;
+		gamesOne: string;
+		gamesOther: string;
+		summaryNone: string;
+		summaryPlayed: string;
+		playedLastWeek: string;
+		scheduled: string;
+		cancelled: string;
+		nextSevenDays: string;
+		vsPreviousWeek: string;
+		cancellationRate: string;
+		weekRange: string;
+		lastPlayed: string;
+		neverPlayed: string;
+	};
 	offline: {
 		title: string;
 		description: string;

@@ -15,6 +15,8 @@ import {
 	FACILITY_LOGO_LAYOUT,
 	SESSION_HEATMAP_BUCKET_COLORS,
 	SESSION_HEATMAP_BUCKET_OPACITIES,
+	selectedRingColor,
+	selectedRingWidth,
 	UNCLUSTERED_FILTER,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 
@@ -133,5 +135,19 @@ describe("app session weather-map styles", () => {
 				],
 			}),
 		).toEqual([]);
+	});
+});
+
+describe("selected ring styles", () => {
+	it("are valid MapLibre expressions with and without a selection", () => {
+		for (const id of ["f1", null]) {
+			expect(
+				styleErrors({
+					...FACILITY_DOT_PAINT,
+					"circle-stroke-color": selectedRingColor(id),
+					"circle-stroke-width": selectedRingWidth(id),
+				}),
+			).toEqual([]);
+		}
 	});
 });

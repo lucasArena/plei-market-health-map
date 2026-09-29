@@ -4,10 +4,12 @@ export { PrismaLoginEventRepository } from "@infra/database/prisma-login-event-r
 export { EmptyAppSessionHeatmapRepository } from "@infra/sample/empty-app-session-heatmap-repository";
 export { FixtureAppSessionHeatmapRepository } from "@infra/sample/fixture-app-session-heatmap-repository";
 export { SampleFacilityRepository } from "@infra/sample/sample-facility-repository";
+export { SampleFacilityStatsRepository } from "@infra/sample/sample-facility-stats-repository";
 export { SystemClock } from "@infra/system/system-clock";
 export { UuidGenerator } from "@infra/system/uuid-generator";
 export { CachedAppSessionHeatmapRepository } from "@infra/warehouse/cached-app-session-heatmap-repository";
 export { CachedFacilityRepository } from "@infra/warehouse/cached-facility-repository";
 export { WarehouseAppSessionHeatmapRepository } from "@infra/warehouse/warehouse-app-session-heatmap-repository";
 export { WarehouseFacilityRepository } from "@infra/warehouse/warehouse-facility-repository";
+export { WarehouseFacilityStatsRepository } from "@infra/warehouse/warehouse-facility-stats-repository";
 export { getWarehousePool } from "@infra/warehouse/warehouse-pool";

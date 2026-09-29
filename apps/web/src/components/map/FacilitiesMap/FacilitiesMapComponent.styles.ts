@@ -1,6 +1,7 @@
 import { PLEIFUL_COLORS } from "@market-health-map/design-system";
 import type {
 	CircleLayerSpecification,
+	ExpressionSpecification,
 	FilterSpecification,
 	HeatmapLayerSpecification,
 	SymbolLayerSpecification,
@@ -15,6 +16,8 @@ export const FACILITIES_SOURCE_ID = "facilities";
 export const FACILITIES_LAYER_ID = "facilities-dots";
 export const FACILITIES_LOGO_LAYER_ID = "facilities-logos";
 export const MARKER_RING_COLOR = "#d1d5db";
+export const SELECTED_RING_COLOR = "#111827";
+export const DETAIL_PANEL_OFFSET = 384;
 export const CLUSTER_LAYER_ID = "facilities-clusters";
 export const CLUSTER_COUNT_LAYER_ID = "facilities-cluster-count";
 export const CLUSTER_RADIUS = 40;
@@ -96,3 +99,20 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 		SESSION_HEATMAP_BUCKET_COLORS[3],
 	],
 };
+
+export function selectedRingColor(facilityId: string | null): ExpressionSpecification {
+	return ["case", ["==", ["get", "id"], facilityId ?? ""], SELECTED_RING_COLOR, MARKER_RING_COLOR];
+}
+
+export function selectedRingWidth(facilityId: string | null): ExpressionSpecification {
+	const isSelected: ExpressionSpecification = ["==", ["get", "id"], facilityId ?? ""];
+	return [
+		"interpolate",
+		["linear"],
+		["zoom"],
+		3,
+		["case", isSelected, 2, 0.5],
+		8,
+		["case", isSelected, 3, 1.5],
+	];
+}

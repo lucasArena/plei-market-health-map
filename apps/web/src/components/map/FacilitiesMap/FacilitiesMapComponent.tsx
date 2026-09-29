@@ -3,11 +3,22 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useFacilitiesMapRules } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.rules";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
+import { FacilityDetailPanel } from "@/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 
 export function FacilitiesMap() {
-	const { containerRef, hasSessionHeatmap, hovered, messages, sessionScale, status } =
-		useFacilitiesMapRules();
+	const {
+		closePanel,
+		containerRef,
+		handlePanelClosed,
+		hasSessionHeatmap,
+		hovered,
+		isPanelClosing,
+		messages,
+		selectedFacilityId,
+		sessionScale,
+		status,
+	} = useFacilitiesMapRules();
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
 	const numberFormatter = new Intl.NumberFormat(undefined, {
 		notation: "compact",
@@ -75,6 +86,14 @@ export function FacilitiesMap() {
 						</div>
 					)}
 				</div>
+			)}
+			{selectedFacilityId && (
+				<FacilityDetailPanel
+					facilityId={selectedFacilityId}
+					isClosing={isPanelClosing}
+					onClose={closePanel}
+					onClosed={handlePanelClosed}
+				/>
 			)}
 			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
 				<a

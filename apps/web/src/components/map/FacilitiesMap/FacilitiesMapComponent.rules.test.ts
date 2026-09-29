@@ -16,6 +16,7 @@ import {
 	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_LAYER_ID,
 	FACILITIES_LAYER_ID,
+	selectedRingWidth,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import { EN_MESSAGES } from "@/test/messages";
 
@@ -295,7 +296,7 @@ describe("useFacilitiesMapRules", () => {
 		);
 	});
 
-	it("shows a hover card for a facility, with no click action", async () => {
+	it("shows a hover card for a facility", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
@@ -326,9 +327,57 @@ describe("useFacilitiesMapRules", () => {
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
 		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
 		expect(result.current.hovered).toBeNull();
+	});
 
-		expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(false);
-		expect(mapState.instances[0]?.setPaintProperty).not.toHaveBeenCalled();
+	it("opens the detail panel on facility click and closes it with an animation", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() => expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(true));
+		const map = mapState.instances[0];
+		const event = (id: unknown) => ({ features: [{ properties: { id } }], point: { x: 1, y: 1 } });
+
+		act(() => mapState.handlers.get(`mouseenter:${FACILITIES_LAYER_ID}`)?.());
+		expect(mapState.canvas.style.cursor).toBe("pointer");
+
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("missing")));
+		expect(result.current.selectedFacilityId).toBeNull();
+
+		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(result.current.isPanelClosing).toBe(false);
+		expect(result.current.hovered).toBeNull();
+		expect(map?.easeTo).toHaveBeenCalledWith({
+			center: [-97.74, 30.27],
+			padding: { top: 0, bottom: 0, left: 0, right: 384 },
+			duration: 600,
+		});
+		expect(map?.setPaintProperty).toHaveBeenLastCalledWith(
+			FACILITIES_LAYER_ID,
+			"circle-stroke-width",
+			selectedRingWidth("f1"),
+		);
+
+		act(() => result.current.closePanel());
+		expect(result.current.isPanelClosing).toBe(true);
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			padding: { top: 0, bottom: 0, left: 0, right: 0 },
+			duration: 600,
+		});
+		expect(map?.setPaintProperty).toHaveBeenLastCalledWith(
+			FACILITIES_LAYER_ID,
+			"circle-stroke-width",
+			selectedRingWidth(null),
+		);
+
+		act(() => result.current.handlePanelClosed());
+		expect(result.current.selectedFacilityId).toBeNull();
+		expect(result.current.isPanelClosing).toBe(false);
+
+		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
+		expect(mapState.canvas.style.cursor).toBe("");
 	});
 
 	it("lists a hovered cluster's facilities and zooms in on click", async () => {
@@ -479,7 +528,7 @@ describe("useFacilitiesMapRules", () => {
 
 		unmount();
 
-		expect(map?.off).toHaveBeenCalledTimes(8);
+		expect(map?.off).toHaveBeenCalledTimes(10);
 		expect(map?.remove).toHaveBeenCalled();
 	});
 
