@@ -7,8 +7,8 @@ apps/
   web/                    Next.js 16: UI, Auth.js (Google SSO), React Query, Serwist PWA
     src/app/                Next's routing folder (pages, layouts, route handlers); thin
     src/application/        constants shared by the UI (Pleiful brand colors) and test/ helpers
-    src/presentation/       screens (one per page) and components (one folder each)
-    src/infrastructure/     API hooks, the in-browser LLM, Auth.js, request locale
+    src/presentation/       screens (one per page), components (one folder each), hooks (React Query)
+    src/infrastructure/     API client, the in-browser LLM, Auth.js, request locale
   server/                 HTTP API (Hono), mounted by web at /api/v1
     src/presentation/       Hono app and routes, auth guard, responses, sign-in tracking
     src/infrastructure/     Prisma, warehouse, sample and system adapters
@@ -72,19 +72,19 @@ One `login_events` row is written per successful sign-in: user id, session id, e
 ## Facilities map
 
 ```
-FacilitiesMapScreen (client)  ->  useFacilities  ->  GET /api/v1/facilities
+FacilitiesMapScreen (client)  ->  useFacilityListAll  ->  GET /api/v1/facilities
   -> listFacilities (use case)
     -> FacilityRepository.listAll  ->  SampleFacilityRepository (mock, infrastructure/src/sample)
 ```
 
-The home page is only the map: a full-screen MapLibre GL map on the OpenFreeMap Positron basemap (free, no key, commercial use allowed), with one dot per facility. The Plei logo floats top-left and the account avatar (menu with sign-out) top-right; there is no header bar. Single facilities are drawn as the Plei logo badge (`plei-logo-marker.ts` rasterizes the active and muted SVG assets into map images) on a thin white ring, which is also the hover target. Facilities with no played games in the current 28-day reporting period use the muted gray badge. Hovering a facility shows a card with its logo (colored initials until real logos exist) and name. Hovering a cluster lists up to 8 of its facilities, and clicking a cluster zooms in. Clicking a single facility rings it, eases the map so the dot sits left of the panel, and slides in the facility detail panel from the right (see below). The × button or Escape slides it out; the selection clears when the slide-out animation ends. The paint and layout expressions are validated against the real MapLibre style spec in `FacilitiesMapScreenComponent.styles.test.ts`, because the MapLibre mock in the rules tests accepts anything. Zoom controls sit bottom-right, and the OpenStreetMap credit (required by its license) is a small line bottom-left.
+The home page is only the map: a full-screen MapLibre GL map on the OpenFreeMap Positron basemap (free, no key, commercial use allowed), with one dot per facility. The Plei logo floats top-left and the account avatar (menu with sign-out) top-right; there is no header bar. Single facilities are drawn as the Plei logo badge (the `usePleiLogoImages` hook in `presentation/hooks/use-map/` rasterizes the active and muted SVG assets into map images) on a thin white ring, which is also the hover target. Facilities with no played games in the current 28-day reporting period use the muted gray badge. Hovering a facility shows a card with its logo (colored initials until real logos exist) and name. Hovering a cluster lists up to 8 of its facilities, and clicking a cluster zooms in. Clicking a single facility rings it, eases the map so the dot sits left of the panel, and slides in the facility detail panel from the right (see below). The × button or Escape slides it out; the selection clears when the slide-out animation ends. The paint and layout expressions are validated against the real MapLibre style spec in `FacilitiesMapScreenComponent.styles.test.ts`, because the MapLibre mock in the rules tests accepts anything. Zoom controls sit bottom-right, and the OpenStreetMap credit (required by its license) is a small line bottom-left.
 
 The facilities come from Plei's data warehouse (`dataplei.plei_gold`, documented in the `plei-data-catalog` repo). `WarehouseFacilityRepository` reads the endorsed `dim_location` table joined with `dim_region`: active locations (`deleted_at is null`) that have coordinates. It also aggregates played pickup games from `dim_reservation` over the same four completed weeks used by the facility detail panel and exposes whether each facility had any activity. The connection is a small read-only `pg` pool (`default_transaction_read_only=on`, 20 s statement timeout), and `CachedFacilityRepository` keeps the result for 5 minutes. Rows are skipped when they are QA or test data (names with QA, TEST, dummy or fake, or internal regions such as L2M, Automation, Pipelines or Lucas), when their coordinates fall outside the Americas service area (one known bad row: `location_id` 27 at −84, 156), or when they fail domain validation. Only non-hidden catalog columns are read. Without `DATA_WAREHOUSE_URL`, the map falls back to deterministic mock facilities.
 
 ### Facility detail panel
 
 ```
-FacilityDetailPanel (client)  ->  useFacilityDetail  ->  GET /api/v1/facilities/[facilityId]
+FacilityDetailPanel (client)  ->  useFacilityDetails  ->  GET /api/v1/facilities/[facilityId]
   -> getFacilityDetail (use case)
     -> FacilityRepository.listAll + FacilityStatsRepository.getWeeklyCounts
 ```
@@ -93,7 +93,7 @@ FacilityDetailPanel (client)  ->  useFacilityDetail  ->  GET /api/v1/facilities/
 
 ### AI summary (in the browser)
 
-`FacilityAiSummary` rewrites the stats into a short summary with Llama 3.2 1B (`Llama-3.2-1B-Instruct-q4f16_1-MLC`), run by WebLLM on the viewer's GPU through WebGPU. Nothing is sent to a server, and there is no key, plan or cost. `apps/web/src/infrastructure/ai/browser-llm.ts` loads the engine once in a web worker (`browser-llm.worker.ts`), queues requests, and interrupts a stream when the panel switches facility. The first summary needs the viewer's consent, because the browser downloads about 880 MB from Hugging Face once and caches it. After that, summaries are generated automatically (about 3 s to load from cache and 3 s to write) and cached in memory per facility, week and locale. The summary covers only one number: pickup games played in the last 28 days (the last 4 completed Monday–Sunday weeks, `played_last_28_days`). `facility-summary-prompt.ts` sends that count with the date range, a worked example in the viewer's language, and the language again in the last message. The 1B model embellishes and drifts into English without these. The template summary says the same thing. Where WebGPU is missing, or the model fails, the panel keeps the template summary. A finished summary is labeled "AI summary" with a sparkle icon. The slide animations are the `panel-slide-in` / `panel-slide-out` classes in `globals.css` and collapse to 1 ms under `prefers-reduced-motion`.
+`FacilityAiSummary` rewrites the stats into a short summary with Llama 3.2 1B (`Llama-3.2-1B-Instruct-q4f16_1-MLC`), run by WebLLM on the viewer's GPU through WebGPU. Nothing is sent to a server, and there is no key, plan or cost. The `BrowserLlm` class (`apps/web/src/infrastructure/ai/browser-llm/`) loads the engine once in a web worker (`browser-llm.worker.ts`), queues requests, and interrupts a stream when the panel switches facility. The first summary needs the viewer's consent, because the browser downloads about 880 MB from Hugging Face once and caches it. After that, summaries are generated automatically (about 3 s to load from cache and 3 s to write) and kept in `localStorage` per facility, week and locale by `FacilitySummaryCache` (`infrastructure/cache/local-storage/facility-summary/`), which drops the older week when a new one is written. The summary covers only one number: pickup games played in the last 28 days (the last 4 completed Monday–Sunday weeks, `played_last_28_days`). `FacilitySummaryPrompt` (`infrastructure/ai/prompts/`) sends that count with the date range, a worked example in the viewer's language, and the language again in the last message. The 1B model embellishes and drifts into English without these. The template summary says the same thing. Where WebGPU is missing, or the model fails, the panel keeps the template summary. A finished summary is labeled "AI summary" with a sparkle icon. The slide animations are the `panel-slide-in` / `panel-slide-out` classes in `globals.css` and collapse to 1 ms under `prefers-reduced-motion`.
 
 ## API conventions
 

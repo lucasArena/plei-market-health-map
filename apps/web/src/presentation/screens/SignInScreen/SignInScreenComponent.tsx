@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { signInWithGoogle } from "@/infrastructure/auth/actions";
 import { GoogleButton } from "@/presentation/components/buttons/GoogleButton/GoogleButtonComponent";
-import { useMessages } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { resolveSignInError } from "@/presentation/screens/SignInScreen/SignInScreenComponent.rules";
 import type { SignInScreenProps } from "@/presentation/screens/SignInScreen/SignInScreenComponent.types";
 

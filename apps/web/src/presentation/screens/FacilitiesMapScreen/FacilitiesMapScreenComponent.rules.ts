@@ -3,13 +3,13 @@
 import type { FacilityPointView } from "@market-health-map/core/application";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
-} from "@/infrastructure/api/use-app-session-heatmap";
-import { useFacilities } from "@/infrastructure/api/use-facilities";
-import { useMessages } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
-import { loadPleiLogos } from "@/presentation/components/map/plei-logo-marker";
+} from "@/presentation/hooks/use-app/use-app-session-heatmap";
+import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
+import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
 	APP_SESSION_HEATMAP_PAINT,
@@ -200,7 +200,7 @@ const EMPTY_HEATMAP: AppSessionHeatmapFeatureCollection = {
 
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
-	const query = useFacilities();
+	const query = useFacilityListAll();
 	const heatmapQuery = useAppSessionHeatmap();
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
@@ -342,6 +342,8 @@ export function useFacilitiesMapScreenRules() {
 		);
 	}, [heatmapQuery.data, heatmapQuery.isError]);
 
+	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
+
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) return;
@@ -402,18 +404,6 @@ export function useFacilitiesMapScreenRules() {
 				});
 				mapRef.current = created;
 				setIsMapReady(true);
-				loadPleiLogos(created)
-					.then(() => {
-						if (isCancelled) return;
-						created.addLayer({
-							id: FACILITIES_LOGO_LAYER_ID,
-							type: "symbol",
-							source: FACILITIES_SOURCE_ID,
-							filter: UNCLUSTERED_FILTER,
-							layout: FACILITY_LOGO_LAYOUT,
-						});
-					})
-					.catch(() => undefined);
 			});
 		});
 
@@ -495,6 +485,18 @@ export function useFacilitiesMapScreenRules() {
 			selectedRingWidth(highlighted),
 		);
 	}, [selectedFacilityId, isPanelClosing, isMapReady]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!areLogosLoaded || !map) return;
+		map.addLayer({
+			id: FACILITIES_LOGO_LAYER_ID,
+			type: "symbol",
+			source: FACILITIES_SOURCE_ID,
+			filter: UNCLUSTERED_FILTER,
+			layout: FACILITY_LOGO_LAYOUT,
+		});
+	}, [areLogosLoaded]);
 
 	return {
 		closePanel,

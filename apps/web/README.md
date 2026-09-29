@@ -11,7 +11,8 @@ The Next.js 16 app people use: the full-screen facilities map, the facility deta
 | `src/presentation/components` | Reusable UI, one folder per component (`NameComponent.tsx`, `.rules.ts`, `.types.ts`, `__tests__/`) |
 | `src/application/test` | Test helpers: `renderWithMessages`, `EN_MESSAGES` and fixtures such as `FACILITY_DETAIL` |
 | `src/application/constants` | Constants shared by the UI, such as the Pleiful brand colors for TypeScript consumers such as MapLibre |
-| `src/infrastructure` | React Query API hooks, the WebLLM summary engine, Auth.js, request locale |
+| `src/presentation/hooks` | Hooks grouped by subject: `use-facility/` (`useFacilityListAll`, `useFacilityDetails`), `use-app/` (`useAppSessionHeatmap`) and `use-map/` (`usePleiLogoImages`) |
+| `src/infrastructure` | The fetch `apiClient`, the WebLLM summary engine, Auth.js, request locale |
 | `src/proxy.ts` | Sends signed-out page requests to `/sign-in` |
 
 ## Commands

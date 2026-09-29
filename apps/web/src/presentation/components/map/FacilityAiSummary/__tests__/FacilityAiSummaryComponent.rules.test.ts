@@ -2,21 +2,18 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
-import type { BrowserLlmCallbacks } from "@/infrastructure/ai/browser-llm.types";
-import {
-	clearCachedSummaries,
-	writeCachedSummary,
-} from "@/infrastructure/ai/facility-summary-cache";
-import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
+import type { BrowserLlmCallbacks } from "@/infrastructure/ai/browser-llm/browser-llm.types";
+import { facilitySummaryCache } from "@/infrastructure/cache/local-storage/facility-summary/facility-summary-cache";
 import { useFacilityAiSummaryRules } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.rules";
+import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const llm = vi.hoisted(() => ({
-	isBrowserLlmSupported: vi.fn(),
-	isBrowserLlmReady: vi.fn(),
-	generateWithBrowserLlm: vi.fn(),
+	isSupported: vi.fn(),
+	isReady: vi.fn(),
+	generate: vi.fn(),
 }));
 
-vi.mock("@/infrastructure/ai/browser-llm", () => llm);
+vi.mock("@/infrastructure/ai/browser-llm/browser-llm", () => ({ browserLlm: llm }));
 
 const FALLBACK = "55 games played last week.";
 
@@ -32,33 +29,33 @@ function renderRules(detail = FACILITY_DETAIL) {
 }
 
 function lastCallbacks(): BrowserLlmCallbacks {
-	return llm.generateWithBrowserLlm.mock.lastCall?.[1];
+	return llm.generate.mock.lastCall?.[1];
 }
 
 describe("useFacilityAiSummaryRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		clearCachedSummaries();
-		llm.isBrowserLlmSupported.mockReturnValue(true);
-		llm.isBrowserLlmReady.mockResolvedValue(true);
+		facilitySummaryCache.clear();
+		llm.isSupported.mockReturnValue(true);
+		llm.isReady.mockResolvedValue(true);
 	});
 
 	it("shows the standard summary where WebGPU is missing", async () => {
-		llm.isBrowserLlmSupported.mockReturnValue(false);
+		llm.isSupported.mockReturnValue(false);
 		const { result } = renderRules();
 
 		await waitFor(() => expect(result.current.status).toBe("unsupported"));
 		expect(result.current.text).toBe(FALLBACK);
-		expect(llm.generateWithBrowserLlm).not.toHaveBeenCalled();
+		expect(llm.generate).not.toHaveBeenCalled();
 	});
 
 	it("waits for consent before the first model download", async () => {
-		llm.isBrowserLlmReady.mockResolvedValue(false);
-		llm.generateWithBrowserLlm.mockResolvedValue("Healthy week.");
+		llm.isReady.mockResolvedValue(false);
+		llm.generate.mockResolvedValue("Healthy week.");
 		const { result } = renderRules();
 
 		await waitFor(() => expect(result.current.status).toBe("idle"));
-		expect(llm.generateWithBrowserLlm).not.toHaveBeenCalled();
+		expect(llm.generate).not.toHaveBeenCalled();
 
 		act(() => result.current.handleGenerate());
 
@@ -68,7 +65,7 @@ describe("useFacilityAiSummaryRules", () => {
 
 	it("reports download progress, streams text and caches the result", async () => {
 		let finish: (text: string) => void = () => undefined;
-		llm.generateWithBrowserLlm.mockReturnValue(
+		llm.generate.mockReturnValue(
 			new Promise((resolve) => {
 				finish = resolve;
 			}),
@@ -92,35 +89,35 @@ describe("useFacilityAiSummaryRules", () => {
 		const again = renderRules();
 		await waitFor(() => expect(again.result.current.status).toBe("ready"));
 		expect(again.result.current.text).toBe("Pegaso HTX had a busy week.");
-		expect(llm.generateWithBrowserLlm).toHaveBeenCalledTimes(1);
+		expect(llm.generate).toHaveBeenCalledTimes(1);
 	});
 
 	it("uses a cached summary without touching the model", async () => {
-		writeCachedSummary("889:2026-09-21:en", "Cached.");
+		facilitySummaryCache.write("889:2026-09-21:en", "Cached.");
 		const { result } = renderRules();
 
 		expect(result.current.status).toBe("ready");
 		expect(result.current.text).toBe("Cached.");
-		expect(llm.isBrowserLlmSupported).not.toHaveBeenCalled();
+		expect(llm.isSupported).not.toHaveBeenCalled();
 	});
 
 	it("falls back when generation fails or returns nothing", async () => {
-		llm.generateWithBrowserLlm.mockRejectedValueOnce(new Error("lost device"));
+		llm.generate.mockRejectedValueOnce(new Error("lost device"));
 		const failed = renderRules();
 		await waitFor(() => expect(failed.result.current.status).toBe("error"));
 		expect(failed.result.current.text).toBe(FALLBACK);
 		failed.unmount();
 
-		llm.generateWithBrowserLlm.mockResolvedValueOnce("");
+		llm.generate.mockResolvedValueOnce("");
 		const empty = renderRules();
 		await waitFor(() => expect(empty.result.current.status).toBe("error"));
 	});
 
 	it("aborts the running summary when the facility changes", async () => {
-		llm.generateWithBrowserLlm.mockReturnValueOnce(new Promise(() => undefined));
-		llm.generateWithBrowserLlm.mockResolvedValueOnce("Other facility.");
+		llm.generate.mockReturnValueOnce(new Promise(() => undefined));
+		llm.generate.mockResolvedValueOnce("Other facility.");
 		const { result, rerender } = renderRules();
-		await waitFor(() => expect(llm.generateWithBrowserLlm).toHaveBeenCalledTimes(1));
+		await waitFor(() => expect(llm.generate).toHaveBeenCalledTimes(1));
 		const firstSignal = lastCallbacks().signal;
 		const firstCallbacks = lastCallbacks();
 
@@ -137,7 +134,7 @@ describe("useFacilityAiSummaryRules", () => {
 
 	it("ignores a readiness answer that arrives after unmount", async () => {
 		let answer: (ready: boolean) => void = () => undefined;
-		llm.isBrowserLlmReady.mockReturnValue(
+		llm.isReady.mockReturnValue(
 			new Promise((resolve) => {
 				answer = resolve;
 			}),
@@ -145,6 +142,6 @@ describe("useFacilityAiSummaryRules", () => {
 		const { unmount } = renderRules();
 		unmount();
 		await act(async () => answer(true));
-		expect(llm.generateWithBrowserLlm).not.toHaveBeenCalled();
+		expect(llm.generate).not.toHaveBeenCalled();
 	});
 });

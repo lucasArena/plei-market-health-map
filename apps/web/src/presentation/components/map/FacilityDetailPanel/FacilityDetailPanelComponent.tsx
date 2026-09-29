@@ -1,7 +1,7 @@
 "use client";
 
+import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { FacilityAiSummary } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent";
-import { FacilityAvatar } from "@/presentation/components/map/FacilityAvatar/FacilityAvatarComponent";
 import { useFacilityDetailPanelRules } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import {
 	HINT_CLASS,
@@ -64,7 +64,7 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 				{status === "ready" && view && detail && (
 					<div className="space-y-5 p-5">
 						<header className="flex items-center gap-3 pr-8">
-							<FacilityAvatar name={view.name} avatarUrl={view.avatarUrl} />
+							<Avatar name={view.name} avatarUrl={view.avatarUrl} />
 							<div className="min-w-0">
 								<h2 className="truncate text-base font-semibold">{view.name}</h2>
 								<p className="truncate text-xs text-muted-foreground">{view.address}</p>

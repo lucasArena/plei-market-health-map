@@ -2,8 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import type { AppProvidersProps } from "@/presentation/components/providers/AppProviders/AppProvidersComponent.types";
+import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const STALE_TIME_MS = 30_000;
 

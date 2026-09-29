@@ -1,4 +1,4 @@
-import { FacilityAvatar } from "@/presentation/components/map/FacilityAvatar/FacilityAvatarComponent";
+import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { clusterLabels } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
 import type { FacilityHoverCardProps } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
 import {
@@ -20,7 +20,7 @@ export function FacilityHoverCard({ hover, messages }: Readonly<FacilityHoverCar
 				className="pointer-events-none absolute z-10 flex items-center gap-2 rounded-lg border bg-background/95 py-1.5 pr-3 pl-1.5 shadow-lg backdrop-blur"
 				style={position}
 			>
-				<FacilityAvatar name={hover.facility.name} avatarUrl={hover.facility.avatarUrl} />
+				<Avatar name={hover.facility.name} avatarUrl={hover.facility.avatarUrl} />
 				<span className="text-sm font-medium whitespace-nowrap">{hover.facility.name}</span>
 			</div>
 		);
@@ -38,7 +38,7 @@ export function FacilityHoverCard({ hover, messages }: Readonly<FacilityHoverCar
 				<ul className="py-1">
 					{hover.facilities.map((facility) => (
 						<li key={facility.id} className="flex items-center gap-2 px-2 py-1">
-							<FacilityAvatar name={facility.name} avatarUrl={facility.avatarUrl} />
+							<Avatar name={facility.name} avatarUrl={facility.avatarUrl} />
 							<span className="truncate text-sm">{facility.name}</span>
 						</li>
 					))}

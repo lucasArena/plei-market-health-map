@@ -6,10 +6,7 @@ import type {
 	SymbolLayerSpecification,
 } from "maplibre-gl";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
-import {
-	PLEI_LOGO_IMAGE_ID,
-	PLEI_LOGO_MUTED_IMAGE_ID,
-} from "@/presentation/components/map/plei-logo-marker";
+import { PLEI_LOGO_IMAGE_ID, PLEI_LOGO_MUTED_IMAGE_ID } from "@/application/constants/plei-logo";
 
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";

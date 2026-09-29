@@ -2,7 +2,6 @@ import type { FacilityDetailView, FacilityStatsView } from "@market-health-map/c
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
-import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
 	buildDetailViewModel,
 	buildSummary,
@@ -13,11 +12,12 @@ import {
 	resolveDetailStatus,
 	useFacilityDetailPanelRules,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
+import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockUseFacilityDetail = vi.fn();
 
-vi.mock("@/infrastructure/api/use-facility-detail", () => ({
-	useFacilityDetail: (id: string | null) => mockUseFacilityDetail(id),
+vi.mock("@/presentation/hooks/use-facility/use-facility-details", () => ({
+	useFacilityDetails: (id: string | null) => mockUseFacilityDetail(id),
 }));
 
 const messages = EN_MESSAGES.facilityDetail;

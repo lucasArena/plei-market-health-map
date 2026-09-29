@@ -1,9 +1,9 @@
 "use client";
 
 import { signOutOfApp } from "@/infrastructure/auth/actions";
+import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { useUserMenuRules } from "@/presentation/components/layout/UserMenu/UserMenuComponent.rules";
 import type { UserMenuProps } from "@/presentation/components/layout/UserMenu/UserMenuComponent.types";
-import { FacilityAvatar } from "@/presentation/components/map/FacilityAvatar/FacilityAvatarComponent";
 
 export function UserMenu({ name, email, image }: Readonly<UserMenuProps>) {
 	const { containerRef, isOpen, messages, toggle, versionLabel } = useUserMenuRules();
@@ -18,7 +18,7 @@ export function UserMenu({ name, email, image }: Readonly<UserMenuProps>) {
 				aria-expanded={isOpen}
 				className="flex rounded-full ring-offset-2 transition-shadow hover:ring-2 hover:ring-border"
 			>
-				<FacilityAvatar name={displayName} avatarUrl={image} />
+				<Avatar name={displayName} avatarUrl={image} />
 			</button>
 			{isOpen && (
 				<div

@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useMessages } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import type { AppHeaderProps } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.types";
 import { UserMenu } from "@/presentation/components/layout/UserMenu/UserMenuComponent";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 	const { messages } = useMessages();

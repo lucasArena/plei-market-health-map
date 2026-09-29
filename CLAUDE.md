@@ -13,8 +13,8 @@ apps/
   web/                    Next.js 16: UI, Auth.js (Google SSO), React Query, Serwist PWA
     src/app/                Next's routing folder (pages, layouts, route handlers); thin
     src/application/        constants shared by the UI (Pleiful brand colors) and test/ helpers
-    src/presentation/       screens (one per page) and components (one folder each)
-    src/infrastructure/     API hooks, the in-browser LLM, Auth.js, request locale
+    src/presentation/       screens (one per page), components (one folder each), hooks (React Query)
+    src/infrastructure/     API client, the in-browser LLM, Auth.js, request locale
   server/                 HTTP API (Hono), mounted by web at /api/v1
     src/presentation/       Hono app and routes, auth guard, responses, sign-in tracking
     src/infrastructure/     Prisma, warehouse, sample and system adapters

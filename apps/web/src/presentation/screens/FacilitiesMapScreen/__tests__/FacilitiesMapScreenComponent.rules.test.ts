@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
-import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
+import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
 	appSessionHeatmapAreas,
 	appSessionHeatmapScale,
@@ -64,19 +64,18 @@ vi.mock("maplibre-gl", () => {
 });
 
 const mockUseFacilities = vi.fn();
-const mockLoadPleiLogos = vi.fn();
+const mockUsePleiLogoImages = vi.fn();
 
-vi.mock("@/presentation/components/map/plei-logo-marker", async (importOriginal) => ({
-	...(await importOriginal<object>()),
-	loadPleiLogos: (map: unknown) => mockLoadPleiLogos(map),
+vi.mock("@/presentation/hooks/use-map/use-plei-logo-images", () => ({
+	usePleiLogoImages: (map: unknown) => mockUsePleiLogoImages(map),
 }));
 
-vi.mock("@/infrastructure/api/use-facilities", () => ({
-	useFacilities: () => mockUseFacilities(),
+vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
+	useFacilityListAll: () => mockUseFacilities(),
 }));
 
 const mockUseAppSessionHeatmap = vi.fn();
-vi.mock("@/infrastructure/api/use-app-session-heatmap", () => ({
+vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
 }));
 
@@ -243,7 +242,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			isPending: false,
 			isError: false,
 		});
-		mockLoadPleiLogos.mockResolvedValue(undefined);
+		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
 	});
 
 	it("creates the map, adds the dot layer on load and pushes the facilities", async () => {
@@ -263,7 +262,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			expect.objectContaining({ cluster: true, clusterRadius: 40 }),
 		);
 		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(5));
-		expect(mockLoadPleiLogos).toHaveBeenCalledWith(map);
+		expect(mockUsePleiLogoImages).toHaveBeenLastCalledWith(map);
 		const addLayer = map?.addLayer;
 		if (!addLayer) throw new Error("Expected addLayer mock");
 		const layerIds = addLayer.mock.calls.map((call) => (call[0] as { id: string }).id);
@@ -503,26 +502,13 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.hovered).toMatchObject({ clusterId: 5, facilities: [] });
 	});
 
-	it("keeps the plain markers when the logo fails to load or the map is gone", async () => {
-		mockLoadPleiLogos.mockRejectedValueOnce(new Error("no image"));
+	it("keeps the plain markers until the logos are loaded", async () => {
+		mockUsePleiLogoImages.mockReturnValue(false);
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
 		await act(async () => undefined);
-		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(4);
 
-		let resolveLogo: () => void = () => undefined;
-		mockLoadPleiLogos.mockReturnValueOnce(
-			new Promise<void>((resolve) => {
-				resolveLogo = resolve;
-			}),
-		);
-		mapState.instances.length = 0;
-		const second = renderRules();
-		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
-		second.unmount();
-		await act(async () => resolveLogo());
 		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(4);
 	});
 

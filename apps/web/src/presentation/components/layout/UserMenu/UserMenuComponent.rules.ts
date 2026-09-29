@@ -3,7 +3,7 @@
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAppVersion } from "@/infrastructure/app-version";
-import { useMessages } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 export function useUserMenuRules() {
 	const { messages } = useMessages();

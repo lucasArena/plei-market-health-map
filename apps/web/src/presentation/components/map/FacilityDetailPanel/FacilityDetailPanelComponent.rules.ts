@@ -3,8 +3,6 @@
 import type { FacilityDetailView, FacilityStatsView } from "@market-health-map/core/application";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
-import { useFacilityDetail } from "@/infrastructure/api/use-facility-detail";
-import { useMessages } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
 	ChangeDirection,
 	type DetailFormatters,
@@ -15,6 +13,8 @@ import {
 	type FacilityStatTile,
 	type StatDirection,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+import { useFacilityDetails } from "@/presentation/hooks/use-facility/use-facility-details";
 
 export function createDetailFormatters(locale: string): DetailFormatters {
 	return {
@@ -148,7 +148,7 @@ export function useFacilityDetailPanelRules({
 	onClosed,
 }: FacilityDetailPanelProps) {
 	const { locale, messages } = useMessages();
-	const query = useFacilityDetail(facilityId);
+	const query = useFacilityDetails(facilityId);
 	const formatters = useMemo(() => createDetailFormatters(locale), [locale]);
 	const detail = query.data;
 	const view = useMemo(
