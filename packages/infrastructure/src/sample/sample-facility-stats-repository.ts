@@ -25,8 +25,8 @@ export function lastWeekStart(now: Date): string {
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly clock: Clock) {}
 
-	async getWeeklyCounts(facilityId: EntityId): Promise<FacilityWeeklyCounts> {
-		const random = createSeededRandom(`${facilityId}-stats`);
+	async getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts> {
+		const random = createSeededRandom(`${facilityIds.join(",")}-stats`);
 		const now = this.clock.now();
 		const scheduledLastWeek = Math.round(4 + random() * 40);
 		const cancelledLastWeek = Math.round(scheduledLastWeek * random() * 0.4);
