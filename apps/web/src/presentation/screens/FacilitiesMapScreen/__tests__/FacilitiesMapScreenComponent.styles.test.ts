@@ -11,6 +11,7 @@ import {
 	FACILITIES_LAYER_ID,
 	FACILITIES_SOURCE_ID,
 	FACILITY_COLOR,
+	FACILITY_DOT_LAYOUT,
 	FACILITY_DOT_PAINT,
 	FACILITY_LOGO_LAYOUT,
 	SESSION_HEATMAP_BUCKET_COLORS,
@@ -76,6 +77,7 @@ describe("cluster styles", () => {
 						type: "circle",
 						source: FACILITIES_SOURCE_ID,
 						filter: UNCLUSTERED_FILTER,
+						layout: FACILITY_DOT_LAYOUT,
 						paint: FACILITY_DOT_PAINT,
 					},
 					{
@@ -88,6 +90,14 @@ describe("cluster styles", () => {
 				],
 			}),
 		).toEqual([]);
+	});
+});
+
+describe("facility stacking order", () => {
+	it("draws active dots and logos above inactive ones at the same spot", () => {
+		const activeOnTop = ["case", ["==", ["get", "isActive"], true], 1, 0];
+		expect(FACILITY_DOT_LAYOUT?.["circle-sort-key"]).toEqual(activeOnTop);
+		expect(FACILITY_LOGO_LAYOUT?.["symbol-sort-key"]).toEqual(activeOnTop);
 	});
 });
 

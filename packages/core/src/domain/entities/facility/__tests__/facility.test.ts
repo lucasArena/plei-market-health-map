@@ -54,6 +54,17 @@ describe("Facility", () => {
 		).toThrow(ValidationError);
 	});
 
+	it("always lists itself first among its member ids, without duplicates", () => {
+		expect(Facility.create(VALID).memberIds).toEqual(["facility-1"]);
+		const merged = Facility.create({
+			...VALID,
+			memberIds: [asEntityId("facility-2"), asEntityId("facility-1"), asEntityId("facility-2")],
+		});
+		expect(merged.memberIds).toEqual(["facility-1", "facility-2"]);
+		expect(merged.toJSON().memberIds).toEqual(["facility-1", "facility-2"]);
+		expect(Facility.restore(VALID).memberIds).toEqual(["facility-1"]);
+	});
+
 	it("restores and copies props defensively", () => {
 		const facility = Facility.restore(VALID);
 		const json = facility.toJSON();

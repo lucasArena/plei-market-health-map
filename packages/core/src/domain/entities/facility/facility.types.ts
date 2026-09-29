@@ -16,4 +16,5 @@ export interface FacilityProps {
 	location: GeoPoint;
 	avatarUrl: string | null;
 	metrics: FacilityMetrics;
+	memberIds?: EntityId[];
 }

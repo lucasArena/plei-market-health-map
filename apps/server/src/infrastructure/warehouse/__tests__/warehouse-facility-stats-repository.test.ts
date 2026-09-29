@@ -23,7 +23,7 @@ describe("FACILITY_WEEKLY_STATS_SQL", () => {
 		);
 		expect(FACILITY_WEEKLY_STATS_SQL).toContain("g.confirmed and g.status <> 'cancelled'");
 		expect(FACILITY_WEEKLY_STATS_SQL).toContain("date_trunc('week', current_date)");
-		expect(FACILITY_WEEKLY_STATS_SQL).toContain("where r.location_id = $1");
+		expect(FACILITY_WEEKLY_STATS_SQL).toContain("where r.location_id = any($1::int[])");
 	});
 });
 
@@ -46,18 +46,29 @@ describe("WarehouseFacilityStatsRepository", () => {
 	it("queries one facility with a bound parameter", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [ROW] });
 
-		const counts = await new WarehouseFacilityStatsRepository({ query }).getWeeklyCounts(
+		const counts = await new WarehouseFacilityStatsRepository({ query }).getWeeklyCounts([
 			"889" as never,
-		);
+		]);
 
-		expect(query).toHaveBeenCalledWith(FACILITY_WEEKLY_STATS_SQL, [889]);
+		expect(query).toHaveBeenCalledWith(FACILITY_WEEKLY_STATS_SQL, [[889]]);
 		expect(counts.playedLastWeek).toBe(55);
+	});
+
+	it("sums every member of a merged facility in one query", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [ROW] });
+
+		await new WarehouseFacilityStatsRepository({ query }).getWeeklyCounts([
+			"292" as never,
+			"698" as never,
+		]);
+
+		expect(query).toHaveBeenCalledWith(FACILITY_WEEKLY_STATS_SQL, [[292, 698]]);
 	});
 
 	it("fails loudly if the warehouse returns no row", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [] });
 		await expect(
-			new WarehouseFacilityStatsRepository({ query }).getWeeklyCounts("889" as never),
+			new WarehouseFacilityStatsRepository({ query }).getWeeklyCounts(["889" as never]),
 		).rejects.toThrow("No stats row returned for facility 889.");
 	});
 });

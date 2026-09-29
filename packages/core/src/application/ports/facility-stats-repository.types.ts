@@ -12,5 +12,5 @@ export interface FacilityWeeklyCounts {
 }
 
 export interface FacilityStatsRepository {
-	getWeeklyCounts(facilityId: EntityId): Promise<FacilityWeeklyCounts>;
+	getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts>;
 }

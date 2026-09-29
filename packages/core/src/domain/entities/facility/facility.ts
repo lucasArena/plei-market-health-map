@@ -14,6 +14,10 @@ function assertMetrics(metrics: FacilityMetrics): FacilityMetrics {
 	return { ...metrics };
 }
 
+function memberIdsWith(id: EntityId, memberIds: EntityId[] = []): EntityId[] {
+	return [...new Set([id, ...memberIds])];
+}
+
 export class Facility {
 	private constructor(private readonly props: FacilityProps) {}
 
@@ -26,6 +30,7 @@ export class Facility {
 			location: guard.location(input.location, "Facility location"),
 			avatarUrl: input.avatarUrl?.trim() || null,
 			metrics: assertMetrics(input.metrics),
+			memberIds: memberIdsWith(input.id, input.memberIds),
 		});
 	}
 
@@ -41,11 +46,17 @@ export class Facility {
 		return this.props.marketId;
 	}
 
+	get memberIds(): EntityId[] {
+		return memberIdsWith(this.props.id, this.props.memberIds);
+	}
+
 	toJSON(): FacilityProps {
+		const { memberIds, ...props } = this.props;
 		return {
-			...this.props,
-			location: { ...this.props.location },
-			metrics: { ...this.props.metrics },
+			...props,
+			location: { ...props.location },
+			metrics: { ...props.metrics },
+			...(memberIds ? { memberIds: [...memberIds] } : {}),
 		};
 	}
 }

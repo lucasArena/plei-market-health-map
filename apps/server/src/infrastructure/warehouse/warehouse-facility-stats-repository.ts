@@ -15,7 +15,7 @@ with bounds as (
 games as (
   select r.reservation_id, r.date_with_time::date as game_date, r.status, r.confirmed
   from plei_gold.dim_reservation r
-  where r.location_id = $1
+  where r.location_id = any($1::int[])
     and r.reservation_type = 'OpenReservation'
     and not (
       r.status = 'cancelled'
@@ -69,13 +69,13 @@ export function toWeeklyCounts(row: WarehouseFacilityStatsRow): FacilityWeeklyCo
 export class WarehouseFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly warehouse: WarehouseParameterizedQueryable) {}
 
-	async getWeeklyCounts(facilityId: EntityId): Promise<FacilityWeeklyCounts> {
+	async getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts> {
 		const { rows } = await this.warehouse.query<WarehouseFacilityStatsRow>(
 			FACILITY_WEEKLY_STATS_SQL,
-			[Number(facilityId)],
+			[facilityIds.map(Number)],
 		);
 		const [row] = rows;
-		if (!row) throw new Error(`No stats row returned for facility ${facilityId}.`);
+		if (!row) throw new Error(`No stats row returned for facility ${facilityIds.join(", ")}.`);
 		return toWeeklyCounts(row);
 	}
 }

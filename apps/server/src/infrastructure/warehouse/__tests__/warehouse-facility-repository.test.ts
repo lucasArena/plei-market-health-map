@@ -30,6 +30,7 @@ describe("toFacility", () => {
 			location: { latitude: 38.62, longitude: -90.19 },
 			avatarUrl: null,
 			metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 12, utilization: 0 },
+			memberIds: ["1042"],
 		});
 	});
 
@@ -65,5 +66,44 @@ describe("WarehouseFacilityRepository", () => {
 		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date >= b.this_week - 28");
 		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date < b.this_week");
 		expect(facilities.map((facility) => facility.id)).toEqual(["1042"]);
+	});
+
+	it("only lists locations where at least one game was ever posted", () => {
+		expect(ACTIVE_LOCATIONS_SQL).toContain("and exists (");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("from plei_gold.dim_reservation posted");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("where posted.location_id = l.location_id");
+		const existsClause = ACTIVE_LOCATIONS_SQL.slice(ACTIVE_LOCATIONS_SQL.indexOf("and exists ("));
+		expect(existsClause).not.toContain("status");
+		expect(existsClause).not.toContain("reservation_type");
+	});
+
+	it("merges a sponsor twin into its base facility at the same spot", async () => {
+		const spot = { location_latitude: 39.96103151952558, location_longitude: -75.15279661864042 };
+		const query = vi.fn().mockResolvedValue({
+			rows: [
+				row({
+					location_id: 292,
+					location_name: "Phield House",
+					played_last_28_days: "16",
+					...spot,
+				}),
+				row({
+					location_id: 698,
+					location_name: "Phield House | Morby",
+					played_last_28_days: "0",
+					...spot,
+				}),
+			],
+		});
+
+		const [facility, ...rest] = await new WarehouseFacilityRepository({ query }).listAll();
+
+		expect(rest).toEqual([]);
+		expect(facility?.toJSON()).toMatchObject({
+			id: "292",
+			name: "Phield House",
+			memberIds: ["292", "698"],
+			metrics: { gamesLast28Days: 16 },
+		});
 	});
 });
