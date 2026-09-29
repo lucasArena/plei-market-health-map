@@ -33,3 +33,34 @@ export interface FacilityFeatureProperties {
 export type FacilityFeature = Feature<Point, FacilityFeatureProperties>;
 
 export type FacilityFeatureCollection = FeatureCollection<Point, FacilityFeatureProperties>;
+
+export interface AppSessionHeatmapFeatureProperties {
+	sessionWeight: number;
+	intensity: number;
+}
+
+export interface SessionHeatmapBounds {
+	contains(coordinates: [number, number]): boolean;
+	getEast?(): number;
+	getNorth?(): number;
+	getSouth?(): number;
+	getWest?(): number;
+}
+
+export interface SessionHeatmapScale {
+	low: number;
+	high: number;
+}
+
+export interface SessionHeatmapArea {
+	lat: number;
+	lng: number;
+	sessionWeight: number;
+}
+
+export type AppSessionHeatmapFeature = Feature<Point, AppSessionHeatmapFeatureProperties>;
+
+export type AppSessionHeatmapFeatureCollection = FeatureCollection<
+	Point,
+	AppSessionHeatmapFeatureProperties
+>;

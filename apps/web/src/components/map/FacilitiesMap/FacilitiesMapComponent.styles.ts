@@ -1,6 +1,8 @@
+import { PLEIFUL_COLORS } from "@market-health-map/design-system";
 import type {
 	CircleLayerSpecification,
 	FilterSpecification,
+	HeatmapLayerSpecification,
 	SymbolLayerSpecification,
 } from "maplibre-gl";
 import { PLEI_LOGO_IMAGE_ID } from "@/components/map/plei-logo-marker";
@@ -19,9 +21,12 @@ export const CLUSTER_RADIUS = 40;
 export const CLUSTER_MAX_ZOOM = 11;
 export const CLUSTER_PREVIEW_LIMIT = 8;
 
+export const APP_SESSION_HEATMAP_SOURCE_ID = "app-session-heatmap";
+export const APP_SESSION_HEATMAP_LAYER_ID = "app-session-density";
+
 export const CLUSTER_FILTER: FilterSpecification = ["has", "point_count"];
 export const UNCLUSTERED_FILTER: FilterSpecification = ["!", ["has", "point_count"]];
-export const FACILITY_COLOR = "#047857";
+export const FACILITY_COLOR = PLEIFUL_COLORS.pitchGreen[80];
 export const TOOLTIP_OFFSET = 14;
 export const HOVER_CARD_WIDTH = 256;
 
@@ -56,4 +61,38 @@ export const CLUSTER_COUNT_LAYOUT: SymbolLayerSpecification["layout"] = {
 
 export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 	"text-color": "#ffffff",
+};
+
+export const SESSION_HEATMAP_BUCKET_COLORS = [
+	PLEIFUL_COLORS.sky[10],
+	PLEIFUL_COLORS.sky[30],
+	PLEIFUL_COLORS.sky[50],
+	PLEIFUL_COLORS.moonlight[60],
+] as const;
+
+export const SESSION_HEATMAP_COLOR = SESSION_HEATMAP_BUCKET_COLORS[0];
+export const SESSION_HEATMAP_BUCKET_OPACITIES = [0.35, 0.55, 0.75, 0.92] as const;
+
+export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
+	"heatmap-weight": ["get", "intensity"],
+	"heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 3, 0.58, 8, 0.55, 14, 0.6],
+	"heatmap-radius": ["interpolate", ["linear"], ["zoom"], 3, 12, 8, 20, 12, 28, 16, 40],
+	"heatmap-opacity": 0.76,
+	"heatmap-color": [
+		"interpolate",
+		["linear"],
+		["heatmap-density"],
+		0,
+		"rgba(224, 242, 254, 0)",
+		0.25,
+		SESSION_HEATMAP_BUCKET_COLORS[0],
+		0.55,
+		SESSION_HEATMAP_BUCKET_COLORS[1],
+		0.82,
+		SESSION_HEATMAP_BUCKET_COLORS[2],
+		0.98,
+		SESSION_HEATMAP_BUCKET_COLORS[3],
+		1,
+		SESSION_HEATMAP_BUCKET_COLORS[3],
+	],
 };

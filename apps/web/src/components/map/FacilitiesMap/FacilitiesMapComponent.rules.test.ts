@@ -2,13 +2,18 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { MessagesProvider } from "@/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
+	appSessionHeatmapAreas,
+	appSessionHeatmapScale,
 	facilitiesForIds,
 	placeHover,
 	resolveMapStatus,
+	toAppSessionHeatmapFeatureCollection,
 	toFacilityFeatureCollection,
 	useFacilitiesMapRules,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.rules";
 import {
+	APP_SESSION_HEATMAP_LAYER_ID,
+	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_LAYER_ID,
 	FACILITIES_LAYER_ID,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
@@ -35,6 +40,7 @@ vi.mock("maplibre-gl", () => {
 		setPaintProperty = vi.fn();
 		getCanvas = vi.fn(() => mapState.canvas);
 		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
+		getBounds = vi.fn(() => ({ contains: () => true }));
 		getSource = vi.fn(() => ({
 			setData: mapState.setData,
 			getClusterLeaves: mapState.getClusterLeaves,
@@ -65,6 +71,11 @@ vi.mock("@/components/map/plei-logo-marker", async (importOriginal) => ({
 }));
 
 vi.mock("@/lib/api/use-facilities", () => ({ useFacilities: () => mockUseFacilities() }));
+
+const mockUseAppSessionHeatmap = vi.fn();
+vi.mock("@/lib/api/use-app-session-heatmap", () => ({
+	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
+}));
 
 const FACILITY = {
 	id: "f1",
@@ -102,6 +113,80 @@ describe("toFacilityFeatureCollection", () => {
 				},
 			],
 		});
+	});
+});
+
+describe("toAppSessionHeatmapFeatureCollection", () => {
+	it("turns heatmap cells into GeoJSON points with viewport-relative intensity", () => {
+		expect(
+			toAppSessionHeatmapFeatureCollection([{ lat: 29.75, lng: -95.35, sessionWeight: 10 }]),
+		).toEqual({
+			type: "FeatureCollection",
+			features: [
+				{
+					type: "Feature",
+					geometry: { type: "Point", coordinates: [-95.35, 29.75] },
+					properties: { sessionWeight: 10, intensity: 1 },
+				},
+			],
+		});
+	});
+
+	it("filters to the viewport and rescales the visible distribution", () => {
+		const cells = [
+			{ lat: 30, lng: -97, sessionWeight: 10 },
+			{ lat: 31, lng: -96, sessionWeight: 100 },
+			{ lat: 40, lng: -80, sessionWeight: 10_000 },
+		];
+		const bounds = { contains: ([lng]: [number, number]) => lng < -90 };
+		const features = toAppSessionHeatmapFeatureCollection(cells, bounds).features;
+
+		expect(features).toHaveLength(2);
+		expect(features[0]?.properties.intensity).toBeLessThan(features[1]?.properties.intensity ?? 0);
+		expect(features[1]?.properties.intensity).toBe(1);
+	});
+});
+
+describe("appSessionHeatmapScale", () => {
+	it("returns the visible distribution's numeric range", () => {
+		const cells = [
+			{ lat: 30, lng: -97, sessionWeight: 10 },
+			{ lat: 31, lng: -96, sessionWeight: 100 },
+			{ lat: 40, lng: -80, sessionWeight: 10_000 },
+		];
+		const bounds = { contains: ([lng]: [number, number]) => lng < -90 };
+
+		expect(appSessionHeatmapScale(cells, bounds)).toEqual({ low: 10, high: 100 });
+	});
+
+	it("returns a zero range when the viewport has no activity", () => {
+		expect(appSessionHeatmapScale([], { contains: () => false })).toEqual({ low: 0, high: 0 });
+	});
+
+	it("combines more sessions per shaded area when zoomed out", () => {
+		const cells = [
+			{ lat: 29.75, lng: -95.35, sessionWeight: 100 },
+			{ lat: 29.75, lng: -95.34, sessionWeight: 200 },
+		];
+		const zoomedOut = {
+			contains: () => true,
+			getWest: () => -100,
+			getEast: () => -90,
+			getSouth: () => 25,
+			getNorth: () => 35,
+		};
+		const zoomedIn = {
+			contains: () => true,
+			getWest: () => -95.36,
+			getEast: () => -95.33,
+			getSouth: () => 29.74,
+			getNorth: () => 29.76,
+		};
+
+		expect(appSessionHeatmapAreas(cells, zoomedOut)).toHaveLength(1);
+		expect(appSessionHeatmapScale(cells, zoomedOut)).toEqual({ low: 300, high: 300 });
+		expect(appSessionHeatmapAreas(cells, zoomedIn)).toHaveLength(2);
+		expect(appSessionHeatmapScale(cells, zoomedIn)).toEqual({ low: 100, high: 200 });
 	});
 });
 
@@ -144,6 +229,11 @@ describe("useFacilitiesMapRules", () => {
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [{ lat: 29.75, lng: -95.35, sessionWeight: 10 }],
+			isPending: false,
+			isError: false,
+		});
 		mockLoadPleiLogo.mockResolvedValue(undefined);
 	});
 
@@ -157,19 +247,32 @@ describe("useFacilitiesMapRules", () => {
 		expect(mapState.setWorkerUrl).toHaveBeenCalledWith(
 			"http://localhost:3000/maplibre/maplibre-gl-worker.mjs",
 		);
+		expect(map?.addSource).toHaveBeenCalledWith(APP_SESSION_HEATMAP_SOURCE_ID, expect.anything());
 		expect(map?.addSource).toHaveBeenCalledWith("facilities", expect.anything());
 		expect(map?.addSource).toHaveBeenCalledWith(
 			"facilities",
 			expect.objectContaining({ cluster: true, clusterRadius: 40 }),
 		);
-		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(4));
+		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(5));
 		expect(mockLoadPleiLogo).toHaveBeenCalledWith(map);
+		const addLayer = map?.addLayer;
+		if (!addLayer) throw new Error("Expected addLayer mock");
+		const layerIds = addLayer.mock.calls.map((call) => (call[0] as { id: string }).id);
+		expect(layerIds.indexOf(APP_SESSION_HEATMAP_LAYER_ID)).toBeLessThan(
+			layerIds.indexOf(CLUSTER_LAYER_ID),
+		);
+		expect(layerIds.indexOf(APP_SESSION_HEATMAP_LAYER_ID)).toBeLessThan(
+			layerIds.indexOf(FACILITIES_LAYER_ID),
+		);
 		expect(map?.addLayer).toHaveBeenLastCalledWith(
 			expect.objectContaining({
 				id: "facilities-logos",
 				type: "symbol",
 				layout: expect.objectContaining({ "icon-image": "plei-logo" }),
 			}),
+		);
+		expect(map?.addLayer).toHaveBeenCalledWith(
+			expect.objectContaining({ id: APP_SESSION_HEATMAP_LAYER_ID, type: "heatmap" }),
 		);
 		expect(map?.addLayer).toHaveBeenCalledWith(
 			expect.objectContaining({ id: FACILITIES_LAYER_ID, type: "circle" }),
@@ -184,6 +287,12 @@ describe("useFacilitiesMapRules", () => {
 		);
 		expect(result.current.status).toBe("ready");
 		expect(result.current.messages).toBe(EN_MESSAGES.map);
+		expect(result.current.sessionScale).toEqual({ low: 10, high: 10 });
+		mapState.setData.mockClear();
+		act(() => mapState.handlers.get("moveend")?.());
+		expect(mapState.setData).toHaveBeenCalledWith(
+			expect.objectContaining({ features: [expect.objectContaining({ type: "Feature" })] }),
+		);
 	});
 
 	it("shows a hover card for a facility, with no click action", async () => {
@@ -341,7 +450,7 @@ describe("useFacilitiesMapRules", () => {
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
 		await act(async () => undefined);
-		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(3);
+		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(4);
 
 		let resolveLogo: () => void = () => undefined;
 		mockLoadPleiLogo.mockReturnValueOnce(
@@ -355,7 +464,7 @@ describe("useFacilitiesMapRules", () => {
 		act(() => mapState.handlers.get("load")?.());
 		second.unmount();
 		await act(async () => resolveLogo());
-		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(3);
+		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(4);
 	});
 
 	it("removes the map on unmount", async () => {
@@ -370,7 +479,7 @@ describe("useFacilitiesMapRules", () => {
 
 		unmount();
 
-		expect(map?.off).toHaveBeenCalledTimes(7);
+		expect(map?.off).toHaveBeenCalledTimes(8);
 		expect(map?.remove).toHaveBeenCalled();
 	});
 
@@ -379,6 +488,26 @@ describe("useFacilitiesMapRules", () => {
 		unmount();
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		expect(mapState.instances).toHaveLength(0);
+	});
+
+	it("soft-fails heatmap errors without breaking facilities status", async () => {
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: undefined,
+			isPending: false,
+			isError: true,
+		});
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() =>
+			expect(mapState.setData).toHaveBeenCalledWith(
+				expect.objectContaining({ features: [expect.objectContaining({ type: "Feature" })] }),
+			),
+		);
+		expect(mapState.setData).toHaveBeenCalledWith({ type: "FeatureCollection", features: [] });
+		expect(result.current.status).toBe("ready");
+		expect(mapState.handlers.has(`mousemove:${APP_SESSION_HEATMAP_LAYER_ID}`)).toBe(false);
+		expect(mapState.handlers.has(`click:${APP_SESSION_HEATMAP_LAYER_ID}`)).toBe(false);
 	});
 
 	it("reports loading with no facilities yet", () => {
