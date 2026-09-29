@@ -4,6 +4,7 @@ import type { EntityId } from "@domain/shared/id.types";
 export interface FacilityMetrics {
 	activePlayers: number;
 	gamesLastWeek: number;
+	gamesLast28Days: number;
 	utilization: number;
 }
 

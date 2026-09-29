@@ -42,7 +42,7 @@ import type {
 	SessionHeatmapBounds,
 	SessionHeatmapScale,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.types";
-import { loadPleiLogo } from "@/components/map/plei-logo-marker";
+import { loadPleiLogos } from "@/components/map/plei-logo-marker";
 import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
@@ -60,7 +60,12 @@ export function toFacilityFeatureCollection(
 				type: "Point",
 				coordinates: [facility.location.longitude, facility.location.latitude],
 			},
-			properties: { id: facility.id, marketId: facility.marketId, name: facility.name },
+			properties: {
+				id: facility.id,
+				marketId: facility.marketId,
+				name: facility.name,
+				isActive: facility.isActive,
+			},
 		})),
 	};
 }
@@ -397,7 +402,7 @@ export function useFacilitiesMapRules() {
 				});
 				mapRef.current = created;
 				setIsMapReady(true);
-				loadPleiLogo(created)
+				loadPleiLogos(created)
 					.then(() => {
 						if (isCancelled) return;
 						created.addLayer({

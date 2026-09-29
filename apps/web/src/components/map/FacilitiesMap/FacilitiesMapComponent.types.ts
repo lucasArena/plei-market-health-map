@@ -28,6 +28,7 @@ export interface FacilityFeatureProperties {
 	id: string;
 	marketId: string;
 	name: string;
+	isActive: boolean;
 }
 
 export type FacilityFeature = Feature<Point, FacilityFeatureProperties>;

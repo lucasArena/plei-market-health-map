@@ -5,5 +5,6 @@ export interface FacilityPointView {
 	marketId: string;
 	name: string;
 	avatarUrl: string | null;
+	isActive: boolean;
 	location: GeoPoint;
 }

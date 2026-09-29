@@ -64,11 +64,11 @@ vi.mock("maplibre-gl", () => {
 });
 
 const mockUseFacilities = vi.fn();
-const mockLoadPleiLogo = vi.fn();
+const mockLoadPleiLogos = vi.fn();
 
 vi.mock("@/components/map/plei-logo-marker", async (importOriginal) => ({
 	...(await importOriginal<object>()),
-	loadPleiLogo: (map: unknown) => mockLoadPleiLogo(map),
+	loadPleiLogos: (map: unknown) => mockLoadPleiLogos(map),
 }));
 
 vi.mock("@/lib/api/use-facilities", () => ({ useFacilities: () => mockUseFacilities() }));
@@ -83,6 +83,7 @@ const FACILITY = {
 	marketId: "austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
+	isActive: true,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
 
@@ -110,7 +111,12 @@ describe("toFacilityFeatureCollection", () => {
 				{
 					type: "Feature",
 					geometry: { type: "Point", coordinates: [-97.74, 30.27] },
-					properties: { id: "f1", marketId: "austin", name: "Eastside Futsal Arena" },
+					properties: {
+						id: "f1",
+						marketId: "austin",
+						name: "Eastside Futsal Arena",
+						isActive: true,
+					},
 				},
 			],
 		});
@@ -235,7 +241,7 @@ describe("useFacilitiesMapRules", () => {
 			isPending: false,
 			isError: false,
 		});
-		mockLoadPleiLogo.mockResolvedValue(undefined);
+		mockLoadPleiLogos.mockResolvedValue(undefined);
 	});
 
 	it("creates the map, adds the dot layer on load and pushes the facilities", async () => {
@@ -255,7 +261,7 @@ describe("useFacilitiesMapRules", () => {
 			expect.objectContaining({ cluster: true, clusterRadius: 40 }),
 		);
 		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(5));
-		expect(mockLoadPleiLogo).toHaveBeenCalledWith(map);
+		expect(mockLoadPleiLogos).toHaveBeenCalledWith(map);
 		const addLayer = map?.addLayer;
 		if (!addLayer) throw new Error("Expected addLayer mock");
 		const layerIds = addLayer.mock.calls.map((call) => (call[0] as { id: string }).id);
@@ -269,7 +275,9 @@ describe("useFacilitiesMapRules", () => {
 			expect.objectContaining({
 				id: "facilities-logos",
 				type: "symbol",
-				layout: expect.objectContaining({ "icon-image": "plei-logo" }),
+				layout: expect.objectContaining({
+					"icon-image": ["case", ["==", ["get", "isActive"], true], "plei-logo", "plei-logo-muted"],
+				}),
 			}),
 		);
 		expect(map?.addLayer).toHaveBeenCalledWith(
@@ -494,7 +502,7 @@ describe("useFacilitiesMapRules", () => {
 	});
 
 	it("keeps the plain markers when the logo fails to load or the map is gone", async () => {
-		mockLoadPleiLogo.mockRejectedValueOnce(new Error("no image"));
+		mockLoadPleiLogos.mockRejectedValueOnce(new Error("no image"));
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
@@ -502,7 +510,7 @@ describe("useFacilitiesMapRules", () => {
 		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(4);
 
 		let resolveLogo: () => void = () => undefined;
-		mockLoadPleiLogo.mockReturnValueOnce(
+		mockLoadPleiLogos.mockReturnValueOnce(
 			new Promise<void>((resolve) => {
 				resolveLogo = resolve;
 			}),
