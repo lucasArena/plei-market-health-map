@@ -1,7 +1,0 @@
-import type { FacilityRepository } from "@application/ports/facility-repository.types";
-import type { FacilityStatsRepository } from "@application/ports/facility-stats-repository.types";
-
-export interface GetFacilityDetailDeps {
-	facilities: FacilityRepository;
-	stats: FacilityStatsRepository;
-}

@@ -15,6 +15,15 @@ pnpm dev
 
 Open http://localhost:3000. You are sent to `/sign-in` (one Google SSO button; only @plei.com accounts get in), then land on the facilities map.
 
+## Workspace
+
+| Path | README |
+| --- | --- |
+| `apps/web` | [Next.js app, screens and components](apps/web/README.md) |
+| `apps/server` | [Hono API, database and warehouse adapters](apps/server/README.md) |
+| `packages/core` | [Domain, use cases and i18n](packages/core/README.md) |
+| `packages/config` | Shared tsconfig and Vitest presets |
+
 ## Contributing
 
 Branch from `staging` as `feature/…`, `hotfix/…`, `refactor/…` or `chore/…`, use conventional commits (`feat: …`, `fix: …`, `chore: …`), and open a PR into `staging`. Production releases are PRs from `staging` into `main`. See [AGENTS.md](AGENTS.md).

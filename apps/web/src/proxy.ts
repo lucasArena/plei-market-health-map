@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/infrastructure/auth/auth";
 
 const PUBLIC_PREFIXES = ["/sign-in", "/api/", "/~offline"];
 
