@@ -1,4 +1,5 @@
 import { isTestFacility } from "@infra/warehouse/is-test-facility";
+import { mergeColocatedFacilities } from "@infra/warehouse/merge-colocated-facilities";
 import { isWithinServiceArea } from "@infra/warehouse/service-area";
 import type {
 	WarehouseLocationRow,
@@ -31,6 +32,11 @@ left join facility_activity a on a.location_id = l.location_id
 where l.deleted_at is null
   and l.location_latitude is not null
   and l.location_longitude is not null
+  and exists (
+    select 1
+    from plei_gold.dim_reservation posted
+    where posted.location_id = l.location_id
+  )
 order by l.location_id`;
 
 const UNASSIGNED_MARKET = "unassigned";
@@ -70,9 +76,11 @@ export class WarehouseFacilityRepository implements FacilityRepository {
 
 	async listAll(): Promise<Facility[]> {
 		const { rows } = await this.warehouse.query<WarehouseLocationRow>(ACTIVE_LOCATIONS_SQL);
-		return rows.flatMap((row) => {
-			const facility = toFacility(row);
-			return facility ? [facility] : [];
-		});
+		return mergeColocatedFacilities(
+			rows.flatMap((row) => {
+				const facility = toFacility(row);
+				return facility ? [facility] : [];
+			}),
+		);
 	}
 }

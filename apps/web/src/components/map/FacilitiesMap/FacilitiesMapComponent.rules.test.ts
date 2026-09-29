@@ -123,6 +123,28 @@ describe("toFacilityFeatureCollection", () => {
 	});
 });
 
+describe("toFacilityFeatureCollection stacking", () => {
+	it("puts inactive facilities first and active last so the active one renders and is picked on top", () => {
+		const location = { latitude: 39.96, longitude: -75.15 };
+		const facilities = [
+			{ ...FACILITY, id: "a1", isActive: true, location },
+			{ ...FACILITY, id: "i1", isActive: false, location },
+			{ ...FACILITY, id: "a2", isActive: true, location },
+			{ ...FACILITY, id: "i2", isActive: false, location },
+		];
+
+		const collection = toFacilityFeatureCollection(facilities);
+
+		expect(collection.features.map((feature) => feature.properties.id)).toEqual([
+			"i1",
+			"i2",
+			"a1",
+			"a2",
+		]);
+		expect(facilities.map((facility) => facility.id)).toEqual(["a1", "i1", "a2", "i2"]);
+	});
+});
+
 describe("toAppSessionHeatmapFeatureCollection", () => {
 	it("turns heatmap cells into GeoJSON points with viewport-relative intensity", () => {
 		expect(
@@ -277,11 +299,18 @@ describe("useFacilitiesMapRules", () => {
 				type: "symbol",
 				layout: expect.objectContaining({
 					"icon-image": ["case", ["==", ["get", "isActive"], true], "plei-logo", "plei-logo-muted"],
+					"symbol-sort-key": ["case", ["==", ["get", "isActive"], true], 1, 0],
 				}),
 			}),
 		);
 		expect(map?.addLayer).toHaveBeenCalledWith(
 			expect.objectContaining({ id: APP_SESSION_HEATMAP_LAYER_ID, type: "heatmap" }),
+		);
+		expect(map?.addLayer).toHaveBeenCalledWith(
+			expect.objectContaining({
+				id: FACILITIES_LAYER_ID,
+				layout: { "circle-sort-key": ["case", ["==", ["get", "isActive"], true], 1, 0] },
+			}),
 		);
 		expect(map?.addLayer).toHaveBeenCalledWith(
 			expect.objectContaining({ id: FACILITIES_LAYER_ID, type: "circle" }),

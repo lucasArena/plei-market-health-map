@@ -21,6 +21,7 @@ import {
 	FACILITIES_LAYER_ID,
 	FACILITIES_LOGO_LAYER_ID,
 	FACILITIES_SOURCE_ID,
+	FACILITY_DOT_LAYOUT,
 	FACILITY_DOT_PAINT,
 	FACILITY_LOGO_LAYOUT,
 	HOVER_CARD_WIDTH,
@@ -49,12 +50,16 @@ import {
 } from "@/lib/api/use-app-session-heatmap";
 import { useFacilities } from "@/lib/api/use-facilities";
 
+function byActiveLast(a: FacilityPointView, b: FacilityPointView): number {
+	return Number(a.isActive) - Number(b.isActive);
+}
+
 export function toFacilityFeatureCollection(
 	facilities: FacilityPointView[],
 ): FacilityFeatureCollection {
 	return {
 		type: "FeatureCollection",
-		features: facilities.map((facility) => ({
+		features: [...facilities].sort(byActiveLast).map((facility) => ({
 			type: "Feature",
 			geometry: {
 				type: "Point",
@@ -398,6 +403,7 @@ export function useFacilitiesMapRules() {
 					type: "circle",
 					source: FACILITIES_SOURCE_ID,
 					filter: UNCLUSTERED_FILTER,
+					layout: FACILITY_DOT_LAYOUT,
 					paint: FACILITY_DOT_PAINT,
 				});
 				mapRef.current = created;

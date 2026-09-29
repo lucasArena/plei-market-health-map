@@ -5,12 +5,12 @@ import type {
 import type { EntityId } from "@market-health-map/domain";
 
 export class InMemoryFacilityStatsRepository implements FacilityStatsRepository {
-	readonly requested: EntityId[] = [];
+	readonly requested: EntityId[][] = [];
 
 	constructor(private readonly counts: FacilityWeeklyCounts) {}
 
-	async getWeeklyCounts(facilityId: EntityId): Promise<FacilityWeeklyCounts> {
-		this.requested.push(facilityId);
+	async getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts> {
+		this.requested.push([...facilityIds]);
 		return { ...this.counts };
 	}
 }
