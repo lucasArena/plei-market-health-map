@@ -1,4 +1,5 @@
 import type { Messages } from "@market-health-map/core/i18n";
+import type { WeeklyActivityPointView } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 
 export const ChangeDirection = { up: "up", down: "down", flat: "flat" } as const;
 
@@ -29,6 +30,7 @@ export interface FacilityDetailViewModel {
 	avatarUrl: string | null;
 	summary: string;
 	tiles: FacilityStatTile[];
+	weeklyActivity: WeeklyActivityPointView[];
 	lastPlayedLabel: string;
 }
 
@@ -37,4 +39,5 @@ export interface DetailFormatters {
 	decimal: Intl.NumberFormat;
 	plural: Intl.PluralRules;
 	dayWithYear: Intl.DateTimeFormat;
+	week: Intl.DateTimeFormat;
 }

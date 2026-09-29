@@ -27,6 +27,7 @@ export function createDetailFormatters(locale: string): DetailFormatters {
 			year: "numeric",
 			timeZone: "UTC",
 		}),
+		week: new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", timeZone: "UTC" }),
 	};
 }
 
@@ -131,6 +132,25 @@ export function buildTiles(
 	];
 }
 
+export function buildWeeklyActivity(
+	stats: FacilityStatsView,
+	messages: DetailMessages,
+	formatters: DetailFormatters,
+) {
+	return stats.weeklyActivity.map((point) => {
+		const label = formatters.week.format(localDate(point.weekStart));
+		const games = formatGames(point.gamesPlayed, messages, formatters);
+		return {
+			key: point.weekStart,
+			label,
+			shortLabel: label,
+			value: point.gamesPlayed,
+			valueLabel: games,
+			tooltip: formatMessage(messages.weeklyActivityTooltip, { week: label, games }),
+		};
+	});
+}
+
 export function buildDetailViewModel(
 	detail: FacilityDetailView,
 	messages: DetailMessages,
@@ -143,6 +163,7 @@ export function buildDetailViewModel(
 		avatarUrl: facility.avatarUrl,
 		summary: buildSummary(stats, messages, formatters),
 		tiles: buildTiles(stats, messages, formatters),
+		weeklyActivity: buildWeeklyActivity(stats, messages, formatters),
 		lastPlayedLabel: stats.lastPlayedDate
 			? formatMessage(messages.lastPlayed, {
 					date: formatters.dayWithYear.format(localDate(stats.lastPlayedDate)),

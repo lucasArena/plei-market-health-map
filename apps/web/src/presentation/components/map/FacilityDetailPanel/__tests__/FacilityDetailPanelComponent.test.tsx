@@ -36,6 +36,16 @@ const VIEW = {
 			hintDirection: "flat",
 		},
 	],
+	weeklyActivity: [
+		{
+			key: "2026-09-21",
+			label: "Sep 21",
+			shortLabel: "Sep 21",
+			value: 12,
+			valueLabel: "12 games",
+			tooltip: "Sep 21: 12 games",
+		},
+	],
 	lastPlayedLabel: "Last game played Sep 27, 2026",
 };
 
@@ -70,6 +80,8 @@ describe("FacilityDetailPanel", () => {
 			"text-emerald-700",
 		);
 		expect(screen.getByText("82%")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Sep 21: 12 games" })).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
 		expect(screen.queryByText("Week of Sep 21 – Sep 27, 2026")).not.toBeInTheDocument();
 	});

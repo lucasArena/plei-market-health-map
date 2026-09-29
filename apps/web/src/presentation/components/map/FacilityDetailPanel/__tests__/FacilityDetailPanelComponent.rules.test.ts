@@ -6,6 +6,7 @@ import {
 	buildDetailViewModel,
 	buildSummary,
 	buildTiles,
+	buildWeeklyActivity,
 	createDetailFormatters,
 	directionOf,
 	formatGames,
@@ -46,7 +47,12 @@ const STATS: FacilityStatsView = {
 	confirmationRateChangePoints: 6,
 	uniquePlayersPeriodChangePercent: -4,
 	activatedPlayersPeriodChangePercent: 18,
-	weeklyActivity: [],
+	weeklyActivity: [
+		{ weekStart: "2026-08-31", gamesPlayed: 8 },
+		{ weekStart: "2026-09-07", gamesPlayed: 11 },
+		{ weekStart: "2026-09-14", gamesPlayed: 10 },
+		{ weekStart: "2026-09-21", gamesPlayed: 12 },
+	],
 	popularTimes: [
 		{ dayOfWeek: 3, timePeriod: 2, gamesPlayed: 5 },
 		{ dayOfWeek: 6, timePeriod: 2, gamesPlayed: 9 },
@@ -166,6 +172,16 @@ describe("buildTiles", () => {
 	});
 });
 
+describe("buildWeeklyActivity", () => {
+	it("formats each week as a chart point", () => {
+		expect(buildWeeklyActivity(STATS, messages, formatters)[0]).toMatchObject({
+			shortLabel: "Aug 31",
+			value: 8,
+			tooltip: "Aug 31: 8 games",
+		});
+	});
+});
+
 describe("buildDetailViewModel", () => {
 	it("labels the last game", () => {
 		const view = buildDetailViewModel(DETAIL, messages, formatters);
@@ -176,6 +192,7 @@ describe("buildDetailViewModel", () => {
 			lastPlayedLabel: "Last game played Sep 27, 2026",
 		});
 		expect(view.tiles).toHaveLength(4);
+		expect(view.weeklyActivity).toHaveLength(4);
 	});
 
 	it("says when nothing was ever played", () => {
