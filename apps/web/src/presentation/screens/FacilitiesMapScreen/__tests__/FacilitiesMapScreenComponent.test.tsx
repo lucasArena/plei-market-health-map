@@ -22,6 +22,7 @@ const FACILITY = {
 	marketId: "austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
+	isActive: true,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
 

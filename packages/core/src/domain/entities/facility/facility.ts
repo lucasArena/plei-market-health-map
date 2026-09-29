@@ -4,7 +4,7 @@ import { guard } from "@core/domain/shared/guard";
 import type { EntityId } from "@core/domain/shared/id.types";
 
 function assertMetrics(metrics: FacilityMetrics): FacilityMetrics {
-	const counts = [metrics.activePlayers, metrics.gamesLastWeek];
+	const counts = [metrics.activePlayers, metrics.gamesLastWeek, metrics.gamesLast28Days];
 	if (counts.some((value) => !Number.isInteger(value) || value < 0)) {
 		throw new ValidationError("Facility counts must be non-negative integers.");
 	}

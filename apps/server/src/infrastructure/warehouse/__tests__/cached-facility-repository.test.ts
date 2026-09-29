@@ -8,7 +8,7 @@ const FACILITY = Facility.create({
 	address: "123 Main St",
 	location: { latitude: 38.6, longitude: -90.2 },
 	avatarUrl: null,
-	metrics: { activePlayers: 0, gamesLastWeek: 0, utilization: 0 },
+	metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 0, utilization: 0 },
 });
 
 function setup() {

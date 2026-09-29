@@ -6,6 +6,7 @@ export const FACILITY_DETAIL: FacilityDetailView = {
 		marketId: "houston",
 		name: "Pegaso HTX",
 		avatarUrl: null,
+		isActive: true,
 		location: { latitude: 29.7, longitude: -95.4 },
 		address: "1 Main St, Houston, TX",
 	},

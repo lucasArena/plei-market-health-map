@@ -15,6 +15,7 @@ function row(overrides: object = {}) {
 		region_name: "St. Louis",
 		location_latitude: 38.62,
 		location_longitude: -90.19,
+		played_last_28_days: "12",
 		...overrides,
 	};
 }
@@ -28,7 +29,7 @@ describe("toFacility", () => {
 			address: "123 Main St, St. Louis, Missouri",
 			location: { latitude: 38.62, longitude: -90.19 },
 			avatarUrl: null,
-			metrics: { activePlayers: 0, gamesLastWeek: 0, utilization: 0 },
+			metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 12, utilization: 0 },
 		});
 	});
 
@@ -61,6 +62,8 @@ describe("WarehouseFacilityRepository", () => {
 
 		expect(query).toHaveBeenCalledWith(ACTIVE_LOCATIONS_SQL);
 		expect(ACTIVE_LOCATIONS_SQL).toContain("deleted_at is null");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date >= b.this_week - 28");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date < b.this_week");
 		expect(facilities.map((facility) => facility.id)).toEqual(["1042"]);
 	});
 });

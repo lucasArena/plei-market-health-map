@@ -77,6 +77,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 		metrics: {
 			activePlayers: players[index] as number,
 			gamesLastWeek: games[index] as number,
+			gamesLast28Days: (games[index] as number) * 4,
 			utilization: Math.round(35 + random() * 63),
 		},
 	}));

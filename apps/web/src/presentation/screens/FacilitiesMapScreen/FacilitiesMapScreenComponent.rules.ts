@@ -9,7 +9,7 @@ import {
 } from "@/infrastructure/api/use-app-session-heatmap";
 import { useFacilities } from "@/infrastructure/api/use-facilities";
 import { useMessages } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
-import { loadPleiLogo } from "@/presentation/components/map/plei-logo-marker";
+import { loadPleiLogos } from "@/presentation/components/map/plei-logo-marker";
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
 	APP_SESSION_HEATMAP_PAINT,
@@ -60,7 +60,12 @@ export function toFacilityFeatureCollection(
 				type: "Point",
 				coordinates: [facility.location.longitude, facility.location.latitude],
 			},
-			properties: { id: facility.id, marketId: facility.marketId, name: facility.name },
+			properties: {
+				id: facility.id,
+				marketId: facility.marketId,
+				name: facility.name,
+				isActive: facility.isActive,
+			},
 		})),
 	};
 }
@@ -397,7 +402,7 @@ export function useFacilitiesMapScreenRules() {
 				});
 				mapRef.current = created;
 				setIsMapReady(true);
-				loadPleiLogo(created)
+				loadPleiLogos(created)
 					.then(() => {
 						if (isCancelled) return;
 						created.addLayer({
