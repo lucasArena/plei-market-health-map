@@ -11,7 +11,7 @@ const FACILITY = Facility.create({
 	address: "1 Main St, Houston, Texas",
 	location: { latitude: 29.76, longitude: -95.37 },
 	avatarUrl: null,
-	metrics: { activePlayers: 0, gamesLastWeek: 0, utilization: 0 },
+	metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 0, utilization: 0 },
 });
 
 const COUNTS = {
@@ -46,6 +46,7 @@ describe("getFacilityDetail", () => {
 			marketId: "2",
 			name: "Pegaso HTX",
 			avatarUrl: null,
+			isActive: false,
 			location: { latitude: 29.76, longitude: -95.37 },
 			address: "1 Main St, Houston, Texas",
 		});

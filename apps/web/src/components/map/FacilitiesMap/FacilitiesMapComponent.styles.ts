@@ -6,7 +6,7 @@ import type {
 	HeatmapLayerSpecification,
 	SymbolLayerSpecification,
 } from "maplibre-gl";
-import { PLEI_LOGO_IMAGE_ID } from "@/components/map/plei-logo-marker";
+import { PLEI_LOGO_IMAGE_ID, PLEI_LOGO_MUTED_IMAGE_ID } from "@/components/map/plei-logo-marker";
 
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
@@ -41,7 +41,12 @@ export const FACILITY_DOT_PAINT: CircleLayerSpecification["paint"] = {
 };
 
 export const FACILITY_LOGO_LAYOUT: SymbolLayerSpecification["layout"] = {
-	"icon-image": PLEI_LOGO_IMAGE_ID,
+	"icon-image": [
+		"case",
+		["==", ["get", "isActive"], true],
+		PLEI_LOGO_IMAGE_ID,
+		PLEI_LOGO_MUTED_IMAGE_ID,
+	],
 	"icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.35, 8, 0.55, 12, 0.7],
 	"icon-allow-overlap": true,
 	"icon-ignore-placement": true,

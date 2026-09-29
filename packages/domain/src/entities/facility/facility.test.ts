@@ -9,7 +9,7 @@ const VALID = {
 	address: " 12 Main St ",
 	location: { latitude: 30.27, longitude: -97.74 },
 	avatarUrl: " https://cdn.plei.app/f1.png ",
-	metrics: { activePlayers: 120, gamesLastWeek: 30, utilization: 72 },
+	metrics: { activePlayers: 120, gamesLastWeek: 30, gamesLast28Days: 120, utilization: 72 },
 };
 
 describe("Facility", () => {
@@ -39,6 +39,9 @@ describe("Facility", () => {
 	it("rejects invalid counts", () => {
 		expect(() =>
 			Facility.create({ ...VALID, metrics: { ...VALID.metrics, gamesLastWeek: -1 } }),
+		).toThrow(ValidationError);
+		expect(() =>
+			Facility.create({ ...VALID, metrics: { ...VALID.metrics, gamesLast28Days: -1 } }),
 		).toThrow(ValidationError);
 	});
 
