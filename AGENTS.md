@@ -51,6 +51,8 @@ Merge commits are skipped, so a squashed PR counts once and a merged PR counts i
 
 On a push to `main`, `_release.yml` sets `version` in the root `package.json`, commits it as `ci: bump new version vX.Y.Z [skip ci]`, creates an annotated tag, and pushes both. `_deploy-vercel.yml` then deploys **that tag**. If nothing needs a bump, nothing is tagged and `main`'s head is deployed. `staging` never bumps or tags. Never edit `version` by hand.
 
+After a tagged deploy, the `linear-release` job writes release notes with `scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`). The notes cover the commits since the previous stable tag, grouped into Breaking changes, Features, Fixes and Other changes, plus every Linear issue ID they mention. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, the notes are attached as the release notes and as a `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns.
+
 ## Release workflow (step by step)
 
 Every change reaches production the same way: **branch → staging → main**. Follow these steps in order.
@@ -86,7 +88,8 @@ chore(ci): add a deploy timeout
 ### 3. Open a PR into `staging` and **squash and merge**
 
 - The base is `staging`. The PR title becomes the squashed commit, so it must be a valid conventional message; it's what production counts later.
-- `ci.pr.yml` must pass: the branch-name check and the unit tests.
+- End the title with the Linear issue, e.g. `feat(map): add facility panel (PROD-451)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
+- `ci.pr.yml` must pass: the branch-name check and the unit tests. The Linear-issue check only warns.
 - Merge with **Squash and merge**.
 - `cd.staging.yml` then deploys the branch head to **https://plei-market-health-map-staging.vercel.app**. Staging never bumps the version or creates a tag.
 - Verify the change on staging before promoting it.

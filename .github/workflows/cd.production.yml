@@ -31,3 +31,46 @@ jobs:
       vercel-environment: production
       ref: ${{ needs.release.outputs.tag || github.sha }}
     secrets: inherit
+
+  linear-release:
+    needs: [release, deploy]
+    if: needs.release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ needs.release.outputs.tag }}
+      LINEAR_ACCESS_KEY: ${{ secrets.LINEAR_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Write the release notes from the commits since the last tag
+        id: notes
+        run: |
+          summary=$(node scripts/release/release-notes.mjs "$TAG" release-notes.md)
+          echo "$summary"
+          echo "previous-tag=$(echo "$summary" | jq -r '.previousTag // empty')" >> "$GITHUB_OUTPUT"
+          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Warn when Linear is not configured
+        if: env.LINEAR_ACCESS_KEY == ''
+        run: echo "::warning::LINEAR_ACCESS_KEY is not set, so $TAG was not sent to Linear."
+      - name: Create the release in Linear
+        id: linear
+        if: env.LINEAR_ACCESS_KEY != ''
+        uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          name: Market Health Map ${{ env.TAG }}
+          version: ${{ env.TAG }}
+          base_ref: ${{ steps.notes.outputs.previous-tag }}
+          release_notes: release-notes.md
+          documents: Changelog ${{ env.TAG }}=release-notes.md
+          links: ${{ github.server_url }}/${{ github.repository }}/tree/${{ env.TAG }}
+      - name: Link the Linear release
+        if: steps.linear.outputs.release-url != ''
+        run: echo "Linear release ${{ steps.linear.outputs.release-url }}" >> "$GITHUB_STEP_SUMMARY"
