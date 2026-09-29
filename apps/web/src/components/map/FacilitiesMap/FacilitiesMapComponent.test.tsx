@@ -6,6 +6,13 @@ import { EN_MESSAGES } from "@/test/messages";
 const mockRules = vi.fn();
 
 vi.mock("maplibre-gl/dist/maplibre-gl.css", () => ({}));
+vi.mock("@/components/map/FacilityDetailPanel/FacilityDetailPanelComponent", () => ({
+	FacilityDetailPanel: ({ facilityId, isClosing }: { facilityId: string; isClosing: boolean }) => (
+		<aside data-testid="detail-panel" data-closing={isClosing}>
+			{facilityId}
+		</aside>
+	),
+}));
 vi.mock("@/components/map/FacilitiesMap/FacilitiesMapComponent.rules", () => ({
 	useFacilitiesMapRules: () => mockRules(),
 }));
@@ -20,9 +27,13 @@ const FACILITY = {
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
+		closePanel: vi.fn(),
 		containerRef: { current: null },
 		hasSessionHeatmap: false,
+		handlePanelClosed: vi.fn(),
 		hovered: null,
+		isPanelClosing: false,
+		selectedFacilityId: null,
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
 		status,
@@ -40,6 +51,7 @@ describe("FacilitiesMap", () => {
 		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
 		expect(screen.queryByRole("status")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("detail-panel")).not.toBeInTheDocument();
 		expect(screen.getByRole("link", { name: "OpenStreetMap contributors" })).toHaveAttribute(
 			"href",
 			"https://www.openstreetmap.org/copyright",
@@ -106,5 +118,16 @@ describe("FacilitiesMap", () => {
 		render(<FacilitiesMap />);
 
 		expect(screen.getByRole("status")).toHaveTextContent(text);
+	});
+
+	it("shows the detail panel for the selected facility", () => {
+		mockRules.mockReturnValue(
+			rulesWith("ready", { selectedFacilityId: "f1", isPanelClosing: true }),
+		);
+
+		render(<FacilitiesMap />);
+
+		expect(screen.getByTestId("detail-panel")).toHaveTextContent("f1");
+		expect(screen.getByTestId("detail-panel")).toHaveAttribute("data-closing", "true");
 	});
 });

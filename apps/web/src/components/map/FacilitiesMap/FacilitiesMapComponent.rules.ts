@@ -17,6 +17,7 @@ import {
 	CLUSTER_PAINT,
 	CLUSTER_PREVIEW_LIMIT,
 	CLUSTER_RADIUS,
+	DETAIL_PANEL_OFFSET,
 	FACILITIES_LAYER_ID,
 	FACILITIES_LOGO_LAYER_ID,
 	FACILITIES_SOURCE_ID,
@@ -27,6 +28,8 @@ import {
 	MAP_STYLE_URL,
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
+	selectedRingColor,
+	selectedRingWidth,
 	UNCLUSTERED_FILTER,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import type {
@@ -197,6 +200,8 @@ export function useFacilitiesMapRules() {
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
+	const [isPanelClosing, setIsPanelClosing] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const hoveredClusterIdRef = useRef<number | null>(null);
@@ -276,6 +281,32 @@ export function useFacilitiesMapRules() {
 	const handleHoverEnd = useCallback(() => {
 		hoveredClusterIdRef.current = null;
 		setHovered(null);
+	}, []);
+
+	const handleFacilityClick = useCallback(
+		(event: MapLayerMouseEvent) => {
+			const facility = facilityFromEvent(event);
+			if (!facility) return;
+			handleHoverEnd();
+			setIsPanelClosing(false);
+			setSelectedFacilityId(facility.id);
+			mapRef.current?.easeTo({
+				center: [facility.location.longitude, facility.location.latitude],
+				padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
+				duration: 600,
+			});
+		},
+		[facilityFromEvent, handleHoverEnd],
+	);
+
+	const closePanel = useCallback(() => {
+		setIsPanelClosing(true);
+		mapRef.current?.easeTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
+	}, []);
+
+	const handlePanelClosed = useCallback(() => {
+		setSelectedFacilityId(null);
+		setIsPanelClosing(false);
 	}, []);
 
 	const handleClusterClick = useCallback(
@@ -415,8 +446,10 @@ export function useFacilitiesMapRules() {
 			handleHoverEnd();
 		};
 		const bindings = [
+			["mouseenter", FACILITIES_LAYER_ID, showPointer],
 			["mousemove", FACILITIES_LAYER_ID, handleHover],
-			["mouseleave", FACILITIES_LAYER_ID, handleHoverEnd],
+			["mouseleave", FACILITIES_LAYER_ID, hidePointer],
+			["click", FACILITIES_LAYER_ID, handleFacilityClick],
 			["mouseenter", CLUSTER_LAYER_ID, showPointer],
 			["mousemove", CLUSTER_LAYER_ID, handleClusterHover],
 			["mouseleave", CLUSTER_LAYER_ID, hidePointer],
@@ -433,6 +466,7 @@ export function useFacilitiesMapRules() {
 	}, [
 		handleClusterClick,
 		handleClusterHover,
+		handleFacilityClick,
 		handleHover,
 		handleHoverEnd,
 		isMapReady,
@@ -441,12 +475,32 @@ export function useFacilitiesMapRules() {
 
 	const hasSessionHeatmap = heatmapFeatureCollection.features.length > 0;
 
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
+		const highlighted = isPanelClosing ? null : selectedFacilityId;
+		map.setPaintProperty(
+			FACILITIES_LAYER_ID,
+			"circle-stroke-color",
+			selectedRingColor(highlighted),
+		);
+		map.setPaintProperty(
+			FACILITIES_LAYER_ID,
+			"circle-stroke-width",
+			selectedRingWidth(highlighted),
+		);
+	}, [selectedFacilityId, isPanelClosing, isMapReady]);
+
 	return {
+		closePanel,
 		containerRef,
 		hasSessionHeatmap,
+		handlePanelClosed,
 		hovered,
+		isPanelClosing,
 		messages: messages.map,
 		sessionScale,
+		selectedFacilityId,
 		status,
 	};
 }

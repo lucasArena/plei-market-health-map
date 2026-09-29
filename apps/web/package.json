@@ -21,6 +21,7 @@
 		"@market-health-map/domain": "workspace:*",
 		"@market-health-map/i18n": "workspace:*",
 		"@market-health-map/infrastructure": "workspace:*",
+		"@mlc-ai/web-llm": "0.2.85",
 		"@serwist/next": "9.5.12",
 		"@tanstack/react-query": "5.104.0",
 		"maplibre-gl": "6.11.2",
