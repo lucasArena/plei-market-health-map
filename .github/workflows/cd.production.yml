@@ -52,7 +52,7 @@ jobs:
       - name: Write the release notes from the commits since the last tag
         id: notes
         run: |
-          summary=$(node scripts/release/release-notes.mjs "$TAG" release-notes.md)
+          summary=$(node .github/scripts/release/release-notes.mjs "$TAG" release-notes.md)
           echo "$summary"
           echo "previous-tag=$(echo "$summary" | jq -r '.previousTag // empty')" >> "$GITHUB_OUTPUT"
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"

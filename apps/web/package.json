@@ -16,11 +16,8 @@
 		"copy:maplibre": "node scripts/copy-maplibre-worker.mjs"
 	},
 	"dependencies": {
-		"@market-health-map/application": "workspace:*",
-		"@market-health-map/design-system": "workspace:*",
-		"@market-health-map/domain": "workspace:*",
-		"@market-health-map/i18n": "workspace:*",
-		"@market-health-map/infrastructure": "workspace:*",
+		"@market-health-map/core": "workspace:*",
+		"@market-health-map/server": "workspace:*",
 		"@mlc-ai/web-llm": "0.2.85",
 		"@serwist/next": "9.5.12",
 		"@tanstack/react-query": "5.104.0",

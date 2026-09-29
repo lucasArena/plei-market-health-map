@@ -6,22 +6,34 @@ Must-haves (from the Linear project): SSO login, tracking which internal users l
 
 ## Architecture
 
-pnpm + Turborepo monorepo with clean architecture. Each arrow points at what the layer depends on, and inner layers never import outer ones:
+pnpm + Turborepo monorepo with clean architecture, split into three parts: `apps/web`, `apps/server` and `packages/core`.
 
 ```
-domain  <-  application  <-  infrastructure  <-  apps/web
+apps/
+  web/                    Next.js 16: UI, Auth.js (Google SSO), React Query, Serwist PWA
+    src/app/                Next's routing folder (pages, layouts, route handlers); thin
+    src/application/        constants shared by the UI (Pleiful brand colors) and test/ helpers
+    src/presentation/       screens (one per page), components (one folder each), hooks (React Query)
+    src/infrastructure/     API client, the in-browser LLM, Auth.js, request locale
+  server/                 HTTP API (Hono), mounted by web at /api/v1
+    src/presentation/       Hono app and routes, auth guard, responses, sign-in tracking
+    src/infrastructure/     Prisma, warehouse, sample and system adapters
+    src/container.ts        composition root, the only place that creates concrete adapters
+    prisma/                 schema and migrations
+packages/
+  core/                   pure TypeScript, no framework
+    src/domain/             entities, value rules (guard), DomainError, EntityId
+    src/application/        use cases, ports, Zod DTOs, mappers, errors; fakes in testing/
+    src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
+  config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
 
-- `packages/domain`: pure entities (`LoginEvent`), `guard`, `DomainError`, `EntityId`. No runtime deps.
-- `packages/application`: use-case factories (`makeRecordLogin`, `makeListRecentLogins`, `makeListFacilities`), ports, Zod DTOs, mappers, and errors. In-memory fakes live in `src/testing`.
-- `packages/infrastructure`: Prisma 7 + Neon adapter, repositories, record mappers, `SystemClock`, and `UuidGenerator`.
-- `packages/i18n`: typed `en` and `pt-BR` catalogs, `getMessages`, and `parseAcceptLanguage`.
-- `packages/config`: shared tsconfig presets and the Vitest factory (95% thresholds).
-- `packages/design-system`: shared Pleiful design tokens for application and visualization code.
-- `apps/web`: Next.js 16 App Router, Auth.js (Google SSO), React Query, and the Serwist PWA. `src/server/container.ts` is the only place that creates concrete adapters.
+Dependencies point inward: `core/domain <- core/application <- apps/server <- apps/web`. Biome enforces it inside core (`noRestrictedImports` overrides in `biome.json`): domain imports nothing, application imports only domain, and core never imports the apps or a framework.
+
+The server is **mounted, not deployed separately**. `apps/web/src/app/api/v1/[[...route]]/route.ts` hands every `/api/v1/*` request to `createApiApp({ resolveAccess })` from `@market-health-map/server`, and passes in how to read the Auth.js session. It's one Vercel project, one domain and one cookie. To split it out later, deploy `apps/server` on its own and point web at it; no code moves.
 
 Pleiful brand colors are documented in `docs/design-system.md`. TypeScript consumers use
-`@market-health-map/design-system`; Tailwind and CSS consumers use the matching `pleiful-*` theme colors.
+`@/application/constants/brand-colors`; Tailwind and CSS consumers use the matching `pleiful-*` theme colors.
 
 See `docs/architecture.md` for more depth.
 
@@ -30,11 +42,12 @@ See `docs/architecture.md` for more depth.
 - **No comments in code.** Names and tests carry the meaning.
 - **All `interface`/`type` declarations live in `*.types.ts` files** and are imported where they're used.
 - **No nested ternaries.** For more than one condition, use the computed-key object pattern (`{ [`${a}`]: x, [`${b}`]: y }.true`), with low-priority keys first.
-- **Path aliases only.** No relative imports. Apps use `@/*`. Packages use their own alias (`@domain/*`, `@application/*`, `@infra/*`, `@i18n/*`). Cross-package imports go through `@market-health-map/<pkg>`. Every consumer's `tsconfig.paths` must list every alias it loads transitively.
-- One folder per React component: `Name/NameComponent.tsx` plus `.types.ts`, `.rules.ts`, and `.test.tsx` siblings. The `.rules.ts` hook holds all the logic, and the component only renders.
+- **Path aliases only.** No relative imports. Web uses `@/*`, server uses `@server/*`, and core uses `@core/*`. Across packages, import `@market-health-map/core/domain`, `@market-health-map/core/application`, `@market-health-map/core/i18n` or `@market-health-map/server`. Every consumer's `tsconfig.paths` must list every alias it loads transitively.
+- Every page in `src/app` only renders its screen from `src/presentation/screens/<Name>Screen/` (e.g. `FacilitiesMapScreen`). Screens compose the reusable pieces in `src/presentation/components/`.
+- One folder per React component: `Name/NameComponent.tsx` plus `.types.ts` and `.rules.ts` siblings, and its tests in `__tests__/`. The `.rules.ts` hook holds all the logic, and the component only renders.
 - Named exports only. Default exports are allowed only for Next.js pages, layouts, and `manifest`.
-- Validate every boundary with Zod. No user-facing string is hardcoded; it comes from `@market-health-map/i18n`.
-- Tests sit next to the code as `*.test.ts(x)`. Coverage must be ≥ 95% in every package. Use cases are tested with in-memory fakes, never DB mocks.
+- Validate every boundary with Zod. No user-facing string is hardcoded; it comes from `@market-health-map/core/i18n`.
+- Tests live in a `__tests__/` folder beside the code they cover, as `__tests__/<name>.test.ts(x)`. Inside `src/app`, Next skips `_`-prefixed folders, so `__tests__` never becomes a route. Coverage must be ≥ 95% in every package. Use cases are tested with in-memory fakes, never DB mocks.
 - Biome for lint and format (tabs, double quotes, width 100). English everywhere.
 - Conventional commits (`feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert`), enforced by commitlint in the `commit-msg` hook and on PRs. Pre-commit runs lint-staged, and pre-push runs `pnpm check`. Never push to `main` or `staging` directly (see `AGENTS.md`).
 
@@ -48,7 +61,7 @@ pnpm dev
 pnpm check
 ```
 
-The single `.env` sits at the repo root. `apps/web/next.config.ts` and `packages/infrastructure/prisma.config.ts` load it explicitly.
+The single `.env` sits at the repo root. `apps/web/next.config.ts` and `apps/server/prisma.config.ts` load it explicitly.
 
 ## Deploying and git flow
 
@@ -57,7 +70,7 @@ Read [`AGENTS.md`](AGENTS.md) before any git work. Branches are `feature/`, `hot
 ## Gotchas
 
 - `next dev` and `next build` run with `--webpack` because Serwist injects a webpack config and Turbopack refuses it.
-- Prisma 7: the datasource URL lives in `prisma.config.ts` (it uses `DATABASE_URL_UNPOOLED` for migrations). The client is generated into `packages/infrastructure/src/generated/prisma`, which is gitignored and regenerated on `postinstall`.
+- Prisma 7: the datasource URL lives in `prisma.config.ts` (it uses `DATABASE_URL_UNPOOLED` for migrations). The client is generated into `apps/server/src/infrastructure/generated/prisma`, which is gitignored and regenerated on `postinstall`.
 - `PrismaNeon` talks to Neon over WebSockets, so it can't connect to a plain local Postgres. Point local dev at a Neon branch.
 - The service worker must reference `self.__SW_MANIFEST` literally, so `sw.ts` uses `declare const self`.
 - The tsconfig base lives in `packages/config/tsconfig/base.json` rather than at the root. Prisma's config loader doesn't follow symlinked `extends` out of `node_modules`.
@@ -67,5 +80,5 @@ Read [`AGENTS.md`](AGENTS.md) before any git work. Branches are `feature/`, `hot
 - Sign-in is Auth.js with Google only (`src/auth.ts`). The `signIn` callback (`evaluateSignIn`) lets in verified `@plei.com` accounts and sends everyone else back to `/sign-in?error=domain&email=…` with a message. The protected layout and `requireUser()` re-check the domain on every request.
 - `src/env.ts` validates only what the app itself reads (`DATABASE_URL`, `ALLOWED_EMAIL_DOMAIN`). Auth.js reads `AUTH_SECRET`, `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` itself. Without `AUTH_SECRET` every request fails. Without `DATABASE_URL`, login tracking warns once and skips.
 - Login tracking runs in Auth.js `events.signIn` (`trackSignIn`): one row per successful sign-in, and it never throws into the sign-in flow.
-- The AI summary runs Llama 3.2 1B in the browser (WebLLM + WebGPU, `src/lib/ai`). Headless Chromium with SwiftShader downloads the model but can't run it (no f16 shaders). To test it live, launch Playwright with `--enable-unsafe-webgpu --use-angle=metal` and a persistent profile so the 880 MB model is cached. Keep the prompt's pre-interpreted facts and the worked example, because the 1B model embellishes without them.
+- The AI summary runs Llama 3.2 1B in the browser (WebLLM + WebGPU, `apps/web/src/infrastructure/ai`). Headless Chromium with SwiftShader downloads the model but can't run it (no f16 shaders). To test it live, launch Playwright with `--enable-unsafe-webgpu --use-angle=metal` and a persistent profile so the 880 MB model is cached. Keep the prompt's pre-interpreted facts and the worked example, because the 1B model embellishes without them.
 - `src/proxy.ts` must export a function named `proxy`. With Auth.js, pass `NextAuth` a plain config object; a lazy `() => config` makes `auth(handler)` return something that is not a function.

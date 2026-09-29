@@ -1,0 +1,27 @@
+{
+	"name": "@market-health-map/core",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./domain": "./src/domain/index.ts",
+		"./application": "./src/application/index.ts",
+		"./application/testing": "./src/application/testing/index.ts",
+		"./i18n": "./src/i18n/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:coverage": "vitest run --coverage"
+	},
+	"dependencies": {
+		"zod": "4.6.5"
+	},
+	"devDependencies": {
+		"@market-health-map/config": "workspace:*",
+		"@vitest/coverage-v8": "5.0.2",
+		"typescript": "5.9.3",
+		"vite-tsconfig-paths": "6.1.1",
+		"vitest": "5.0.2"
+	}
+}

@@ -1,5 +1,5 @@
-import { FacilitiesMap } from "@/components/map/FacilitiesMap/FacilitiesMapComponent";
+import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 
 export default function HomePage() {
-	return <FacilitiesMap />;
+	return <FacilitiesMapScreen />;
 }

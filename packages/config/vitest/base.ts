@@ -10,11 +10,12 @@ export const DEFAULT_THRESHOLD: CoverageThreshold = {
 
 export const DEFAULT_COVERAGE_EXCLUDE = [
 	"src/**/*.test.{ts,tsx}",
+	"src/**/__tests__/**",
 	"src/**/index.ts",
 	"src/**/*.types.ts",
 	"src/**/*.d.ts",
-	"src/testing/**",
-	"src/generated/**",
+	"src/**/testing/**",
+	"src/**/generated/**",
 ];
 
 export function createVitestConfig(options: CreateVitestConfigOptions = {}): ViteUserConfig {
