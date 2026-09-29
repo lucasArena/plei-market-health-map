@@ -8,6 +8,7 @@ import {
 	PANEL_CLASS,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.styles";
 import type { FacilityDetailPanelProps } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
+import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 import { WeeklyActivityChart } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent";
 
 const SKELETON_TILES = ["played", "confirmation", "players", "activated"];
@@ -29,6 +30,7 @@ function FacilityDetailSkeleton() {
 				))}
 			</div>
 			<div className="h-28 rounded-xl bg-muted" />
+			<div className="h-32 rounded-xl bg-muted" />
 		</div>
 	);
 }
@@ -89,6 +91,14 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 							title={messages.weeklyActivity}
 							legend={messages.gamesLegend}
 							points={view.weeklyActivity}
+						/>
+						<PopularTimesHeatmap
+							title={messages.popularTimes}
+							dayLabels={view.dayLabels}
+							periodLabels={view.timePeriodLabels}
+							cells={view.popularTimes}
+							quietLabel={messages.quiet}
+							busyLabel={messages.busy}
 						/>
 						<footer className="border-t pt-3 text-[11px] text-muted-foreground">
 							<p>{view.lastPlayedLabel}</p>

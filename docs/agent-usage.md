@@ -28,3 +28,4 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-09-29 | Cursor Grok 4.7 | Extended facility stats with the previous 28-day period, confirmation inputs, unique and activated players, four weekly buckets, and a day/time grid | `pnpm check` passes |
 | 2026-09-29 | Cursor Grok 4.7 | Replaced the facility panel's weekly tiles with four 28-day scorecards, each compared with the previous period (green when up, red when down), and restyled the AI summary card | `pnpm check` passes |
 | 2026-09-29 | Cursor Grok 4.7 | Added a weekly activity chart to the facility panel, with hover and keyboard tooltips that stay inside the panel at the first and last points | `pnpm check` passes |
+| 2026-09-29 | Cursor Grok 4.7 | Added a popular-times heatmap and taught the in-browser summary the confirmation rate, player counts, period change, and busiest time | `pnpm check` passes |

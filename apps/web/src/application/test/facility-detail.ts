@@ -33,7 +33,12 @@ export const FACILITY_DETAIL: FacilityDetailView = {
 		confirmationRateChangePoints: 1.5,
 		uniquePlayersPeriodChangePercent: 5,
 		activatedPlayersPeriodChangePercent: 20,
-		weeklyActivity: [],
-		popularTimes: [],
+		weeklyActivity: [
+			{ weekStart: "2026-08-31", gamesPlayed: 48 },
+			{ weekStart: "2026-09-07", gamesPlayed: 58 },
+			{ weekStart: "2026-09-14", gamesPlayed: 51 },
+			{ weekStart: "2026-09-21", gamesPlayed: 55 },
+		],
+		popularTimes: [{ dayOfWeek: 6, timePeriod: 2, gamesPlayed: 12 }],
 	},
 };
