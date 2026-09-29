@@ -9,7 +9,7 @@ const VALID = {
 	address: " 12 Main St ",
 	location: { latitude: 30.27, longitude: -97.74 },
 	avatarUrl: " https://cdn.plei.app/f1.png ",
-	metrics: { activePlayers: 120, gamesLastWeek: 30, utilization: 72 },
+	metrics: { activePlayers: 120, gamesLastWeek: 30, gamesLast28Days: 120, utilization: 72 },
 };
 
 describe("Facility", () => {
@@ -40,6 +40,9 @@ describe("Facility", () => {
 		expect(() =>
 			Facility.create({ ...VALID, metrics: { ...VALID.metrics, gamesLastWeek: -1 } }),
 		).toThrow(ValidationError);
+		expect(() =>
+			Facility.create({ ...VALID, metrics: { ...VALID.metrics, gamesLast28Days: -1 } }),
+		).toThrow(ValidationError);
 	});
 
 	it("rejects utilization out of range", () => {
@@ -49,6 +52,17 @@ describe("Facility", () => {
 		expect(() =>
 			Facility.create({ ...VALID, metrics: { ...VALID.metrics, utilization: -1 } }),
 		).toThrow(ValidationError);
+	});
+
+	it("always lists itself first among its member ids, without duplicates", () => {
+		expect(Facility.create(VALID).memberIds).toEqual(["facility-1"]);
+		const merged = Facility.create({
+			...VALID,
+			memberIds: [asEntityId("facility-2"), asEntityId("facility-1"), asEntityId("facility-2")],
+		});
+		expect(merged.memberIds).toEqual(["facility-1", "facility-2"]);
+		expect(merged.toJSON().memberIds).toEqual(["facility-1", "facility-2"]);
+		expect(Facility.restore(VALID).memberIds).toEqual(["facility-1"]);
 	});
 
 	it("restores and copies props defensively", () => {

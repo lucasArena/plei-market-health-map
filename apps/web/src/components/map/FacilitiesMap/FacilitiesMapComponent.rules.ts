@@ -21,6 +21,7 @@ import {
 	FACILITIES_LAYER_ID,
 	FACILITIES_LOGO_LAYER_ID,
 	FACILITIES_SOURCE_ID,
+	FACILITY_DOT_LAYOUT,
 	FACILITY_DOT_PAINT,
 	FACILITY_LOGO_LAYOUT,
 	HOVER_CARD_WIDTH,
@@ -42,25 +43,34 @@ import type {
 	SessionHeatmapBounds,
 	SessionHeatmapScale,
 } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.types";
-import { loadPleiLogo } from "@/components/map/plei-logo-marker";
+import { loadPleiLogos } from "@/components/map/plei-logo-marker";
 import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
 } from "@/lib/api/use-app-session-heatmap";
 import { useFacilities } from "@/lib/api/use-facilities";
 
+function byActiveLast(a: FacilityPointView, b: FacilityPointView): number {
+	return Number(a.isActive) - Number(b.isActive);
+}
+
 export function toFacilityFeatureCollection(
 	facilities: FacilityPointView[],
 ): FacilityFeatureCollection {
 	return {
 		type: "FeatureCollection",
-		features: facilities.map((facility) => ({
+		features: [...facilities].sort(byActiveLast).map((facility) => ({
 			type: "Feature",
 			geometry: {
 				type: "Point",
 				coordinates: [facility.location.longitude, facility.location.latitude],
 			},
-			properties: { id: facility.id, marketId: facility.marketId, name: facility.name },
+			properties: {
+				id: facility.id,
+				marketId: facility.marketId,
+				name: facility.name,
+				isActive: facility.isActive,
+			},
 		})),
 	};
 }
@@ -393,11 +403,12 @@ export function useFacilitiesMapRules() {
 					type: "circle",
 					source: FACILITIES_SOURCE_ID,
 					filter: UNCLUSTERED_FILTER,
+					layout: FACILITY_DOT_LAYOUT,
 					paint: FACILITY_DOT_PAINT,
 				});
 				mapRef.current = created;
 				setIsMapReady(true);
-				loadPleiLogo(created)
+				loadPleiLogos(created)
 					.then(() => {
 						if (isCancelled) return;
 						created.addLayer({

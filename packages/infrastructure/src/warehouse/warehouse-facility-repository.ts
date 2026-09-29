@@ -1,4 +1,5 @@
 import { isTestFacility } from "@infra/warehouse/is-test-facility";
+import { mergeColocatedFacilities } from "@infra/warehouse/merge-colocated-facilities";
 import { isWithinServiceArea } from "@infra/warehouse/service-area";
 import type {
 	WarehouseLocationRow,
@@ -8,13 +9,34 @@ import type { FacilityRepository } from "@market-health-map/application";
 import { asEntityId, Facility } from "@market-health-map/domain";
 
 export const ACTIVE_LOCATIONS_SQL = `
+with bounds as (
+  select date_trunc('week', current_date)::date as this_week
+),
+facility_activity as (
+  select r.location_id, count(distinct r.reservation_id) as played_last_28_days
+  from plei_gold.dim_reservation r
+  cross join bounds b
+  where r.reservation_type = 'OpenReservation'
+    and r.confirmed
+    and r.status <> 'cancelled'
+    and r.date_with_time::date >= b.this_week - 28
+    and r.date_with_time::date < b.this_week
+  group by r.location_id
+)
 select l.location_id, l.location_name, l.address, l.city, l.state,
-       l.region_id, r.region_name, l.location_latitude, l.location_longitude
+       l.region_id, r.region_name, l.location_latitude, l.location_longitude,
+       coalesce(a.played_last_28_days, 0) as played_last_28_days
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
+left join facility_activity a on a.location_id = l.location_id
 where l.deleted_at is null
   and l.location_latitude is not null
   and l.location_longitude is not null
+  and exists (
+    select 1
+    from plei_gold.dim_reservation posted
+    where posted.location_id = l.location_id
+  )
 order by l.location_id`;
 
 const UNASSIGNED_MARKET = "unassigned";
@@ -37,7 +59,12 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 			address: formatAddress(row),
 			location: { latitude, longitude },
 			avatarUrl: null,
-			metrics: { activePlayers: 0, gamesLastWeek: 0, utilization: 0 },
+			metrics: {
+				activePlayers: 0,
+				gamesLastWeek: 0,
+				gamesLast28Days: Number(row.played_last_28_days),
+				utilization: 0,
+			},
 		});
 	} catch {
 		return null;
@@ -49,9 +76,11 @@ export class WarehouseFacilityRepository implements FacilityRepository {
 
 	async listAll(): Promise<Facility[]> {
 		const { rows } = await this.warehouse.query<WarehouseLocationRow>(ACTIVE_LOCATIONS_SQL);
-		return rows.flatMap((row) => {
-			const facility = toFacility(row);
-			return facility ? [facility] : [];
-		});
+		return mergeColocatedFacilities(
+			rows.flatMap((row) => {
+				const facility = toFacility(row);
+				return facility ? [facility] : [];
+			}),
+		);
 	}
 }

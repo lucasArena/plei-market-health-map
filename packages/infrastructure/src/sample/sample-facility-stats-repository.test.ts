@@ -10,8 +10,8 @@ const repository = new SampleFacilityStatsRepository(
 
 describe("SampleFacilityStatsRepository", () => {
 	it("produces consistent, deterministic weekly counts", async () => {
-		const first = await repository.getWeeklyCounts("austin-facility-1" as never);
-		const second = await repository.getWeeklyCounts("austin-facility-1" as never);
+		const first = await repository.getWeeklyCounts(["austin-facility-1" as never]);
+		const second = await repository.getWeeklyCounts(["austin-facility-1" as never]);
 
 		expect(second).toEqual(first);
 		expect(first.weekStart).toBe("2026-09-21");

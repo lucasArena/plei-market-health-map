@@ -4,7 +4,7 @@ import { guard } from "@domain/shared/guard";
 import type { EntityId } from "@domain/shared/id.types";
 
 function assertMetrics(metrics: FacilityMetrics): FacilityMetrics {
-	const counts = [metrics.activePlayers, metrics.gamesLastWeek];
+	const counts = [metrics.activePlayers, metrics.gamesLastWeek, metrics.gamesLast28Days];
 	if (counts.some((value) => !Number.isInteger(value) || value < 0)) {
 		throw new ValidationError("Facility counts must be non-negative integers.");
 	}
@@ -12,6 +12,10 @@ function assertMetrics(metrics: FacilityMetrics): FacilityMetrics {
 		throw new ValidationError("Facility utilization must be between 0 and 100.");
 	}
 	return { ...metrics };
+}
+
+function memberIdsWith(id: EntityId, memberIds: EntityId[] = []): EntityId[] {
+	return [...new Set([id, ...memberIds])];
 }
 
 export class Facility {
@@ -26,6 +30,7 @@ export class Facility {
 			location: guard.location(input.location, "Facility location"),
 			avatarUrl: input.avatarUrl?.trim() || null,
 			metrics: assertMetrics(input.metrics),
+			memberIds: memberIdsWith(input.id, input.memberIds),
 		});
 	}
 
@@ -41,11 +46,17 @@ export class Facility {
 		return this.props.marketId;
 	}
 
+	get memberIds(): EntityId[] {
+		return memberIdsWith(this.props.id, this.props.memberIds);
+	}
+
 	toJSON(): FacilityProps {
+		const { memberIds, ...props } = this.props;
 		return {
-			...this.props,
-			location: { ...this.props.location },
-			metrics: { ...this.props.metrics },
+			...props,
+			location: { ...props.location },
+			metrics: { ...props.metrics },
+			...(memberIds ? { memberIds: [...memberIds] } : {}),
 		};
 	}
 }

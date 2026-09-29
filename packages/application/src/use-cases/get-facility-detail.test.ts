@@ -11,7 +11,7 @@ const FACILITY = Facility.create({
 	address: "1 Main St, Houston, Texas",
 	location: { latitude: 29.76, longitude: -95.37 },
 	avatarUrl: null,
-	metrics: { activePlayers: 0, gamesLastWeek: 0, utilization: 0 },
+	metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 0, utilization: 0 },
 });
 
 const COUNTS = {
@@ -40,16 +40,40 @@ describe("getFacilityDetail", () => {
 
 		const detail = await getFacilityDetail({ facilityId: " 889 " });
 
-		expect(stats.requested).toEqual(["889"]);
+		expect(stats.requested).toEqual([["889"]]);
 		expect(detail.facility).toEqual({
 			id: "889",
 			marketId: "2",
 			name: "Pegaso HTX",
 			avatarUrl: null,
+			isActive: false,
 			location: { latitude: 29.76, longitude: -95.37 },
 			address: "1 Main St, Houston, Texas",
 		});
 		expect(detail.stats).toEqual({ ...COUNTS, playedChangePercent: 7.8, cancellationRate: 36.8 });
+	});
+
+	it("resolves any member id of a merged facility and requests stats for the whole group", async () => {
+		const merged = Facility.create({
+			id: asEntityId("292"),
+			marketId: asEntityId("22"),
+			name: "Phield House",
+			address: "814 Spring Garden St, Philadelphia, PA",
+			location: { latitude: 39.96, longitude: -75.15 },
+			avatarUrl: null,
+			memberIds: [asEntityId("698")],
+			metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 16, utilization: 0 },
+		});
+		const stats = new InMemoryFacilityStatsRepository(COUNTS);
+		const getFacilityDetail = makeGetFacilityDetail({
+			facilities: new InMemoryFacilityRepository([merged]),
+			stats,
+		});
+
+		const detail = await getFacilityDetail({ facilityId: "698" });
+
+		expect(detail.facility).toMatchObject({ id: "292", name: "Phield House", isActive: true });
+		expect(stats.requested).toEqual([["292", "698"]]);
 	});
 
 	it("leaves rates empty when there is nothing to compare against", async () => {

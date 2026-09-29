@@ -8,6 +8,7 @@ function facility(id: string, name: string) {
 		marketId: "austin",
 		name,
 		avatarUrl: null,
+		isActive: true,
 		location: { latitude: 30.27, longitude: -97.74 },
 	};
 }
