@@ -20,6 +20,11 @@ export interface Messages {
 		failed: string;
 		clusterCount: string;
 		moreFacilities: string;
+		sessionHeatmapLegend: string;
+		sessionHeatmapContext: string;
+		sessionHeatmapNoActivity: string;
+		sessionHeatmapLowValue: string;
+		sessionHeatmapHighValue: string;
 	};
 	offline: {
 		title: string;

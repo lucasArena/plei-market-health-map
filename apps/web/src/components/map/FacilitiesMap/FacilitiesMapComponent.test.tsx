@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { FacilitiesMap } from "@/components/map/FacilitiesMap/FacilitiesMapComponent";
+import { SESSION_HEATMAP_BUCKET_COLORS } from "@/components/map/FacilitiesMap/FacilitiesMapComponent.styles";
 import { EN_MESSAGES } from "@/test/messages";
 
 const mockRules = vi.fn();
@@ -20,8 +21,10 @@ const FACILITY = {
 function rulesWith(status: string, overrides: object = {}) {
 	return {
 		containerRef: { current: null },
+		hasSessionHeatmap: false,
 		hovered: null,
 		messages: EN_MESSAGES.map,
+		sessionScale: { low: 0, high: 0 },
 		status,
 		...overrides,
 	};
@@ -36,10 +39,43 @@ describe("FacilitiesMap", () => {
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
 		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
 		expect(screen.queryByRole("status")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
 		expect(screen.getByRole("link", { name: "OpenStreetMap contributors" })).toHaveAttribute(
 			"href",
 			"https://www.openstreetmap.org/copyright",
 		);
+	});
+
+	it("shows the session heatmap legend when heatmap data is present", () => {
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				sessionScale: { low: 12, high: 480 },
+			}),
+		);
+
+		render(<FacilitiesMap />);
+
+		const legend = screen.getByTestId("session-heatmap-legend");
+		expect(legend).toHaveTextContent("Sessions per shaded area · last 28 days");
+		expect(legend).toHaveTextContent("Scale updates for the current map view");
+		expect(legend).toHaveTextContent("12");
+		expect(legend).toHaveTextContent("480+");
+		expect(screen.getByText("12 sessions in a shaded area")).toBeInTheDocument();
+		expect(screen.getByText("480+ sessions in a shaded area")).toBeInTheDocument();
+		expect(screen.getByTestId("session-heatmap-gradient")).toHaveStyle({
+			backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
+		});
+		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#E0F2FE", "#7DD3FC", "#0EA5E9", "#7C3AED"]);
+	});
+
+	it("explains when the current map view has no sessions", () => {
+		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true }));
+
+		render(<FacilitiesMap />);
+
+		expect(screen.getByText("No sessions in the current map view")).toBeInTheDocument();
+		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
 	});
 
 	it("shows the hover card for the hovered facility", () => {
