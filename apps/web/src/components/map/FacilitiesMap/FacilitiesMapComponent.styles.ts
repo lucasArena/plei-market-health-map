@@ -33,6 +33,17 @@ export const FACILITY_COLOR = PLEIFUL_COLORS.pitchGreen[80];
 export const TOOLTIP_OFFSET = 14;
 export const HOVER_CARD_WIDTH = 256;
 
+export const ACTIVE_ON_TOP_SORT_KEY: ExpressionSpecification = [
+	"case",
+	["==", ["get", "isActive"], true],
+	1,
+	0,
+];
+
+export const FACILITY_DOT_LAYOUT: CircleLayerSpecification["layout"] = {
+	"circle-sort-key": ACTIVE_ON_TOP_SORT_KEY,
+};
+
 export const FACILITY_DOT_PAINT: CircleLayerSpecification["paint"] = {
 	"circle-color": "#ffffff",
 	"circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 8.5, 8, 12.5, 12, 15.5],
@@ -47,6 +58,7 @@ export const FACILITY_LOGO_LAYOUT: SymbolLayerSpecification["layout"] = {
 		PLEI_LOGO_IMAGE_ID,
 		PLEI_LOGO_MUTED_IMAGE_ID,
 	],
+	"symbol-sort-key": ACTIVE_ON_TOP_SORT_KEY,
 	"icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.35, 8, 0.55, 12, 0.7],
 	"icon-allow-overlap": true,
 	"icon-ignore-placement": true,
