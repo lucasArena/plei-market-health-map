@@ -1,6 +1,6 @@
 import { type RenderOptions, render } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
-import { MessagesProvider } from "@/components/i18n/MessagesProvider/MessagesProviderComponent";
+import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import { EN_MESSAGES } from "@/test/messages";
 
 export function renderWithMessages(ui: ReactElement, options?: RenderOptions) {

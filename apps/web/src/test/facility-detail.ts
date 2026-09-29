@@ -1,4 +1,4 @@
-import type { FacilityDetailView } from "@market-health-map/application";
+import type { FacilityDetailView } from "@market-health-map/core/application";
 
 export const FACILITY_DETAIL: FacilityDetailView = {
 	facility: {

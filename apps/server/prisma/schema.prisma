@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/infrastructure/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model LoginEvent {
+  id         String   @id @db.Uuid
+  userId     String   @map("user_id")
+  sessionId  String   @unique @map("session_id")
+  email      String
+  signedInAt DateTime @map("signed_in_at") @db.Timestamptz(3)
+
+  @@index([signedInAt(sort: Desc)])
+  @@index([userId, signedInAt(sort: Desc)])
+  @@map("login_events")
+}

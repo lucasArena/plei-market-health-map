@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, getMessages } from "@market-health-map/i18n";
+import { DEFAULT_LOCALE, getMessages } from "@market-health-map/core/i18n";
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {

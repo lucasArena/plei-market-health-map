@@ -1,8 +1,8 @@
-import { getMessages } from "@market-health-map/i18n";
+import { getMessages } from "@market-health-map/core/i18n";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { AppProviders } from "@/components/providers/AppProviders/AppProvidersComponent";
-import { getRequestLocale } from "@/server/i18n/get-request-locale";
+import { getRequestLocale } from "@/infrastructure/i18n/get-request-locale";
+import { AppProviders } from "@/presentation/components/providers/AppProviders/AppProvidersComponent";
 import "./globals.css";
 
 const inter = Inter({

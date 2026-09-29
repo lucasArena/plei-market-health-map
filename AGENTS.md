@@ -38,7 +38,7 @@ Other hooks: `pre-commit` runs lint-staged (Biome on staged files), and `pre-pus
 
 ## Versioning and releases
 
-Only **production** is versioned. `scripts/release/next-version.mjs` (tests in `next-version.test.mjs`, run by `pnpm test:scripts`) reads the non-merge commits since the last `vX.Y.Z` tag and counts them:
+Only **production** is versioned. `.github/scripts/release/next-version.mjs` (tests in `next-version.test.mjs`, run by `pnpm test:scripts`) reads the non-merge commits since the last `vX.Y.Z` tag and counts them:
 
 | Commit | Effect |
 | --- | --- |
@@ -51,7 +51,7 @@ Merge commits are skipped, so a squashed PR counts once and a merged PR counts i
 
 On a push to `main`, `_release.yml` sets `version` in the root `package.json`, commits it as `ci: bump new version vX.Y.Z [skip ci]`, creates an annotated tag, and pushes both. `_deploy-vercel.yml` then deploys **that tag**. If nothing needs a bump, nothing is tagged and `main`'s head is deployed. `staging` never bumps or tags. Never edit `version` by hand.
 
-After a tagged deploy, the `linear-release` job writes release notes with `scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`). The notes cover the commits since the previous stable tag, grouped into Breaking changes, Features, Fixes and Other changes, plus every Linear issue ID they mention. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, the notes are attached as the release notes and as a `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns.
+After a tagged deploy, the `linear-release` job writes release notes with `.github/scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`). The notes cover the commits since the previous stable tag, grouped into Breaking changes, Features, Fixes and Other changes, plus every Linear issue ID they mention. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, the notes are attached as the release notes and as a `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns.
 
 ## Release workflow (step by step)
 

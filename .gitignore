@@ -301,7 +301,7 @@ config.conf
 .turbo/
 
 # Prisma generated client
-packages/infrastructure/src/generated/
+apps/server/src/infrastructure/generated/
 
 # Serwist
 apps/web/public/sw.js

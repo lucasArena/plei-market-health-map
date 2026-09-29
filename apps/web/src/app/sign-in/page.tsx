@@ -1,7 +1,7 @@
+import { getAllowedEmailDomain } from "@market-health-map/server";
 import { redirect } from "next/navigation";
-import { SignInScreen } from "@/components/auth/SignInScreen/SignInScreenComponent";
-import { getAllowedEmailDomain } from "@/env";
-import { getInternalAccess } from "@/server/auth/internal-access";
+import { getInternalAccess } from "@/infrastructure/auth/internal-access";
+import { SignInScreen } from "@/presentation/screens/SignInScreen/SignInScreenComponent";
 
 export default async function SignInPage({
 	searchParams,

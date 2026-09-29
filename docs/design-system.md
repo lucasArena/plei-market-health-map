@@ -2,7 +2,7 @@
 
 The Pleiful color system comes from the Figma Foundations file. The codebase exposes it in two forms:
 
-- TypeScript consumers import `PLEIFUL_COLORS` from `@market-health-map/design-system`.
+- TypeScript consumers import `PLEIFUL_COLORS` from `@/application/constants/brand-colors` in `apps/web`.
 - CSS and Tailwind consumers use utilities such as `bg-pleiful-pitch-green-50`,
   `text-pleiful-moonlight-70`, or the matching `--pleiful-*` custom properties.
 

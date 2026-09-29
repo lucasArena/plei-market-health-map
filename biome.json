@@ -40,6 +40,107 @@
 	},
 	"overrides": [
 		{
+			"includes": ["packages/core/src/domain/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@core/application/**",
+											"@core/i18n/**",
+											"@server/**",
+											"@/**",
+											"next",
+											"next/**",
+											"react",
+											"react/**",
+											"hono",
+											"hono/**",
+											"@prisma/**",
+											"pg",
+											"@market-health-map/**"
+										],
+										"message": "The domain layer depends on nothing: no application, i18n, apps or frameworks."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/core/src/application/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@core/i18n/**",
+											"@server/**",
+											"@/**",
+											"next",
+											"next/**",
+											"react",
+											"react/**",
+											"hono",
+											"hono/**",
+											"@prisma/**",
+											"pg",
+											"@market-health-map/**"
+										],
+										"message": "The application layer depends only on the domain: no i18n, apps or frameworks."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/core/src/i18n/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@core/application/**",
+											"@core/domain/**",
+											"@server/**",
+											"@/**",
+											"next",
+											"next/**",
+											"react",
+											"react/**",
+											"hono",
+											"hono/**",
+											"@prisma/**",
+											"pg",
+											"@market-health-map/**"
+										],
+										"message": "i18n is standalone: no domain, application, apps or frameworks."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
 			"includes": ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "**/testing/**/*.{ts,tsx}"],
 			"linter": {
 				"rules": {
@@ -78,7 +179,7 @@
 			"!**/lib/graphql/generated",
 			"!next-env.d.ts",
 			"!**/.turbo",
-			"!**/src/generated",
+			"!**/src/**/generated",
 			"!**/public/sw.js",
 			"!**/public/swe-worker-*.js",
 			"!**/next-env.d.ts",

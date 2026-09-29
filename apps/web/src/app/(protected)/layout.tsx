@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { AppHeader } from "@/components/layout/AppHeader/AppHeaderComponent";
-import { getInternalAccess } from "@/server/auth/internal-access";
-import { signInErrorUrl } from "@/server/auth/sign-in-policy";
+import { getInternalAccess } from "@/infrastructure/auth/internal-access";
+import { signInErrorUrl } from "@/infrastructure/auth/sign-in-policy";
+import { AppHeader } from "@/presentation/components/layout/AppHeader/AppHeaderComponent";
 
 export default async function ProtectedLayout({
 	children,

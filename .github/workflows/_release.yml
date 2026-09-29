@@ -28,7 +28,7 @@ jobs:
       - name: Plan the version from commits since the last tag
         id: plan
         run: |
-          plan=$(node scripts/release/next-version.mjs)
+          plan=$(node .github/scripts/release/next-version.mjs)
           echo "$plan"
           echo "version=$(echo "$plan" | jq -r '.version // empty')" >> "$GITHUB_OUTPUT"
           echo "tag=$(echo "$plan" | jq -r '.tag // empty')" >> "$GITHUB_OUTPUT"

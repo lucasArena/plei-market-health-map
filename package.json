@@ -15,12 +15,12 @@
 		"typecheck": "turbo run typecheck",
 		"test": "turbo run test",
 		"test:coverage": "turbo run test:coverage",
-		"db:generate": "pnpm --filter @market-health-map/infrastructure db:generate",
-		"db:migrate": "pnpm --filter @market-health-map/infrastructure db:migrate",
-		"db:deploy": "pnpm --filter @market-health-map/infrastructure db:deploy",
+		"db:generate": "pnpm --filter @market-health-map/server db:generate",
+		"db:migrate": "pnpm --filter @market-health-map/server db:migrate",
+		"db:deploy": "pnpm --filter @market-health-map/server db:deploy",
 		"check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run test:scripts",
 		"prepare": "simple-git-hooks",
-		"test:scripts": "node --test \"scripts/**/*.test.mjs\""
+		"test:scripts": "node --test \".github/scripts/**/*.test.mjs\""
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm exec lint-staged",

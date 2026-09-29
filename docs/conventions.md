@@ -5,18 +5,19 @@
 - English only. No comments. Names, types, and tests document intent.
 - Every `interface` and `type` lives in a `*.types.ts` file next to the code that uses it.
 - No nested ternaries. For more than one condition, use `{ [`${low}`]: a, [`${high}`]: b }.true`; the last key that is true wins.
-- Path aliases only: `@/*` in apps, and `@domain/*`, `@application/*`, `@infra/*`, `@i18n/*` inside packages. Use `@market-health-map/<pkg>` across packages.
+- Path aliases only: `@/*` in web, `@server/*` in server, `@core/*` in core. Across packages, use `@market-health-map/core/<domain|application|i18n>` and `@market-health-map/server`.
 - Named exports only, except Next.js route segments (`page`, `layout`, `manifest`).
 - Use-case factories follow `makeVerbNoun(deps)`, which returns a `verbNoun(input)` function.
 - Entities have a private constructor, `create()` (validates), `restore()` (rehydrates), getters, and `toJSON()`.
-- React components: one PascalCase folder each, `NameComponent.tsx`, with `.types.ts`, `.rules.ts` (hook with all the logic) and `.test.tsx` beside it.
+- Pages in `src/app` stay thin and render one screen from `src/presentation/screens/` (`FacilitiesMapScreen`, `SignInScreen`, `OfflineScreen`). Screens compose the components in `src/presentation/components/`.
+- React components: one PascalCase folder each, `NameComponent.tsx`, with `.types.ts` and `.rules.ts` (hook with all the logic) beside it, and its tests in `__tests__/`.
 - Biome formats: tabs, double quotes, semicolons, width 100.
 
 ## Testing
 
-- Tests sit next to the code as `*.test.ts(x)`. Coverage must reach 95% on lines, branches, functions, and statements in every package.
-- Domain tests are pure. Application tests use the in-memory fakes. Web tests use Testing Library, and external modules (Auth.js, the container, `fetch`) are mocked.
-- Prisma repositories are covered by `*.integration.test.ts`, run with `pnpm --filter @market-health-map/infrastructure test:integration` against a Neon branch. They are excluded from the unit coverage gate.
+- Tests live in a `__tests__/` folder beside the code they cover (`src/foo/__tests__/bar.test.ts` tests `src/foo/bar.ts`). Coverage must reach 95% on lines, branches, functions, and statements in every package.
+- Domain tests are pure. Application tests use the in-memory fakes. Server API tests call the Hono app with `app.request()` and fake services. Web tests use Testing Library, and external modules (Auth.js, the server package, `fetch`) are mocked.
+- Prisma repositories are covered by `*.integration.test.ts`, run with `pnpm --filter @market-health-map/server test:integration` against a Neon branch. They are excluded from the unit coverage gate.
 
 ## Git
 

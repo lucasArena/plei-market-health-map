@@ -10,7 +10,6 @@ export default defineConfig({
 		coverageInclude: ["src/**/*.{ts,tsx}"],
 		coverageExclude: [
 			...DEFAULT_COVERAGE_EXCLUDE,
-			"src/server/container.ts",
 			"src/app/sw.ts",
 			"src/app/**/layout.tsx",
 			"src/proxy.ts",

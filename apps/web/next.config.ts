@@ -19,12 +19,7 @@ const nextConfig: NextConfig = {
 	env: {
 		NEXT_PUBLIC_APP_VERSION: appVersion,
 	},
-	transpilePackages: [
-		"@market-health-map/domain",
-		"@market-health-map/application",
-		"@market-health-map/infrastructure",
-		"@market-health-map/i18n",
-	],
+	transpilePackages: ["@market-health-map/core", "@market-health-map/server"],
 	typedRoutes: true,
 	devIndicators: false,
 	serverExternalPackages: [
