@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"@market-health-map/application": "workspace:*",
+		"@market-health-map/design-system": "workspace:*",
 		"@market-health-map/domain": "workspace:*",
 		"@market-health-map/i18n": "workspace:*",
 		"@market-health-map/infrastructure": "workspace:*",

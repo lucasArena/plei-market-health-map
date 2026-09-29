@@ -17,10 +17,11 @@ domain  <-  application  <-  infrastructure  <-  apps/web
 - `packages/infrastructure`: Prisma 7 + Neon adapter, repositories, record mappers, `SystemClock`, and `UuidGenerator`.
 - `packages/i18n`: typed `en` and `pt-BR` catalogs, `getMessages`, and `parseAcceptLanguage`.
 - `packages/config`: shared tsconfig presets and the Vitest factory (95% thresholds).
+- `packages/design-system`: shared Pleiful design tokens for application and visualization code.
 - `apps/web`: Next.js 16 App Router, Auth.js (Google SSO), React Query, and the Serwist PWA. `src/server/container.ts` is the only place that creates concrete adapters.
 
 Pleiful brand colors are documented in `docs/design-system.md`. TypeScript consumers use
-`@/lib/design-system/brand-colors`; Tailwind and CSS consumers use the matching `pleiful-*` theme colors.
+`@market-health-map/design-system`; Tailwind and CSS consumers use the matching `pleiful-*` theme colors.
 
 See `docs/architecture.md` for more depth.
 

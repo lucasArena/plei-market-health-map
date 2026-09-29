@@ -1,4 +1,4 @@
-import { PLEIFUL_COLORS } from "@/lib/design-system/brand-colors";
+import { PLEIFUL_COLORS } from "@design-system/brand-colors";
 
 describe("PLEIFUL_COLORS", () => {
 	it("exposes the Figma global color scales", () => {

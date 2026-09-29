@@ -1,3 +1,4 @@
+import { PLEIFUL_COLORS } from "@market-health-map/design-system";
 import type {
 	CircleLayerSpecification,
 	FilterSpecification,
@@ -5,7 +6,6 @@ import type {
 	SymbolLayerSpecification,
 } from "maplibre-gl";
 import { PLEI_LOGO_IMAGE_ID } from "@/components/map/plei-logo-marker";
-import { PLEIFUL_COLORS } from "@/lib/design-system/brand-colors";
 
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
