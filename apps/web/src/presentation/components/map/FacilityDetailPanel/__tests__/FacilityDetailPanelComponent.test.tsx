@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { FACILITY_DETAIL } from "@/application/test/facility-detail";
+import { EN_MESSAGES } from "@/application/test/messages";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
-import { FACILITY_DETAIL } from "@/test/facility-detail";
-import { EN_MESSAGES } from "@/test/messages";
 
 const mockRules = vi.fn();
 

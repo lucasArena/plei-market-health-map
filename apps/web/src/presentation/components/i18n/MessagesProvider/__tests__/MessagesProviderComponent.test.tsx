@@ -1,9 +1,9 @@
 import { renderHook } from "@testing-library/react";
+import { EN_MESSAGES } from "@/application/test/messages";
 import {
 	MessagesProvider,
 	useMessages,
 } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
-import { EN_MESSAGES } from "@/test/messages";
 
 describe("MessagesProvider", () => {
 	it("exposes the locale and catalog", () => {

@@ -1,10 +1,10 @@
+import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import {
 	clearCachedSummaries,
 	readCachedSummary,
 	summaryCacheKey,
 	writeCachedSummary,
 } from "@/infrastructure/ai/facility-summary-cache";
-import { FACILITY_DETAIL } from "@/test/facility-detail";
 
 describe("facility summary cache", () => {
 	it("keys summaries by facility, week and locale", () => {

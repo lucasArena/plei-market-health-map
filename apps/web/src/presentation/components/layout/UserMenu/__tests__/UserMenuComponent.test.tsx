@@ -1,6 +1,6 @@
 import { fireEvent, screen } from "@testing-library/react";
+import { renderWithMessages } from "@/application/test/render-with-messages";
 import { UserMenu } from "@/presentation/components/layout/UserMenu/UserMenuComponent";
-import { renderWithMessages } from "@/test/render-with-messages";
 
 vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
 

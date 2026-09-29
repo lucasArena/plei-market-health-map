@@ -1,8 +1,8 @@
 import { screen } from "@testing-library/react";
+import { EN_MESSAGES } from "@/application/test/messages";
+import { renderWithMessages } from "@/application/test/render-with-messages";
 import { SignInScreen } from "@/presentation/screens/SignInScreen/SignInScreenComponent";
 import { resolveSignInError } from "@/presentation/screens/SignInScreen/SignInScreenComponent.rules";
-import { EN_MESSAGES } from "@/test/messages";
-import { renderWithMessages } from "@/test/render-with-messages";
 
 const mockFormStatus = vi.fn(() => ({ pending: false }));
 

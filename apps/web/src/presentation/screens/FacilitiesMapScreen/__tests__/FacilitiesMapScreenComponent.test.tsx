@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import { EN_MESSAGES } from "@/application/test/messages";
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
-import { EN_MESSAGES } from "@/test/messages";
 
 const mockRules = vi.fn();
 

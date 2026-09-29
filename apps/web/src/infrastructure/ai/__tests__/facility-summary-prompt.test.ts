@@ -1,5 +1,5 @@
+import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { buildFacilitySummaryMessages } from "@/infrastructure/ai/facility-summary-prompt";
-import { FACILITY_DETAIL } from "@/test/facility-detail";
 
 describe("buildFacilitySummaryMessages", () => {
 	it("asks only about the games played in the last 28 days", () => {

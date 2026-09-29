@@ -1,5 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
+import { FACILITY_DETAIL } from "@/application/test/facility-detail";
+import { EN_MESSAGES } from "@/application/test/messages";
 import type { BrowserLlmCallbacks } from "@/infrastructure/ai/browser-llm.types";
 import {
 	clearCachedSummaries,
@@ -7,8 +9,6 @@ import {
 } from "@/infrastructure/ai/facility-summary-cache";
 import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import { useFacilityAiSummaryRules } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.rules";
-import { FACILITY_DETAIL } from "@/test/facility-detail";
-import { EN_MESSAGES } from "@/test/messages";
 
 const llm = vi.hoisted(() => ({
 	isBrowserLlmSupported: vi.fn(),

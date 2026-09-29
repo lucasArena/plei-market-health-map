@@ -1,6 +1,7 @@
 import type { FacilityDetailView, FacilityStatsView } from "@market-health-map/core/application";
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
+import { EN_MESSAGES } from "@/application/test/messages";
 import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
 	buildDetailViewModel,
@@ -12,7 +13,6 @@ import {
 	resolveDetailStatus,
 	useFacilityDetailPanelRules,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
-import { EN_MESSAGES } from "@/test/messages";
 
 const mockUseFacilityDetail = vi.fn();
 

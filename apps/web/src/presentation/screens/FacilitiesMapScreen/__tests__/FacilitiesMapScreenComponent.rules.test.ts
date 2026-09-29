@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
+import { EN_MESSAGES } from "@/application/test/messages";
 import { MessagesProvider } from "@/presentation/components/i18n/MessagesProvider/MessagesProviderComponent";
 import {
 	appSessionHeatmapAreas,
@@ -18,7 +19,6 @@ import {
 	FACILITIES_LAYER_ID,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
-import { EN_MESSAGES } from "@/test/messages";
 
 const mapState = vi.hoisted(() => ({
 	instances: [] as Array<Record<string, ReturnType<typeof vi.fn>>>,

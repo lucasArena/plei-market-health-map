@@ -13,7 +13,7 @@ export default defineConfig({
 			"src/app/sw.ts",
 			"src/app/**/layout.tsx",
 			"src/proxy.ts",
-			"src/test/**",
+			"src/application/test/**",
 		],
 	}),
 	plugins: [tsconfigPaths(), react()],

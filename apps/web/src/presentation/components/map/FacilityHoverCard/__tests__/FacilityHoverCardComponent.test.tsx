@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
+import { EN_MESSAGES } from "@/application/test/messages";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
-import { EN_MESSAGES } from "@/test/messages";
 
 function facility(id: string, name: string) {
 	return {
