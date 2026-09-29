@@ -1,0 +1,20 @@
+**/__tests__/** review-test
+**/*.integration.test.ts review-test
+apps/web/src/application/test/** review-test
+apps/server/src/testing/** review-test
+packages/core/src/application/testing/** review-test
+
+docs/** review-documentation
+**/README.md review-documentation
+AGENTS.md -review-documentation review-agent-guidance
+CLAUDE.md -review-documentation review-agent-guidance
+apps/web/AGENTS.md review-agent-guidance
+apps/web/CLAUDE.md review-agent-guidance
+
+packages/core/src/i18n/messages/** review-localization
+
+apps/web/public/** review-assets
+
+pnpm-lock.yaml linguist-generated=true
+apps/server/prisma/migrations/** linguist-generated=true
+apps/server/src/infrastructure/sample/fixtures/** linguist-generated=true
