@@ -146,6 +146,7 @@ chore(ci): add a deploy timeout
 - The base is `staging`. The PR title becomes the squashed commit, so it must be a valid conventional message; it's what production counts later.
 - End the title with the Linear issue, e.g. `feat(map): add facility panel (PROD-451)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
 - `ci.pr.yml` must pass: the branch-name check and the unit tests. The Linear-issue check only warns.
+- Review it in Linear if you like: open `linear.review/lucasArena/plei-market-health-map/pull/<number>` (or the **Reviews** tab). `.gitattributes` groups the diff into implementation, tests, docs, agent guidance, localization, assets and generated files.
 - Merge with **Squash and merge**.
 - `cd.staging.yml` then deploys the branch head to **https://plei-market-health-map-staging.vercel.app**. Staging never bumps the version or creates a tag.
 - Verify the change on staging before promoting it.
