@@ -1,6 +1,62 @@
 # AGENTS.md
 
-A guide for coding agents working in this repo. `CLAUDE.md` has the full architecture and code conventions. This file adds the rules for **git, branches, commits, and releases** that every agent must follow.
+A guide for coding agents working in this repo. `CLAUDE.md` has the full architecture and code conventions. This file adds the rules for **where code goes** and for **git, branches, commits, and releases** that every agent must follow.
+
+## Folder structure (where code goes)
+
+Use this as the map before creating any file. If something doesn't fit, ask instead of inventing a new top-level folder.
+
+```
+apps/
+  web/src/
+    app/                          Next.js routing only: page.tsx, layout.tsx, route.ts, manifest.ts
+    application/
+      constants/                  UI constants shared across screens (brand-colors.ts, plei-logo.ts)
+      test/                       test helpers and fixtures (messages, render-with-messages, query-wrapper)
+    presentation/
+      screens/<Name>Screen/       one screen per page (FacilitiesMapScreen, SignInScreen, OfflineScreen)
+      components/<group>/<Name>/  reusable UI, grouped by kind: buttons/, displays/, layout/, map/, providers/
+      hooks/use-<subject>/        hooks grouped by subject: use-facility/, use-app/, use-map/
+    infrastructure/
+      api/                        the fetch apiClient
+      ai/browser-llm/             BrowserLlm (WebLLM engine) and its web worker
+      ai/prompts/                 prompt builders (FacilitySummaryPrompt)
+      cache/local-storage/<name>/ browser caches (facility-summary)
+      auth/                       Auth.js config, server actions, access checks
+      i18n/                       request locale
+    proxy.ts                      Next proxy (must stay at src/)
+  server/src/
+    presentation/http/            createApiApp (Hono), routes/<resource>-routes.ts, auth guard, responses, errors
+    presentation/auth/            inbound adapters called by web (trackSignIn)
+    infrastructure/<source>/      adapters by data source: database/, warehouse/, sample/, system/
+    container.ts                  composition root, the only place that builds concrete adapters
+    env.ts                        server env parsing (Zod)
+  server/prisma/                  schema and migrations
+packages/
+  core/src/
+    domain/                       entities/<entity>/, shared/ (guard, errors, ids); imports nothing
+    application/                  use-cases/, ports/, dtos/, mappers/, errors/, testing/ (fakes); imports only domain
+    i18n/                         message catalogs and locale helpers; imports nothing
+  config/                         shared tsconfig and Vitest presets
+.github/
+  workflows/                      CI/CD workflows only (GitHub reads every YAML here)
+  scripts/release/                scripts the workflows run (next-version, release-notes)
+docs/                             repo-wide docs (architecture, conventions, deployment, design system, agent usage)
+```
+
+Rules:
+
+- **Pages stay thin.** A `page.tsx` renders one screen from `presentation/screens` and does nothing else beyond reading params or redirecting. Only Next.js files go in `app/`.
+- **A screen is the page's content**, not a wrapper around one component. Pieces used by more than one screen go in `presentation/components/<group>/`.
+- **Component folders** are PascalCase: `<Name>/<Name>Component.tsx` with `.rules.ts` (the `use<Name>Rules` hook holds all logic), `.types.ts`, optional `.styles.ts`, and tests in `__tests__/`. Screens follow the same shape (`<Name>ScreenComponent.tsx`).
+- **Hooks** live in `presentation/hooks/use-<subject>/use-<subject>-<what>.ts` (e.g. `use-facility/use-facility-list-all.ts` exports `useFacilityListAll`). Data hooks wrap `infrastructure/api/apiClient` with React Query.
+- **Infrastructure is grouped by technology**, then by purpose: `ai/`, `cache/local-storage/`, `api/`, `auth/`. Stateful services are classes with one shared instance exported next to them (`export const browserLlm = new BrowserLlm()`), and their dependencies are constructor options so tests pass fakes.
+- **Server:** one Hono route file per resource under `presentation/http/routes/`, mounted in `api-app.ts`. New adapters go in `infrastructure/<source>/` and are wired only in `container.ts`. Business rules never live in the server; they go in core use cases.
+- **Core stays framework-free.** Biome's `noRestrictedImports` blocks wrong imports (domain → application, core → apps, React, Next, Hono, Prisma). New entities go in `domain/entities/<entity>/`, new use cases in `application/use-cases/` as `makeVerbNoun`.
+- **Tests** go in a `__tests__/` folder beside the file they cover, named `<file>.test.ts(x)`. Shared helpers go in `application/test/` (web), `testing/` (server) or `application/testing/` (core fakes).
+- **Types** go in a sibling `<file>.types.ts`, never inline.
+- **Imports** use aliases only: `@/…` in web, `@server/…` in server, `@core/…` in core, and `@market-health-map/core/<domain|application|i18n>` or `@market-health-map/server` across packages.
+- **Names:** folders and files are kebab-case, except component and screen folders, which are PascalCase.
 
 ## Git flow (mandatory)
 
@@ -116,7 +172,7 @@ Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Onl
 ## Before you finish a task
 
 - `pnpm check` passes.
-- Docs in `CLAUDE.md` and `docs/` match what changed.
+- New files follow the folder structure above, and docs in `CLAUDE.md` and `docs/` match what changed.
 - A row is added to `docs/agent-usage.md` for meaningful agent-assisted work (a project must-have).
 
 <!-- BEGIN:turborepo-agent-rules -->
