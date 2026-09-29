@@ -1,5 +1,10 @@
-import type { ListRecentLoginsInput, RecordLoginInput } from "@market-health-map/application";
+import type {
+	GetFacilityDetailInput,
+	ListRecentLoginsInput,
+	RecordLoginInput,
+} from "@market-health-map/application";
 import {
+	makeGetFacilityDetail,
 	makeListAppSessionHeatmap,
 	makeListFacilities,
 	makeListRecentLogins,
@@ -13,10 +18,12 @@ import {
 	getWarehousePool,
 	PrismaLoginEventRepository,
 	SampleFacilityRepository,
+	SampleFacilityStatsRepository,
 	SystemClock,
 	UuidGenerator,
 	WarehouseAppSessionHeatmapRepository,
 	WarehouseFacilityRepository,
+	WarehouseFacilityStatsRepository,
 } from "@market-health-map/infrastructure";
 import { getServerEnv } from "@/env";
 
@@ -35,18 +42,27 @@ function buildLogins() {
 	};
 }
 
-function buildFacilityRepository() {
+function buildFacilityRepositories() {
 	const warehouseUrl = getServerEnv().DATA_WAREHOUSE_URL;
-	if (!warehouseUrl) return new SampleFacilityRepository();
-	return new CachedFacilityRepository(
-		new WarehouseFacilityRepository(getWarehousePool(warehouseUrl)),
-		new SystemClock(),
-	);
+	const clock = new SystemClock();
+	if (!warehouseUrl) {
+		return {
+			facilities: new SampleFacilityRepository(),
+			stats: new SampleFacilityStatsRepository(clock),
+		};
+	}
+	const pool = getWarehousePool(warehouseUrl);
+	return {
+		facilities: new CachedFacilityRepository(new WarehouseFacilityRepository(pool), clock),
+		stats: new WarehouseFacilityStatsRepository(pool),
+	};
 }
 
 function buildFacilities() {
+	const repositories = buildFacilityRepositories();
 	return {
-		listFacilities: makeListFacilities({ facilities: buildFacilityRepository() }),
+		listFacilities: makeListFacilities({ facilities: repositories.facilities }),
+		getFacilityDetail: makeGetFacilityDetail(repositories),
 	};
 }
 
@@ -102,6 +118,7 @@ const container = {
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
 	listFacilities: () => facilityModule().listFacilities(),
 	listAppSessionHeatmap: () => appSessionHeatmapModule().listAppSessionHeatmap(),
+	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
 };
 
 export function getContainer() {

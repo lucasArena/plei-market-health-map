@@ -6,7 +6,7 @@ export const BUMP_COMMIT_PREFIX = "ci: bump new version";
 const MAJOR_PATTERN = /^\w+(\([^)]*\))?!:|BREAKING CHANGE/;
 const MINOR_PATTERN = /^(feat|feature)(\([^)]*\))?:/;
 const PATCH_PATTERN = /^(fix|hotfix)(\([^)]*\))?:/;
-const STABLE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)$/;
+export const STABLE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)$/;
 
 export function classifyCommit(subject) {
 	if (subject.startsWith(BUMP_COMMIT_PREFIX)) return "none";
@@ -22,7 +22,7 @@ export function parseVersion(tag) {
 	return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) };
 }
 
-function compareVersions(left, right) {
+export function compareVersions(left, right) {
 	return left.major - right.major || left.minor - right.minor || left.patch - right.patch;
 }
 
@@ -48,11 +48,11 @@ export function planRelease({ lastStableTag, subjects }) {
 	return { bumped: true, version, tag: `v${version}` };
 }
 
-function git(...args) {
+export function git(...args) {
 	return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
-function lines(output) {
+export function lines(output) {
 	return output.split("\n").filter(Boolean);
 }
 
