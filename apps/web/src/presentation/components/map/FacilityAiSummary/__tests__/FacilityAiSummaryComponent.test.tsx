@@ -65,7 +65,7 @@ describe("FacilityAiSummary", () => {
 		renderSummary();
 
 		expect(screen.getByText("Summary text.")).toBeInTheDocument();
-		expect(screen.queryByText(messages.label)).not.toBeInTheDocument();
+		expect(screen.getByText(messages.label)).toBeInTheDocument();
 	});
 
 	it("marks a finished AI summary with the sparkle icon", () => {

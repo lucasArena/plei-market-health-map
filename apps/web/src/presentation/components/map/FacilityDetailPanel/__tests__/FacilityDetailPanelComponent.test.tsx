@@ -19,18 +19,23 @@ const VIEW = {
 	name: "Pegaso HTX",
 	address: "1 Main St, Houston, TX",
 	avatarUrl: null,
-	summary: "12 games played last week.",
+	summary: "41 games brought in 7 newly activated players.",
 	tiles: [
 		{
 			key: "played",
-			label: "Played last week",
-			value: "12",
-			hint: "+20% vs previous week",
+			label: "Games played",
+			value: "41",
+			hint: "+20% vs previous period",
 			hintDirection: "up",
 		},
-		{ key: "scheduled", label: "Scheduled", value: "16", hint: null, hintDirection: "flat" },
+		{
+			key: "confirmation",
+			label: "Confirmation rate",
+			value: "82%",
+			hint: null,
+			hintDirection: "flat",
+		},
 	],
-	weekLabel: "Week of Sep 21 – Sep 27, 2026",
 	lastPlayedLabel: "Last game played Sep 27, 2026",
 };
 
@@ -59,11 +64,14 @@ describe("FacilityDetailPanel", () => {
 		expect(panel).toHaveClass("panel-slide-in");
 		expect(screen.getByRole("heading", { name: "Pegaso HTX" })).toBeInTheDocument();
 		expect(screen.getByText("1 Main St, Houston, TX")).toBeInTheDocument();
-		expect(screen.getByText("12 games played last week.")).toBeInTheDocument();
-		expect(screen.getByText("+20% vs previous week")).toHaveClass("text-emerald-700");
-		expect(screen.getByText("16")).toBeInTheDocument();
-		expect(screen.getByText(VIEW.weekLabel)).toBeInTheDocument();
+		expect(screen.getByText("41 games brought in 7 newly activated players.")).toBeInTheDocument();
+		expect(screen.getByText("+20% vs previous period")).toHaveClass(
+			"whitespace-nowrap",
+			"text-emerald-700",
+		);
+		expect(screen.getByText("82%")).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
+		expect(screen.queryByText("Week of Sep 21 – Sep 27, 2026")).not.toBeInTheDocument();
 	});
 
 	it("closes from the button and reports the end of the animation", () => {

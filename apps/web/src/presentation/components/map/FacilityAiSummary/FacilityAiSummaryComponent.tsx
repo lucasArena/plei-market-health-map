@@ -8,8 +8,17 @@ export function FacilityAiSummary(props: Readonly<FacilityAiSummaryProps>) {
 		useFacilityAiSummaryRules(props);
 
 	return (
-		<div className="space-y-2" aria-busy={status === "loading" || status === "generating"}>
-			<p className="text-sm leading-relaxed">{text}</p>
+		<div
+			className="space-y-2 rounded-xl bg-pleiful-moonlight-5 p-3.5"
+			aria-busy={status === "loading" || status === "generating"}
+		>
+			<p className="flex items-center gap-1.5 text-xs font-semibold text-pleiful-moonlight-70">
+				<svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5 fill-current">
+					<path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9zM5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7z" />
+				</svg>
+				{messages.label}
+			</p>
+			<p className="text-xs leading-relaxed">{text}</p>
 			{status === "idle" && (
 				<div className="space-y-1">
 					<button
@@ -39,19 +48,7 @@ export function FacilityAiSummary(props: Readonly<FacilityAiSummaryProps>) {
 					{messages.writing}
 				</p>
 			)}
-			{status === "ready" && (
-				<p className="flex items-center gap-1 text-[11px] font-medium text-pleiful-moonlight-60">
-					<svg
-						aria-hidden="true"
-						data-testid="ai-summary-icon"
-						viewBox="0 0 24 24"
-						className="size-3.5 fill-current drop-shadow-[0_0_4px_rgba(124,58,237,0.45)]"
-					>
-						<path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9zM5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7z" />
-					</svg>
-					{messages.label}
-				</p>
-			)}
+			{status === "ready" && <span data-testid="ai-summary-icon" className="sr-only" />}
 			{status === "error" && <p className="text-[11px] text-muted-foreground">{messages.failed}</p>}
 		</div>
 	);

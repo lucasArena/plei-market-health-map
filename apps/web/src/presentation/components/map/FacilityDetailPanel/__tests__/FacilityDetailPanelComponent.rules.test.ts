@@ -28,26 +28,29 @@ const STATS: FacilityStatsView = {
 	playedLastWeek: 12,
 	playedPreviousWeek: 10,
 	playedLast28Days: 41,
-	playedPrevious28Days: 0,
-	scheduledLast28Days: 0,
-	scheduledPrevious28Days: 0,
-	uniquePlayersLast28Days: 0,
-	uniquePlayersPrevious28Days: 0,
-	activatedPlayersLast28Days: 0,
-	activatedPlayersPrevious28Days: 0,
+	playedPrevious28Days: 34,
+	scheduledLast28Days: 50,
+	scheduledPrevious28Days: 40,
+	uniquePlayersLast28Days: 32,
+	uniquePlayersPrevious28Days: 40,
+	activatedPlayersLast28Days: 7,
+	activatedPlayersPrevious28Days: 5,
 	scheduledLastWeek: 16,
 	cancelledLastWeek: 4,
 	upcomingNextSevenDays: 1,
 	lastPlayedDate: "2026-09-27",
 	playedChangePercent: 20,
-	playedPeriodChangePercent: null,
+	playedPeriodChangePercent: 20,
 	cancellationRate: 25,
-	confirmationRate: null,
-	confirmationRateChangePoints: null,
-	uniquePlayersPeriodChangePercent: null,
-	activatedPlayersPeriodChangePercent: null,
+	confirmationRate: 82,
+	confirmationRateChangePoints: 6,
+	uniquePlayersPeriodChangePercent: -4,
+	activatedPlayersPeriodChangePercent: 18,
 	weeklyActivity: [],
-	popularTimes: [],
+	popularTimes: [
+		{ dayOfWeek: 3, timePeriod: 2, gamesPlayed: 5 },
+		{ dayOfWeek: 6, timePeriod: 2, gamesPlayed: 9 },
+	],
 };
 
 const DETAIL: FacilityDetailView = {
@@ -84,12 +87,12 @@ describe("directionOf", () => {
 });
 
 describe("buildSummary", () => {
-	it("summarizes the games played in the last 28 days", () => {
+	it("summarizes high-level facility activity", () => {
 		expect(buildSummary(STATS, messages, formatters)).toBe(
-			"41 games played in the last 28 days (Aug 31 – Sep 27, 2026).",
+			"41 games brought in 7 newly activated players, with a confirmation rate of 82%. Activity was strongest on Sat PM.",
 		);
 		expect(buildSummary({ ...STATS, playedLast28Days: 1 }, messages, formatters)).toBe(
-			"1 game played in the last 28 days (Aug 31 – Sep 27, 2026).",
+			"1 game brought in 7 newly activated players, with a confirmation rate of 82%. Activity was strongest on Sat PM.",
 		);
 	});
 
@@ -98,42 +101,81 @@ describe("buildSummary", () => {
 			"No games were played here in the last 28 days.",
 		);
 	});
+
+	it("handles missing rates and labels in the deterministic fallback", () => {
+		const summary = buildSummary(
+			{
+				...STATS,
+				confirmationRate: null,
+				popularTimes: [{ dayOfWeek: 9, timePeriod: 9, gamesPlayed: 12 }],
+			},
+			{ ...messages, dayLabels: [], timePeriodLabels: [] },
+			formatters,
+		);
+		expect(summary).toContain("confirmation rate of Unavailable");
+	});
 });
 
 describe("buildTiles", () => {
-	it("shows a signed change and the cancellation rate", () => {
+	it("shows the four 28-day headline metrics", () => {
 		const tiles = buildTiles(STATS, messages, formatters);
-		expect(tiles.map((tile) => [tile.key, tile.value, tile.hint, tile.hintDirection])).toEqual([
-			["played", "12", "+20% vs previous week", "up"],
-			["scheduled", "16", null, "flat"],
-			["cancelled", "4", "25% of scheduled", "flat"],
-			["upcoming", "1", null, "flat"],
+		expect(
+			tiles.map((tile) => [tile.key, tile.label, tile.value, tile.hint, tile.hintDirection]),
+		).toEqual([
+			["played", "Games played", "41", "+20% vs previous period", "up"],
+			["confirmation", "Confirmation rate", "82%", "+6 pts vs previous period", "up"],
+			["players", "Unique players", "32", "-4% vs previous period", "down"],
+			["activated", "Activated players", "7", "+18% vs previous period", "up"],
 		]);
 	});
 
 	it("drops hints without a baseline and keeps the minus sign", () => {
 		const empty = buildTiles(
-			{ ...STATS, playedChangePercent: null, cancellationRate: null },
+			{
+				...STATS,
+				confirmationRate: null,
+				playedPeriodChangePercent: null,
+				confirmationRateChangePoints: null,
+				uniquePlayersPeriodChangePercent: null,
+				activatedPlayersPeriodChangePercent: null,
+			},
 			messages,
 			formatters,
 		);
-		expect(empty[0]?.hint).toBeNull();
-		expect(empty[2]?.hint).toBeNull();
-		const down = buildTiles({ ...STATS, playedChangePercent: -12.5 }, messages, formatters);
-		expect(down[0]).toMatchObject({ hint: "-12.5% vs previous week", hintDirection: "down" });
+		expect(empty.every((tile) => tile.hint === null)).toBe(true);
+		expect(empty[1]?.value).toBe("Unavailable");
+		const down = buildTiles(
+			{ ...STATS, playedPeriodChangePercent: -12.5, confirmationRateChangePoints: -3.5 },
+			messages,
+			formatters,
+		);
+		expect(down[0]).toMatchObject({
+			hint: "-12.5% vs previous period",
+			hintDirection: "down",
+		});
+		expect(down[1]).toMatchObject({
+			hint: "-3.5 pts vs previous period",
+			hintDirection: "down",
+		});
+		const flat = buildTiles(
+			{ ...STATS, activatedPlayersPeriodChangePercent: 0 },
+			messages,
+			formatters,
+		);
+		expect(flat[3]).toMatchObject({ hint: "0% vs previous period", hintDirection: "flat" });
 	});
 });
 
 describe("buildDetailViewModel", () => {
-	it("labels the week and the last game", () => {
+	it("labels the last game", () => {
 		const view = buildDetailViewModel(DETAIL, messages, formatters);
 		expect(view).toMatchObject({
 			name: "Pegaso HTX",
 			address: "1 Main St, Houston, TX",
 			avatarUrl: null,
-			weekLabel: "Week of Sep 21 – Sep 27, 2026",
 			lastPlayedLabel: "Last game played Sep 27, 2026",
 		});
+		expect(view.tiles).toHaveLength(4);
 	});
 
 	it("says when nothing was ever played", () => {
