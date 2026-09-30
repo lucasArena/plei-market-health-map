@@ -74,7 +74,7 @@ describe("POST /api/v1/feedback", () => {
 		expect(issues.attachments[0]?.bytes).toEqual(PNG_BYTES);
 		const draft = issues.issues[0];
 		expect(draft?.type).toBe("bug");
-		expect(draft?.title).toBe("[MHM bug] Zoom buttons hide behind the panel");
+		expect(draft?.title).toBe("Bug Report from Stefano Sanchez");
 		expect(draft?.description).toContain("Stefano Sanchez (stefano@plei.com)");
 		expect(draft?.description).toContain("![](https://uploads.test/2/two.png)");
 		expect(draft?.submitter).toEqual({

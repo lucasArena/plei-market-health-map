@@ -303,7 +303,10 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(mockUseFacilityPlayerStats).toHaveBeenCalledWith("889");
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.name).toBe("Pegaso HTX");
-		expect(result.current.detail).toEqual(DETAIL);
+		expect(result.current.aiContext?.cacheKey).toBe(
+			`v4:facility-${DETAIL.facility.id}:${DETAIL.stats.weekStart}:en`,
+		);
+		expect(result.current.aiContext?.prompt.at(-1)?.content).toContain(DETAIL.facility.name);
 		expect(result.current.messages).toBe(messages);
 	});
 
@@ -329,7 +332,7 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.weeklyActivity).toHaveLength(4);
 		expect(result.current.view?.tiles[2]?.isLoading).toBe(true);
-		expect(result.current.detail).toBeNull();
+		expect(result.current.aiContext).toBeNull();
 		expect(result.current.isAiPending).toBe(true);
 	});
 

@@ -2,6 +2,7 @@
 
 import type {
 	FacilityPlayerStatsView,
+	FacilityReservationDetailView,
 	FacilityReservationStatsView,
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
@@ -10,6 +11,8 @@ import type {
 } from "@market-health-map/core/application";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
+import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
+import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import {
 	buildPopularTimes,
 	buildProgressiveTiles,
@@ -225,6 +228,34 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: messages.subtitle };
 }
 
+export function buildMarketAiSubject(
+	scope: MapScope,
+	heading: MarketSummaryHeading,
+	summary: MarketSummaryView | undefined,
+	facilityReport: FacilityReservationDetailView | undefined,
+	playerStats: FacilityPlayerStatsView | undefined,
+): ActivitySummarySubject | null {
+	if (!playerStats) return null;
+	if (scope.kind === "facility") {
+		return facilityReport
+			? {
+					kind: "facility",
+					id: scope.id,
+					name: heading.title,
+					stats: { ...facilityReport.stats, ...playerStats },
+				}
+			: null;
+	}
+	if (!summary) return null;
+	return {
+		kind: scope.kind === "market" ? "market" : "all-markets",
+		id: scope.kind === "market" ? scope.id : "all",
+		name: heading.title,
+		stats: { ...summary.stats, ...playerStats },
+		scope: summary.scope,
+	};
+}
+
 export function useMarketSummaryPanelRules({
 	isClosing,
 	onClose,
@@ -279,7 +310,14 @@ export function useMarketSummaryPanelRules({
 		playerStats,
 		summary,
 	]);
-	const heading = buildScopeHeading(scope, messages.marketSummary);
+	const heading = useMemo(
+		() => buildScopeHeading(scope, messages.marketSummary),
+		[scope, messages.marketSummary],
+	);
+	const aiContext = useMemo(() => {
+		const subject = buildMarketAiSubject(scope, heading, summary, facilityReport, playerStats);
+		return subject ? aiSummaryContextFor(subject, locale) : null;
+	}, [scope, heading, summary, facilityReport, playerStats, locale]);
 	const status = resolveDetailStatus(reportQuery.isPending, reportQuery.isError);
 
 	const handleAnimationEnd = useCallback(() => {
@@ -295,6 +333,7 @@ export function useMarketSummaryPanelRules({
 	}, [onClose]);
 
 	return {
+		aiContext,
 		detailMessages: messages.facilityDetail,
 		handleAnimationEnd,
 		heading,

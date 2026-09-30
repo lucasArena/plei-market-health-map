@@ -4,20 +4,18 @@ import type {
 	FeedbackIssueSubmitter,
 } from "@core/application/ports/issue-tracker.types";
 
-export const FEEDBACK_TITLE_LENGTH = 80;
-
-export const FEEDBACK_TITLE_PREFIXES: Record<FeedbackType, string> = {
-	improvement: "[MHM feedback]",
-	bug: "[MHM bug]",
+export const FEEDBACK_TITLES: Record<FeedbackType, string> = {
+	improvement: "Feedback",
+	bug: "Bug Report",
 };
 
-export function toFeedbackIssueTitle(type: FeedbackType, message: string): string {
-	const flat = message.replace(/\s+/g, " ").trim();
-	const summary =
-		flat.length > FEEDBACK_TITLE_LENGTH
-			? `${flat.slice(0, FEEDBACK_TITLE_LENGTH).trimEnd()}...`
-			: flat;
-	return `${FEEDBACK_TITLE_PREFIXES[type]} ${summary}`;
+/** "Bug Report from Lucas Arena". Uses the email without a name, and the plain title without either. */
+export function toFeedbackIssueTitle(
+	type: FeedbackType,
+	submitter?: Feedback["submitter"],
+): string {
+	const reporter = submitter?.name?.trim() || submitter?.email?.trim();
+	return reporter ? `${FEEDBACK_TITLES[type]} from ${reporter}` : FEEDBACK_TITLES[type];
 }
 
 export function toFeedbackIssueDescription(
@@ -50,7 +48,7 @@ export function toFeedbackIssueDraft(
 ): FeedbackIssueDraft {
 	return {
 		type: feedback.type,
-		title: toFeedbackIssueTitle(feedback.type, feedback.message),
+		title: toFeedbackIssueTitle(feedback.type, feedback.submitter),
 		description: toFeedbackIssueDescription(feedback, assetUrls, submittedAt),
 		submitter: toFeedbackIssueSubmitter(feedback),
 	};
