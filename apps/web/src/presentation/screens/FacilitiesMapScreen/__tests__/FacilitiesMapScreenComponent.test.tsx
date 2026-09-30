@@ -36,6 +36,7 @@ const FACILITY = {
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
+		clearSearchScope: vi.fn(),
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],

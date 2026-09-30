@@ -1,3 +1,5 @@
+import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
+import { NotFoundError } from "@core/application/errors/not-found-error";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { makeGetMarketPlayerStats } from "@core/application/use-cases/get-market-player-stats";
@@ -114,5 +116,54 @@ describe("market summary", () => {
 			topFacilities: [],
 			topMarkets: [],
 		});
+	});
+
+	it("scopes the summary and rankings to one market when asked", async () => {
+		const { getMarketSummary, stats } = setup([
+			facility("292", "philly", 16, ["698"]),
+			facility("10", "philly", 0),
+			facility("31", "houston", 40),
+		]);
+
+		const summary = await getMarketSummary({ market: " philly " });
+
+		expect(stats.reservationRequested).toEqual([["292", "698", "10"]]);
+		expect(summary.scope).toEqual({
+			facilityCount: 2,
+			activeFacilityCount: 1,
+			marketCount: 1,
+			activeMarketCount: 1,
+		});
+		expect(summary.topFacilities.map((rank) => rank.id)).toEqual(["292"]);
+		expect(summary.topMarkets.map((rank) => rank.id)).toEqual(["philly"]);
+	});
+
+	it("scopes player analytics to one market when asked", async () => {
+		const { getMarketPlayerStats, stats } = setup([
+			facility("292", "philly", 16, ["698"]),
+			facility("31", "houston", 40),
+		]);
+
+		await getMarketPlayerStats({ market: "houston" });
+
+		expect(stats.playerRequested).toEqual([["31"]]);
+	});
+
+	it("rejects an unknown market as not found before querying analytics", async () => {
+		const { getMarketSummary, getMarketPlayerStats, stats } = setup([
+			facility("292", "philly", 16),
+		]);
+
+		await expect(getMarketSummary({ market: "nowhere" })).rejects.toBeInstanceOf(NotFoundError);
+		await expect(getMarketPlayerStats({ market: "nowhere" })).rejects.toBeInstanceOf(NotFoundError);
+		expect(stats.reservationRequested).toEqual([]);
+		expect(stats.playerRequested).toEqual([]);
+	});
+
+	it("rejects a blank market as an invalid request", async () => {
+		const { getMarketSummary, getMarketPlayerStats } = setup([facility("292", "philly", 16)]);
+
+		await expect(getMarketSummary({ market: "  " })).rejects.toBeInstanceOf(InvalidRequestError);
+		await expect(getMarketPlayerStats({ market: "" })).rejects.toBeInstanceOf(InvalidRequestError);
 	});
 });

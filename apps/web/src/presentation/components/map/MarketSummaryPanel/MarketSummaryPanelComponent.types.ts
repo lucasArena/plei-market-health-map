@@ -33,7 +33,12 @@ export interface MarketSummaryViewModel {
 	popularTimes: PopularTimeCellView[];
 	dayLabels: string[];
 	timePeriodLabels: string[];
-	topMarkets: MarketRankRowView[];
-	topFacilities: MarketRankRowView[];
+	topMarkets: MarketRankRowView[] | null;
+	topFacilities: MarketRankRowView[] | null;
 	lastPlayedLabel: string;
+}
+
+export interface MarketSummaryHeading {
+	title: string;
+	subtitle: string;
 }

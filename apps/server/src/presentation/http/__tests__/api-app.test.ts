@@ -1,3 +1,4 @@
+import { InvalidRequestError, NotFoundError } from "@market-health-map/core/application";
 import { createApiApp } from "@server/presentation/http/api-app";
 import type { AccessDecision } from "@server/presentation/http/authenticate.types";
 import type { ApiTestBody } from "@server/testing/api-response.types";
@@ -67,8 +68,27 @@ describe("createApiApp", () => {
 			status: 200,
 			body: { data: { uniquePlayersLast28Days: 900 } },
 		});
-		expect(services.getMarketSummary).toHaveBeenCalledOnce();
-		expect(services.getMarketPlayerStats).toHaveBeenCalledOnce();
+		expect(services.getMarketSummary).toHaveBeenCalledWith({ market: undefined });
+		expect(services.getMarketPlayerStats).toHaveBeenCalledWith({ market: undefined });
+	});
+
+	it("passes the market filter through to both market summary endpoints", async () => {
+		const { get, services } = setup();
+
+		await get("/market-summary?market=philly");
+		await get("/market-summary/players?market=philly");
+
+		expect(services.getMarketSummary).toHaveBeenCalledWith({ market: "philly" });
+		expect(services.getMarketPlayerStats).toHaveBeenCalledWith({ market: "philly" });
+	});
+
+	it("maps an unknown market to 404 and an invalid one to 400", async () => {
+		const { get, services } = setup();
+		services.getMarketSummary.mockRejectedValueOnce(new NotFoundError("Market"));
+		services.getMarketPlayerStats.mockRejectedValueOnce(new InvalidRequestError([]));
+
+		expect((await get("/market-summary?market=nowhere")).status).toBe(404);
+		expect((await get("/market-summary/players?market=")).status).toBe(400);
 	});
 
 	it("rejects anonymous market summary requests before running any query", async () => {

@@ -83,6 +83,10 @@ export interface Messages {
 		topMarkets: string;
 		marketFacilities: string;
 		noRankings: string;
+		allMarkets: string;
+		marketSubtitle: string;
+		facilitySubtitle: string;
+		marketSummaryNone: string;
 	};
 	feedback: {
 		open: string;

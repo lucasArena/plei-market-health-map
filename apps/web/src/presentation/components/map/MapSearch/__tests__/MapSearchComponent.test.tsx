@@ -51,6 +51,7 @@ describe("MapSearch", () => {
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={onFacilitySelect}
 				onMarketSelect={onMarketSelect}
+				onClear={vi.fn()}
 			/>,
 		);
 		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
@@ -75,20 +76,27 @@ describe("MapSearch", () => {
 	});
 
 	it("clears, closes, and reports an empty result", () => {
+		const onClear = vi.fn();
 		render(
 			<MapSearch
 				facilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onClear={onClear}
 			/>,
 		);
 		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
 		fireEvent.change(input, { target: { value: "nowhere" } });
 		expect(screen.getByText("No markets or facilities found")).toBeInTheDocument();
 
+		expect(onClear).not.toHaveBeenCalled();
 		fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
 		expect(input).toHaveValue("");
+		expect(onClear).toHaveBeenCalledOnce();
+		fireEvent.change(input, { target: { value: "Mi" } });
+		fireEvent.change(input, { target: { value: " " } });
+		expect(onClear).toHaveBeenCalledTimes(2);
 		fireEvent.keyDown(input, { key: "Escape" });
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 
@@ -104,6 +112,7 @@ describe("MapSearch", () => {
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
 			/>,
 		);
 		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
@@ -113,5 +122,21 @@ describe("MapSearch", () => {
 
 		fireEvent.pointerDown(input);
 		expect(screen.getByRole("listbox")).toBeInTheDocument();
+	});
+
+	it("sits in the header row just left of the summary toggle and avatar", () => {
+		const { container } = render(
+			<MapSearch
+				facilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
+			/>,
+		);
+
+		const root = container.firstElementChild;
+		expect(root).toHaveClass("top-4", "right-[6.75rem]", "w-[min(24rem,calc(100%-11rem))]");
+		expect(root).not.toHaveClass("left-1/2");
 	});
 });

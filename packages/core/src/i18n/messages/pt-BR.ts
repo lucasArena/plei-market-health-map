@@ -90,6 +90,10 @@ export const ptBR: Messages = {
 		topMarkets: "Principais mercados",
 		marketFacilities: "{active} de {total} instalações ativas",
 		noRankings: "Nenhum jogo realizado nos últimos 28 dias.",
+		allMarkets: "Todos os mercados",
+		marketSubtitle: "Resumo do mercado, últimos 28 dias",
+		facilitySubtitle: "Instalação em {market}, últimos 28 dias",
+		marketSummaryNone: "Nenhum jogo foi realizado neste mercado nos últimos 28 dias.",
 	},
 	feedback: {
 		open: "Enviar feedback",

@@ -88,6 +88,10 @@ export const en: Messages = {
 		topMarkets: "Top markets",
 		marketFacilities: "{active} of {total} facilities active",
 		noRankings: "No games played in the last 28 days.",
+		allMarkets: "All markets",
+		marketSubtitle: "Market summary, last 28 days",
+		facilitySubtitle: "Facility in {market}, last 28 days",
+		marketSummaryNone: "No games were played in this market in the last 28 days.",
 	},
 	feedback: {
 		open: "Send feedback",

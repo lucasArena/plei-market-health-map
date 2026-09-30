@@ -32,6 +32,7 @@ export function useMapSearchRules({
 	facilities,
 	onFacilitySelect,
 	onMarketSelect,
+	onClear,
 }: MapSearchProps) {
 	const [query, setQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
@@ -57,6 +58,7 @@ export function useMapSearchRules({
 	const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setQuery(event.target.value);
 		setIsOpen(true);
+		if (event.target.value.trim() === "") onClear();
 	};
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -78,6 +80,7 @@ export function useMapSearchRules({
 	const clear = () => {
 		setQuery("");
 		setIsOpen(true);
+		onClear();
 	};
 
 	return {

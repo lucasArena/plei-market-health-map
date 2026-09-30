@@ -1,6 +1,7 @@
 "use client";
 
 import { useMapSearchRules } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
+import { MAP_SEARCH_POSITION_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 import type { MapSearchProps } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 
 export function MapSearch(props: MapSearchProps) {
@@ -21,10 +22,7 @@ export function MapSearch(props: MapSearchProps) {
 	const hasResults = visibleMarkets.length > 0 || visibleFacilities.length > 0;
 
 	return (
-		<div
-			ref={rootRef}
-			className="absolute top-5 left-1/2 z-20 w-[min(24rem,calc(100%-2rem))] -translate-x-1/2"
-		>
+		<div ref={rootRef} className={MAP_SEARCH_POSITION_CLASS}>
 			<div className="flex h-11 items-center gap-2 rounded-xl border border-border/70 bg-background/95 px-3 shadow-lg backdrop-blur-md">
 				<svg
 					aria-hidden="true"

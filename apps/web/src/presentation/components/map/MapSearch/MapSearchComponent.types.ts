@@ -12,4 +12,5 @@ export interface MapSearchProps {
 	messages: Messages["map"];
 	onFacilitySelect(facility: FacilityPointView): void;
 	onMarketSelect(market: MarketSearchResult): void;
+	onClear(): void;
 }

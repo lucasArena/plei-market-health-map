@@ -10,6 +10,7 @@ import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/Facilities
 
 export function FacilitiesMapScreen() {
 	const {
+		clearSearchScope,
 		closePanel,
 		containerRef,
 		facilities,
@@ -42,6 +43,7 @@ export function FacilitiesMapScreen() {
 				messages={messages}
 				onFacilitySelect={selectSearchFacility}
 				onMarketSelect={selectSearchMarket}
+				onClear={clearSearchScope}
 			/>
 			{overlayMessage && (
 				<p
