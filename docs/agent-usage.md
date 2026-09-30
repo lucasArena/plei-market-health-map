@@ -41,3 +41,4 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-09-30 | Cursor Grok 4.7 | Kept the session heatmap independent of the Users switch | Layers panel tests pass |
 | 2026-09-30 | Cursor Grok 4.7 | Merged staging into the layers panel so search, the summary toggle, and the account menu stay on the right while the layers chip stays top-left | Header and map screen tests pass |
 | 2026-09-30 | Cursor Grok 4.7 | Removed the Users layer from the control panel, including its switch and filters | Layers panel tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Made the layers card the same width as the Plei Market header | Layers panel tests pass |

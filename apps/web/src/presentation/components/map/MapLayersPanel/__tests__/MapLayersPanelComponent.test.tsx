@@ -20,7 +20,17 @@ describe("MapLayersPanel", () => {
 		renderWithMessages(<MapLayersPanel />);
 
 		const panel = screen.getByRole("complementary", { name: "Plei Market" });
-		expect(panel).toHaveClass("fixed", "top-[20px]", "left-[20px]", "z-50", "gap-[4px]");
+		expect(panel).toHaveClass(
+			"fixed",
+			"top-[20px]",
+			"left-[20px]",
+			"z-50",
+			"gap-[4px]",
+			"items-stretch",
+		);
+		const layersCard = screen.getByText("Layers").parentElement;
+		expect(layersCard).toHaveClass("w-full");
+		expect(layersCard).not.toHaveClass("w-max");
 		expect(panel).not.toHaveClass("border");
 		expect(screen.getByText("Plei Market")).toHaveClass("text-[12px]");
 		expect(screen.getByText("Plei Market").parentElement).toHaveClass(

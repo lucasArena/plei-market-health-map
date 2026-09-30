@@ -57,7 +57,7 @@ export function MapLayersPanel() {
 	return (
 		<aside
 			aria-label={messages.layersBrand}
-			className="fixed top-[20px] left-[20px] z-50 flex w-max flex-col items-start gap-[4px]"
+			className="fixed top-[20px] left-[20px] z-50 flex w-max flex-col items-stretch gap-[4px]"
 		>
 			<div className="flex items-stretch overflow-hidden rounded-[8px] border border-border bg-card py-[2px] shadow-md">
 				<div className="flex items-center gap-[4px] px-[8px] py-[4px]">
@@ -79,7 +79,7 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`flex w-max flex-col gap-1 overflow-hidden rounded-[10px] border border-border bg-card px-3 pt-1 pb-3 shadow-md ${cardMotionClass}`}
+					className={`flex w-full flex-col gap-1 overflow-hidden rounded-[10px] border border-border bg-card px-3 pt-1 pb-3 shadow-md ${cardMotionClass}`}
 				>
 					<p className="py-1.5 text-[10px] leading-4 font-medium text-muted-foreground">
 						{messages.layersHeading}
