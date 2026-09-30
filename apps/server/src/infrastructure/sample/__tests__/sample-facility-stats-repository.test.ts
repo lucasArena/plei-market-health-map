@@ -10,10 +10,14 @@ const repository = new SampleFacilityStatsRepository(
 
 describe("SampleFacilityStatsRepository", () => {
 	it("produces consistent, deterministic weekly counts", async () => {
-		const first = await repository.getWeeklyCounts(["austin-facility-1" as never]);
-		const second = await repository.getWeeklyCounts(["austin-facility-1" as never]);
+		const ids = ["austin-facility-1" as never];
+		const first = await repository.getReservationStats(ids);
+		const second = await repository.getReservationStats(ids);
+		const firstPlayers = await repository.getPlayerStats(ids);
+		const secondPlayers = await repository.getPlayerStats(ids);
 
 		expect(second).toEqual(first);
+		expect(secondPlayers).toEqual(firstPlayers);
 		expect(first.weekStart).toBe("2026-09-21");
 		expect(first.lastPlayedDate).toBe("2026-09-28");
 		expect(first.playedLastWeek + first.cancelledLastWeek).toBe(first.scheduledLastWeek);

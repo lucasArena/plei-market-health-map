@@ -27,6 +27,7 @@ const VIEW = {
 			value: "41",
 			hint: "+20% vs previous period",
 			hintDirection: "up",
+			isLoading: false,
 		},
 		{
 			key: "confirmation",
@@ -34,6 +35,7 @@ const VIEW = {
 			value: "82%",
 			hint: null,
 			hintDirection: "flat",
+			isLoading: false,
 		},
 	],
 	weeklyActivity: [
@@ -65,6 +67,7 @@ function rulesWith(overrides: object = {}) {
 	return {
 		detail: FACILITY_DETAIL,
 		handleAnimationEnd: vi.fn(),
+		isAiPending: false,
 		isClosing: false,
 		messages: EN_MESSAGES.facilityDetail,
 		onClose: vi.fn(),
@@ -97,6 +100,37 @@ describe("FacilityDetailPanel", () => {
 		expect(screen.getByRole("button", { name: "Mon, AM: 2 games" })).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
 		expect(screen.queryByText("Week of Sep 21 – Sep 27, 2026")).not.toBeInTheDocument();
+	});
+
+	it("renders reservation analytics while player stats and AI continue loading", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				detail: null,
+				isAiPending: true,
+				view: {
+					...VIEW,
+					summary: null,
+					tiles: [
+						VIEW.tiles[0],
+						{
+							key: "players",
+							label: "Unique players",
+							value: "",
+							hint: null,
+							hintDirection: "flat",
+							isLoading: true,
+						},
+					],
+				},
+			}),
+		);
+
+		render(<FacilityDetailPanel {...PROPS} />);
+
+		expect(screen.getByText("41")).toBeInTheDocument();
+		expect(screen.getByTestId("facility-stat-players-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("facility-ai-summary-skeleton")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
 	});
 
 	it("closes from the button and reports the end of the animation", () => {

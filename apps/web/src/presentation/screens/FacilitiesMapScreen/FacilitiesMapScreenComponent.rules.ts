@@ -1,6 +1,7 @@
 "use client";
 
 import type { FacilityPointView } from "@market-health-map/core/application";
+import { useQueryClient } from "@tanstack/react-query";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
@@ -8,6 +9,7 @@ import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
+import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import {
@@ -205,6 +207,7 @@ const EMPTY_HEATMAP: AppSessionHeatmapFeatureCollection = {
 
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
+	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
 	const heatmapQuery = useAppSessionHeatmap();
 	const [isMapReady, setIsMapReady] = useState(false);
@@ -253,8 +256,9 @@ export function useFacilitiesMapScreenRules() {
 			const facility = facilityFromEvent(event);
 			hoveredClusterIdRef.current = null;
 			setHovered(facility ? { kind: "facility", facility, ...placementFor(event.point) } : null);
+			if (facility) void prefetchFacilityReservationStats(queryClient, facility.id);
 		},
-		[facilityFromEvent, placementFor],
+		[facilityFromEvent, placementFor, queryClient],
 	);
 
 	const handleClusterHover = useCallback(

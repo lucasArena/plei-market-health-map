@@ -1,6 +1,12 @@
 "use client";
 
-import type { FacilityDetailView, FacilityStatsView } from "@market-health-map/core/application";
+import type {
+	FacilityDetailView,
+	FacilityPlayerStatsView,
+	FacilityReservationDetailView,
+	FacilityReservationStatsView,
+	FacilityStatsView,
+} from "@market-health-map/core/application";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import {
@@ -14,7 +20,8 @@ import {
 	type StatDirection,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
-import { useFacilityDetails } from "@/presentation/hooks/use-facility/use-facility-details";
+import { useFacilityPlayerStats } from "@/presentation/hooks/use-facility/use-facility-player-stats";
+import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
 
 export function createDetailFormatters(locale: string): DetailFormatters {
 	return {
@@ -102,6 +109,7 @@ export function buildTiles(
 			label: messages.gamesPlayed,
 			value: formatters.number.format(stats.playedLast28Days),
 			...periodComparison(stats.playedPeriodChangePercent, "percent", messages, formatters),
+			isLoading: false,
 		},
 		{
 			key: "confirmation",
@@ -111,12 +119,14 @@ export function buildTiles(
 					? messages.unavailable
 					: `${formatters.decimal.format(stats.confirmationRate)}%`,
 			...periodComparison(stats.confirmationRateChangePoints, "points", messages, formatters),
+			isLoading: false,
 		},
 		{
 			key: "players",
 			label: messages.uniquePlayers,
 			value: formatters.number.format(stats.uniquePlayersLast28Days),
 			...periodComparison(stats.uniquePlayersPeriodChangePercent, "percent", messages, formatters),
+			isLoading: false,
 		},
 		{
 			key: "activated",
@@ -128,12 +138,100 @@ export function buildTiles(
 				messages,
 				formatters,
 			),
+			isLoading: false,
+		},
+	];
+}
+
+export function buildProgressiveTiles(
+	reservationStats: FacilityReservationStatsView,
+	playerStats: FacilityPlayerStatsView | undefined,
+	isPlayerPending: boolean,
+	messages: DetailMessages,
+	formatters: DetailFormatters,
+): FacilityStatTile[] {
+	const reservationTiles: FacilityStatTile[] = [
+		{
+			key: "played",
+			label: messages.gamesPlayed,
+			value: formatters.number.format(reservationStats.playedLast28Days),
+			...periodComparison(
+				reservationStats.playedPeriodChangePercent,
+				"percent",
+				messages,
+				formatters,
+			),
+			isLoading: false,
+		},
+		{
+			key: "confirmation",
+			label: messages.confirmationRate,
+			value:
+				reservationStats.confirmationRate === null
+					? messages.unavailable
+					: `${formatters.decimal.format(reservationStats.confirmationRate)}%`,
+			...periodComparison(
+				reservationStats.confirmationRateChangePoints,
+				"points",
+				messages,
+				formatters,
+			),
+			isLoading: false,
+		},
+	];
+	if (!playerStats) {
+		const value = isPlayerPending ? "" : messages.unavailable;
+		return [
+			...reservationTiles,
+			{
+				key: "players",
+				label: messages.uniquePlayers,
+				value,
+				hint: null,
+				hintDirection: ChangeDirection.flat,
+				isLoading: isPlayerPending,
+			},
+			{
+				key: "activated",
+				label: messages.activatedPlayers,
+				value,
+				hint: null,
+				hintDirection: ChangeDirection.flat,
+				isLoading: isPlayerPending,
+			},
+		];
+	}
+	return [
+		...reservationTiles,
+		{
+			key: "players",
+			label: messages.uniquePlayers,
+			value: formatters.number.format(playerStats.uniquePlayersLast28Days),
+			...periodComparison(
+				playerStats.uniquePlayersPeriodChangePercent,
+				"percent",
+				messages,
+				formatters,
+			),
+			isLoading: false,
+		},
+		{
+			key: "activated",
+			label: messages.activatedPlayers,
+			value: formatters.number.format(playerStats.activatedPlayersLast28Days),
+			...periodComparison(
+				playerStats.activatedPlayersPeriodChangePercent,
+				"percent",
+				messages,
+				formatters,
+			),
+			isLoading: false,
 		},
 	];
 }
 
 export function buildWeeklyActivity(
-	stats: FacilityStatsView,
+	stats: FacilityReservationStatsView,
 	messages: DetailMessages,
 	formatters: DetailFormatters,
 ) {
@@ -152,7 +250,7 @@ export function buildWeeklyActivity(
 }
 
 export function buildPopularTimes(
-	stats: FacilityStatsView,
+	stats: FacilityReservationStatsView,
 	messages: DetailMessages,
 	formatters: DetailFormatters,
 ) {
@@ -205,6 +303,33 @@ export function buildDetailViewModel(
 	};
 }
 
+export function buildProgressiveDetailViewModel(
+	detail: FacilityReservationDetailView,
+	playerStats: FacilityPlayerStatsView | undefined,
+	isPlayerPending: boolean,
+	messages: DetailMessages,
+	formatters: DetailFormatters,
+): FacilityDetailViewModel {
+	const { facility, stats } = detail;
+	const fullStats = playerStats ? { ...stats, ...playerStats } : null;
+	return {
+		name: facility.name,
+		address: facility.address,
+		avatarUrl: facility.avatarUrl,
+		summary: fullStats ? buildSummary(fullStats, messages, formatters) : null,
+		tiles: buildProgressiveTiles(stats, playerStats, isPlayerPending, messages, formatters),
+		weeklyActivity: buildWeeklyActivity(stats, messages, formatters),
+		popularTimes: buildPopularTimes(stats, messages, formatters),
+		dayLabels: [...messages.dayLabels],
+		timePeriodLabels: [...messages.timePeriodLabels],
+		lastPlayedLabel: stats.lastPlayedDate
+			? formatMessage(messages.lastPlayed, {
+					date: formatters.dayWithYear.format(localDate(stats.lastPlayedDate)),
+				})
+			: messages.neverPlayed,
+	};
+}
+
 export function resolveDetailStatus(isPending: boolean, isError: boolean): FacilityDetailStatus {
 	const status = { [`${!isPending}`]: "ready", [`${isError}`]: "error" }.true;
 	return (status ?? "loading") as FacilityDetailStatus;
@@ -217,14 +342,35 @@ export function useFacilityDetailPanelRules({
 	onClosed,
 }: FacilityDetailPanelProps) {
 	const { locale, messages } = useMessages();
-	const query = useFacilityDetails(facilityId);
+	const reservationQuery = useFacilityReservationStats(facilityId);
+	const playerQuery = useFacilityPlayerStats(facilityId);
 	const formatters = useMemo(() => createDetailFormatters(locale), [locale]);
-	const detail = query.data;
-	const view = useMemo(
-		() => (detail ? buildDetailViewModel(detail, messages.facilityDetail, formatters) : null),
-		[detail, messages, formatters],
+	const reservationDetail = reservationQuery.data;
+	const playerStats = playerQuery.data;
+	const detail = useMemo<FacilityDetailView | null>(
+		() =>
+			reservationDetail && playerStats
+				? {
+						facility: reservationDetail.facility,
+						stats: { ...reservationDetail.stats, ...playerStats },
+					}
+				: null,
+		[playerStats, reservationDetail],
 	);
-	const status = resolveDetailStatus(query.isPending, query.isError);
+	const view = useMemo(
+		() =>
+			reservationDetail
+				? buildProgressiveDetailViewModel(
+						reservationDetail,
+						playerStats,
+						playerQuery.isPending,
+						messages.facilityDetail,
+						formatters,
+					)
+				: null,
+		[formatters, messages.facilityDetail, playerQuery.isPending, playerStats, reservationDetail],
+	);
+	const status = resolveDetailStatus(reservationQuery.isPending, reservationQuery.isError);
 
 	const handleAnimationEnd = useCallback(() => {
 		if (isClosing) onClosed();
@@ -241,6 +387,7 @@ export function useFacilityDetailPanelRules({
 	return {
 		detail,
 		handleAnimationEnd,
+		isAiPending: status === "ready" && playerQuery.isPending,
 		isClosing,
 		messages: messages.facilityDetail,
 		onClose,

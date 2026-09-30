@@ -23,13 +23,14 @@ export interface FacilityStatTile {
 	value: string;
 	hint: string | null;
 	hintDirection: StatDirection;
+	isLoading: boolean;
 }
 
 export interface FacilityDetailViewModel {
 	name: string;
 	address: string;
 	avatarUrl: string | null;
-	summary: string;
+	summary: string | null;
 	tiles: FacilityStatTile[];
 	weeklyActivity: WeeklyActivityPointView[];
 	popularTimes: PopularTimeCellView[];

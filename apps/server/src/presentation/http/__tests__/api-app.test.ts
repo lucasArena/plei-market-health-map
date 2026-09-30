@@ -8,6 +8,8 @@ function setup(access: AccessDecision = ALLOWED) {
 	const services = {
 		listFacilities: vi.fn().mockResolvedValue([{ id: "f1" }]),
 		getFacilityDetail: vi.fn().mockResolvedValue({ facility: { id: "889" } }),
+		getFacilityReservationStats: vi.fn().mockResolvedValue({ playedLastWeek: 55 }),
+		getFacilityPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 126 }),
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
 		listRecentLogins: vi.fn().mockResolvedValue([{ id: "l1" }]),
 	};
@@ -36,6 +38,19 @@ describe("createApiApp", () => {
 			body: { data: { facility: { id: "889" } } },
 		});
 		expect(services.getFacilityDetail).toHaveBeenCalledWith({ facilityId: "889" });
+	});
+
+	it("returns reservation and player analytics independently", async () => {
+		const { get, services } = setup();
+
+		expect((await get("/facilities/889/reservations")).body).toEqual({
+			data: { playedLastWeek: 55 },
+		});
+		expect((await get("/facilities/889/players")).body).toEqual({
+			data: { uniquePlayersLast28Days: 126 },
+		});
+		expect(services.getFacilityReservationStats).toHaveBeenCalledWith({ facilityId: "889" });
+		expect(services.getFacilityPlayerStats).toHaveBeenCalledWith({ facilityId: "889" });
 	});
 
 	it("returns the app session heatmap", async () => {

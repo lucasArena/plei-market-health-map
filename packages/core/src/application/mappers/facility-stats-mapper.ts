@@ -1,5 +1,13 @@
-import type { FacilityStatsView } from "@core/application/dtos/facility-detail-dto.types";
-import type { FacilityWeeklyCounts } from "@core/application/ports/facility-stats-repository.types";
+import type {
+	FacilityPlayerStatsView,
+	FacilityReservationStatsView,
+	FacilityStatsView,
+} from "@core/application/dtos/facility-detail-dto.types";
+import type {
+	FacilityPlayerStats,
+	FacilityReservationStats,
+	FacilityWeeklyCounts,
+} from "@core/application/ports/facility-stats-repository.types";
 
 function roundTo(value: number, decimals: number): number {
 	const factor = 10 ** decimals;
@@ -16,7 +24,9 @@ function confirmationRate(played: number, scheduled: number): number | null {
 	return roundTo((played / scheduled) * 100, 1);
 }
 
-export function toFacilityStatsView(counts: FacilityWeeklyCounts): FacilityStatsView {
+export function toFacilityReservationStatsView(
+	counts: FacilityReservationStats,
+): FacilityReservationStatsView {
 	const {
 		playedLastWeek,
 		playedPreviousWeek,
@@ -24,10 +34,6 @@ export function toFacilityStatsView(counts: FacilityWeeklyCounts): FacilityStats
 		playedPrevious28Days,
 		scheduledLast28Days,
 		scheduledPrevious28Days,
-		uniquePlayersLast28Days,
-		uniquePlayersPrevious28Days,
-		activatedPlayersLast28Days,
-		activatedPlayersPrevious28Days,
 		scheduledLastWeek,
 		cancelledLastWeek,
 	} = counts;
@@ -44,6 +50,18 @@ export function toFacilityStatsView(counts: FacilityWeeklyCounts): FacilityStats
 			currentConfirmation === null || previousConfirmation === null
 				? null
 				: roundTo(currentConfirmation - previousConfirmation, 1),
+	};
+}
+
+export function toFacilityPlayerStatsView(counts: FacilityPlayerStats): FacilityPlayerStatsView {
+	const {
+		uniquePlayersLast28Days,
+		uniquePlayersPrevious28Days,
+		activatedPlayersLast28Days,
+		activatedPlayersPrevious28Days,
+	} = counts;
+	return {
+		...counts,
 		uniquePlayersPeriodChangePercent: percentChange(
 			uniquePlayersLast28Days,
 			uniquePlayersPrevious28Days,
@@ -52,5 +70,12 @@ export function toFacilityStatsView(counts: FacilityWeeklyCounts): FacilityStats
 			activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days,
 		),
+	};
+}
+
+export function toFacilityStatsView(counts: FacilityWeeklyCounts): FacilityStatsView {
+	return {
+		...toFacilityReservationStatsView(counts),
+		...toFacilityPlayerStatsView(counts),
 	};
 }
