@@ -16,7 +16,7 @@ function switchByName(name: string) {
 }
 
 describe("MapLayersPanel", () => {
-	it("opens at the top left with facilities off and all users selected", () => {
+	it("opens at the top left with facilities off", () => {
 		renderWithMessages(<MapLayersPanel />);
 
 		const panel = screen.getByRole("complementary", { name: "Plei Market" });
@@ -35,47 +35,27 @@ describe("MapLayersPanel", () => {
 			"w-[22px]",
 			"p-[1px]",
 		);
-		expect(switchByName("Users")).toHaveClass("bg-pleiful-pitch-green-80");
 		expect(switchByName("Facilities").firstElementChild).toHaveClass(
 			"size-[9px]",
 			"translate-x-0",
 			"transition-transform",
 		);
-		expect(switchByName("Users").firstElementChild).toHaveClass("translate-x-[9px]");
+		expect(screen.queryByRole("switch", { name: "Users" })).not.toBeInTheDocument();
+		expect(screen.queryByText("Users")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "All" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
 		expect(screen.getByText("Layers")).toHaveClass("text-[10px]");
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
-		expect(switchByName("Users")).toHaveAttribute("aria-checked", "true");
-		expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
-		expect(screen.getByRole("button", { name: "Active users" })).toHaveAttribute(
-			"aria-pressed",
-			"false",
-		);
-		expect(screen.getByRole("button", { name: "Active players" })).toHaveAttribute(
-			"aria-pressed",
-			"false",
-		);
 	});
 
-	it("toggles each layer and the user filter", () => {
+	it("toggles the facilities layer", () => {
 		renderWithMessages(<MapLayersPanel />);
 
 		fireEvent.click(switchByName("Facilities"));
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
-
-		fireEvent.click(screen.getByRole("button", { name: "Active players" }));
-		expect(screen.getByRole("button", { name: "Active players" })).toHaveAttribute(
-			"aria-pressed",
-			"true",
-		);
-		expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "false");
-
-		fireEvent.click(switchByName("Users"));
-		expect(switchByName("Users")).toHaveAttribute("aria-checked", "false");
-		expect(screen.queryByRole("button", { name: "All" })).not.toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
-		expect(document.querySelector("fieldset")).toHaveClass("invisible", "h-0");
-		expect(screen.getByRole("complementary", { name: "Plei Market" })).toBeInTheDocument();
+		expect(switchByName("Facilities")).toHaveClass("bg-pleiful-pitch-green-80");
+		expect(switchByName("Facilities").firstElementChild).toHaveClass("translate-x-[9px]");
 	});
 
 	it("tells the map to show facilities when the switch is turned on", () => {

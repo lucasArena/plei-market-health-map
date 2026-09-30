@@ -2,10 +2,7 @@
 
 import Image from "next/image";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
-import type {
-	LayerSwitchProps,
-	UserFilterButtonProps,
-} from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
+import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	const track = {
@@ -33,24 +30,6 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	);
 }
 
-function UserFilterButton({ option, selected, onSelect }: Readonly<UserFilterButtonProps>) {
-	const surface = {
-		[`${!selected}`]: "bg-background",
-		[`${selected}`]: "bg-accent",
-	}.true as string;
-
-	return (
-		<button
-			type="button"
-			aria-pressed={selected}
-			onClick={() => onSelect(option.id)}
-			className={`flex h-8 items-center justify-center rounded-md border border-input px-3 text-[12px] leading-5 font-medium whitespace-nowrap text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] ${surface}`}
-		>
-			{option.label}
-		</button>
-	);
-}
-
 export function MapLayersPanel() {
 	const {
 		cardMotion,
@@ -58,14 +37,9 @@ export function MapLayersPanel() {
 		isCardShown,
 		isExpanded,
 		messages,
-		selectUserFilter,
 		showFacilities,
-		showUsers,
 		toggleExpanded,
 		toggleFacilities,
-		toggleUsers,
-		userFilter,
-		userFilters,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
 		[`${!isExpanded}`]: messages.layersExpand,
@@ -80,11 +54,6 @@ export function MapLayersPanel() {
 		enter: "layers-card-in",
 		exit: "layers-card-out",
 	}[cardMotion];
-	const userFiltersClass = {
-		[`${showUsers}`]: "mt-3",
-		[`${!showUsers}`]: "invisible h-0 pointer-events-none",
-	}.true as string;
-
 	return (
 		<aside
 			aria-label={messages.layersBrand}
@@ -127,39 +96,6 @@ export function MapLayersPanel() {
 							label={messages.layersFacilities}
 							onToggle={toggleFacilities}
 						/>
-					</div>
-					<div className="flex h-4 w-full items-center" aria-hidden="true">
-						<div className="h-px w-full bg-border" />
-					</div>
-					<div className="flex w-max flex-col">
-						<div className="flex w-full items-center justify-between gap-3">
-							<div className="flex items-center gap-1">
-								<Image src="/images/map-layers/circle-user.svg" alt="" width={16} height={16} />
-								<p className="text-[12px] leading-none font-medium text-foreground">
-									{messages.layersUsers}
-								</p>
-							</div>
-							<LayerSwitch
-								checked={showUsers}
-								label={messages.layersUsers}
-								onToggle={toggleUsers}
-							/>
-						</div>
-						<fieldset
-							aria-label={messages.layersUsers}
-							aria-hidden={!showUsers}
-							inert={!showUsers}
-							className={`flex w-max gap-1 overflow-hidden border-0 p-0 ${userFiltersClass}`}
-						>
-							{userFilters.map((option) => (
-								<UserFilterButton
-									key={option.id}
-									option={option}
-									selected={userFilter === option.id}
-									onSelect={selectUserFilter}
-								/>
-							))}
-						</fieldset>
 					</div>
 				</div>
 			)}
