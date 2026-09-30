@@ -19,10 +19,24 @@ const COUNTS = {
 	playedLastWeek: 55,
 	playedPreviousWeek: 51,
 	playedLast28Days: 212,
+	playedPrevious28Days: 200,
+	scheduledLast28Days: 250,
+	scheduledPrevious28Days: 240,
+	uniquePlayersLast28Days: 126,
+	uniquePlayersPrevious28Days: 120,
+	activatedPlayersLast28Days: 24,
+	activatedPlayersPrevious28Days: 20,
 	scheduledLastWeek: 87,
 	cancelledLastWeek: 32,
 	upcomingNextSevenDays: 41,
 	lastPlayedDate: "2026-09-28",
+	weeklyActivity: [
+		{ weekStart: "2026-08-31", gamesPlayed: 48 },
+		{ weekStart: "2026-09-07", gamesPlayed: 58 },
+		{ weekStart: "2026-09-14", gamesPlayed: 51 },
+		{ weekStart: "2026-09-21", gamesPlayed: 55 },
+	],
+	popularTimes: [{ dayOfWeek: 6, timePeriod: 2, gamesPlayed: 12 }],
 };
 
 function setup(counts = COUNTS) {
@@ -50,7 +64,16 @@ describe("getFacilityDetail", () => {
 			location: { latitude: 29.76, longitude: -95.37 },
 			address: "1 Main St, Houston, Texas",
 		});
-		expect(detail.stats).toEqual({ ...COUNTS, playedChangePercent: 7.8, cancellationRate: 36.8 });
+		expect(detail.stats).toEqual({
+			...COUNTS,
+			playedChangePercent: 7.8,
+			playedPeriodChangePercent: 6,
+			cancellationRate: 36.8,
+			confirmationRate: 84.8,
+			confirmationRateChangePoints: 1.5,
+			uniquePlayersPeriodChangePercent: 5,
+			activatedPlayersPeriodChangePercent: 20,
+		});
 	});
 
 	it("resolves any member id of a merged facility and requests stats for the whole group", async () => {
@@ -80,14 +103,24 @@ describe("getFacilityDetail", () => {
 		const { getFacilityDetail } = setup({
 			...COUNTS,
 			playedPreviousWeek: 0,
+			playedPrevious28Days: 0,
 			scheduledLastWeek: 0,
 			cancelledLastWeek: 0,
+			scheduledLast28Days: 0,
+			scheduledPrevious28Days: 0,
+			uniquePlayersPrevious28Days: 0,
+			activatedPlayersPrevious28Days: 0,
 		});
 
 		const { stats } = await getFacilityDetail({ facilityId: "889" });
 
 		expect(stats.playedChangePercent).toBeNull();
+		expect(stats.playedPeriodChangePercent).toBeNull();
 		expect(stats.cancellationRate).toBeNull();
+		expect(stats.confirmationRate).toBeNull();
+		expect(stats.confirmationRateChangePoints).toBeNull();
+		expect(stats.uniquePlayersPeriodChangePercent).toBeNull();
+		expect(stats.activatedPlayersPeriodChangePercent).toBeNull();
 	});
 
 	it("throws when the facility does not exist", async () => {

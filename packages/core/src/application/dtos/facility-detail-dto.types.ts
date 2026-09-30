@@ -7,7 +7,12 @@ export type GetFacilityDetailInput = z.infer<typeof getFacilityDetailSchema>;
 
 export interface FacilityStatsView extends FacilityWeeklyCounts {
 	playedChangePercent: number | null;
+	playedPeriodChangePercent: number | null;
 	cancellationRate: number | null;
+	confirmationRate: number | null;
+	confirmationRateChangePoints: number | null;
+	uniquePlayersPeriodChangePercent: number | null;
+	activatedPlayersPeriodChangePercent: number | null;
 }
 
 export interface FacilityDetailView {
