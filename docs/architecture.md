@@ -11,27 +11,40 @@ apps/
     src/infrastructure/     API client, the in-browser LLM, Auth.js, request locale
   server/                 HTTP API (Hono), mounted by web at /api/v1
     src/presentation/       Hono app and routes, auth guard, responses, sign-in tracking
-    src/infrastructure/     Prisma, warehouse, sample and system adapters
+    src/presentation/http/controllers/  one Hono controller per resource
+    src/infrastructure/     repositories/ (Prisma, warehouse, sample) and providers/ (system, Linear), one folder per unit with its .types.ts and __tests__/
     src/container.ts        composition root, the only place that creates concrete adapters
     prisma/                 schema and migrations
 packages/
   core/                   pure TypeScript, no framework
     src/domain/             entities, value rules (guard), DomainError, EntityId
-    src/application/        use cases, ports, Zod DTOs, mappers, errors; fakes in testing/
+    src/application/        services/, repositories/ and providers/ (interfaces), Zod DTOs, mappers, errors; fakes in testing/
     src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
   config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
 
 Dependencies point inward: `core/domain <- core/application <- apps/server <- apps/web`. Biome enforces it inside core (`noRestrictedImports` overrides in `biome.json`): domain imports nothing, application imports only domain, and core never imports the apps or a framework.
 
+Server code is layered **controllers → services → repositories**, so the database behind a repository can change without touching the rest:
+
+| Layer | Where | What it does |
+| --- | --- | --- |
+| Controllers | `apps/server/src/presentation/http/controllers/<resource>-controller.ts` | Hono handlers: read the request, call a service, respond |
+| Services | `packages/core/src/application/services/` | Business logic (`makeListFacilities`, `makeGetMarketSummary`, …); never import a database or framework |
+| Repository interfaces | `packages/core/src/application/repositories/` | What a service needs from storage (`FacilityRepository`, `LoginEventRepository`, …) |
+| Provider interfaces | `packages/core/src/application/providers/` | Other outside needs: `Clock`, `IdGenerator`, `IssueTracker` |
+| Repository implementations | `apps/server/src/infrastructure/repositories/{database,warehouse,sample}/` | Prisma, warehouse and sample implementations of the interfaces |
+| Provider implementations | `apps/server/src/infrastructure/providers/{system,linear}/` | System clock and ids, the Linear issue tracker |
+| Composition root | `apps/server/src/container.ts` | Picks which implementation each service gets, from the environment |
+
 The server is **mounted, not deployed separately**. `apps/web/src/app/api/v1/[[...route]]/route.ts` hands every `/api/v1/*` request to `createApiApp({ resolveAccess })` from `@market-health-map/server`, and passes in how to read the Auth.js session. It's one Vercel project, one domain and one cookie. To split it out later, deploy `apps/server` on its own and point web at it; no code moves.
 
 | Part | Responsibility | May import |
 | --- | --- | --- |
 | `core/domain` | Entities, value rules (`guard`), `DomainError` | nothing |
-| `core/application` | Use cases, ports, DTOs (Zod), mappers, errors, fakes | domain, zod |
+| `core/application` | Services, repository and provider interfaces, DTOs (Zod), mappers, errors, fakes | domain, zod |
 | `core/i18n` | Message catalogs and locale detection | nothing |
-| `apps/server` | Hono API, adapters (Prisma, warehouse, samples), composition root | core |
+| `apps/server` | Hono controllers, repository and provider implementations, composition root | core |
 | `apps/web` | Next.js pages, components, Auth.js, React Query, PWA | core, server |
 
 Packages ship raw TypeScript. Next transpiles them via `transpilePackages`, and Vitest resolves their aliases with `vite-tsconfig-paths`.
@@ -161,7 +174,7 @@ Dry-run wins over real credentials so local UI work never files real tickets. Th
 
 ## API conventions
 
-- One Hono app (`apps/server/src/presentation/http/api-app.ts`) with base path `/api/v1`, one route file per resource in `presentation/http/routes/`, and one Next catch-all that mounts it.
+- One Hono app (`apps/server/src/presentation/http/api-app.ts`) with base path `/api/v1`, one controller file per resource in `presentation/http/controllers/`, and one Next catch-all that mounts it.
 - A middleware authenticates every request. Handlers stay thin: call the use case (Zod validates inside it) and respond. Unknown routes answer 404.
 - Success returns `{ data, meta? }`. Errors return `{ error: { code, message, details? } }`, mapped in `apps/server/src/presentation/http/errors.ts` (the app's `onError`) with messages in the request's language.
 

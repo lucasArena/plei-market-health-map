@@ -26,16 +26,18 @@ apps/
       i18n/                       request locale
     proxy.ts                      Next proxy (must stay at src/)
   server/src/
-    presentation/http/            createApiApp (Hono), routes/<resource>-routes.ts, auth guard, responses, errors
+    presentation/http/            createApiApp (Hono), controllers/<resource>-controller.ts, auth guard, responses, errors
     presentation/auth/            inbound adapters called by web (trackSignIn)
-    infrastructure/<source>/      adapters by data source: database/, warehouse/, sample/, system/
+    infrastructure/repositories/  repository implementations by source: database/, warehouse/, sample/
+      <source>/<name>/            one folder per unit: <name>.ts, <name>.types.ts, __tests__/<name>.test.ts
+    infrastructure/providers/     provider implementations: system/ (clock, ids), linear/ (issue tracker), same one-folder-per-unit layout
     container.ts                  composition root, the only place that builds concrete adapters
     env.ts                        server env parsing (Zod)
   server/prisma/                  schema and migrations
 packages/
   core/src/
     domain/                       entities/<entity>/, shared/ (guard, errors, ids); imports nothing
-    application/                  use-cases/, ports/, dtos/, mappers/, errors/, testing/ (fakes); imports only domain
+    application/                  services/, repositories/ and providers/ (interfaces), dtos/, mappers/, errors/, testing/ (fakes); imports only domain
     i18n/                         message catalogs and locale helpers; imports nothing
   config/                         shared tsconfig and Vitest presets
 .github/
@@ -51,8 +53,18 @@ Rules:
 - **Component folders** are PascalCase: `<Name>/<Name>Component.tsx` with `.rules.ts` (the `use<Name>Rules` hook holds all logic), `.types.ts`, optional `.styles.ts`, and tests in `__tests__/`. Screens follow the same shape (`<Name>ScreenComponent.tsx`).
 - **Hooks** live in `presentation/hooks/use-<subject>/use-<subject>-<what>.ts` (e.g. `use-facility/use-facility-list-all.ts` exports `useFacilityListAll`). Data hooks wrap `infrastructure/api/apiClient` with React Query.
 - **Infrastructure is grouped by technology**, then by purpose: `ai/`, `cache/local-storage/`, `api/`, `auth/`. Stateful services are classes with one shared instance exported next to them (`export const browserLlm = new BrowserLlm()`), and their dependencies are constructor options so tests pass fakes.
-- **Server:** one Hono route file per resource under `presentation/http/routes/`, mounted in `api-app.ts`. New adapters go in `infrastructure/<source>/` and are wired only in `container.ts`. Business rules never live in the server; they go in core use cases.
-- **Core stays framework-free.** Biome's `noRestrictedImports` blocks wrong imports (domain → application, core → apps, React, Next, Hono, Prisma). New entities go in `domain/entities/<entity>/`, new use cases in `application/use-cases/` as `makeVerbNoun`.
+- **Server layers are controllers → services → repositories.** One Hono controller per resource in `presentation/http/controllers/<resource>-controller.ts`, mounted in `api-app.ts`; it only reads the request, calls a service and responds. Business logic lives in core `application/services/` as `makeVerbNoun`. Storage goes through an interface in core `application/repositories/`, implemented in server `infrastructure/repositories/<source>/`; other outside needs (clock, ids, Linear) are `application/providers/` implemented in `infrastructure/providers/`. `container.ts` is the only place that picks implementations, so changing the database never touches controllers or services.
+- **One folder per server unit.** Every repository, provider and helper in `apps/server/src/infrastructure` lives in a folder named after it, with its types and tests beside it:
+
+  ```
+  infrastructure/repositories/warehouse/warehouse-facility-repository/
+    warehouse-facility-repository.ts
+    warehouse-facility-repository.types.ts
+    __tests__/warehouse-facility-repository.test.ts
+  ```
+
+  Import the file by its full path (`@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository`). Its `.types.ts` carries the same name as the file, and supporting data belongs to its unit (the sample CSV lives in `fixture-app-session-heatmap-repository/fixtures/`).
+- **Core stays framework-free.** Biome's `noRestrictedImports` blocks wrong imports (domain → application, core → apps, React, Next, Hono, Prisma). New entities go in `domain/entities/<entity>/`, new services in `application/services/` as `makeVerbNoun`.
 - **Tests** go in a `__tests__/` folder beside the file they cover, named `<file>.test.ts(x)`. Shared helpers go in `application/test/` (web), `testing/` (server) or `application/testing/` (core fakes).
 - **Types** go in a sibling `<file>.types.ts`, never inline.
 - **Imports** use aliases only: `@/…` in web, `@server/…` in server, `@core/…` in core, and `@market-health-map/core/<domain|application|i18n>` or `@market-health-map/server` across packages.

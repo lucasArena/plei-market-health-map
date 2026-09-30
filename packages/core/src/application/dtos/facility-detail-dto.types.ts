@@ -4,7 +4,7 @@ import type {
 	FacilityPlayerStats,
 	FacilityReservationStats,
 	FacilityWeeklyCounts,
-} from "@core/application/ports/facility-stats-repository.types";
+} from "@core/application/repositories/facility-stats-repository.types";
 import type { z } from "zod";
 
 export type GetFacilityDetailInput = z.infer<typeof getFacilityDetailSchema>;

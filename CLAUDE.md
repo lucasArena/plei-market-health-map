@@ -17,13 +17,14 @@ apps/
     src/infrastructure/     API client, the in-browser LLM, Auth.js, request locale
   server/                 HTTP API (Hono), mounted by web at /api/v1
     src/presentation/       Hono app and routes, auth guard, responses, sign-in tracking
-    src/infrastructure/     Prisma, warehouse, sample and system adapters
+    src/presentation/http/controllers/  one Hono controller per resource
+    src/infrastructure/     repositories/ (Prisma, warehouse, sample) and providers/ (system, Linear), one folder per unit with its .types.ts and __tests__/
     src/container.ts        composition root, the only place that creates concrete adapters
     prisma/                 schema and migrations
 packages/
   core/                   pure TypeScript, no framework
     src/domain/             entities, value rules (guard), DomainError, EntityId
-    src/application/        use cases, ports, Zod DTOs, mappers, errors; fakes in testing/
+    src/application/        services/, repositories/ and providers/ (interfaces), Zod DTOs, mappers, errors; fakes in testing/
     src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
   config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
@@ -34,6 +35,18 @@ The server is **mounted, not deployed separately**. `apps/web/src/app/api/v1/[[.
 
 Pleiful brand colors are documented in `docs/design-system.md`. TypeScript consumers use
 `@/application/constants/brand-colors`; Tailwind and CSS consumers use the matching `pleiful-*` theme colors.
+
+Server code is layered **controllers → services → repositories**, so the database behind a repository can change without touching the rest:
+
+| Layer | Where | What it does |
+| --- | --- | --- |
+| Controllers | `apps/server/src/presentation/http/controllers/<resource>-controller.ts` | Hono handlers: read the request, call a service, respond |
+| Services | `packages/core/src/application/services/` | Business logic (`makeListFacilities`, `makeGetMarketSummary`, …); never import a database or framework |
+| Repository interfaces | `packages/core/src/application/repositories/` | What a service needs from storage (`FacilityRepository`, `LoginEventRepository`, …) |
+| Provider interfaces | `packages/core/src/application/providers/` | Other outside needs: `Clock`, `IdGenerator`, `IssueTracker` |
+| Repository implementations | `apps/server/src/infrastructure/repositories/{database,warehouse,sample}/` | Prisma, warehouse and sample implementations of the interfaces |
+| Provider implementations | `apps/server/src/infrastructure/providers/{system,linear}/` | System clock and ids, the Linear issue tracker |
+| Composition root | `apps/server/src/container.ts` | Picks which implementation each service gets, from the environment |
 
 See `docs/architecture.md` for more depth.
 
@@ -47,7 +60,7 @@ See `docs/architecture.md` for more depth.
 - One folder per React component: `Name/NameComponent.tsx` plus `.types.ts` and `.rules.ts` siblings, and its tests in `__tests__/`. The `.rules.ts` hook holds all the logic, and the component only renders.
 - Named exports only. Default exports are allowed only for Next.js pages, layouts, and `manifest`.
 - Validate every boundary with Zod. No user-facing string is hardcoded; it comes from `@market-health-map/core/i18n`.
-- Tests live in a `__tests__/` folder beside the code they cover, as `__tests__/<name>.test.ts(x)`. Inside `src/app`, Next skips `_`-prefixed folders, so `__tests__` never becomes a route. Coverage must be ≥ 95% in every package. Use cases are tested with in-memory fakes, never DB mocks.
+- Tests live in a `__tests__/` folder beside the code they cover, as `__tests__/<name>.test.ts(x)`. Inside `src/app`, Next skips `_`-prefixed folders, so `__tests__` never becomes a route. Coverage must be ≥ 95% in every package. Services are tested with in-memory fakes, never DB mocks.
 - Biome for lint and format (tabs, double quotes, width 100). English everywhere.
 - Conventional commits (`feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert`), enforced by commitlint in the `commit-msg` hook and on PRs. Pre-commit runs lint-staged, and pre-push runs `pnpm check`. Never push to `main` or `staging` directly (see `AGENTS.md`).
 

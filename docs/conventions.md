@@ -7,7 +7,7 @@
 - No nested ternaries. For more than one condition, use `{ [`${low}`]: a, [`${high}`]: b }.true`; the last key that is true wins.
 - Path aliases only: `@/*` in web, `@server/*` in server, `@core/*` in core. Across packages, use `@market-health-map/core/<domain|application|i18n>` and `@market-health-map/server`.
 - Named exports only, except Next.js route segments (`page`, `layout`, `manifest`).
-- Use-case factories follow `makeVerbNoun(deps)`, which returns a `verbNoun(input)` function.
+- Services (`application/services/`) follow `makeVerbNoun(deps)`, which returns a `verbNoun(input)` function. Controllers call them; repositories and providers are passed in as `deps`.
 - Entities have a private constructor, `create()` (validates), `restore()` (rehydrates), getters, and `toJSON()`.
 - Pages in `src/app` stay thin and render one screen from `src/presentation/screens/` (`FacilitiesMapScreen`, `SignInScreen`, `OfflineScreen`). Screens compose the components in `src/presentation/components/`.
 - React components: one PascalCase folder each, `NameComponent.tsx`, with `.types.ts` and `.rules.ts` (hook with all the logic) beside it, and its tests in `__tests__/`.

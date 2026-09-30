@@ -3,7 +3,7 @@ import type {
 	FacilityReservationStats,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
-} from "@core/application/ports/facility-stats-repository.types";
+} from "@core/application/repositories/facility-stats-repository.types";
 import type { EntityId } from "@core/domain";
 
 export class InMemoryFacilityStatsRepository implements FacilityStatsRepository {
