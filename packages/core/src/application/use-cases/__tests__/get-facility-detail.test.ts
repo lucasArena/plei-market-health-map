@@ -54,7 +54,8 @@ describe("getFacilityDetail", () => {
 
 		const detail = await getFacilityDetail({ facilityId: " 889 " });
 
-		expect(stats.requested).toEqual([["889"]]);
+		expect(stats.reservationRequested).toEqual([["889"]]);
+		expect(stats.playerRequested).toEqual([["889"]]);
 		expect(detail.facility).toEqual({
 			id: "889",
 			marketId: "2",
@@ -96,7 +97,8 @@ describe("getFacilityDetail", () => {
 		const detail = await getFacilityDetail({ facilityId: "698" });
 
 		expect(detail.facility).toMatchObject({ id: "292", name: "Phield House", isActive: true });
-		expect(stats.requested).toEqual([["292", "698"]]);
+		expect(stats.reservationRequested).toEqual([["292", "698"]]);
+		expect(stats.playerRequested).toEqual([["292", "698"]]);
 	});
 
 	it("leaves rates empty when there is nothing to compare against", async () => {

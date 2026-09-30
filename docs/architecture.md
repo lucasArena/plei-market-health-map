@@ -84,14 +84,26 @@ The facilities come from Plei's data warehouse (`dataplei.plei_gold`, documented
 ### Facility detail panel
 
 ```
-FacilityDetailPanel (client)  ->  useFacilityDetails  ->  GET /api/v1/facilities/[facilityId]
-  -> getFacilityDetail (use case)
-    -> FacilityRepository.listAll + FacilityStatsRepository.getWeeklyCounts(facility.memberIds)
+FacilityDetailPanel (client)
+  -> GET /api/v1/facilities/[facilityId]/reservations
+    -> fast reservation scorecards, weekly activity and popular times
+  -> GET /api/v1/facilities/[facilityId]/players
+    -> unique and activated player scorecards, then the AI summary
 ```
 
 The panel accepts any member id of a merged facility and requests stats for the whole group.
+Both requests begin together, but the reservation response renders without waiting for player
+analytics. Unique and activated player cards keep local skeletons until their response arrives, and
+the AI summary starts only after both responses can be merged. Hovering a facility prefetches the
+reservation response. `CachedFacilityStatsRepository` caches each slice independently for 5 minutes.
 
-`WarehouseFacilityStatsRepository` runs one parameterized query on `plei_gold.dim_reservation` for all member ids (`location_id = any($1::int[])`, so counts are distinct games summed across the group and the last played date is the latest one), following the catalog's rules: pickup games only (`reservation_type = 'OpenReservation'`), played means confirmed and not cancelled, cancellations for 'Recurring game series' and 'Operational changes' are excluded, and weeks are completed Monday–Sunday weeks on the local, timezone-naive `date_with_time`. It returns played games in the last 28 days and in the previous 28 days, last week and the week before, scheduled and cancelled last week, upcoming games in the next 7 days, and the last played date. The same query also returns confirmation inputs, unique and activated players for both 28-day periods, four weekly game buckets, and a day-and-time grid. `toFacilityStatsView` adds the week-over-week change, the previous-period changes, the cancellation rate, and the confirmation rate (null when the denominator is 0). The panel builds a template summary of games, activated players, and confirmation rate, plus four scorecards that compare each metric with the previous 28-day period. Positive changes are green and negative changes are red. A weekly activity chart plots the four completed weeks, and a popular-times heatmap shows games by day and time of day. Every chart point and heatmap cell is available by hover and keyboard focus. The in-browser model receives the same game, confirmation, player, period-change, and busiest-time facts. All copy lives in the `facilityDetail` i18n block.
+`WarehouseFacilityStatsRepository` runs separate parameterized queries for reservations and players.
+The reservation query bounds its main scan to the previous 56 days through the next 7 days and
+reads the last played date separately. The slower player query reads qualifying participation from
+`fct_games_opened` for the same two 28-day periods. `toFacilityStatsView` can still merge both
+slices for callers that need the complete detail. The panel shows four scorecards, a weekly activity
+chart, and a popular-times heatmap; every chart point and heatmap cell is available by hover and
+keyboard focus. All copy lives in the `facilityDetail` i18n block.
 
 ### AI summary (in the browser)
 

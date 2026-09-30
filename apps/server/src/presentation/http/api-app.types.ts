@@ -3,7 +3,12 @@ import type { ResolveAccess } from "@server/presentation/http/authenticate.types
 
 export type ApiServices = Pick<
 	ServerContainer,
-	"listFacilities" | "getFacilityDetail" | "listAppSessionHeatmap" | "listRecentLogins"
+	| "listFacilities"
+	| "getFacilityDetail"
+	| "getFacilityReservationStats"
+	| "getFacilityPlayerStats"
+	| "listAppSessionHeatmap"
+	| "listRecentLogins"
 >;
 
 export interface CreateApiAppOptions {

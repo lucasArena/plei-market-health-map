@@ -1,5 +1,7 @@
 import type {
 	Clock,
+	FacilityPlayerStats,
+	FacilityReservationStats,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@market-health-map/core/application";
@@ -25,7 +27,28 @@ export function lastWeekStart(now: Date): string {
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly clock: Clock) {}
 
-	async getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts> {
+	async getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
+		const {
+			uniquePlayersLast28Days: _uniquePlayersLast28Days,
+			uniquePlayersPrevious28Days: _uniquePlayersPrevious28Days,
+			activatedPlayersLast28Days: _activatedPlayersLast28Days,
+			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
+			...reservationStats
+		} = this.makeCounts(facilityIds);
+		return reservationStats;
+	}
+
+	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
+		const counts = this.makeCounts(facilityIds);
+		return {
+			uniquePlayersLast28Days: counts.uniquePlayersLast28Days,
+			uniquePlayersPrevious28Days: counts.uniquePlayersPrevious28Days,
+			activatedPlayersLast28Days: counts.activatedPlayersLast28Days,
+			activatedPlayersPrevious28Days: counts.activatedPlayersPrevious28Days,
+		};
+	}
+
+	private makeCounts(facilityIds: EntityId[]): FacilityWeeklyCounts {
 		const random = createSeededRandom(`${facilityIds.join(",")}-stats`);
 		const now = this.clock.now();
 		const scheduledLastWeek = Math.round(4 + random() * 40);

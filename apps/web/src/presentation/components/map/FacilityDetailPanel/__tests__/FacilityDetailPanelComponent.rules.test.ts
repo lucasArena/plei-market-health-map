@@ -5,6 +5,8 @@ import { EN_MESSAGES } from "@/application/test/messages";
 import {
 	buildDetailViewModel,
 	buildPopularTimes,
+	buildProgressiveDetailViewModel,
+	buildProgressiveTiles,
 	buildSummary,
 	buildTiles,
 	buildWeeklyActivity,
@@ -16,10 +18,15 @@ import {
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
-const mockUseFacilityDetail = vi.fn();
+const mockUseFacilityReservationStats = vi.fn();
+const mockUseFacilityPlayerStats = vi.fn();
 
-vi.mock("@/presentation/hooks/use-facility/use-facility-details", () => ({
-	useFacilityDetails: (id: string | null) => mockUseFacilityDetail(id),
+vi.mock("@/presentation/hooks/use-facility/use-facility-reservation-stats", () => ({
+	useFacilityReservationStats: (id: string | null) => mockUseFacilityReservationStats(id),
+}));
+
+vi.mock("@/presentation/hooks/use-facility/use-facility-player-stats", () => ({
+	useFacilityPlayerStats: (id: string | null) => mockUseFacilityPlayerStats(id),
 }));
 
 const messages = EN_MESSAGES.facilityDetail;
@@ -173,6 +180,22 @@ describe("buildTiles", () => {
 	});
 });
 
+describe("buildProgressiveTiles", () => {
+	it("shows reservation metrics while player metrics load", () => {
+		const tiles = buildProgressiveTiles(STATS, undefined, true, messages, formatters);
+
+		expect(tiles.slice(0, 2).map((tile) => tile.value)).toEqual(["41", "82%"]);
+		expect(tiles.slice(2).every((tile) => tile.isLoading)).toBe(true);
+	});
+
+	it("shows unavailable player metrics after a failed request", () => {
+		const tiles = buildProgressiveTiles(STATS, undefined, false, messages, formatters);
+
+		expect(tiles.slice(2).map((tile) => tile.value)).toEqual(["Unavailable", "Unavailable"]);
+		expect(tiles.slice(2).every((tile) => !tile.isLoading)).toBe(true);
+	});
+});
+
 describe("buildWeeklyActivity", () => {
 	it("formats each week as a chart point", () => {
 		expect(buildWeeklyActivity(STATS, messages, formatters)[0]).toMatchObject({
@@ -223,6 +246,22 @@ describe("buildDetailViewModel", () => {
 	});
 });
 
+describe("buildProgressiveDetailViewModel", () => {
+	it("builds charts before the player metrics arrive", () => {
+		const view = buildProgressiveDetailViewModel(
+			{ facility: DETAIL.facility, stats: STATS },
+			undefined,
+			true,
+			messages,
+			formatters,
+		);
+
+		expect(view.summary).toBeNull();
+		expect(view.weeklyActivity).toHaveLength(4);
+		expect(view.popularTimes).toHaveLength(28);
+	});
+});
+
 describe("resolveDetailStatus", () => {
 	it("maps query state to a status", () => {
 		expect(resolveDetailStatus(true, false)).toBe("loading");
@@ -234,7 +273,16 @@ describe("resolveDetailStatus", () => {
 describe("useFacilityDetailPanelRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockUseFacilityDetail.mockReturnValue({ data: DETAIL, isPending: false, isError: false });
+		mockUseFacilityReservationStats.mockReturnValue({
+			data: { facility: DETAIL.facility, stats: STATS },
+			isPending: false,
+			isError: false,
+		});
+		mockUseFacilityPlayerStats.mockReturnValue({
+			data: STATS,
+			isPending: false,
+			isError: false,
+		});
 	});
 
 	function renderRules(isClosing = false) {
@@ -250,18 +298,38 @@ describe("useFacilityDetailPanelRules", () => {
 
 	it("builds the view for the selected facility", () => {
 		const { result } = renderRules();
-		expect(mockUseFacilityDetail).toHaveBeenCalledWith("889");
+		expect(mockUseFacilityReservationStats).toHaveBeenCalledWith("889");
+		expect(mockUseFacilityPlayerStats).toHaveBeenCalledWith("889");
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.name).toBe("Pegaso HTX");
-		expect(result.current.detail).toBe(DETAIL);
+		expect(result.current.detail).toEqual(DETAIL);
 		expect(result.current.messages).toBe(messages);
 	});
 
 	it("has no view while loading", () => {
-		mockUseFacilityDetail.mockReturnValue({ data: undefined, isPending: true, isError: false });
+		mockUseFacilityReservationStats.mockReturnValue({
+			data: undefined,
+			isPending: true,
+			isError: false,
+		});
 		const { result } = renderRules();
 		expect(result.current.status).toBe("loading");
 		expect(result.current.view).toBeNull();
+	});
+
+	it("shows reservation analytics while player analytics load", () => {
+		mockUseFacilityPlayerStats.mockReturnValue({
+			data: undefined,
+			isPending: true,
+			isError: false,
+		});
+		const { result } = renderRules();
+
+		expect(result.current.status).toBe("ready");
+		expect(result.current.view?.weeklyActivity).toHaveLength(4);
+		expect(result.current.view?.tiles[2]?.isLoading).toBe(true);
+		expect(result.current.detail).toBeNull();
+		expect(result.current.isAiPending).toBe(true);
 	});
 
 	it("closes on Escape only", () => {

@@ -36,7 +36,7 @@ function FacilityDetailSkeleton() {
 }
 
 export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
-	const { detail, handleAnimationEnd, isClosing, messages, onClose, status, view } =
+	const { detail, handleAnimationEnd, isAiPending, isClosing, messages, onClose, status, view } =
 		useFacilityDetailPanelRules(props);
 
 	return (
@@ -62,7 +62,7 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 						{messages.failed}
 					</p>
 				)}
-				{status === "ready" && view && detail && (
+				{status === "ready" && view && (
 					<div className="space-y-4 p-5">
 						<header className="flex items-center gap-3 pr-8">
 							<Avatar name={view.name} avatarUrl={view.avatarUrl} />
@@ -71,12 +71,27 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 								<p className="truncate text-xs text-muted-foreground">{view.address}</p>
 							</div>
 						</header>
-						<FacilityAiSummary detail={detail} fallback={view.summary} />
+						{detail && view.summary ? (
+							<FacilityAiSummary detail={detail} fallback={view.summary} />
+						) : isAiPending ? (
+							<div
+								data-testid="facility-ai-summary-skeleton"
+								aria-busy="true"
+								className="h-20 animate-pulse rounded-xl bg-pleiful-moonlight-5"
+							/>
+						) : null}
 						<dl className="grid grid-cols-2 gap-2.5">
 							{view.tiles.map((tile) => (
 								<div key={tile.key} className="rounded-xl border bg-card p-3.5">
 									<dt className="text-xs text-muted-foreground">{tile.label}</dt>
-									<dd className="mt-1 text-2xl font-semibold tabular-nums">{tile.value}</dd>
+									{tile.isLoading ? (
+										<dd
+											data-testid={`facility-stat-${tile.key}-skeleton`}
+											className="mt-2 h-7 w-16 animate-pulse rounded bg-muted"
+										/>
+									) : (
+										<dd className="mt-1 text-2xl font-semibold tabular-nums">{tile.value}</dd>
+									)}
 									{tile.hint && (
 										<dd
 											className={`mt-0.5 whitespace-nowrap text-[11px] ${HINT_CLASS[tile.hintDirection]}`}
