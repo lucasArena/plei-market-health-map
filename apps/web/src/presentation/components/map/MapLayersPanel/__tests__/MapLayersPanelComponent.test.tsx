@@ -7,6 +7,10 @@ import {
 	useMapLayers,
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 
+const mockPathname = vi.fn(() => "/");
+
+vi.mock("next/navigation", () => ({ usePathname: () => mockPathname() }));
+
 afterEach(() => {
 	vi.useRealTimers();
 });
@@ -16,7 +20,7 @@ function switchByName(name: string) {
 }
 
 describe("MapLayersPanel", () => {
-	it("opens at the top left with facilities off", () => {
+	it("opens at the top left with facilities on", () => {
 		renderWithMessages(<MapLayersPanel />);
 
 		const panel = screen.getByRole("complementary", { name: "Plei Market" });
@@ -40,14 +44,14 @@ describe("MapLayersPanel", () => {
 		);
 		expect(screen.getByText("Plei Market").parentElement?.parentElement).toHaveClass("py-[2px]");
 		expect(switchByName("Facilities")).toHaveClass(
-			"bg-[#e5e5e5]",
+			"bg-pleiful-pitch-green-80",
 			"h-[13px]",
 			"w-[22px]",
 			"p-[1px]",
 		);
 		expect(switchByName("Facilities").firstElementChild).toHaveClass(
 			"size-[9px]",
-			"translate-x-0",
+			"translate-x-[9px]",
 			"transition-transform",
 		);
 		expect(screen.queryByRole("switch", { name: "Users" })).not.toBeInTheDocument();
@@ -56,7 +60,8 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
 		expect(screen.getByText("Layers")).toHaveClass("text-[10px]");
-		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
+		expect(screen.getByText("Facilities").previousElementSibling).toBeNull();
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
@@ -64,12 +69,12 @@ describe("MapLayersPanel", () => {
 		renderWithMessages(<MapLayersPanel />);
 
 		fireEvent.click(switchByName("Facilities"));
-		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Facilities")).toHaveClass("bg-pleiful-pitch-green-80");
-		expect(switchByName("Facilities").firstElementChild).toHaveClass("translate-x-[9px]");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Facilities")).toHaveClass("bg-[#e5e5e5]");
+		expect(switchByName("Facilities").firstElementChild).toHaveClass("translate-x-0");
 	});
 
-	it("tells the map to show facilities when the switch is turned on", () => {
+	it("tells the map to hide and show facilities with the switch", () => {
 		function FacilitiesState() {
 			const layers = useMapLayers();
 			return <span>{String(layers?.showFacilities)}</span>;
@@ -82,11 +87,11 @@ describe("MapLayersPanel", () => {
 			</MapLayersProvider>,
 		);
 
-		expect(screen.getByText("false")).toBeInTheDocument();
-		fireEvent.click(switchByName("Facilities"));
 		expect(screen.getByText("true")).toBeInTheDocument();
 		fireEvent.click(switchByName("Facilities"));
 		expect(screen.getByText("false")).toBeInTheDocument();
+		fireEvent.click(switchByName("Facilities"));
+		expect(screen.getByText("true")).toBeInTheDocument();
 	});
 
 	it("tells the map to hide app sessions when the switch is turned off", () => {
@@ -150,6 +155,16 @@ describe("MapLayersPanel", () => {
 
 		expect(screen.getByText("Layers").closest(".layers-card-in")).toBeInTheDocument();
 		expect(screen.getByText("Layers")).toBeInTheDocument();
-		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
+	});
+
+	it("links the brand to the map and hides the layers away from it", () => {
+		mockPathname.mockReturnValue("/metrics");
+		renderWithMessages(<MapLayersPanel />);
+
+		expect(screen.getByRole("link", { name: "Plei Market" })).toHaveAttribute("href", "/");
+		expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+		mockPathname.mockReturnValue("/");
 	});
 });

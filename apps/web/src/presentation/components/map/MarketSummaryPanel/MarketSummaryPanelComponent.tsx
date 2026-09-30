@@ -3,6 +3,7 @@
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
+import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
 import type {
@@ -10,7 +11,6 @@ import type {
 	MarketSummaryPanelProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
-import { WeeklyActivityChart } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent";
 
 const SKELETON_TILES = ["facilities", "markets", "played", "confirmation", "players", "activated"];
 

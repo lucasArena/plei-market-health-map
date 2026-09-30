@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import type {
 	MapSearchProps,
 	MarketSearchResult,
@@ -66,12 +67,14 @@ export function useMapSearchRules({
 	};
 
 	const selectMarket = (market: MarketSearchResult) => {
+		activityTracker.count("searches");
 		setQuery(market.name);
 		setIsOpen(false);
 		onMarketSelect(market);
 	};
 
 	const selectFacility = (facility: MapSearchProps["facilities"][number]) => {
+		activityTracker.count("searches");
 		setQuery(facility.name);
 		setIsOpen(false);
 		onFacilitySelect(facility);

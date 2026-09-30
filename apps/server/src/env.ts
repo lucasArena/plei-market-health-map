@@ -16,6 +16,8 @@ export const serverEnvSchema = z.object({
 	LINEAR_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
 	LINEAR_API_KEY: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
 	FEEDBACK_DRY_RUN: z.preprocess(emptyAsUndefined, z.stringbool().default(false)),
+	TARGET_USER_EMAILS: z.preprocess(emptyAsUndefined, z.string().optional()),
+	APP_METRICS_VIEWER_EMAILS: z.preprocess(emptyAsUndefined, z.string().optional()),
 });
 
 let cached: z.infer<typeof serverEnvSchema> | undefined;
@@ -31,6 +33,25 @@ export function isLoginTrackingConfigured(): boolean {
 
 export function getAllowedEmailDomain(): string {
 	return getServerEnv().ALLOWED_EMAIL_DOMAIN;
+}
+
+function parseEmailList(raw = ""): string[] {
+	return [
+		...new Set(
+			raw
+				.split(/[\s,;]+/)
+				.map((email) => email.trim().toLowerCase())
+				.filter(Boolean),
+		),
+	];
+}
+
+export function getTargetUserEmails(): string[] {
+	return parseEmailList(getServerEnv().TARGET_USER_EMAILS);
+}
+
+export function canViewAppMetrics(email: string): boolean {
+	return parseEmailList(getServerEnv().APP_METRICS_VIEWER_EMAILS).includes(email.toLowerCase());
 }
 
 export function getLinearCredentials(): LinearCredentials | null {

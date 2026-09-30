@@ -2,7 +2,7 @@ import type { Feedback, FeedbackType } from "@core/application/dtos/feedback-dto
 import type {
 	FeedbackIssueDraft,
 	FeedbackIssueSubmitter,
-} from "@core/application/ports/issue-tracker.types";
+} from "@core/application/providers/issue-tracker.types";
 
 export const FEEDBACK_TITLES: Record<FeedbackType, string> = {
 	improvement: "Feedback",

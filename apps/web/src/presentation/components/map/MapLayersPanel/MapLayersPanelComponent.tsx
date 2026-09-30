@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 
@@ -36,6 +37,7 @@ export function MapLayersPanel() {
 		finishCardMotion,
 		isCardShown,
 		isExpanded,
+		isOnMap,
 		messages,
 		showFacilities,
 		showSessions,
@@ -62,23 +64,25 @@ export function MapLayersPanel() {
 			className="fixed top-[20px] left-[20px] z-50 flex w-max flex-col items-stretch gap-[4px]"
 		>
 			<div className="flex items-stretch overflow-hidden rounded-[8px] border border-border bg-card py-[2px] shadow-md">
-				<div className="flex items-center gap-[4px] px-[8px] py-[4px]">
+				<Link href="/" className="flex items-center gap-[4px] px-[8px] py-[4px] hover:bg-accent">
 					<Image src="/images/plei-logo.svg" alt="" width={20} height={20} />
 					<p className="text-[12px] leading-none font-semibold whitespace-nowrap text-card-foreground">
 						{messages.layersBrand}
 					</p>
-				</div>
-				<button
-					type="button"
-					aria-expanded={isExpanded}
-					aria-label={collapseLabel}
-					onClick={toggleExpanded}
-					className={`-my-[2px] flex w-[32px] shrink-0 items-center justify-center self-stretch border-l border-border hover:bg-accent active:bg-accent ${toggleSurface}`}
-				>
-					<Image src="/images/map-layers/settings-2.svg" alt="" width={16} height={16} />
-				</button>
+				</Link>
+				{isOnMap && (
+					<button
+						type="button"
+						aria-expanded={isExpanded}
+						aria-label={collapseLabel}
+						onClick={toggleExpanded}
+						className={`-my-[2px] flex w-[32px] shrink-0 items-center justify-center self-stretch border-l border-border hover:bg-accent active:bg-accent ${toggleSurface}`}
+					>
+						<Image src="/images/map-layers/settings-2.svg" alt="" width={16} height={16} />
+					</button>
+				)}
 			</div>
-			{isCardShown && (
+			{isOnMap && isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
 					className={`flex w-full flex-col gap-1 overflow-hidden rounded-[10px] border border-border bg-card px-3 pt-1 pb-3 shadow-md ${cardMotionClass}`}
@@ -87,12 +91,9 @@ export function MapLayersPanel() {
 						{messages.layersHeading}
 					</p>
 					<div className="flex w-full items-center justify-between gap-3">
-						<div className="flex items-center gap-1">
-							<Image src="/images/map-layers/map-pin.svg" alt="" width={16} height={16} />
-							<p className="text-[12px] leading-none font-medium text-foreground">
-								{messages.layersFacilities}
-							</p>
-						</div>
+						<p className="text-[12px] leading-none font-medium text-foreground">
+							{messages.layersFacilities}
+						</p>
 						<LayerSwitch
 							checked={showFacilities}
 							label={messages.layersFacilities}

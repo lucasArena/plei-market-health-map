@@ -7,7 +7,7 @@ import type {
 	FacilityPlayerStats,
 	FacilityReservationStats,
 	FacilityWeeklyCounts,
-} from "@core/application/ports/facility-stats-repository.types";
+} from "@core/application/repositories/facility-stats-repository.types";
 
 function roundTo(value: number, decimals: number): number {
 	const factor = 10 ** decimals;

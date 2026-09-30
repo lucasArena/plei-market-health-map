@@ -1,5 +1,5 @@
 import type { MarketGameChangeView } from "@core/application/dtos/market-summary-dto.types";
-import type { FacilityGameComparison } from "@core/application/ports/facility-stats-repository.types";
+import type { FacilityGameComparison } from "@core/application/repositories/facility-stats-repository.types";
 import type { Facility } from "@core/domain";
 
 export function toMarketGameChanges(

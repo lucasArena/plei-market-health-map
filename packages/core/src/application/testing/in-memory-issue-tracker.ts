@@ -3,7 +3,7 @@ import type {
 	FeedbackIssueDraft,
 	IssueAttachment,
 	IssueTracker,
-} from "@core/application/ports/issue-tracker.types";
+} from "@core/application/providers/issue-tracker.types";
 
 export class InMemoryIssueTracker implements IssueTracker {
 	readonly attachments: IssueAttachment[] = [];

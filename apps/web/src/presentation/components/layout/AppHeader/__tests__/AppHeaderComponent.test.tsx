@@ -3,11 +3,19 @@ import { renderWithMessages } from "@/application/test/render-with-messages";
 import { AppHeader } from "@/presentation/components/layout/AppHeader/AppHeaderComponent";
 
 vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
 describe("AppHeader", () => {
 	it("shows the market summary toggle and the account avatar", () => {
 		renderWithMessages(
-			<AppHeader user={{ name: "Lucas Arena", email: "lucas@plei.com", image: null }} />,
+			<AppHeader
+				user={{
+					name: "Lucas Arena",
+					email: "lucas@plei.com",
+					image: null,
+					canViewAppMetrics: false,
+				}}
+			/>,
 		);
 
 		expect(screen.getByRole("button", { name: "Market summary" })).toBeInTheDocument();
@@ -19,7 +27,14 @@ describe("AppHeader", () => {
 
 	it("puts the search slot, the summary toggle and the avatar in one gapped row", () => {
 		renderWithMessages(
-			<AppHeader user={{ name: "Lucas Arena", email: "lucas@plei.com", image: null }} />,
+			<AppHeader
+				user={{
+					name: "Lucas Arena",
+					email: "lucas@plei.com",
+					image: null,
+					canViewAppMetrics: false,
+				}}
+			/>,
 		);
 
 		const slot = screen.getByTestId("header-search-slot");

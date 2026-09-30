@@ -4,20 +4,25 @@ import type {
 	GetFacilityReservationStatsInput,
 	GetMarketSummaryInput,
 	IssueTracker,
+	ListAppMetricsPeopleInput,
 	ListRecentLoginsInput,
+	RecordDailyActivityInput,
 	RecordLoginInput,
 	SubmitFeedbackInput,
 } from "@market-health-map/core/application";
 import {
+	makeGetAppMetrics,
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
 	makeGetFacilityReservationStats,
 	makeGetMarketGameInsights,
 	makeGetMarketPlayerStats,
 	makeGetMarketSummary,
+	makeListAppMetricsPeople,
 	makeListAppSessionHeatmap,
 	makeListFacilities,
 	makeListRecentLogins,
+	makeRecordDailyActivity,
 	makeRecordLogin,
 	makeSubmitFeedback,
 } from "@market-health-map/core/application";
@@ -25,25 +30,53 @@ import {
 	getFeedbackMode,
 	getLinearCredentials,
 	getServerEnv,
+	getTargetUserEmails,
 	hasPartialLinearAppCredentials,
 } from "@server/env";
-import { getPrismaClient } from "@server/infrastructure/database/prisma-client";
-import { PrismaLoginEventRepository } from "@server/infrastructure/database/prisma-login-event-repository";
-import { DryRunIssueTracker } from "@server/infrastructure/linear/dry-run-issue-tracker";
-import { LinearApiKeyAuth, LinearAppAuth } from "@server/infrastructure/linear/linear-auth";
-import { LinearIssueTracker } from "@server/infrastructure/linear/linear-issue-tracker";
-import { FixtureAppSessionHeatmapRepository } from "@server/infrastructure/sample/fixture-app-session-heatmap-repository";
-import { SampleFacilityRepository } from "@server/infrastructure/sample/sample-facility-repository";
-import { SampleFacilityStatsRepository } from "@server/infrastructure/sample/sample-facility-stats-repository";
-import { SystemClock } from "@server/infrastructure/system/system-clock";
-import { UuidGenerator } from "@server/infrastructure/system/uuid-generator";
-import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/warehouse/cached-app-session-heatmap-repository";
-import { CachedFacilityRepository } from "@server/infrastructure/warehouse/cached-facility-repository";
-import { CachedFacilityStatsRepository } from "@server/infrastructure/warehouse/cached-facility-stats-repository";
-import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/warehouse/warehouse-app-session-heatmap-repository";
-import { WarehouseFacilityRepository } from "@server/infrastructure/warehouse/warehouse-facility-repository";
-import { WarehouseFacilityStatsRepository } from "@server/infrastructure/warehouse/warehouse-facility-stats-repository";
-import { getWarehousePool } from "@server/infrastructure/warehouse/warehouse-pool";
+import { DryRunIssueTracker } from "@server/infrastructure/providers/linear/dry-run-issue-tracker/dry-run-issue-tracker";
+import {
+	LinearApiKeyAuth,
+	LinearAppAuth,
+} from "@server/infrastructure/providers/linear/linear-auth/linear-auth";
+import { LinearIssueTracker } from "@server/infrastructure/providers/linear/linear-issue-tracker/linear-issue-tracker";
+import { SystemClock } from "@server/infrastructure/providers/system/system-clock/system-clock";
+import { UuidGenerator } from "@server/infrastructure/providers/system/uuid-generator/uuid-generator";
+import { CachedDailyActivityRepository } from "@server/infrastructure/repositories/database/cached-daily-activity-repository/cached-daily-activity-repository";
+import { getPrismaClient } from "@server/infrastructure/repositories/database/prisma-client/prisma-client";
+import { PrismaDailyActivityRepository } from "@server/infrastructure/repositories/database/prisma-daily-activity-repository/prisma-daily-activity-repository";
+import { PrismaLoginEventRepository } from "@server/infrastructure/repositories/database/prisma-login-event-repository/prisma-login-event-repository";
+import { FixtureAppSessionHeatmapRepository } from "@server/infrastructure/repositories/sample/fixture-app-session-heatmap-repository/fixture-app-session-heatmap-repository";
+import { MemoryDailyActivityRepository } from "@server/infrastructure/repositories/sample/memory-daily-activity-repository/memory-daily-activity-repository";
+import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
+import { SampleFacilityStatsRepository } from "@server/infrastructure/repositories/sample/sample-facility-stats-repository/sample-facility-stats-repository";
+import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
+import { CachedFacilityRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-repository/cached-facility-repository";
+import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
+import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository";
+import { WarehouseFacilityRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
+import { WarehouseFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
+import { getWarehousePool } from "@server/infrastructure/repositories/warehouse/warehouse-pool/warehouse-pool";
+
+function buildDailyActivityRepository() {
+	const databaseUrl = getServerEnv().DATABASE_URL;
+	const clock = new SystemClock();
+	if (!databaseUrl) return new MemoryDailyActivityRepository();
+	return new CachedDailyActivityRepository(
+		new PrismaDailyActivityRepository(getPrismaClient(databaseUrl)),
+		clock,
+	);
+}
+
+function buildAppMetrics() {
+	const dailyActivity = buildDailyActivityRepository();
+	const clock = new SystemClock();
+	const targetEmails = getTargetUserEmails();
+	return {
+		recordDailyActivity: makeRecordDailyActivity({ dailyActivity, clock }),
+		getAppMetrics: makeGetAppMetrics({ dailyActivity, clock, targetEmails }),
+		listAppMetricsPeople: makeListAppMetricsPeople({ dailyActivity, clock, targetEmails }),
+	};
+}
 
 function buildLogins() {
 	const databaseUrl = getServerEnv().DATABASE_URL;
@@ -149,6 +182,7 @@ let logins: ReturnType<typeof buildLogins> | undefined;
 let facilities: ReturnType<typeof buildFacilities> | undefined;
 let appSessionHeatmap: ReturnType<typeof buildAppSessionHeatmap> | undefined;
 let feedback: ReturnType<typeof buildFeedback> | undefined;
+let appMetrics: ReturnType<typeof buildAppMetrics> | undefined;
 
 function loginModule() {
 	logins ??= buildLogins();
@@ -163,6 +197,11 @@ function facilityModule() {
 function appSessionHeatmapModule() {
 	appSessionHeatmap ??= buildAppSessionHeatmap();
 	return appSessionHeatmap;
+}
+
+function appMetricsModule() {
+	appMetrics ??= buildAppMetrics();
+	return appMetrics;
 }
 
 function feedbackModule() {
@@ -186,6 +225,11 @@ const container = {
 	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>
 		facilityModule().getMarketPlayerStats(input),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
+	recordDailyActivity: (input: RecordDailyActivityInput) =>
+		appMetricsModule().recordDailyActivity(input),
+	getAppMetrics: () => appMetricsModule().getAppMetrics(),
+	listAppMetricsPeople: (input?: ListAppMetricsPeopleInput) =>
+		appMetricsModule().listAppMetricsPeople(input),
 };
 
 export function getContainer() {

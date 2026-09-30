@@ -16,6 +16,9 @@ export type ApiServices = Pick<
 	| "listAppSessionHeatmap"
 	| "listRecentLogins"
 	| "submitFeedback"
+	| "recordDailyActivity"
+	| "getAppMetrics"
+	| "listAppMetricsPeople"
 >;
 
 export type ApiEnv = {

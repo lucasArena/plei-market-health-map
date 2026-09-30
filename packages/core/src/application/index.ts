@@ -1,3 +1,25 @@
+export {
+	ACTIVITY_COUNTERS,
+	APP_METRICS_GOAL_PERCENT,
+	APP_METRICS_WEEKS,
+	DAILY_ACTIVITY_RETENTION_DAYS,
+	DEFAULT_PEOPLE_PAGE_SIZE,
+	recordActivitySchema,
+} from "@core/application/dtos/app-metrics-dto";
+export type {
+	ActivityCounter,
+	ActivityCounters,
+	ActivityReport,
+	ActivityUser,
+	AppMetricsPeoplePage,
+	AppMetricsPersonView,
+	AppMetricsView,
+	AppMetricsWeekView,
+	DailyActivity,
+	DailyActivityIncrement,
+	ListAppMetricsPeopleInput,
+	RecordDailyActivityInput,
+} from "@core/application/dtos/app-metrics-dto.types";
 export type { AppSessionHeatmapCellView } from "@core/application/dtos/app-session-heatmap-dto.types";
 export { getFacilityDetailSchema } from "@core/application/dtos/facility-detail-dto";
 export type {
@@ -79,9 +101,17 @@ export {
 	toTopFacilities,
 	toTopMarkets,
 } from "@core/application/mappers/market-summary-mapper";
-export type { AppSessionHeatmapRepository } from "@core/application/ports/app-session-heatmap-repository.types";
-export type { Clock } from "@core/application/ports/clock.types";
-export type { FacilityRepository } from "@core/application/ports/facility-repository.types";
+export type { Clock } from "@core/application/providers/clock.types";
+export type { IdGenerator } from "@core/application/providers/id-generator.types";
+export type {
+	FeedbackIssueDraft,
+	FeedbackIssueSubmitter,
+	IssueAttachment,
+	IssueTracker,
+} from "@core/application/providers/issue-tracker.types";
+export type { AppSessionHeatmapRepository } from "@core/application/repositories/app-session-heatmap-repository.types";
+export type { DailyActivityRepository } from "@core/application/repositories/daily-activity-repository.types";
+export type { FacilityRepository } from "@core/application/repositories/facility-repository.types";
 export type {
 	FacilityGameComparison,
 	FacilityGameComparisonRepository,
@@ -91,23 +121,19 @@ export type {
 	FacilityReservationStatsRepository,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
-} from "@core/application/ports/facility-stats-repository.types";
-export type { IdGenerator } from "@core/application/ports/id-generator.types";
-export type {
-	FeedbackIssueDraft,
-	FeedbackIssueSubmitter,
-	IssueAttachment,
-	IssueTracker,
-} from "@core/application/ports/issue-tracker.types";
-export type { LoginEventRepository } from "@core/application/ports/login-event-repository.types";
-export { makeGetFacilityDetail } from "@core/application/use-cases/get-facility-detail";
-export { makeGetFacilityPlayerStats } from "@core/application/use-cases/get-facility-player-stats";
-export { makeGetFacilityReservationStats } from "@core/application/use-cases/get-facility-reservation-stats";
-export { makeGetMarketGameInsights } from "@core/application/use-cases/get-market-game-insights";
-export { makeGetMarketPlayerStats } from "@core/application/use-cases/get-market-player-stats";
-export { makeGetMarketSummary } from "@core/application/use-cases/get-market-summary";
-export { makeListAppSessionHeatmap } from "@core/application/use-cases/list-app-session-heatmap";
-export { makeListFacilities } from "@core/application/use-cases/list-facilities";
-export { makeListRecentLogins } from "@core/application/use-cases/list-recent-logins";
-export { makeRecordLogin } from "@core/application/use-cases/record-login";
-export { makeSubmitFeedback } from "@core/application/use-cases/submit-feedback";
+} from "@core/application/repositories/facility-stats-repository.types";
+export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
+export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
+export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
+export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
+export { makeGetFacilityReservationStats } from "@core/application/services/get-facility-reservation-stats";
+export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
+export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
+export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
+export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
+export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
+export { makeListFacilities } from "@core/application/services/list-facilities";
+export { makeListRecentLogins } from "@core/application/services/list-recent-logins";
+export { makeRecordDailyActivity } from "@core/application/services/record-daily-activity";
+export { makeRecordLogin } from "@core/application/services/record-login";
+export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

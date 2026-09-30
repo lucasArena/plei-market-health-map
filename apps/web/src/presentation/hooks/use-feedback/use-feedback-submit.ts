@@ -5,6 +5,7 @@ import {
 	MAX_FEEDBACK_REQUEST_BYTES,
 } from "@market-health-map/core/application";
 import { useMutation } from "@tanstack/react-query";
+import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { ApiError } from "@/infrastructure/api/client";
 import { imageCompressor, totalBytes } from "@/infrastructure/image/image-compressor";
 import type { FeedbackSubmission } from "@/presentation/hooks/use-feedback/use-feedback-submit.types";
@@ -43,5 +44,8 @@ export async function submitFeedback(submission: FeedbackSubmission): Promise<Fe
 }
 
 export function useFeedbackSubmit() {
-	return useMutation({ mutationFn: submitFeedback });
+	return useMutation({
+		mutationFn: submitFeedback,
+		onSuccess: () => activityTracker.count("feedbackSent"),
+	});
 }

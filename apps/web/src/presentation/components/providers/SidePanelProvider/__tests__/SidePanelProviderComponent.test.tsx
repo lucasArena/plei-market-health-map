@@ -32,4 +32,33 @@ describe("SidePanelProvider", () => {
 		expect(() => result.current.releasePanel("facility-detail")).not.toThrow();
 		expect(result.current.activePanel).toBeNull();
 	});
+
+	it("closes a panel through the closer it registered", () => {
+		const { result } = renderHook(() => useSidePanels(), { wrapper });
+		const close = vi.fn();
+		const other = vi.fn();
+
+		let unregister = () => undefined as void;
+		act(() => {
+			unregister = result.current.registerCloser("facility-detail", close);
+		});
+		act(() => result.current.closePanel("facility-detail"));
+		act(() => result.current.closePanel("market-summary"));
+		expect(close).toHaveBeenCalledTimes(1);
+
+		const unregisterOther = result.current.registerCloser("facility-detail", other);
+		unregister();
+		result.current.closePanel("facility-detail");
+		expect(other).toHaveBeenCalledTimes(1);
+		unregisterOther();
+		result.current.closePanel("facility-detail");
+		expect(other).toHaveBeenCalledTimes(1);
+	});
+
+	it("ignores closers outside a provider", () => {
+		const { result } = renderHook(() => useSidePanels());
+
+		expect(() => result.current.registerCloser("facility-detail", vi.fn())()).not.toThrow();
+		expect(() => result.current.closePanel("facility-detail")).not.toThrow();
+	});
 });

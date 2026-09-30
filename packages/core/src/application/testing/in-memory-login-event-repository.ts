@@ -1,4 +1,4 @@
-import type { LoginEventRepository } from "@core/application/ports/login-event-repository.types";
+import type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
 import type { LoginEvent } from "@core/domain";
 
 export class InMemoryLoginEventRepository implements LoginEventRepository {

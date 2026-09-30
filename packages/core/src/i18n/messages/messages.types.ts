@@ -13,6 +13,7 @@ export interface Messages {
 		accountMenu: string;
 		version: string;
 		signOut: string;
+		appMetrics: string;
 	};
 	map: {
 		title: string;
@@ -137,6 +138,42 @@ export interface Messages {
 		tooLarge: string;
 		invalid: string;
 		failed: string;
+	};
+	appMetrics: {
+		title: string;
+		subtitle: string;
+		backToMap: string;
+		failed: string;
+		weeklyGoal: string;
+		goalHint: string;
+		activeUsers: string;
+		activeUsersHint: string;
+		notYet: string;
+		notYetNone: string;
+		chartTitle: string;
+		chartLegend: string;
+		chartTargetLegend: string;
+		chartAllTooltip: string;
+		chartTooltip: string;
+		tableTitle: string;
+		columnPerson: string;
+		columnDays: string;
+		columnVisits: string;
+		columnMinutes: string;
+		columnTopFeature: string;
+		columnLastSeen: string;
+		targetBadge: string;
+		neverSeen: string;
+		noFeature: string;
+		emptyTable: string;
+		previousPage: string;
+		nextPage: string;
+		pageOf: string;
+		featureFacilitiesOpened: string;
+		featureMarketSummariesOpened: string;
+		featureSearches: string;
+		featureAiSummaries: string;
+		featureFeedbackSent: string;
 	};
 	offline: {
 		title: string;

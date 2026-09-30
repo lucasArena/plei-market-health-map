@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { type AnimationEvent, useCallback, useEffect, useState } from "react";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type { LayersCardMotion } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
@@ -14,9 +15,10 @@ const LAYERS_CARD_MOTION_MS = {
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
+	const isOnMap = usePathname() === "/";
 	const [isExpanded, setIsExpanded] = useState(true);
 	const [cardMotion, setCardMotion] = useState<LayersCardMotion>("resting");
-	const [localShowFacilities, setLocalShowFacilities] = useState(false);
+	const [localShowFacilities, setLocalShowFacilities] = useState(true);
 	const [localShowSessions, setLocalShowSessions] = useState(true);
 	const showFacilities = layers?.showFacilities ?? localShowFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
@@ -60,6 +62,7 @@ export function useMapLayersPanelRules() {
 	const isCardShown = isExpanded || cardMotion === "exit";
 
 	return {
+		isOnMap,
 		cardMotion,
 		finishCardMotion,
 		isCardShown,

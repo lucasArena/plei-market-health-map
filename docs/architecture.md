@@ -11,27 +11,40 @@ apps/
     src/infrastructure/     API client, the in-browser LLM, Auth.js, request locale
   server/                 HTTP API (Hono), mounted by web at /api/v1
     src/presentation/       Hono app and routes, auth guard, responses, sign-in tracking
-    src/infrastructure/     Prisma, warehouse, sample and system adapters
+    src/presentation/http/controllers/  one Hono controller per resource
+    src/infrastructure/     repositories/ (Prisma, warehouse, sample) and providers/ (system, Linear), one folder per unit with its .types.ts and __tests__/
     src/container.ts        composition root, the only place that creates concrete adapters
     prisma/                 schema and migrations
 packages/
   core/                   pure TypeScript, no framework
     src/domain/             entities, value rules (guard), DomainError, EntityId
-    src/application/        use cases, ports, Zod DTOs, mappers, errors; fakes in testing/
+    src/application/        services/, repositories/ and providers/ (interfaces), Zod DTOs, mappers, errors; fakes in testing/
     src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
   config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
 
 Dependencies point inward: `core/domain <- core/application <- apps/server <- apps/web`. Biome enforces it inside core (`noRestrictedImports` overrides in `biome.json`): domain imports nothing, application imports only domain, and core never imports the apps or a framework.
 
+Server code is layered **controllers → services → repositories**, so the database behind a repository can change without touching the rest:
+
+| Layer | Where | What it does |
+| --- | --- | --- |
+| Controllers | `apps/server/src/presentation/http/controllers/<resource>-controller.ts` | Hono handlers: read the request, call a service, respond |
+| Services | `packages/core/src/application/services/` | Business logic (`makeListFacilities`, `makeGetMarketSummary`, …); never import a database or framework |
+| Repository interfaces | `packages/core/src/application/repositories/` | What a service needs from storage (`FacilityRepository`, `LoginEventRepository`, …) |
+| Provider interfaces | `packages/core/src/application/providers/` | Other outside needs: `Clock`, `IdGenerator`, `IssueTracker` |
+| Repository implementations | `apps/server/src/infrastructure/repositories/{database,warehouse,sample}/` | Prisma, warehouse and sample implementations of the interfaces |
+| Provider implementations | `apps/server/src/infrastructure/providers/{system,linear}/` | System clock and ids, the Linear issue tracker |
+| Composition root | `apps/server/src/container.ts` | Picks which implementation each service gets, from the environment |
+
 The server is **mounted, not deployed separately**. `apps/web/src/app/api/v1/[[...route]]/route.ts` hands every `/api/v1/*` request to `createApiApp({ resolveAccess })` from `@market-health-map/server`, and passes in how to read the Auth.js session. It's one Vercel project, one domain and one cookie. To split it out later, deploy `apps/server` on its own and point web at it; no code moves.
 
 | Part | Responsibility | May import |
 | --- | --- | --- |
 | `core/domain` | Entities, value rules (`guard`), `DomainError` | nothing |
-| `core/application` | Use cases, ports, DTOs (Zod), mappers, errors, fakes | domain, zod |
+| `core/application` | Services, repository and provider interfaces, DTOs (Zod), mappers, errors, fakes | domain, zod |
 | `core/i18n` | Message catalogs and locale detection | nothing |
-| `apps/server` | Hono API, adapters (Prisma, warehouse, samples), composition root | core |
+| `apps/server` | Hono controllers, repository and provider implementations, composition root | core |
 | `apps/web` | Next.js pages, components, Auth.js, React Query, PWA | core, server |
 
 Packages ship raw TypeScript. Next transpiles them via `transpilePackages`, and Vitest resolves their aliases with `vite-tsconfig-paths`.
@@ -133,6 +146,23 @@ The panel-toggle button beside the avatar opens the same kind of floating panel 
 
 The panel follows the map search. `MapScopeProvider` (in `AppProviders`) holds the current scope: picking a market in `MapSearch` sets a market scope, picking a facility sets a facility scope, and clearing the search (the × button or an empty box) goes back to all markets. The panel title names the scope ("All markets", the market name, or the facility name) and changes while the panel is open. A market scope calls both endpoints with `?market=<marketId>`; the use cases aggregate only that market's visible facilities and answer 404 for a market with no visible facility and 400 for a blank value. The panel then drops the "Active markets" tile and the top markets list. A facility scope reuses the facility detail endpoints (`/facilities/:id/reservations` and `/players`, shared with the detail panel's cache) and hides the scope tiles and both rankings. Each scope has its own React Query entry, so switching back is instant, and nothing is fetched while the panel is closed.
 
+## App metrics (project success tracking)
+
+The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/metrics`, from the avatar menu) measures it. Only the people in `APP_METRICS_VIEWER_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
+
+```
+ActivityTracker (web, every signed-in page)  ->  POST /api/v1/activity   (activity-controller)
+  -> recordDailyActivity (core service)  ->  DailyActivityRepository  ->  daily_activity (Neon)
+AppMetricsScreen  ->  GET /api/v1/metrics, GET /api/v1/metrics/people?page=   (metrics-controller)
+  -> getAppMetrics, listAppMetricsPeople  ->  CachedDailyActivityRepository (5 min)  ->  Prisma
+```
+
+- **Everyone is recorded; only target users count toward the goal.** The user always comes from the session, never from the request body.
+- **One row per person per US Eastern day** in `daily_activity` (first and last seen, minutes, visits, and counters for facilities opened, market summaries, searches, AI summaries and feedback). This keeps the Neon free plan's compute low: the first visit of the day sends one request, remembered in `localStorage`; everything else is sent in one `sendBeacon` when the tab is hidden or closed. There are no periodic check-ins.
+- A person is **active in a week** (Monday–Sunday, US Eastern) if they have at least one row that week. The page shows the weekly goal (green when ≥ 75%), active users, target users not active yet, an 8-week chart (`WeeklyActivityChart`) and a paginated people table (`DataTable` + `Pagination`), target users first.
+- Reads are cached for 5 minutes on the server and in React Query, so viewing the page doesn't wake the database. Rows older than 180 days are deleted once a day.
+- Without `DATABASE_URL`, activity is kept in memory (`MemoryDailyActivityRepository`), so local development works without a database.
+
 ## Feedback (Linear)
 
 `POST /api/v1/feedback` turns the in-app "Help us improve" form into a Linear issue. It takes `multipart/form-data` and needs a signed-in Plei session like every other route (401 / 403).
@@ -147,7 +177,7 @@ The panel follows the map search. `MapScopeProvider` (in `AppProviders`) holds t
 
 It answers `201 { data: { identifier, url } }`. Errors use the usual envelope: `400 VALIDATION_ERROR` (with Zod `details`), `413 PAYLOAD_TOO_LARGE` when the request is over 4 MB, `502 ISSUE_TRACKER_FAILED` when Linear fails, and `503 FEEDBACK_NOT_CONFIGURED` when there are no Linear credentials.
 
-`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue. The title is "Bug Report from <name>" for bugs and "Feedback from <name>" for improvements, using the session name. It uses the email when there is no name, and just "Bug Report" or "Feedback" when there is neither. The markdown description holds the full message, the submitter's name and email from the session ("Submitted by"), the page and view, an ISO timestamp, and every screenshot inline as `![](assetUrl)`. `LinearIssueTracker` (`apps/server/src/infrastructure/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and then calls `issueCreate`. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
+`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue. The title is "Bug Report from <name>" for bugs and "Feedback from <name>" for improvements, using the session name. It uses the email when there is no name, and just "Bug Report" or "Feedback" when there is neither. The markdown description holds the full message, the submitter's name and email from the session ("Submitted by"), the page and view, an ISO timestamp, and every screenshot inline as `![](assetUrl)`. `LinearIssueTracker` (`apps/server/src/infrastructure/providers/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and then calls `issueCreate`. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
 
 `container.ts` picks the adapter from the environment:
 
@@ -164,7 +194,7 @@ Dry-run wins over real credentials so local UI work never files real tickets. Th
 
 ## API conventions
 
-- One Hono app (`apps/server/src/presentation/http/api-app.ts`) with base path `/api/v1`, one route file per resource in `presentation/http/routes/`, and one Next catch-all that mounts it.
+- One Hono app (`apps/server/src/presentation/http/api-app.ts`) with base path `/api/v1`, one controller file per resource in `presentation/http/controllers/`, and one Next catch-all that mounts it.
 - A middleware authenticates every request. Handlers stay thin: call the use case (Zod validates inside it) and respond. Unknown routes answer 404.
 - Success returns `{ data, meta? }`. Errors return `{ error: { code, message, details? } }`, mapped in `apps/server/src/presentation/http/errors.ts` (the app's `onError`) with messages in the request's language.
 
