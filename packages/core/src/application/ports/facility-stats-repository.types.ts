@@ -11,7 +11,7 @@ export interface FacilityPopularTime {
 	gamesPlayed: number;
 }
 
-export interface FacilityWeeklyCounts {
+export interface FacilityReservationStats {
 	weekStart: string;
 	playedLastWeek: number;
 	playedPreviousWeek: number;
@@ -19,10 +19,6 @@ export interface FacilityWeeklyCounts {
 	playedPrevious28Days: number;
 	scheduledLast28Days: number;
 	scheduledPrevious28Days: number;
-	uniquePlayersLast28Days: number;
-	uniquePlayersPrevious28Days: number;
-	activatedPlayersLast28Days: number;
-	activatedPlayersPrevious28Days: number;
 	scheduledLastWeek: number;
 	cancelledLastWeek: number;
 	upcomingNextSevenDays: number;
@@ -31,6 +27,23 @@ export interface FacilityWeeklyCounts {
 	popularTimes: FacilityPopularTime[];
 }
 
-export interface FacilityStatsRepository {
-	getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts>;
+export interface FacilityPlayerStats {
+	uniquePlayersLast28Days: number;
+	uniquePlayersPrevious28Days: number;
+	activatedPlayersLast28Days: number;
+	activatedPlayersPrevious28Days: number;
 }
+
+export interface FacilityWeeklyCounts extends FacilityReservationStats, FacilityPlayerStats {}
+
+export interface FacilityReservationStatsRepository {
+	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats>;
+}
+
+export interface FacilityPlayerStatsRepository {
+	getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats>;
+}
+
+export interface FacilityStatsRepository
+	extends FacilityReservationStatsRepository,
+		FacilityPlayerStatsRepository {}

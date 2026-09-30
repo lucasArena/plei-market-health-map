@@ -93,10 +93,10 @@ describe("useFacilityAiSummaryRules", () => {
 	});
 
 	it("uses a cached summary without touching the model", async () => {
-		facilitySummaryCache.write("889:2026-09-21:en", "Cached.");
+		facilitySummaryCache.write(facilitySummaryCache.keyFor(FACILITY_DETAIL, "en"), "Cached.");
 		const { result } = renderRules();
 
-		expect(result.current.status).toBe("ready");
+		await waitFor(() => expect(result.current.status).toBe("ready"));
 		expect(result.current.text).toBe("Cached.");
 		expect(llm.isSupported).not.toHaveBeenCalled();
 	});

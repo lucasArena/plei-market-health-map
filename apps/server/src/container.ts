@@ -1,10 +1,14 @@
 import type {
 	GetFacilityDetailInput,
+	GetFacilityPlayerStatsInput,
+	GetFacilityReservationStatsInput,
 	ListRecentLoginsInput,
 	RecordLoginInput,
 } from "@market-health-map/core/application";
 import {
 	makeGetFacilityDetail,
+	makeGetFacilityPlayerStats,
+	makeGetFacilityReservationStats,
 	makeListAppSessionHeatmap,
 	makeListFacilities,
 	makeListRecentLogins,
@@ -20,6 +24,7 @@ import { SystemClock } from "@server/infrastructure/system/system-clock";
 import { UuidGenerator } from "@server/infrastructure/system/uuid-generator";
 import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/warehouse/cached-app-session-heatmap-repository";
 import { CachedFacilityRepository } from "@server/infrastructure/warehouse/cached-facility-repository";
+import { CachedFacilityStatsRepository } from "@server/infrastructure/warehouse/cached-facility-stats-repository";
 import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/warehouse/warehouse-app-session-heatmap-repository";
 import { WarehouseFacilityRepository } from "@server/infrastructure/warehouse/warehouse-facility-repository";
 import { WarehouseFacilityStatsRepository } from "@server/infrastructure/warehouse/warehouse-facility-stats-repository";
@@ -46,13 +51,13 @@ function buildFacilityRepositories() {
 	if (!warehouseUrl) {
 		return {
 			facilities: new SampleFacilityRepository(),
-			stats: new SampleFacilityStatsRepository(clock),
+			stats: new CachedFacilityStatsRepository(new SampleFacilityStatsRepository(clock), clock),
 		};
 	}
 	const pool = getWarehousePool(warehouseUrl);
 	return {
 		facilities: new CachedFacilityRepository(new WarehouseFacilityRepository(pool), clock),
-		stats: new WarehouseFacilityStatsRepository(pool),
+		stats: new CachedFacilityStatsRepository(new WarehouseFacilityStatsRepository(pool), clock),
 	};
 }
 
@@ -61,6 +66,8 @@ function buildFacilities() {
 	return {
 		listFacilities: makeListFacilities({ facilities: repositories.facilities }),
 		getFacilityDetail: makeGetFacilityDetail(repositories),
+		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
+		getFacilityPlayerStats: makeGetFacilityPlayerStats(repositories),
 	};
 }
 
@@ -117,6 +124,10 @@ const container = {
 	listFacilities: () => facilityModule().listFacilities(),
 	listAppSessionHeatmap: () => appSessionHeatmapModule().listAppSessionHeatmap(),
 	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
+	getFacilityReservationStats: (input: GetFacilityReservationStatsInput) =>
+		facilityModule().getFacilityReservationStats(input),
+	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
+		facilityModule().getFacilityPlayerStats(input),
 };
 
 export function getContainer() {

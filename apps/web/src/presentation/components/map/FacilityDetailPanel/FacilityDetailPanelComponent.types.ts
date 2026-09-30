@@ -1,4 +1,6 @@
 import type { Messages } from "@market-health-map/core/i18n";
+import type { PopularTimeCellView } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.types";
+import type { WeeklyActivityPointView } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 
 export const ChangeDirection = { up: "up", down: "down", flat: "flat" } as const;
 
@@ -21,15 +23,19 @@ export interface FacilityStatTile {
 	value: string;
 	hint: string | null;
 	hintDirection: StatDirection;
+	isLoading: boolean;
 }
 
 export interface FacilityDetailViewModel {
 	name: string;
 	address: string;
 	avatarUrl: string | null;
-	summary: string;
+	summary: string | null;
 	tiles: FacilityStatTile[];
-	weekLabel: string;
+	weeklyActivity: WeeklyActivityPointView[];
+	popularTimes: PopularTimeCellView[];
+	dayLabels: string[];
+	timePeriodLabels: string[];
 	lastPlayedLabel: string;
 }
 
@@ -37,6 +43,6 @@ export interface DetailFormatters {
 	number: Intl.NumberFormat;
 	decimal: Intl.NumberFormat;
 	plural: Intl.PluralRules;
-	day: Intl.DateTimeFormat;
 	dayWithYear: Intl.DateTimeFormat;
+	week: Intl.DateTimeFormat;
 }
