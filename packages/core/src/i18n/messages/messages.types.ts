@@ -18,6 +18,12 @@ export interface Messages {
 		title: string;
 		loading: string;
 		failed: string;
+		searchPlaceholder: string;
+		clearSearch: string;
+		markets: string;
+		facilities: string;
+		facilityCount: string;
+		noSearchResults: string;
 		clusterCount: string;
 		moreFacilities: string;
 		sessionHeatmapLegend: string;

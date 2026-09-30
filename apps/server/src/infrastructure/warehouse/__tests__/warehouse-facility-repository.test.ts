@@ -25,6 +25,7 @@ describe("toFacility", () => {
 		expect(toFacility(row())?.toJSON()).toEqual({
 			id: "1042",
 			marketId: "7",
+			marketName: "St. Louis",
 			name: "The Sports Yard | Section 109",
 			address: "123 Main St, St. Louis, Missouri",
 			location: { latitude: 38.62, longitude: -90.19 },

@@ -4,6 +4,7 @@ export const FACILITY_DETAIL: FacilityDetailView = {
 	facility: {
 		id: "889",
 		marketId: "houston",
+		marketName: "Houston",
 		name: "Pegaso HTX",
 		avatarUrl: null,
 		isActive: true,

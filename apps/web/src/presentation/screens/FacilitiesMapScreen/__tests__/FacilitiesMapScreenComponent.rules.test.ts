@@ -6,6 +6,7 @@ import {
 	appSessionHeatmapAreas,
 	appSessionHeatmapScale,
 	facilitiesForIds,
+	marketBounds,
 	placeHover,
 	resolveMapStatus,
 	toAppSessionHeatmapFeatureCollection,
@@ -48,6 +49,7 @@ vi.mock("maplibre-gl", () => {
 		remove = vi.fn();
 		off = vi.fn();
 		easeTo = vi.fn();
+		fitBounds = vi.fn();
 		setPaintProperty = vi.fn();
 		getCanvas = vi.fn(() => mapState.canvas);
 		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
@@ -92,6 +94,7 @@ vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 const FACILITY = {
 	id: "f1",
 	marketId: "austin",
+	marketName: "Austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
@@ -125,6 +128,7 @@ describe("toFacilityFeatureCollection", () => {
 					properties: {
 						id: "f1",
 						marketId: "austin",
+						marketName: "Austin",
 						name: "Eastside Futsal Arena",
 						isActive: true,
 					},
@@ -252,6 +256,36 @@ describe("facilitiesForIds", () => {
 	it("keeps known string ids in order", () => {
 		const byId = new Map([["f1", FACILITY]]);
 		expect(facilitiesForIds(["f1", "missing", 3, undefined], byId)).toEqual([FACILITY]);
+	});
+});
+
+describe("marketBounds", () => {
+	it("contains every facility or returns null for an empty market", () => {
+		expect(
+			marketBounds([
+				FACILITY,
+				{ ...FACILITY, id: "f2", location: { latitude: 31, longitude: -96 } },
+			]),
+		).toEqual([
+			[-97.74, 30.27],
+			[-96, 31],
+		]);
+		expect(marketBounds([])).toBeNull();
+	});
+});
+
+describe("marketBounds", () => {
+	it("returns the corners containing all market facilities", () => {
+		expect(
+			marketBounds([
+				FACILITY,
+				{ ...FACILITY, id: "f2", location: { latitude: 31, longitude: -96 } },
+			]),
+		).toEqual([
+			[-97.74, 30.27],
+			[-96, 31],
+		]);
+		expect(marketBounds([])).toBeNull();
 	});
 });
 
@@ -427,6 +461,91 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
 		expect(mapState.canvas.style.cursor).toBe("");
+	});
+
+	it("zooms to facilities and fits markets selected from search", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const map = mapState.instances[0];
+		act(() => result.current.selectSearchFacility(FACILITY));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(map?.easeTo).toHaveBeenLastCalledWith(
+			expect.objectContaining({ center: [-97.74, 30.27], zoom: 14 }),
+		);
+		const second = { ...FACILITY, id: "f2", location: { latitude: 31, longitude: -96 } };
+		act(() =>
+			result.current.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY, second],
+			}),
+		);
+		expect(map?.fitBounds).toHaveBeenCalledWith(
+			[
+				[-97.74, 30.27],
+				[-96, 31],
+			],
+			{ padding: 72, maxZoom: 11, duration: 700 },
+		);
+		act(() =>
+			result.current.selectSearchMarket({ id: "austin", name: "Austin", facilities: [FACILITY] }),
+		);
+		expect(map?.easeTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom: 11 }));
+		act(() => result.current.selectSearchMarket({ id: "empty", name: "Empty", facilities: [] }));
+	});
+
+	it("zooms to search selections", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const map = mapState.instances[0];
+		const secondFacility = {
+			...FACILITY,
+			id: "f2",
+			location: { latitude: 30.4, longitude: -97.6 },
+		};
+
+		act(() => result.current.selectSearchFacility(FACILITY));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			center: [-97.74, 30.27],
+			zoom: 14,
+			padding: { top: 0, bottom: 0, left: 0, right: 384 },
+			duration: 700,
+		});
+
+		act(() =>
+			result.current.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY, secondFacility],
+			}),
+		);
+		expect(result.current.selectedFacilityId).toBeNull();
+		expect(map?.fitBounds).toHaveBeenCalledWith(
+			[
+				[-97.74, 30.27],
+				[-97.6, 30.4],
+			],
+			{ padding: 72, maxZoom: 11, duration: 700 },
+		);
+
+		act(() =>
+			result.current.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY],
+			}),
+		);
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			center: [-97.74, 30.27],
+			zoom: 11,
+			padding: { top: 0, bottom: 0, left: 0, right: 0 },
+			duration: 700,
+		});
+
+		act(() => result.current.selectSearchMarket({ id: "empty", name: "Empty", facilities: [] }));
 	});
 
 	it("lists a hovered cluster's facilities and zooms in on click", async () => {

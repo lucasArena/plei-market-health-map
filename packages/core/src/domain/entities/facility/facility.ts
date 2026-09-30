@@ -25,6 +25,7 @@ export class Facility {
 		return new Facility({
 			id: input.id,
 			marketId: input.marketId,
+			marketName: guard.notEmpty(input.marketName ?? input.marketId, "Market name"),
 			name: guard.notEmpty(input.name, "Facility name"),
 			address: guard.notEmpty(input.address, "Facility address"),
 			location: guard.location(input.location, "Facility location"),
@@ -44,6 +45,10 @@ export class Facility {
 
 	get marketId(): EntityId {
 		return this.props.marketId;
+	}
+
+	get marketName(): string {
+		return this.props.marketName ?? this.props.marketId;
 	}
 
 	get memberIds(): EntityId[] {

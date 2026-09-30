@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
+import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
@@ -11,12 +12,15 @@ export function FacilitiesMapScreen() {
 	const {
 		closePanel,
 		containerRef,
+		facilities,
 		handlePanelClosed,
 		hasSessionHeatmap,
 		hovered,
 		isPanelClosing,
 		messages,
 		selectedFacilityId,
+		selectSearchFacility,
+		selectSearchMarket,
 		sessionScale,
 		status,
 	} = useFacilitiesMapScreenRules();
@@ -33,6 +37,12 @@ export function FacilitiesMapScreen() {
 			<div className="absolute inset-0">
 				<div ref={containerRef} data-testid="facilities-map" className="h-full w-full" />
 			</div>
+			<MapSearch
+				facilities={facilities}
+				messages={messages}
+				onFacilitySelect={selectSearchFacility}
+				onMarketSelect={selectSearchMarket}
+			/>
 			{overlayMessage && (
 				<p
 					role="status"
