@@ -7,8 +7,6 @@ export type LayersCardMotion = "resting" | "enter" | "exit";
 export interface MapLayersValue {
 	showFacilities: boolean;
 	setShowFacilities: (showFacilities: boolean) => void;
-	showUsers: boolean;
-	setShowUsers: (showUsers: boolean) => void;
 }
 
 export interface MapLayersProviderProps {

@@ -232,7 +232,6 @@ export function useFacilitiesMapScreenRules() {
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const mapLayers = useMapLayers();
 	const showFacilities = mapLayers?.showFacilities ?? true;
-	const showUsers = mapLayers?.showUsers ?? true;
 	const showFacilitiesRef = useRef(showFacilities);
 	showFacilitiesRef.current = showFacilities;
 	const hoveredClusterIdRef = useRef<number | null>(null);
@@ -533,8 +532,7 @@ export function useFacilitiesMapScreenRules() {
 		for (const layerId of FACILITY_MAP_LAYER_IDS) {
 			applyMapLayerVisibility(map, layerId, showFacilities);
 		}
-		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showUsers);
-	}, [isMapReady, showFacilities, showUsers]);
+	}, [isMapReady, showFacilities]);
 
 	return {
 		closePanel,
@@ -546,7 +544,6 @@ export function useFacilitiesMapScreenRules() {
 		messages: messages.map,
 		sessionScale,
 		selectedFacilityId,
-		showUsers,
 		status,
 	};
 }

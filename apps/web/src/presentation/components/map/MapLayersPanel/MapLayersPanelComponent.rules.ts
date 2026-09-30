@@ -20,10 +20,9 @@ export function useMapLayersPanelRules() {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const [cardMotion, setCardMotion] = useState<LayersCardMotion>("resting");
 	const [localShowFacilities, setLocalShowFacilities] = useState(false);
-	const [localShowUsers, setLocalShowUsers] = useState(true);
+	const [showUsers, setShowUsers] = useState(true);
 	const [userFilter, setUserFilter] = useState<UserLayerFilter>("all");
 	const showFacilities = layers?.showFacilities ?? localShowFacilities;
-	const showUsers = layers?.showUsers ?? localShowUsers;
 
 	const toggleExpanded = useCallback(() => {
 		setCardMotion(isExpanded ? "exit" : "enter");
@@ -54,13 +53,7 @@ export function useMapLayersPanelRules() {
 		}
 		setLocalShowFacilities((current) => !current);
 	}, [layers]);
-	const toggleUsers = useCallback(() => {
-		if (layers) {
-			layers.setShowUsers(!layers.showUsers);
-			return;
-		}
-		setLocalShowUsers((current) => !current);
-	}, [layers]);
+	const toggleUsers = useCallback(() => setShowUsers((current) => !current), []);
 	const selectUserFilter = useCallback((filter: UserLayerFilter) => setUserFilter(filter), []);
 
 	const copy = messages.map;

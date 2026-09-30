@@ -10,11 +10,7 @@ const MapLayersContext = createContext<MapLayersValue | null>(null);
 
 export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>) {
 	const [showFacilities, setShowFacilities] = useState(false);
-	const [showUsers, setShowUsers] = useState(true);
-	const value = useMemo(
-		() => ({ showFacilities, setShowFacilities, showUsers, setShowUsers }),
-		[showFacilities, showUsers],
-	);
+	const value = useMemo(() => ({ showFacilities, setShowFacilities }), [showFacilities]);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }
 
