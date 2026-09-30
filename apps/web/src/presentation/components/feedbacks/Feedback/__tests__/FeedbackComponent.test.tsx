@@ -4,6 +4,8 @@ import { createQueryWrapper } from "@/application/test/query-wrapper";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 
+vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
+
 const createObjectURL = vi.fn((file: File) => `blob:${file.name}`);
 const revokeObjectURL = vi.fn();
 
@@ -41,6 +43,24 @@ function finishClosing() {
 }
 
 describe("Feedback", () => {
+	it.each([true, false])(
+		"keeps the metrics viewer rule and places sign-out last (%s)",
+		(canViewAppMetrics) => {
+			renderWidget(
+				<Feedback
+					user={{ name: "Stefano", email: "stefano@plei.com", image: null, canViewAppMetrics }}
+				/>,
+			);
+			fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+			const signOut = screen.getByRole("button", { name: "Sign out" });
+			expect(signOut.closest("form")).toBe(
+				signOut.closest("form")?.parentElement?.lastElementChild,
+			);
+			const metrics = screen.queryByRole("link", { name: "App metrics" });
+			if (canViewAppMetrics) expect(metrics).toHaveAttribute("href", "/metrics");
+			else expect(metrics).not.toBeInTheDocument();
+		},
+	);
 	beforeEach(() => {
 		Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
 		Object.defineProperty(URL, "revokeObjectURL", { value: revokeObjectURL, configurable: true });

@@ -698,7 +698,7 @@ export function bindFacilityGlass(
 
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
-	const { setScope } = useMapScope();
+	const { setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
 	const heatmapQuery = useAppSessionHeatmap();
@@ -706,6 +706,10 @@ export function useFacilitiesMapScreenRules() {
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
+	useEffect(() => {
+		shareSelectedFacilityId(selectedFacilityId);
+		return () => shareSelectedFacilityId(null);
+	}, [selectedFacilityId, shareSelectedFacilityId]);
 	const [isPanelClosing, setIsPanelClosing] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
