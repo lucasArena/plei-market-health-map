@@ -17,6 +17,7 @@ import {
 import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
+import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
 	APP_SESSION_HEATMAP_PAINT,
@@ -418,6 +419,11 @@ export function useFacilitiesMapScreenRules() {
 	}, [heatmapQuery.data, heatmapQuery.isError]);
 
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
+	useExclusiveSidePanel(
+		"facility-detail",
+		selectedFacilityId !== null && !isPanelClosing,
+		closePanel,
+	);
 
 	useEffect(() => {
 		const container = containerRef.current;

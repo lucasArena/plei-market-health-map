@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { MarketSummaryToggleState } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
 export function nextToggleState(state: MarketSummaryToggleState): MarketSummaryToggleState {
 	return ({ closed: "open", open: "closing", closing: "open" } as const)[state];
@@ -18,6 +19,7 @@ export function useMarketSummaryToggleRules() {
 		[],
 	);
 	const handleClosed = useCallback(() => setState("closed"), []);
+	useExclusiveSidePanel("market-summary", state === "open", close);
 
 	return {
 		close,

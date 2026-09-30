@@ -6,6 +6,7 @@ import type { AppProvidersProps } from "@/presentation/components/providers/AppP
 import { HeaderSlotProvider } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { MapScopeProvider } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+import { SidePanelProvider } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 
 const STALE_TIME_MS = 30_000;
 
@@ -17,7 +18,9 @@ export function AppProviders({ locale, messages, children }: Readonly<AppProvide
 		<QueryClientProvider client={queryClient}>
 			<MessagesProvider locale={locale} messages={messages}>
 				<MapScopeProvider>
-					<HeaderSlotProvider>{children}</HeaderSlotProvider>
+					<SidePanelProvider>
+						<HeaderSlotProvider>{children}</HeaderSlotProvider>
+					</SidePanelProvider>
 				</MapScopeProvider>
 			</MessagesProvider>
 		</QueryClientProvider>
