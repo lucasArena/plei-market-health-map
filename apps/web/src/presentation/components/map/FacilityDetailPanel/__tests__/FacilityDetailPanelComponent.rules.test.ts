@@ -200,10 +200,18 @@ describe("buildProgressiveTiles", () => {
 describe("buildWeeklyActivity", () => {
 	it("formats each week as a chart point", () => {
 		expect(buildWeeklyActivity(STATS, messages, formatters)[0]).toMatchObject({
-			shortLabel: "Aug 31",
+			key: "2026-08-31",
+			shortLabel: "Sep 6",
 			value: 8,
-			tooltip: "Aug 31: 8 games",
+			tooltip: "Sep 6: 8 games",
 		});
+	});
+
+	it("labels each Monday to Sunday week by the Sunday it ends on", () => {
+		const points = buildWeeklyActivity(STATS, messages, formatters);
+
+		expect(points.map((point) => point.label)).toEqual(["Sep 6", "Sep 13", "Sep 20", "Sep 27"]);
+		expect(points.at(-1)).toMatchObject({ label: "Sep 27", tooltip: "Sep 27: 12 games" });
 	});
 });
 

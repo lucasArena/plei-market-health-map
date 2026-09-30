@@ -47,6 +47,21 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("dim_player");
 	});
 
+	it("buckets weekly activity into completed Monday to Sunday weeks", () => {
+		// Postgres date_trunc('week') starts weeks on Monday.
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"date_trunc('week', current_date)::date as this_week",
+		);
+		// A Sunday game falls before week_start + 7 and a Monday game starts the next week.
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"g.game_date >= w.week_start and g.game_date < w.week_start + 7",
+		);
+		// The last week is the one before this_week, so the week in progress is left out.
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"generate_series(b.this_week - 28, b.this_week - 7, interval '7 days')",
+		);
+	});
+
 	it("queries current and previous 28-day player analytics separately", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");

@@ -7,6 +7,7 @@ import type {
 	FacilityReservationStatsView,
 	FacilityStatsView,
 } from "@market-health-map/core/application";
+import { weekEndOf } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
@@ -237,7 +238,7 @@ export function buildWeeklyActivity(
 	formatters: DetailFormatters,
 ) {
 	return stats.weeklyActivity.map((point) => {
-		const label = formatters.week.format(localDate(point.weekStart));
+		const label = formatters.week.format(localDate(weekEndOf(point.weekStart)));
 		const games = formatGames(point.gamesPlayed, messages, formatters);
 		return {
 			key: point.weekStart,
