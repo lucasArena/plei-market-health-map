@@ -7,6 +7,7 @@ The HTTP API (Hono) and every adapter to the outside world: the Neon Postgres da
 | Folder | What lives there |
 | --- | --- |
 | `src/presentation/http` | `createApiApp` (Hono), one route file per resource, the auth guard, response envelopes and error mapping |
+| `src/infrastructure/linear` | `LinearIssueTracker` (feedback to Linear issues), `LinearAppAuth` / `LinearApiKeyAuth` (OAuth app token or personal key), its dry-run twin and the team, state, label and project IDs |
 | `src/presentation/auth` | `trackSignIn`, called from Auth.js when someone signs in |
 | `src/infrastructure` | Prisma repository, warehouse repositories and caches, sample data, clock and ids |
 | `src/container.ts` | Composition root: picks warehouse or sample adapters from the environment and wires the use cases |
@@ -23,5 +24,7 @@ pnpm db:migrate
 ```
 
 `test:integration` needs a Neon branch in `DATABASE_URL`. Warehouse queries follow `plei-data-catalog`, and never select columns tagged `hide`.
+
+`POST /api/v1/feedback` (`presentation/http/routes/feedback-routes.ts`) caps the whole request at 4 MB (`MAX_FEEDBACK_REQUEST_BYTES` from core): it checks `Content-Length` first, then counts bytes while reading the body, and answers `413 PAYLOAD_TOO_LARGE` when either is over.
 
 See [docs/architecture.md](../../docs/architecture.md) for the ports, adapters and API conventions.

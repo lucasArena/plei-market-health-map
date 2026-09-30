@@ -1,6 +1,8 @@
 export interface AuthenticatedPrincipal {
 	userId: string;
 	email: string;
+	name?: string | null;
+	image?: string | null;
 }
 
 export interface AnonymousAccess {
@@ -16,6 +18,8 @@ export interface AllowedAccess {
 	status: "allowed";
 	userId: string;
 	email: string;
+	name?: string | null;
+	image?: string | null;
 }
 
 export type AccessDecision = AnonymousAccess | DeniedAccess | AllowedAccess;

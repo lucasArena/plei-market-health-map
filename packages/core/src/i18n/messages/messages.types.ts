@@ -61,6 +61,40 @@ export interface Messages {
 		lastPlayed: string;
 		neverPlayed: string;
 	};
+	feedback: {
+		open: string;
+		close: string;
+		title: string;
+		subtitle: string;
+		improvementTitle: string;
+		improvementDescription: string;
+		bugTitle: string;
+		bugDescription: string;
+		back: string;
+		messageLabel: string;
+		improvementPlaceholder: string;
+		bugPlaceholder: string;
+		characterCount: string;
+		attachLabel: string;
+		attachHint: string;
+		attachButton: string;
+		dropHere: string;
+		removeImage: string;
+		unsupportedImage: string;
+		imageTooLarge: string;
+		tooManyImages: string;
+		submit: string;
+		submitting: string;
+		successTitle: string;
+		successDescription: string;
+		sendAnother: string;
+		retry: string;
+		notConfigured: string;
+		deliveryFailed: string;
+		tooLarge: string;
+		invalid: string;
+		failed: string;
+	};
 	offline: {
 		title: string;
 		description: string;
@@ -71,5 +105,8 @@ export interface Messages {
 		notFound: string;
 		invalidRequest: string;
 		internal: string;
+		feedbackNotConfigured: string;
+		payloadTooLarge: string;
+		feedbackDeliveryFailed: string;
 	};
 }

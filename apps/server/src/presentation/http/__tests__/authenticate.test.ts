@@ -17,6 +17,22 @@ describe("requireUser", () => {
 		expect(resolveAccess).toHaveBeenCalledWith(REQUEST);
 	});
 
+	it("passes the session name and avatar through for feedback", async () => {
+		const resolveAccess = vi.fn().mockResolvedValue({
+			status: "allowed",
+			userId: "g-1",
+			email: "stefano@plei.com",
+			name: "Stefano Sanchez",
+			image: "https://img/s.png",
+		});
+		await expect(requireUser(resolveAccess, REQUEST)).resolves.toEqual({
+			userId: "g-1",
+			email: "stefano@plei.com",
+			name: "Stefano Sanchez",
+			image: "https://img/s.png",
+		});
+	});
+
 	it("rejects anonymous requests", async () => {
 		const resolveAccess = vi.fn().mockResolvedValue({ status: "anonymous" });
 		await expect(requireUser(resolveAccess, REQUEST)).rejects.toBeInstanceOf(UnauthorizedError);

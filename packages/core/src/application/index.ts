@@ -12,6 +12,23 @@ export type {
 } from "@core/application/dtos/facility-detail-dto.types";
 export type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
 export {
+	DEFAULT_FEEDBACK_IMAGE_NAME,
+	FEEDBACK_IMAGE_CONTENT_TYPES,
+	FEEDBACK_TYPES,
+	MAX_FEEDBACK_CONTEXT_LENGTH,
+	MAX_FEEDBACK_IMAGE_BYTES,
+	MAX_FEEDBACK_IMAGES,
+	MAX_FEEDBACK_MESSAGE_LENGTH,
+	MAX_FEEDBACK_REQUEST_BYTES,
+	submitFeedbackSchema,
+} from "@core/application/dtos/feedback-dto";
+export type {
+	Feedback,
+	FeedbackIssueView,
+	FeedbackType,
+	SubmitFeedbackInput,
+} from "@core/application/dtos/feedback-dto.types";
+export {
 	DEFAULT_RECENT_LOGINS_LIMIT,
 	listRecentLoginsSchema,
 	MAX_RECENT_LOGINS_LIMIT,
@@ -23,8 +40,12 @@ export type {
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
 export {
+	FeedbackNotConfiguredError,
 	ForbiddenError,
+	InvalidRequestError,
+	IssueTrackerError,
 	NotFoundError,
+	PayloadTooLargeError,
 	UnauthorizedError,
 } from "@core/application/errors/use-case-error";
 export { toFacilityPointView } from "@core/application/mappers/facility-mapper";
@@ -33,6 +54,14 @@ export {
 	toFacilityReservationStatsView,
 	toFacilityStatsView,
 } from "@core/application/mappers/facility-stats-mapper";
+export {
+	FEEDBACK_TITLE_LENGTH,
+	FEEDBACK_TITLE_PREFIXES,
+	toFeedbackIssueDescription,
+	toFeedbackIssueDraft,
+	toFeedbackIssueSubmitter,
+	toFeedbackIssueTitle,
+} from "@core/application/mappers/feedback-issue-mapper";
 export { toLoginEventView } from "@core/application/mappers/login-event-mapper";
 export type { AppSessionHeatmapRepository } from "@core/application/ports/app-session-heatmap-repository.types";
 export type { Clock } from "@core/application/ports/clock.types";
@@ -46,6 +75,12 @@ export type {
 	FacilityWeeklyCounts,
 } from "@core/application/ports/facility-stats-repository.types";
 export type { IdGenerator } from "@core/application/ports/id-generator.types";
+export type {
+	FeedbackIssueDraft,
+	FeedbackIssueSubmitter,
+	IssueAttachment,
+	IssueTracker,
+} from "@core/application/ports/issue-tracker.types";
 export type { LoginEventRepository } from "@core/application/ports/login-event-repository.types";
 export { makeGetFacilityDetail } from "@core/application/use-cases/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/use-cases/get-facility-player-stats";
@@ -54,3 +89,4 @@ export { makeListAppSessionHeatmap } from "@core/application/use-cases/list-app-
 export { makeListFacilities } from "@core/application/use-cases/list-facilities";
 export { makeListRecentLogins } from "@core/application/use-cases/list-recent-logins";
 export { makeRecordLogin } from "@core/application/use-cases/record-login";
+export { makeSubmitFeedback } from "@core/application/use-cases/submit-feedback";
