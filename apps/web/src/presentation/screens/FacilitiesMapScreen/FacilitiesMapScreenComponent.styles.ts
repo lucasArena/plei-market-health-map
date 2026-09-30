@@ -7,6 +7,7 @@ import type {
 } from "maplibre-gl";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { PLEI_LOGO_IMAGE_ID, PLEI_LOGO_MUTED_IMAGE_ID } from "@/application/constants/plei-logo";
+import type { SessionHeatmapStudy } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
@@ -151,6 +152,104 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 		SESSION_HEATMAP_BUCKET_COLORS[3],
 	],
 };
+
+export const SESSION_HEATMAP_PALETTE_COLORS = [
+	PLEIFUL_COLORS.pitchGreen[50],
+	PLEIFUL_COLORS.pitchGreen[70],
+	PLEIFUL_COLORS.pitchGreen[90],
+	PLEIFUL_COLORS.sangria[50],
+] as const;
+
+export const SESSION_HEATMAP_MARK_COLORS = [
+	PLEIFUL_COLORS.pitchGreen[40],
+	PLEIFUL_COLORS.pitchGreen[60],
+	PLEIFUL_COLORS.sangria[40],
+	PLEIFUL_COLORS.sangria[70],
+] as const;
+
+export const APP_SESSION_HEATMAP_PALETTE_PAINT: HeatmapLayerSpecification["paint"] = {
+	"heatmap-weight": ["get", "intensity"],
+	"heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 3, 0.7, 8, 0.85, 14, 1],
+	"heatmap-radius": ["interpolate", ["linear"], ["zoom"], 3, 14, 8, 24, 12, 32, 16, 44],
+	"heatmap-opacity": 0.88,
+	"heatmap-color": [
+		"interpolate",
+		["linear"],
+		["heatmap-density"],
+		0,
+		"rgba(22, 117, 92, 0)",
+		0.08,
+		SESSION_HEATMAP_PALETTE_COLORS[0],
+		0.35,
+		SESSION_HEATMAP_PALETTE_COLORS[1],
+		0.68,
+		SESSION_HEATMAP_PALETTE_COLORS[2],
+		1,
+		SESSION_HEATMAP_PALETTE_COLORS[3],
+	],
+};
+
+export const APP_SESSION_MARKS_PAINT: CircleLayerSpecification["paint"] = {
+	"circle-radius": [
+		"interpolate",
+		["linear"],
+		["zoom"],
+		3,
+		["interpolate", ["linear"], ["get", "intensity"], 0, 3, 1, 10],
+		8,
+		["interpolate", ["linear"], ["get", "intensity"], 0, 5, 1, 18],
+		12,
+		["interpolate", ["linear"], ["get", "intensity"], 0, 7, 1, 26],
+	],
+	"circle-color": [
+		"interpolate",
+		["linear"],
+		["get", "intensity"],
+		0,
+		SESSION_HEATMAP_MARK_COLORS[0],
+		0.35,
+		SESSION_HEATMAP_MARK_COLORS[1],
+		0.7,
+		SESSION_HEATMAP_MARK_COLORS[2],
+		1,
+		SESSION_HEATMAP_MARK_COLORS[3],
+	],
+	"circle-opacity": 0.9,
+	"circle-stroke-width": 1.25,
+	"circle-stroke-color": PLEIFUL_COLORS.pitchGreen[90],
+};
+
+export function sessionHeatmapStudy(value: string | null): SessionHeatmapStudy {
+	if (value === "palette") return "palette";
+	if (value === "marks") return "marks";
+	return "wash";
+}
+
+export function sessionHeatmapBucketColors(study: SessionHeatmapStudy): readonly string[] {
+	if (study === "palette") return SESSION_HEATMAP_PALETTE_COLORS;
+	if (study === "marks") return SESSION_HEATMAP_MARK_COLORS;
+	return SESSION_HEATMAP_BUCKET_COLORS;
+}
+
+export function sessionHeatmapLayer(
+	study: SessionHeatmapStudy,
+): HeatmapLayerSpecification | CircleLayerSpecification {
+	if (study === "marks") {
+		return {
+			id: APP_SESSION_HEATMAP_LAYER_ID,
+			type: "circle",
+			source: APP_SESSION_HEATMAP_SOURCE_ID,
+			paint: APP_SESSION_MARKS_PAINT,
+		};
+	}
+	const paint = study === "palette" ? APP_SESSION_HEATMAP_PALETTE_PAINT : APP_SESSION_HEATMAP_PAINT;
+	return {
+		id: APP_SESSION_HEATMAP_LAYER_ID,
+		type: "heatmap",
+		source: APP_SESSION_HEATMAP_SOURCE_ID,
+		paint,
+	};
+}
 
 export function selectedRingColor(facilityId: string | null): ExpressionSpecification {
 	return ["case", ["==", ["get", "id"], facilityId ?? ""], SELECTED_RING_COLOR, MARKER_RING_COLOR];

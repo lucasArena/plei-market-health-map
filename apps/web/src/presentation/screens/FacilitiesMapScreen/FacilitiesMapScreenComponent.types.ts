@@ -26,6 +26,10 @@ export type FacilitiesMapStatus = "loading" | "error" | "ready";
 
 export type FacilityLayerMotion = "enter" | "exit";
 
+export type MapCursor = "pointer" | "default" | "grabbing";
+
+export type SessionHeatmapStudy = "wash" | "palette" | "marks";
+
 export interface FacilityFeatureProperties {
 	id: string;
 	marketId: string;

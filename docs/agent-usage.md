@@ -51,3 +51,5 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-09-30 | Cursor Grok 4.7 | Thickened the facility dot inset stroke by 1px | Map screen tests pass |
 | 2026-09-30 | Cursor Grok 4.7 | Cleared the facilities fade transform after it finished so cluster glass blur samples the map again | Map screen tests pass |
 | 2026-09-30 | Cursor Grok 4.7 | Zoomed an active cluster click until one of its active facilities was drawn as its own dot | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Restored facility click to select or unselect, and a closed-hand cursor while the mouse button is held so the map can be dragged | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Added heatmap comparison views: a green-to-coral palette and one circle per session area, because the light wash disappears on the map | Map screen tests pass |

@@ -19,6 +19,7 @@ import {
 	FACILITY_LAYER_ENTER_MS,
 	FACILITY_LAYER_EXIT_MS,
 	facilitiesForIds,
+	mapCursor,
 	marketBounds,
 	placeHover,
 	readClusterGlassBadges,
@@ -685,6 +686,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		layersState.showFacilities = true;
+		window.history.replaceState(null, "", "/");
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -769,6 +771,25 @@ describe("useFacilitiesMapScreenRules", () => {
 		);
 	});
 
+	it("draws one circle per session area when the heatmap query asks for marks", async () => {
+		window.history.replaceState(null, "", "/?heatmap=marks");
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() =>
+			expect(mapState.instances[0]?.addLayer).toHaveBeenCalledWith(
+				expect.objectContaining({
+					id: APP_SESSION_HEATMAP_LAYER_ID,
+					type: "circle",
+					paint: expect.objectContaining({ "circle-opacity": 0.9 }),
+				}),
+			),
+		);
+		expect(document.title).toContain("one circle per area");
+		expect(result.current.heatmapStudyLabel).toBe("Version · one circle per area");
+		expect(result.current.heatmapLegendColors[0]).toBe("#3D8C77");
+	});
+
 	it("shows a hover card for a facility", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
@@ -851,7 +872,60 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.isPanelClosing).toBe(false);
 
 		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("");
+		expect(mapState.canvas.style.cursor).toBe("default");
+
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(result.current.isPanelClosing).toBe(false);
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		expect(result.current.isPanelClosing).toBe(true);
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			padding: { top: 0, bottom: 0, left: 0, right: 0 },
+			duration: 600,
+		});
+	});
+
+	it("unselects a facility from an empty click and shows a hand while the button is held", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() => expect(mapState.handlers.has("mousedown")).toBe(true));
+		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
+		map.getLayer = vi.fn(() => ({ id: "layer" }));
+		map.queryRenderedFeatures = vi.fn(() => [{ properties: { id: "f1" } }]);
+		expect(mapState.canvas.style.cursor).toBe("default");
+		expect(mapCursor(false, false)).toBe("default");
+		expect(mapCursor(true, false)).toBe("pointer");
+		expect(mapCursor(false, true)).toBe("grabbing");
+
+		act(() => mapState.handlers.get(`mouseenter:${FACILITIES_LAYER_ID}`)?.());
+		expect(mapState.canvas.style.cursor).toBe("pointer");
+		act(() => mapState.handlers.get("mousedown")?.());
+		expect(mapState.canvas.style.cursor).toBe("grabbing");
+		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
+		expect(mapState.canvas.style.cursor).toBe("grabbing");
+		act(() => mapState.handlers.get("mouseup")?.());
+		expect(mapState.canvas.style.cursor).toBe("default");
+
+		act(() =>
+			mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.({
+				features: [{ properties: { id: "f1" } }],
+				point: { x: 1, y: 1 },
+			}),
+		);
+		expect(result.current.selectedFacilityId).toBe("f1");
+		act(() => mapState.handlers.get("click")?.({ point: { x: 2, y: 2 } }));
+		expect(result.current.isPanelClosing).toBe(false);
+
+		map.getLayer = vi.fn(() => undefined);
+		map.queryRenderedFeatures = vi.fn(() => []);
+		act(() => mapState.handlers.get("click")?.({ point: { x: 3, y: 3 } }));
+		expect(result.current.isPanelClosing).toBe(true);
+
+		act(() => result.current.handlePanelClosed());
+		act(() => mapState.handlers.get("click")?.({ point: { x: 4, y: 4 } }));
+		expect(result.current.isPanelClosing).toBe(false);
 	});
 
 	it("zooms to facilities and fits markets selected from search", async () => {
@@ -998,7 +1072,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		act(() => mapState.handlers.get(`mouseenter:${CLUSTER_LAYER_ID}`)?.());
 		expect(mapState.canvas.style.cursor).toBe("pointer");
 		act(() => mapState.handlers.get(`mouseleave:${CLUSTER_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("");
+		expect(mapState.canvas.style.cursor).toBe("default");
 
 		await act(async () => {
 			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(10));
@@ -1209,7 +1283,7 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		unmount();
 
-		expect(map?.off).toHaveBeenCalledTimes(10);
+		expect(map?.off).toHaveBeenCalledTimes(13);
 		expect(map?.remove).toHaveBeenCalled();
 	});
 

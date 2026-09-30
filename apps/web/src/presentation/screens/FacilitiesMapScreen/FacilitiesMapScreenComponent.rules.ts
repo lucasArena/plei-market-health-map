@@ -1,8 +1,14 @@
 "use client";
 
 import type { FacilityPointView } from "@market-health-map/core/application";
+import type { Messages } from "@market-health-map/core/i18n";
 import { useQueryClient } from "@tanstack/react-query";
-import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
+import type {
+	GeoJSONSource,
+	MapLayerMouseEvent,
+	Map as MapLibreMap,
+	MapMouseEvent,
+} from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLEI_LOGO_URL, PLEI_LOGO_WHITE_URL } from "@/application/constants/plei-logo";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
@@ -20,8 +26,6 @@ import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facil
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import {
-	APP_SESSION_HEATMAP_LAYER_ID,
-	APP_SESSION_HEATMAP_PAINT,
 	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_ACTIVE_COUNT_EXPRESSION,
 	CLUSTER_ACTIVE_COUNT_KEY,
@@ -68,6 +72,9 @@ import {
 	MAPLIBRE_WORKER_URL,
 	selectedRingColor,
 	selectedRingWidth,
+	sessionHeatmapBucketColors,
+	sessionHeatmapLayer,
+	sessionHeatmapStudy,
 	UNCLUSTERED_FILTER,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 import type {
@@ -82,10 +89,12 @@ import type {
 	FacilityGlassBadge,
 	FacilityLayerMotion,
 	HoverPlacement,
+	MapCursor,
 	MapHover,
 	SessionHeatmapArea,
 	SessionHeatmapBounds,
 	SessionHeatmapScale,
+	SessionHeatmapStudy,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 function byActiveLast(a: FacilityPointView, b: FacilityPointView): number {
@@ -362,6 +371,27 @@ function applyMapLayerVisibility(map: MapLibreMap, layerId: string, visible: boo
 
 export const FACILITY_LAYER_ENTER_MS = 240;
 export const FACILITY_LAYER_EXIT_MS = 200;
+
+export function mapCursor(overClickTarget: boolean, holding: boolean): MapCursor {
+	if (holding) return "grabbing";
+	if (overClickTarget) return "pointer";
+	return "default";
+}
+
+function sessionHeatmapStudyLabel(study: SessionHeatmapStudy, labels: Messages["map"]): string {
+	switch (study) {
+		case "wash":
+			return labels.sessionHeatmapStudyWash;
+		case "palette":
+			return labels.sessionHeatmapStudyPalette;
+		case "marks":
+			return labels.sessionHeatmapStudyMarks;
+		default: {
+			const unreachable: never = study;
+			return unreachable;
+		}
+	}
+}
 
 export function applyFacilityLayerMotion(host: HTMLElement, motion: FacilityLayerMotion) {
 	host.classList.remove("facility-layer-in", "facility-layer-out");
@@ -701,6 +731,7 @@ export function useFacilitiesMapScreenRules() {
 	const query = useFacilityListAll();
 	const heatmapQuery = useAppSessionHeatmap();
 	const [isMapReady, setIsMapReady] = useState(false);
+	const [heatmapStudy, setHeatmapStudy] = useState<SessionHeatmapStudy>("wash");
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
@@ -708,6 +739,8 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
+	const holdingRef = useRef(false);
+	const overClickTargetRef = useRef(false);
 	const mapLayers = useMapLayers();
 	const showFacilities = mapLayers?.showFacilities ?? true;
 	const showFacilitiesRef = useRef(showFacilities);
@@ -795,11 +828,33 @@ export function useFacilitiesMapScreenRules() {
 		setHovered(null);
 	}, []);
 
+	const closePanel = useCallback(() => {
+		setIsPanelClosing(true);
+		mapRef.current?.easeTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
+	}, []);
+
+	const handleMapClick = useCallback(
+		(event: MapMouseEvent) => {
+			const map = mapRef.current;
+			if (!map || !selectedFacilityIdRef.current) return;
+			const layers = [FACILITIES_LAYER_ID, CLUSTER_LAYER_ID].filter((layerId) =>
+				map.getLayer(layerId),
+			);
+			if (map.queryRenderedFeatures(event.point, { layers }).length > 0) return;
+			closePanel();
+		},
+		[closePanel],
+	);
+
 	const handleFacilityClick = useCallback(
 		(event: MapLayerMouseEvent) => {
 			const facility = facilityFromEvent(event);
 			if (!facility) return;
 			handleHoverEnd();
+			if (selectedFacilityIdRef.current === facility.id) {
+				closePanel();
+				return;
+			}
 			setIsPanelClosing(false);
 			setSelectedFacilityId(facility.id);
 			mapRef.current?.easeTo({
@@ -808,7 +863,7 @@ export function useFacilitiesMapScreenRules() {
 				duration: 600,
 			});
 		},
-		[facilityFromEvent, handleHoverEnd],
+		[closePanel, facilityFromEvent, handleHoverEnd],
 	);
 
 	const selectSearchFacility = useCallback(
@@ -858,11 +913,6 @@ export function useFacilitiesMapScreenRules() {
 		[setScope],
 	);
 
-	const closePanel = useCallback(() => {
-		setIsPanelClosing(true);
-		mapRef.current?.easeTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
-	}, []);
-
 	const handlePanelClosed = useCallback(() => {
 		setSelectedFacilityId(null);
 		setIsPanelClosing(false);
@@ -909,6 +959,8 @@ export function useFacilitiesMapScreenRules() {
 		let isCancelled = false;
 		let map: MapLibreMap | null = null;
 
+		const study = sessionHeatmapStudy(new URLSearchParams(window.location.search).get("heatmap"));
+		setHeatmapStudy(study);
 		import("maplibre-gl").then(({ Map: MapLibre, NavigationControl, setWorkerUrl }) => {
 			if (isCancelled) return;
 			setWorkerUrl(new URL(MAPLIBRE_WORKER_URL, window.location.origin).href);
@@ -926,12 +978,7 @@ export function useFacilitiesMapScreenRules() {
 					type: "geojson",
 					data: EMPTY_HEATMAP,
 				});
-				created.addLayer({
-					id: APP_SESSION_HEATMAP_LAYER_ID,
-					type: "heatmap",
-					source: APP_SESSION_HEATMAP_SOURCE_ID,
-					paint: APP_SESSION_HEATMAP_PAINT,
-				});
+				created.addLayer(sessionHeatmapLayer(study));
 				created.addSource(FACILITIES_SOURCE_ID, {
 					type: "geojson",
 					data: { type: "FeatureCollection", features: [] },
@@ -978,6 +1025,21 @@ export function useFacilitiesMapScreenRules() {
 	}, []);
 
 	useEffect(() => {
+		const studyLabel = sessionHeatmapStudyLabel(heatmapStudy, messages.map);
+		const title = `${messages.common.appName} · ${studyLabel}`;
+		const applyTitle = () => {
+			if (document.title !== title) document.title = title;
+		};
+		applyTitle();
+		const titleElement = document.querySelector("title");
+		const observer = new MutationObserver(applyTitle);
+		if (titleElement) {
+			observer.observe(titleElement, { childList: true, characterData: true, subtree: true });
+		}
+		return () => observer.disconnect();
+	}, [heatmapStudy, messages.common.appName, messages.map]);
+
+	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
 		map.getSource<GeoJSONSource>(FACILITIES_SOURCE_ID)?.setData(featureCollection);
@@ -996,12 +1058,25 @@ export function useFacilitiesMapScreenRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
+		const paintCursor = () => {
+			map.getCanvas().style.cursor = mapCursor(overClickTargetRef.current, holdingRef.current);
+		};
 		const showPointer = () => {
-			map.getCanvas().style.cursor = "pointer";
+			overClickTargetRef.current = true;
+			paintCursor();
 		};
 		const hidePointer = () => {
-			map.getCanvas().style.cursor = "";
+			overClickTargetRef.current = false;
 			handleHoverEnd();
+			paintCursor();
+		};
+		const startHold = () => {
+			holdingRef.current = true;
+			paintCursor();
+		};
+		const endHold = () => {
+			holdingRef.current = false;
+			paintCursor();
 		};
 		const bindings = [
 			["mouseenter", FACILITIES_LAYER_ID, showPointer],
@@ -1013,11 +1088,18 @@ export function useFacilitiesMapScreenRules() {
 			["mouseleave", CLUSTER_LAYER_ID, hidePointer],
 			["click", CLUSTER_LAYER_ID, handleClusterClick],
 		] as const;
+		paintCursor();
 		for (const [event, layer, handler] of bindings) map.on(event, layer, handler);
+		map.on("click", handleMapClick);
+		map.on("mousedown", startHold);
+		map.on("mouseup", endHold);
 		map.on("movestart", handleHoverEnd);
 		map.on("moveend", refreshHeatmap);
 		return () => {
 			for (const [event, layer, handler] of bindings) map.off(event, layer, handler);
+			map.off("click", handleMapClick);
+			map.off("mousedown", startHold);
+			map.off("mouseup", endHold);
 			map.off("movestart", handleHoverEnd);
 			map.off("moveend", refreshHeatmap);
 		};
@@ -1027,6 +1109,7 @@ export function useFacilitiesMapScreenRules() {
 		handleFacilityClick,
 		handleHover,
 		handleHoverEnd,
+		handleMapClick,
 		isMapReady,
 		refreshHeatmap,
 	]);
@@ -1151,6 +1234,8 @@ export function useFacilitiesMapScreenRules() {
 		containerRef,
 		facilities: query.data ?? [],
 		hasSessionHeatmap,
+		heatmapLegendColors: sessionHeatmapBucketColors(heatmapStudy),
+		heatmapStudyLabel: sessionHeatmapStudyLabel(heatmapStudy, messages.map),
 		handlePanelClosed,
 		hovered,
 		isPanelClosing,

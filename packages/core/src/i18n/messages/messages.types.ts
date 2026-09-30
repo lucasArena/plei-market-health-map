@@ -31,6 +31,9 @@ export interface Messages {
 		sessionHeatmapNoActivity: string;
 		sessionHeatmapLowValue: string;
 		sessionHeatmapHighValue: string;
+		sessionHeatmapStudyWash: string;
+		sessionHeatmapStudyPalette: string;
+		sessionHeatmapStudyMarks: string;
 		layersBrand: string;
 		layersHeading: string;
 		layersFacilities: string;

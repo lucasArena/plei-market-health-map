@@ -3,7 +3,9 @@ import type { CircleLayerSpecification, HeatmapLayerSpecification } from "maplib
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
 	APP_SESSION_HEATMAP_PAINT,
+	APP_SESSION_HEATMAP_PALETTE_PAINT,
 	APP_SESSION_HEATMAP_SOURCE_ID,
+	APP_SESSION_MARKS_PAINT,
 	CLUSTER_ACTIVE_COUNT_EXPRESSION,
 	CLUSTER_ACTIVE_COUNT_KEY,
 	CLUSTER_BORDER_COLOR,
@@ -25,8 +27,13 @@ import {
 	FACILITY_LOGO_LAYOUT,
 	SESSION_HEATMAP_BUCKET_COLORS,
 	SESSION_HEATMAP_BUCKET_OPACITIES,
+	SESSION_HEATMAP_MARK_COLORS,
+	SESSION_HEATMAP_PALETTE_COLORS,
 	selectedRingColor,
 	selectedRingWidth,
+	sessionHeatmapBucketColors,
+	sessionHeatmapLayer,
+	sessionHeatmapStudy,
 	UNCLUSTERED_FILTER,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
@@ -146,6 +153,31 @@ describe("app session weather-map styles", () => {
 		expect(JSON.stringify(APP_SESSION_HEATMAP_PAINT?.["heatmap-radius"])).toContain("40");
 		expect(APP_SESSION_HEATMAP_SOURCE_ID).toBe("app-session-heatmap");
 		expect(APP_SESSION_HEATMAP_LAYER_ID).toBe("app-session-density");
+		expect(sessionHeatmapStudy(null)).toBe("wash");
+		expect(sessionHeatmapStudy("palette")).toBe("palette");
+		expect(sessionHeatmapStudy("marks")).toBe("marks");
+		expect(sessionHeatmapStudy("other")).toBe("wash");
+		expect(sessionHeatmapBucketColors("wash")).toEqual(SESSION_HEATMAP_BUCKET_COLORS);
+		expect(sessionHeatmapBucketColors("palette")[0]).toBe("#16755C");
+		expect(sessionHeatmapBucketColors("palette")).not.toContain("#E0F2FE");
+		expect(sessionHeatmapBucketColors("marks")).toEqual(SESSION_HEATMAP_MARK_COLORS);
+		expect(JSON.stringify(APP_SESSION_HEATMAP_PALETTE_PAINT?.["heatmap-color"])).toContain(
+			"#16755C",
+		);
+		expect(JSON.stringify(APP_SESSION_HEATMAP_PALETTE_PAINT?.["heatmap-color"])).not.toContain(
+			"#E0F2FE",
+		);
+		expect(APP_SESSION_MARKS_PAINT?.["circle-opacity"]).toBe(0.9);
+		expect(sessionHeatmapLayer("wash")).toMatchObject({ type: "heatmap" });
+		expect(sessionHeatmapLayer("palette")).toMatchObject({
+			type: "heatmap",
+			paint: APP_SESSION_HEATMAP_PALETTE_PAINT,
+		});
+		expect(sessionHeatmapLayer("marks")).toMatchObject({
+			type: "circle",
+			paint: APP_SESSION_MARKS_PAINT,
+		});
+		expect(SESSION_HEATMAP_PALETTE_COLORS).toEqual(["#16755C", "#0F4E3D", "#07271F", "#FF6333"]);
 	});
 
 	it("uses valid MapLibre paints", () => {
@@ -164,6 +196,18 @@ describe("app session weather-map styles", () => {
 						type: "heatmap",
 						source: APP_SESSION_HEATMAP_SOURCE_ID,
 						paint: APP_SESSION_HEATMAP_PAINT as HeatmapLayerSpecification["paint"],
+					},
+					{
+						id: "app-session-palette",
+						type: "heatmap",
+						source: APP_SESSION_HEATMAP_SOURCE_ID,
+						paint: APP_SESSION_HEATMAP_PALETTE_PAINT as HeatmapLayerSpecification["paint"],
+					},
+					{
+						id: "app-session-marks",
+						type: "circle",
+						source: APP_SESSION_HEATMAP_SOURCE_ID,
+						paint: APP_SESSION_MARKS_PAINT,
 					},
 				],
 			}),

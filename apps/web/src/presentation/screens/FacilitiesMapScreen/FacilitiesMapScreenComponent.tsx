@@ -18,6 +18,8 @@ export function FacilitiesMapScreen() {
 		facilities,
 		handlePanelClosed,
 		hasSessionHeatmap,
+		heatmapLegendColors = SESSION_HEATMAP_BUCKET_COLORS,
+		heatmapStudyLabel,
 		hovered,
 		isPanelClosing,
 		messages,
@@ -66,6 +68,14 @@ export function FacilitiesMapScreen() {
 					data-testid="session-heatmap-legend"
 					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
 				>
+					{heatmapStudyLabel ? (
+						<p
+							data-testid="session-heatmap-study"
+							className="text-[10px] font-semibold tracking-wide text-pleiful-pitch-green-70 uppercase"
+						>
+							{heatmapStudyLabel}
+						</p>
+					) : null}
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
 						{messages.sessionHeatmapLegend}
 					</p>
@@ -91,7 +101,7 @@ export function FacilitiesMapScreen() {
 								data-testid="session-heatmap-gradient"
 								className="h-2.5 flex-1 rounded-full"
 								style={{
-									backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
+									backgroundImage: `linear-gradient(to right, ${heatmapLegendColors.join(", ")})`,
 								}}
 							/>
 							<span
