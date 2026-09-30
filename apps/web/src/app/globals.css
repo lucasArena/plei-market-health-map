@@ -3,6 +3,61 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Glass surface, shared by the map chrome. The look comes from the facility
+ * cluster circles (CLUSTER_GLASS_* in FacilitiesMapScreenComponent.styles.ts),
+ * a notch glassier: 24px blur with 2x saturation, a white top highlight
+ * gradient, a soft white rim and an inset top light with a soft drop shadow.
+ * The dark fills stay higher because the basemap stays light, and muted text
+ * needs the extra fill to keep 4.5:1.
+ *
+ * - `glass`: small icon controls (header buttons, zoom).
+ * - `glass-strong`: controls with text (search field, results list).
+ * - `glass-panel`: dense panels and drawers, the most opaque tier.
+ *
+ * Only the fill changes between tiers, so text keeps its contrast on busy map
+ * areas. The text tiers also darken muted text (lighten it in the dark theme)
+ * so secondary labels stay above 4.5:1 on the translucent fill. Users who ask
+ * for reduced transparency get a solid surface.
+ */
+@property --glass-tint {
+  syntax: "*";
+  inherits: false;
+}
+
+@utility glass {
+  --tw-shadow: var(--glass-shadow);
+  border: 1px solid var(--glass-border);
+  background-color: var(--glass-tint, var(--glass-fill));
+  background-image: var(--glass-highlight);
+  box-shadow:
+    var(--tw-inset-shadow, 0 0 #0000), var(--tw-inset-ring-shadow, 0 0 #0000),
+    var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+
+  @media (prefers-reduced-transparency: reduce) {
+    border-color: var(--border);
+    background-color: var(--background);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-strong {
+  @apply glass;
+  --glass-tint: var(--glass-fill-strong);
+  --muted-foreground: var(--glass-muted-foreground);
+}
+
+@utility glass-panel {
+  @apply glass;
+  --glass-tint: var(--glass-fill-panel);
+  --muted-foreground: var(--glass-muted-foreground);
+}
+
 @theme inline {
   --font-size-sm: calc(12 / 14 * 1rem);
   --font-size-sm--line-height: calc(16 / 14 * 1rem);
@@ -144,6 +199,23 @@
   --pleiful-moonlight-90: #4c1d95;
   --pleiful-orchid-50: #d946ef;
   --pleiful-sangria-50: #ff6333;
+  --glass-blur: 24px;
+  --glass-saturate: 2;
+  --glass-fill: rgb(255 255 255 / 0.42);
+  --glass-fill-strong: rgb(255 255 255 / 0.6);
+  --glass-fill-panel: rgb(255 255 255 / 0.74);
+  --glass-highlight: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.8) 0%,
+    rgb(255 255 255 / 0.1) 46%,
+    rgb(255 255 255 / 0.28) 100%
+  );
+  --glass-border: rgb(255 255 255 / 0.78);
+  --glass-divider: rgb(0 0 0 / 0.08);
+  --glass-muted-foreground: oklch(0.42 0 0);
+  --glass-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 1), inset 0 2px 6px rgb(255 255 255 / 0.35),
+    0 10px 24px rgb(0 0 0 / 0.12);
 }
 
 .dark {
@@ -179,6 +251,21 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --glass-fill: rgb(23 23 23 / 0.45);
+  --glass-fill-strong: rgb(23 23 23 / 0.68);
+  --glass-fill-panel: rgb(23 23 23 / 0.78);
+  --glass-highlight: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.2) 0%,
+    rgb(255 255 255 / 0.03) 46%,
+    rgb(255 255 255 / 0.08) 100%
+  );
+  --glass-border: rgb(255 255 255 / 0.14);
+  --glass-divider: rgb(255 255 255 / 0.12);
+  --glass-muted-foreground: oklch(0.82 0 0);
+  --glass-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 2px 6px rgb(255 255 255 / 0.05),
+    0 10px 24px rgb(0 0 0 / 0.4);
 }
 
 @layer base {
@@ -188,6 +275,37 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/*
+ * MapLibre's NavigationControl (the zoom buttons, bottom right) gets the glass
+ * surface through overrides of its own classes, so the map keeps wiring the
+ * buttons. The icons are MapLibre's dark SVGs, inverted in the dark theme.
+ */
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group:not(:empty) {
+  @apply glass;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button + button {
+  border-top-color: var(--glass-divider);
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button:not(:disabled):hover {
+  background-color: rgb(255 255 255 / 0.35);
+}
+
+.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button:not(:disabled):hover {
+  background-color: rgb(255 255 255 / 0.08);
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button:focus:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--pleiful-pitch-green-80);
+}
+
+.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-icon {
+  filter: invert(1);
 }
 
 @keyframes panel-slide-in {
