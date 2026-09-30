@@ -25,6 +25,15 @@ export interface Messages {
 		sessionHeatmapNoActivity: string;
 		sessionHeatmapLowValue: string;
 		sessionHeatmapHighValue: string;
+		layersBrand: string;
+		layersHeading: string;
+		layersFacilities: string;
+		layersUsers: string;
+		layersAll: string;
+		layersActiveUsers: string;
+		layersActivePlayers: string;
+		layersCollapse: string;
+		layersExpand: string;
 	};
 	facilityAi: {
 		generate: string;

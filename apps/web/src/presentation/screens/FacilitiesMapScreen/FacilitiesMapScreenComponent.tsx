@@ -18,6 +18,7 @@ export function FacilitiesMapScreen() {
 		messages,
 		selectedFacilityId,
 		sessionScale,
+		showUsers = true,
 		status,
 	} = useFacilitiesMapScreenRules();
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
@@ -42,7 +43,7 @@ export function FacilitiesMapScreen() {
 				</p>
 			)}
 			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
-			{hasSessionHeatmap && (
+			{hasSessionHeatmap && showUsers && (
 				<div
 					data-testid="session-heatmap-legend"
 					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"

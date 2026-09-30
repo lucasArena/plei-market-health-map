@@ -4,6 +4,7 @@ import type { FacilityPointView } from "@market-health-map/core/application";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
 	type AppSessionHeatmapCellView,
@@ -205,6 +206,18 @@ const EMPTY_HEATMAP: AppSessionHeatmapFeatureCollection = {
 	features: [],
 };
 
+const FACILITY_MAP_LAYER_IDS = [
+	CLUSTER_LAYER_ID,
+	CLUSTER_COUNT_LAYER_ID,
+	FACILITIES_LAYER_ID,
+	FACILITIES_LOGO_LAYER_ID,
+] as const;
+
+function applyMapLayerVisibility(map: MapLibreMap, layerId: string, visible: boolean) {
+	if (typeof map.getLayer !== "function" || !map.getLayer(layerId)) return;
+	map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+}
+
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
 	const queryClient = useQueryClient();
@@ -217,6 +230,11 @@ export function useFacilitiesMapScreenRules() {
 	const [isPanelClosing, setIsPanelClosing] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
+	const mapLayers = useMapLayers();
+	const showFacilities = mapLayers?.showFacilities ?? true;
+	const showUsers = mapLayers?.showUsers ?? true;
+	const showFacilitiesRef = useRef(showFacilities);
+	showFacilitiesRef.current = showFacilities;
 	const hoveredClusterIdRef = useRef<number | null>(null);
 	const featureCollection = useMemo(
 		() => toFacilityFeatureCollection(query.data ?? []),
@@ -506,7 +524,17 @@ export function useFacilitiesMapScreenRules() {
 			filter: UNCLUSTERED_FILTER,
 			layout: FACILITY_LOGO_LAYOUT,
 		});
+		applyMapLayerVisibility(map, FACILITIES_LOGO_LAYER_ID, showFacilitiesRef.current);
 	}, [areLogosLoaded]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
+		for (const layerId of FACILITY_MAP_LAYER_IDS) {
+			applyMapLayerVisibility(map, layerId, showFacilities);
+		}
+		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showUsers);
+	}, [isMapReady, showFacilities, showUsers]);
 
 	return {
 		closePanel,
@@ -518,6 +546,7 @@ export function useFacilitiesMapScreenRules() {
 		messages: messages.map,
 		sessionScale,
 		selectedFacilityId,
+		showUsers,
 		status,
 	};
 }
