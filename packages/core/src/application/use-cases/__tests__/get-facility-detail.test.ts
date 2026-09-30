@@ -59,6 +59,7 @@ describe("getFacilityDetail", () => {
 		expect(detail.facility).toEqual({
 			id: "889",
 			marketId: "2",
+			marketName: "2",
 			name: "Pegaso HTX",
 			avatarUrl: null,
 			isActive: false,

@@ -18,6 +18,12 @@ export interface Messages {
 		title: string;
 		loading: string;
 		failed: string;
+		searchPlaceholder: string;
+		clearSearch: string;
+		markets: string;
+		facilities: string;
+		facilityCount: string;
+		noSearchResults: string;
 		clusterCount: string;
 		moreFacilities: string;
 		sessionHeatmapLegend: string;
@@ -69,6 +75,27 @@ export interface Messages {
 		busy: string;
 		lastPlayed: string;
 		neverPlayed: string;
+	};
+	marketSummary: {
+		open: string;
+		close: string;
+		label: string;
+		title: string;
+		subtitle: string;
+		failed: string;
+		summaryNone: string;
+		summaryActivity: string;
+		activeFacilities: string;
+		activeMarkets: string;
+		ofTotal: string;
+		topFacilities: string;
+		topMarkets: string;
+		marketFacilities: string;
+		noRankings: string;
+		allMarkets: string;
+		marketSubtitle: string;
+		facilitySubtitle: string;
+		marketSummaryNone: string;
 	};
 	feedback: {
 		open: string;

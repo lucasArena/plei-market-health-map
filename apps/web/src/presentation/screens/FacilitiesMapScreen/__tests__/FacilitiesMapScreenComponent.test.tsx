@@ -1,9 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 const mockRules = vi.fn();
+
+vi.mock(
+	"@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent",
+	() => ({
+		useHeaderSlot: vi.fn(() => ({ searchSlot: null, setSearchSlot: vi.fn() })),
+	}),
+);
 
 vi.mock("maplibre-gl/dist/maplibre-gl.css", () => ({}));
 vi.mock("@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent", () => ({
@@ -27,6 +35,7 @@ vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent
 const FACILITY = {
 	id: "f1",
 	marketId: "austin",
+	marketName: "Austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
@@ -35,13 +44,17 @@ const FACILITY = {
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
+		clearSearchScope: vi.fn(),
 		closePanel: vi.fn(),
 		containerRef: { current: null },
+		facilities: [],
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
 		hovered: null,
 		isPanelClosing: false,
 		selectedFacilityId: null,
+		selectSearchFacility: vi.fn(),
+		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
 		status,
@@ -50,6 +63,24 @@ function rulesWith(status: string, overrides: object = {}) {
 }
 
 describe("FacilitiesMapScreen", () => {
+	it("renders the search into the header slot once the header provides it", () => {
+		mockRules.mockReturnValue(rulesWith("ready"));
+		const { unmount } = render(<FacilitiesMapScreen />);
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+		unmount();
+
+		const slot = document.createElement("div");
+		document.body.append(slot);
+		vi.mocked(useHeaderSlot).mockReturnValue({ searchSlot: slot, setSearchSlot: vi.fn() });
+		render(<FacilitiesMapScreen />);
+
+		expect(slot).toContainElement(
+			screen.getByRole("combobox", { name: "Search markets or facilities" }),
+		);
+		vi.mocked(useHeaderSlot).mockReturnValue({ searchSlot: null, setSearchSlot: vi.fn() });
+		slot.remove();
+	});
+
 	it("renders only the map and its attribution", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 
