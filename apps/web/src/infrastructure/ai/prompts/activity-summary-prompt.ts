@@ -1,5 +1,5 @@
-import type { FacilityDetailView } from "@market-health-map/core/application";
 import type { LlmMessage } from "@/infrastructure/ai/browser-llm/browser-llm.types";
+import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
 
 const DAY_MS = 86_400_000;
 const DEFAULT_LANGUAGE = "English";
@@ -8,7 +8,7 @@ const DEFAULT_EXAMPLE_SUMMARY =
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const TIME_PERIOD_NAMES = ["mornings", "midday", "evenings", "late evenings"];
 
-export class FacilitySummaryPrompt {
+export class ActivitySummaryPrompt {
 	private static readonly LANGUAGE_BY_LOCALE: Record<string, string> = {
 		en: "English",
 		"pt-BR": "Brazilian Portuguese",
@@ -29,24 +29,40 @@ export class FacilitySummaryPrompt {
 			"A Riverside Arena teve 86 jogos, taxa de confirmação de 84% e 126 jogadores, incluindo 24 novos ativados; as noites de sábado foram o período mais movimentado.",
 	};
 
-	build(detail: FacilityDetailView, locale: string): LlmMessage[] {
+	build(subject: ActivitySummarySubject, locale: string): LlmMessage[] {
 		const language = this.languageFor(locale);
 		return [
 			{ role: "system", content: this.instructions(language) },
-			{ role: "user", content: this.factsMessage(FacilitySummaryPrompt.EXAMPLE_FACTS) },
+			{ role: "user", content: this.factsMessage(ActivitySummaryPrompt.EXAMPLE_FACTS) },
 			{ role: "assistant", content: this.exampleSummaryFor(locale) },
 			{
 				role: "user",
-				content: `${this.factsMessage(this.factsFor(detail, locale))}\n\nWrite the summary in ${language}.`,
+				content: `${this.factsMessage(this.factsFor(subject, locale))}\n\nWrite the summary in ${language}.`,
 			},
 		];
 	}
 
 	private instructions(language: string): string {
-		return `You summarize a pickup soccer facility's activity over the last 28 days for Plei's operations team. Write one concise sentence in ${language} covering the most useful game, confirmation, player and timing signals. Use only the facts given and never add causes. No lists, headings or markdown.`;
+		return `You summarize pickup soccer activity over the last 28 days for a facility, a market or all Plei markets, for Plei's operations team. Write one concise sentence in ${language} covering the most useful game, confirmation, player and timing signals. Use only the facts given and never add causes. No lists, headings or markdown.`;
 	}
 
-	private factsFor({ facility, stats }: FacilityDetailView, locale: string): string[] {
+	private subjectFact({ kind, name }: ActivitySummarySubject): string {
+		return {
+			facility: `Facility: ${name}.`,
+			market: `Market: ${name}.`,
+			"all-markets": "Scope: all Plei markets.",
+		}[kind];
+	}
+
+	private scopeFacts({ kind, scope }: ActivitySummarySubject): string[] {
+		if (!scope) return [];
+		const facilities = `Active facilities: ${scope.activeFacilityCount} of ${scope.facilityCount}.`;
+		if (kind !== "all-markets") return [facilities];
+		return [facilities, `Active markets: ${scope.activeMarketCount} of ${scope.marketCount}.`];
+	}
+
+	private factsFor(subject: ActivitySummarySubject, locale: string): string[] {
+		const { stats } = subject;
 		const start = this.formatDay(stats.weekStart, -21, locale, false);
 		const end = this.formatDay(stats.weekStart, 6, locale, true);
 		const busiest = stats.popularTimes.reduce(
@@ -60,7 +76,8 @@ export class FacilitySummaryPrompt {
 				? "unavailable"
 				: `${stats.playedPeriodChangePercent}%`;
 		return [
-			`Facility: ${facility.name}.`,
+			this.subjectFact(subject),
+			...this.scopeFacts(subject),
 			`Pickup games played in the last 28 days (${start} to ${end}): ${stats.playedLast28Days}.`,
 			`Confirmation rate: ${confirmationRate}.`,
 			`Unique players: ${stats.uniquePlayersLast28Days}.`,
@@ -75,11 +92,11 @@ export class FacilitySummaryPrompt {
 	}
 
 	private languageFor(locale: string): string {
-		return FacilitySummaryPrompt.LANGUAGE_BY_LOCALE[locale] ?? DEFAULT_LANGUAGE;
+		return ActivitySummaryPrompt.LANGUAGE_BY_LOCALE[locale] ?? DEFAULT_LANGUAGE;
 	}
 
 	private exampleSummaryFor(locale: string): string {
-		return FacilitySummaryPrompt.EXAMPLE_SUMMARY_BY_LOCALE[locale] ?? DEFAULT_EXAMPLE_SUMMARY;
+		return ActivitySummaryPrompt.EXAMPLE_SUMMARY_BY_LOCALE[locale] ?? DEFAULT_EXAMPLE_SUMMARY;
 	}
 
 	private formatDay(isoDate: string, days: number, locale: string, withYear: boolean): string {
@@ -93,4 +110,4 @@ export class FacilitySummaryPrompt {
 	}
 }
 
-export const facilitySummaryPrompt = new FacilitySummaryPrompt();
+export const activitySummaryPrompt = new ActivitySummaryPrompt();

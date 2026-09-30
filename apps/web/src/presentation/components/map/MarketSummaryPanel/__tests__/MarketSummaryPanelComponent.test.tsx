@@ -4,6 +4,9 @@ import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryP
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
+	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
+}));
 vi.mock(
 	"@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules",
 	() => ({
@@ -64,6 +67,7 @@ const VIEW = {
 
 function rulesWith(overrides: object = {}) {
 	return {
+		aiContext: { cacheKey: "v4:all-markets-all:2026-09-21:en", prompt: [] },
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
 		heading: { title: "All markets", subtitle: EN_MESSAGES.marketSummary.subtitle },

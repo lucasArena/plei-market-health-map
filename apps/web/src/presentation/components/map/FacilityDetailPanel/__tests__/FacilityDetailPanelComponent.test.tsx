@@ -1,12 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 
 const mockRules = vi.fn();
 
-vi.mock("@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent", () => ({
-	FacilityAiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
+vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
+	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
 vi.mock(
 	"@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules",
@@ -65,7 +64,7 @@ const VIEW = {
 
 function rulesWith(overrides: object = {}) {
 	return {
-		detail: FACILITY_DETAIL,
+		aiContext: { cacheKey: "v4:facility-889:2026-09-21:en", prompt: [] },
 		handleAnimationEnd: vi.fn(),
 		isAiPending: false,
 		isClosing: false,
@@ -105,7 +104,7 @@ describe("FacilityDetailPanel", () => {
 	it("renders reservation analytics while player stats and AI continue loading", () => {
 		mockRules.mockReturnValue(
 			rulesWith({
-				detail: null,
+				aiContext: null,
 				isAiPending: true,
 				view: {
 					...VIEW,

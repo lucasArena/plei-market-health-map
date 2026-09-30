@@ -1,5 +1,6 @@
 "use client";
 
+import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
@@ -61,6 +62,7 @@ function RankList({ title, rows, emptyLabel }: Readonly<MarketRankListProps>) {
 
 export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 	const {
+		aiContext,
 		detailMessages,
 		handleAnimationEnd,
 		heading,
@@ -101,10 +103,10 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							<h2 className="truncate text-base font-semibold">{heading.title}</h2>
 							<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
 						</header>
-						{view.summary && (
-							<p className="rounded-xl bg-pleiful-moonlight-5 p-3.5 text-sm leading-relaxed">
-								{view.summary}
-							</p>
+						{view.summary && aiContext && (
+							<div className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+								<AiSummary context={aiContext} fallback={view.summary} />
+							</div>
 						)}
 						{!view.summary && isSummaryPending && (
 							<div

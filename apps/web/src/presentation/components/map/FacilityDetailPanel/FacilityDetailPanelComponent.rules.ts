@@ -9,6 +9,7 @@ import type {
 } from "@market-health-map/core/application";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
+import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import {
 	ChangeDirection,
 	type DetailFormatters,
@@ -370,6 +371,21 @@ export function useFacilityDetailPanelRules({
 				: null,
 		[formatters, messages.facilityDetail, playerQuery.isPending, playerStats, reservationDetail],
 	);
+	const aiContext = useMemo(
+		() =>
+			detail
+				? aiSummaryContextFor(
+						{
+							kind: "facility",
+							id: detail.facility.id,
+							name: detail.facility.name,
+							stats: detail.stats,
+						},
+						locale,
+					)
+				: null,
+		[detail, locale],
+	);
 	const status = resolveDetailStatus(reservationQuery.isPending, reservationQuery.isError);
 
 	const handleAnimationEnd = useCallback(() => {
@@ -385,7 +401,7 @@ export function useFacilityDetailPanelRules({
 	}, [onClose]);
 
 	return {
-		detail,
+		aiContext,
 		handleAnimationEnd,
 		isAiPending: status === "ready" && playerQuery.isPending,
 		isClosing,

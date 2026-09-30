@@ -1,11 +1,11 @@
 "use client";
 
-import { useFacilityAiSummaryRules } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.rules";
-import type { FacilityAiSummaryProps } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.types";
+import { useAiSummaryRules } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
+import type { AiSummaryProps } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.types";
 
-export function FacilityAiSummary(props: Readonly<FacilityAiSummaryProps>) {
+export function AiSummary(props: Readonly<AiSummaryProps>) {
 	const { handleGenerate, messages, progressLabel, progressPercent, status, text } =
-		useFacilityAiSummaryRules(props);
+		useAiSummaryRules(props);
 
 	return (
 		<div
