@@ -1,12 +1,28 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import {
+	MapScopeProvider,
+	useMapScope,
+} from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
+	activeClusterRevealTarget,
+	applyClusterGlassActivity,
+	applyFacilityGlassActivity,
+	applyFacilityLayerMotion,
 	appSessionHeatmapAreas,
 	appSessionHeatmapScale,
+	bindFacilityGlass,
+	createClusterGlassNode,
+	createFacilityGlassNode,
+	FACILITY_LAYER_ENTER_MS,
+	FACILITY_LAYER_EXIT_MS,
 	facilitiesForIds,
+	marketBounds,
 	placeHover,
+	readClusterGlassBadges,
+	readFacilityGlassBadges,
 	resolveMapStatus,
 	toAppSessionHeatmapFeatureCollection,
 	toFacilityFeatureCollection,
@@ -15,10 +31,13 @@ import {
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
 	APP_SESSION_HEATMAP_SOURCE_ID,
+	CLUSTER_ACTIVE_COUNT_EXPRESSION,
+	CLUSTER_ACTIVE_COUNT_KEY,
 	CLUSTER_LAYER_ID,
 	FACILITIES_LAYER_ID,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
+import type { ClusterTreeSource } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 const mapState = vi.hoisted(() => ({
 	instances: [] as Array<Record<string, ReturnType<typeof vi.fn>>>,
@@ -27,7 +46,18 @@ const mapState = vi.hoisted(() => ({
 	setData: vi.fn(),
 	getClusterLeaves: vi.fn(),
 	getClusterExpansionZoom: vi.fn(),
+	getClusterChildren: vi.fn(),
 	setWorkerUrl: vi.fn(),
+}));
+const queryClient = vi.hoisted(() => ({}));
+const mockPrefetchFacilityReservationStats = vi.hoisted(() => vi.fn());
+
+vi.mock("@tanstack/react-query", () => ({
+	useQueryClient: () => queryClient,
+}));
+
+vi.mock("@/presentation/hooks/use-facility/prefetch-facility-reservation-stats", () => ({
+	prefetchFacilityReservationStats: mockPrefetchFacilityReservationStats,
 }));
 
 vi.mock("maplibre-gl", () => {
@@ -38,13 +68,16 @@ vi.mock("maplibre-gl", () => {
 		remove = vi.fn();
 		off = vi.fn();
 		easeTo = vi.fn();
+		fitBounds = vi.fn();
 		setPaintProperty = vi.fn();
+		triggerRepaint = vi.fn();
 		getCanvas = vi.fn(() => mapState.canvas);
 		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
 		getBounds = vi.fn(() => ({ contains: () => true }));
 		getSource = vi.fn(() => ({
 			setData: mapState.setData,
 			getClusterLeaves: mapState.getClusterLeaves,
+			getClusterChildren: mapState.getClusterChildren,
 			getClusterExpansionZoom: mapState.getClusterExpansionZoom,
 		}));
 		on = vi.fn((event: string, layerOrHandler: unknown, handler?: unknown) => {
@@ -74,6 +107,17 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 	useFacilityListAll: () => mockUseFacilities(),
 }));
 
+const layersState = vi.hoisted(() => ({ showFacilities: true, showSessions: true }));
+
+vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
+	useMapLayers: () => ({
+		showFacilities: layersState.showFacilities,
+		setShowFacilities: vi.fn(),
+		showSessions: layersState.showSessions,
+		setShowSessions: vi.fn(),
+	}),
+}));
+
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
@@ -82,6 +126,7 @@ vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 const FACILITY = {
 	id: "f1",
 	marketId: "austin",
+	marketName: "Austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
@@ -104,6 +149,360 @@ function renderRules() {
 	);
 }
 
+describe("active cluster reveal", () => {
+	it("zooms to the nearest active facility once that facility is drawn as its own dot", async () => {
+		const source = {
+			getClusterExpansionZoom: vi.fn(async (clusterId: number) => (clusterId === 7 ? 6 : 10)),
+			getClusterChildren: vi.fn(async (clusterId: number) => {
+				if (clusterId === 7) {
+					return [
+						{
+							properties: { cluster: true, cluster_id: 8, point_count: 2 },
+							geometry: { coordinates: [-97.2, 30.2] },
+						},
+					];
+				}
+				return [
+					{
+						properties: { id: "live", isActive: true },
+						geometry: { coordinates: [-97.1, 30.4] },
+					},
+					{
+						properties: { id: "quiet", isActive: false },
+						geometry: { coordinates: [-97.2, 30.2] },
+					},
+				];
+			}),
+			getClusterLeaves: vi.fn(async (clusterId: number) => {
+				if (clusterId === 8) {
+					return [
+						{
+							properties: { id: "live", isActive: true },
+							geometry: { coordinates: [-97.1, 30.4] },
+						},
+					];
+				}
+				return [
+					{
+						properties: { id: "far", isActive: true },
+						geometry: { coordinates: [-80, 25] },
+					},
+					{
+						properties: { id: "live", isActive: true },
+						geometry: { coordinates: [-97.1, 30.4] },
+					},
+					{
+						properties: { id: "quiet", isActive: false },
+						geometry: { coordinates: [-97.2, 30.2] },
+					},
+				];
+			}),
+		};
+		await expect(activeClusterRevealTarget(source, 7, [-97.7, 30.3], 3)).resolves.toEqual({
+			zoom: 10,
+			center: [-97.1, 30.4],
+		});
+		await expect(
+			activeClusterRevealTarget(
+				{
+					...source,
+					getClusterLeaves: vi.fn(async () => []),
+				},
+				7,
+				[-97.7, 30.3],
+				3,
+			),
+		).resolves.toEqual({ zoom: 6, center: [-97.7, 30.3] });
+	});
+
+	it("ignores leaves that cannot be drawn and stops when the active facility never separates", async () => {
+		const leaves = [
+			{ properties: { isActive: true }, geometry: { coordinates: [1, 2] } },
+			{ properties: { id: "dead", isActive: null }, geometry: { coordinates: [0, 0] } },
+			{ properties: { id: "zero", isActive: 0 }, geometry: { coordinates: [0, 0] } },
+			{ properties: { id: "text", isActive: "false" }, geometry: { coordinates: [0, 0] } },
+			{ properties: { id: "missing", isActive: true } },
+			{ properties: { id: "short", isActive: true }, geometry: { coordinates: [1] } },
+			{ properties: { id: "words", isActive: true }, geometry: { coordinates: ["x", "y"] } },
+			{
+				properties: { id: 9, isActive: "1" },
+				geometry: { coordinates: [-97.2, 30.2] },
+			},
+			{
+				properties: { id: "near", isActive: true },
+				geometry: { coordinates: [-97.5, 30.3] },
+			},
+		];
+		const source = {
+			getClusterExpansionZoom: vi.fn(async (clusterId: number) => clusterId),
+			getClusterChildren: vi.fn(async (clusterId: number) => {
+				if (clusterId === 1) {
+					return [
+						{ properties: { id: "other" }, geometry: { coordinates: [1, 2] } },
+						{ properties: { cluster: true, cluster_id: "bad" } },
+						{ properties: { cluster: true, cluster_id: 2 } },
+					];
+				}
+				return [{ properties: { cluster: true, cluster_id: 4, point_count: 1 } }];
+			}),
+			getClusterLeaves: vi.fn(async (clusterId: number) => {
+				if (clusterId === 2) {
+					return [
+						{
+							properties: { id: "other", isActive: true },
+							geometry: { coordinates: [1, 2] },
+						},
+					];
+				}
+				return leaves;
+			}),
+		};
+		const tree = source as ClusterTreeSource;
+		await expect(activeClusterRevealTarget(tree, 1, [-97.7, 30.3], 0)).resolves.toEqual({
+			zoom: 1,
+			center: [-97.5, 30.3],
+		});
+		expect(source.getClusterLeaves).toHaveBeenCalledWith(1, 1, 0);
+		expect(source.getClusterLeaves).toHaveBeenCalledWith(2, 1, 0);
+		await expect(activeClusterRevealTarget(tree, 4, [-97.7, 30.3], 3)).resolves.toEqual({
+			zoom: 4,
+			center: [-97.5, 30.3],
+		});
+	});
+});
+
+describe("facility layer motion", () => {
+	it("fades a facility layer host in from below and out downward", () => {
+		const host = document.createElement("div");
+		applyFacilityLayerMotion(host, "enter");
+		expect(host.classList.contains("facility-layer-in")).toBe(true);
+		expect(host.style.opacity).toBe("");
+		applyFacilityLayerMotion(host, "exit");
+		expect(host.classList.contains("facility-layer-out")).toBe(true);
+		expect(host.classList.contains("facility-layer-in")).toBe(false);
+	});
+});
+
+describe("facility glass", () => {
+	it("draws a 29px glass disc with a 17px logo, and a white mark when the facility is inactive", () => {
+		const active = createFacilityGlassNode();
+		const logo = active.querySelector("img");
+		expect(active.style.width).toBe("29px");
+		expect(logo?.getAttribute("src")).toBe("/images/plei-logo.svg");
+		expect(logo).toHaveStyle({ width: "17px", height: "17px" });
+		applyFacilityGlassActivity(active, true);
+		expect(logo?.getAttribute("src")).toBe("/images/plei-logo.svg");
+		applyFacilityGlassActivity(active, false);
+		expect(active.style.backgroundColor).toBe("rgba(255, 255, 255, 0.336)");
+		expect(active.style.backdropFilter).toBe("blur(18px) saturate(1.8)");
+		expect(logo).toBeInstanceOf(HTMLImageElement);
+		expect((logo as HTMLImageElement).style.filter).toBe("none");
+		expect(logo?.getAttribute("src")).toBe("/images/plei-logo-white.svg");
+		const badges = readFacilityGlassBadges(
+			[
+				{
+					geometry: { coordinates: [1, 2] },
+					properties: { id: "quiet", isActive: false },
+				},
+			],
+			() => ({ x: 4, y: 5 }),
+		);
+		expect(badges).toEqual([{ id: "quiet", x: 4, y: 5, active: false }]);
+	});
+
+	it("draws a 41px glass cluster and a gray stroke and count when no facility inside is active", () => {
+		const node = createClusterGlassNode();
+		const ring = node.querySelector("[data-testid='cluster-glass-stroke']");
+		const label = node.querySelector("[data-testid='cluster-glass-label']");
+		expect(node.style.width).toBe("41px");
+		expect(node.style.pointerEvents).toBe("none");
+		expect(ring).toHaveStyle({ width: "35px", height: "35px", border: "2px solid #86EFAC" });
+		applyClusterGlassActivity(node, false);
+		expect(node.style.backgroundColor).toBe("rgba(255, 255, 255, 0.28)");
+		expect(node.style.backdropFilter).toBe("blur(18px) saturate(1.8)");
+		expect(node.style.color).toBe("rgb(55, 65, 81)");
+		expect(label).toBeInstanceOf(HTMLElement);
+		expect((label as HTMLElement).style.color).toBe("rgb(55, 65, 81)");
+		expect(ring).toBeInstanceOf(HTMLElement);
+		expect((ring as HTMLElement).style.borderColor).toBe("rgb(137, 142, 153)");
+	});
+
+	it("keeps one badge per cluster and marks a cluster inactive when it has no active facility", () => {
+		const project = () => ({ x: 1, y: 2 });
+		expect(
+			readClusterGlassBadges(
+				[
+					{
+						properties: { cluster_id: 1, point_count_abbreviated: "1.2k" },
+						geometry: { coordinates: [0, 0] },
+					},
+					{
+						properties: { cluster_id: 1, point_count: 3 },
+						geometry: { coordinates: [0, 0] },
+					},
+					{ properties: { cluster_id: 2 }, geometry: { coordinates: [0, 0] } },
+					{
+						properties: { cluster_id: 4, point_count_abbreviated: 9 },
+						geometry: { coordinates: [0, 0] },
+					},
+					{
+						properties: { cluster_id: 8, point_count: 4, activeCount: 2 },
+						geometry: { coordinates: [0, 0] },
+					},
+					{
+						properties: { cluster_id: 9, point_count: 4, activeCount: 0 },
+						geometry: { coordinates: [0, 0] },
+					},
+					{
+						properties: { cluster_id: 5, point_count: 1 },
+						geometry: { coordinates: ["x", "y"] },
+					},
+					{ properties: { point_count: 4 }, geometry: { coordinates: [0, 0] } },
+					{ properties: { cluster_id: 3, point_count: 1 } },
+				],
+				project,
+			),
+		).toEqual([
+			{ id: 1, label: "1.2k", x: 1, y: 2, active: false },
+			{ id: 2, label: "", x: 1, y: 2, active: false },
+			{ id: 4, label: "9", x: 1, y: 2, active: false },
+			{ id: 8, label: "4", x: 1, y: 2, active: true },
+			{ id: 9, label: "4", x: 1, y: 2, active: false },
+		]);
+		expect(
+			readFacilityGlassBadges(
+				[
+					{
+						properties: { cluster_id: 1, id: "c" },
+						geometry: { coordinates: [0, 0] },
+					},
+					{ properties: { id: "a" }, geometry: { coordinates: [0, 0] } },
+					{
+						properties: { id: "a", isActive: false },
+						geometry: { coordinates: [0, 0] },
+					},
+					{ properties: { id: 4 }, geometry: { coordinates: [0, 0] } },
+					{
+						properties: { id: "b", isActive: "false" },
+						geometry: { coordinates: [0, 0] },
+					},
+					{ properties: { id: "d", isActive: 0 }, geometry: { coordinates: [9, 9] } },
+					{
+						properties: { id: "e", isActive: "0" },
+						geometry: { coordinates: [9, 9] },
+					},
+				],
+				project,
+			).map((badge) => [badge.id, badge.active]),
+		).toEqual([
+			["a", true],
+			["b", false],
+			["d", false],
+			["e", false],
+		]);
+	});
+
+	it("projects glass discs on each map render and removes them when facilities are hidden", () => {
+		const container = document.createElement("div");
+		const frames = new Map<number, FrameRequestCallback>();
+		let nextFrame = 1;
+		const requestFrame = vi
+			.spyOn(window, "requestAnimationFrame")
+			.mockImplementation((callback) => {
+				const id = nextFrame;
+				nextFrame += 1;
+				frames.set(id, callback);
+				return id;
+			});
+		const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+			frames.delete(id);
+		});
+		const handlers = new Map<string, () => void>();
+		const layers = new Set(["facilities-clusters", "facilities-dots"]);
+		const map = {
+			getContainer: () => container,
+			getLayer: (id: string) => (layers.has(id) ? {} : undefined),
+			queryRenderedFeatures: ({ layers: requested }: { layers: string[] }) => {
+				if (requested[0] === "facilities-clusters") {
+					return [
+						{
+							geometry: { coordinates: [1, 2] },
+							properties: { cluster_id: 7, point_count: 12, activeCount: 12 },
+						},
+					];
+				}
+				return [
+					{
+						geometry: { coordinates: [3, 4] },
+						properties: { id: "f1", isActive: true },
+					},
+					{
+						geometry: { coordinates: [5, 6] },
+						properties: { id: "quiet", isActive: false },
+					},
+				];
+			},
+			project: () => ({ x: 10, y: 20 }),
+			on: (_event: string, handler: () => void) => {
+				handlers.set("render", handler);
+			},
+			off: vi.fn(),
+		};
+		const showFacilitiesRef = { current: true };
+		const selectedFacilityIdRef = { current: "f1" as string | null };
+		const unbind = bindFacilityGlass(map as never, showFacilitiesRef, selectedFacilityIdRef);
+		const flush = () => {
+			const id = [...frames.keys()][0];
+			const callback = id === undefined ? undefined : frames.get(id);
+			if (id !== undefined) frames.delete(id);
+			callback?.(0);
+		};
+		expect(container.querySelector("[data-testid='cluster-glass']")).toHaveStyle({
+			pointerEvents: "none",
+		});
+		handlers.get("render")?.();
+		expect(frames.size).toBe(1);
+		flush();
+		expect(container.querySelector("[data-testid='cluster-glass-label']")?.textContent).toBe("12");
+		expect(container.querySelector("[data-testid='cluster-glass'] > div")).toHaveStyle({
+			pointerEvents: "none",
+		});
+		const discs = container.querySelectorAll("[data-testid='facility-glass'] > div");
+		const selected = discs[0];
+		const inactive = discs[1];
+		expect(selected).toBeInstanceOf(HTMLElement);
+		expect(inactive).toBeInstanceOf(HTMLElement);
+		expect(selected).toHaveStyle({
+			boxShadow:
+				"inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 3px #111827, 0 10px 24px rgba(0,0,0,0.12)",
+			pointerEvents: "none",
+		});
+		expect((inactive as HTMLElement).style.boxShadow).toBe(
+			"inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 2px #6B7280, 0 10px 24px rgba(0,0,0,0.12)",
+		);
+		layers.clear();
+		handlers.get("render")?.();
+		flush();
+		expect(container.querySelector("[data-testid='cluster-glass-label']")).toBeNull();
+		showFacilitiesRef.current = false;
+		handlers.get("render")?.();
+		flush();
+		handlers.get("render")?.();
+		unbind?.();
+		expect(cancelFrame).toHaveBeenCalled();
+		expect(container.childElementCount).toBe(0);
+		requestFrame.mockRestore();
+		cancelFrame.mockRestore();
+		expect(
+			bindFacilityGlass(
+				{ getContainer: () => ({}) } as never,
+				showFacilitiesRef,
+				selectedFacilityIdRef,
+			),
+		).toBeUndefined();
+	});
+});
+
 describe("toFacilityFeatureCollection", () => {
 	it("turns facilities into GeoJSON points", () => {
 		expect(toFacilityFeatureCollection([FACILITY])).toEqual({
@@ -115,6 +514,7 @@ describe("toFacilityFeatureCollection", () => {
 					properties: {
 						id: "f1",
 						marketId: "austin",
+						marketName: "Austin",
 						name: "Eastside Futsal Arena",
 						isActive: true,
 					},
@@ -245,6 +645,36 @@ describe("facilitiesForIds", () => {
 	});
 });
 
+describe("marketBounds", () => {
+	it("contains every facility or returns null for an empty market", () => {
+		expect(
+			marketBounds([
+				FACILITY,
+				{ ...FACILITY, id: "f2", location: { latitude: 31, longitude: -96 } },
+			]),
+		).toEqual([
+			[-97.74, 30.27],
+			[-96, 31],
+		]);
+		expect(marketBounds([])).toBeNull();
+	});
+});
+
+describe("marketBounds", () => {
+	it("returns the corners containing all market facilities", () => {
+		expect(
+			marketBounds([
+				FACILITY,
+				{ ...FACILITY, id: "f2", location: { latitude: 31, longitude: -96 } },
+			]),
+		).toEqual([
+			[-97.74, 30.27],
+			[-96, 31],
+		]);
+		expect(marketBounds([])).toBeNull();
+	});
+});
+
 describe("resolveMapStatus", () => {
 	it("maps query state to a status", () => {
 		expect(resolveMapStatus(true, false)).toBe("loading");
@@ -256,6 +686,8 @@ describe("resolveMapStatus", () => {
 describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		layersState.showFacilities = true;
+		layersState.showSessions = true;
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -281,7 +713,13 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(map?.addSource).toHaveBeenCalledWith("facilities", expect.anything());
 		expect(map?.addSource).toHaveBeenCalledWith(
 			"facilities",
-			expect.objectContaining({ cluster: true, clusterRadius: 40 }),
+			expect.objectContaining({
+				cluster: true,
+				clusterRadius: 40,
+				clusterProperties: {
+					[CLUSTER_ACTIVE_COUNT_KEY]: CLUSTER_ACTIVE_COUNT_EXPRESSION,
+				},
+			}),
 		);
 		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(5));
 		expect(mockUsePleiLogoImages).toHaveBeenLastCalledWith(map);
@@ -355,6 +793,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			flipX: false,
 			flipY: false,
 		});
+		expect(mockPrefetchFacilityReservationStats).toHaveBeenCalledWith(queryClient, "f1");
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("missing")));
 		expect(result.current.hovered).toBeNull();
 
@@ -418,6 +857,129 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(mapState.canvas.style.cursor).toBe("");
 	});
 
+	it("zooms to facilities and fits markets selected from search", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const map = mapState.instances[0];
+		act(() => result.current.selectSearchFacility(FACILITY));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(map?.easeTo).toHaveBeenLastCalledWith(
+			expect.objectContaining({ center: [-97.74, 30.27], zoom: 14 }),
+		);
+		const second = { ...FACILITY, id: "f2", location: { latitude: 31, longitude: -96 } };
+		act(() =>
+			result.current.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY, second],
+			}),
+		);
+		expect(map?.fitBounds).toHaveBeenCalledWith(
+			[
+				[-97.74, 30.27],
+				[-96, 31],
+			],
+			{ padding: 72, maxZoom: 11, duration: 700 },
+		);
+		act(() =>
+			result.current.selectSearchMarket({ id: "austin", name: "Austin", facilities: [FACILITY] }),
+		);
+		expect(map?.easeTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom: 11 }));
+		act(() => result.current.selectSearchMarket({ id: "empty", name: "Empty", facilities: [] }));
+	});
+
+	it("shares the searched facility or market as the summary scope and resets it on clear", async () => {
+		const container = document.createElement("div");
+		const { result } = renderHook(
+			() => {
+				const rules = useFacilitiesMapScreenRules();
+				rules.containerRef.current ??= container;
+				return { rules, scope: useMapScope().scope };
+			},
+			{
+				wrapper: ({ children }: { children: ReactNode }) =>
+					wrapper({ children: createElement(MapScopeProvider, null, children) }),
+			},
+		);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(result.current.scope).toEqual({ kind: "all" });
+
+		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		expect(result.current.scope).toEqual({
+			kind: "facility",
+			id: "f1",
+			name: FACILITY.name,
+			marketName: "Austin",
+		});
+
+		act(() =>
+			result.current.rules.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY],
+			}),
+		);
+		expect(result.current.scope).toEqual({ kind: "market", id: "austin", name: "Austin" });
+
+		act(() => result.current.rules.clearSearchScope());
+		expect(result.current.scope).toEqual({ kind: "all" });
+	});
+
+	it("zooms to search selections", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const map = mapState.instances[0];
+		const secondFacility = {
+			...FACILITY,
+			id: "f2",
+			location: { latitude: 30.4, longitude: -97.6 },
+		};
+
+		act(() => result.current.selectSearchFacility(FACILITY));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			center: [-97.74, 30.27],
+			zoom: 14,
+			padding: { top: 0, bottom: 0, left: 0, right: 384 },
+			duration: 700,
+		});
+
+		act(() =>
+			result.current.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY, secondFacility],
+			}),
+		);
+		expect(result.current.selectedFacilityId).toBeNull();
+		expect(map?.fitBounds).toHaveBeenCalledWith(
+			[
+				[-97.74, 30.27],
+				[-97.6, 30.4],
+			],
+			{ padding: 72, maxZoom: 11, duration: 700 },
+		);
+
+		act(() =>
+			result.current.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY],
+			}),
+		);
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			center: [-97.74, 30.27],
+			zoom: 11,
+			padding: { top: 0, bottom: 0, left: 0, right: 0 },
+			duration: 700,
+		});
+
+		act(() => result.current.selectSearchMarket({ id: "empty", name: "Empty", facilities: [] }));
+	});
+
 	it("lists a hovered cluster's facilities and zooms in on click", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
@@ -471,6 +1033,133 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		act(() => mapState.handlers.get(`click:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30, null)));
 		expect(map?.easeTo).toHaveBeenCalledTimes(1);
+
+		mapState.getClusterLeaves.mockResolvedValue([
+			{
+				properties: { id: "f1", isActive: true },
+				geometry: { coordinates: [-97.1, 30.4] },
+			},
+		]);
+		mapState.getClusterChildren.mockResolvedValue([
+			{
+				properties: { id: "f1", isActive: true },
+				geometry: { coordinates: [-97.1, 30.4] },
+			},
+		]);
+		mapState.getClusterExpansionZoom.mockResolvedValue(12);
+		await act(async () => {
+			mapState.handlers.get(`click:${CLUSTER_LAYER_ID}`)?.({
+				features: [
+					{
+						properties: { cluster_id: 7, point_count: 12, activeCount: 2 },
+						geometry: { type: "Point", coordinates: [-97.7, 30.3] },
+					},
+				],
+				point: { x: 30, y: 40 },
+			});
+		});
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			center: [-97.1, 30.4],
+			zoom: 12,
+			duration: 500,
+		});
+	});
+
+	it("hides the session heatmap and its legend when app sessions are off", async () => {
+		const { result, rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
+		map.getLayer = vi.fn(() => ({ id: APP_SESSION_HEATMAP_LAYER_ID }));
+		map.setLayoutProperty = vi.fn();
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.hasSessionHeatmap).toBe(true);
+
+		layersState.showSessions = false;
+		rerender();
+		expect(map.setLayoutProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"visibility",
+			"none",
+		);
+		expect(result.current.hasSessionHeatmap).toBe(false);
+
+		layersState.showSessions = true;
+		rerender();
+		expect(map.setLayoutProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"visibility",
+			"visible",
+		);
+		expect(result.current.hasSessionHeatmap).toBe(true);
+	});
+
+	it("fades facility markers in and out with the facilities switch", async () => {
+		const { rerender, unmount } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
+		const container = document.createElement("div");
+		map.getContainer = vi.fn(() => container);
+		map.getLayer = vi.fn(() => ({ id: "facilities" }));
+		map.setLayoutProperty = vi.fn();
+		map.queryRenderedFeatures = vi.fn(() => []);
+		map.project = vi.fn(() => ({ x: 0, y: 0 }));
+		act(() => mapState.handlers.get("load")?.());
+		const cluster = container.querySelector("[data-testid='cluster-glass']");
+		const facility = container.querySelector("[data-testid='facility-glass']");
+		if (!(cluster instanceof HTMLElement) || !(facility instanceof HTMLElement)) {
+			throw new Error("facility glass hosts were not mounted");
+		}
+
+		layersState.showFacilities = false;
+		rerender();
+		expect(cluster.classList.contains("facility-layer-out")).toBe(true);
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, FACILITY_LAYER_EXIT_MS + 30));
+		});
+		expect(map?.triggerRepaint).toHaveBeenCalled();
+		expect(cluster.style.opacity).toBe("0");
+
+		layersState.showFacilities = true;
+		rerender();
+		expect(cluster.classList.contains("facility-layer-in")).toBe(true);
+		expect(facility.classList.contains("facility-layer-in")).toBe(true);
+		expect(map?.setLayoutProperty).toHaveBeenCalledWith(
+			expect.any(String),
+			"visibility",
+			"visible",
+		);
+
+		act(() => {
+			cluster.dispatchEvent(new Event("animationend"));
+		});
+		expect(cluster.classList.contains("facility-layer-in")).toBe(false);
+		expect(facility.classList.contains("facility-layer-in")).toBe(true);
+		act(() => {
+			cluster.dispatchEvent(new Event("animationend"));
+		});
+		act(() => {
+			facility.dispatchEvent(new Event("animationend"));
+		});
+		expect(facility.classList.contains("facility-layer-in")).toBe(false);
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, FACILITY_LAYER_ENTER_MS + 30));
+		});
+
+		layersState.showFacilities = false;
+		rerender();
+		expect(cluster.classList.contains("facility-layer-out")).toBe(true);
+		act(() => {
+			cluster.dispatchEvent(new Event("animationend"));
+		});
+		expect(cluster.style.opacity).toBe("0");
+		expect(cluster.classList.contains("facility-layer-out")).toBe(false);
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, FACILITY_LAYER_EXIT_MS + 30));
+		});
+		unmount();
 	});
 
 	it("ignores cluster results that arrive after the pointer left", async () => {

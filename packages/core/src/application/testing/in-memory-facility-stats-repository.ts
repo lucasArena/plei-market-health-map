@@ -1,16 +1,44 @@
 import type {
+	FacilityGameComparison,
+	FacilityPlayerStats,
+	FacilityReservationStats,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
-} from "@core/application/ports/facility-stats-repository.types";
+} from "@core/application/repositories/facility-stats-repository.types";
 import type { EntityId } from "@core/domain";
 
 export class InMemoryFacilityStatsRepository implements FacilityStatsRepository {
-	readonly requested: EntityId[][] = [];
+	readonly reservationRequested: EntityId[][] = [];
+	readonly playerRequested: EntityId[][] = [];
 
-	constructor(private readonly counts: FacilityWeeklyCounts) {}
+	constructor(
+		private readonly counts: FacilityWeeklyCounts,
+		private readonly comparisons: FacilityGameComparison[] = [],
+	) {}
 
-	async getWeeklyCounts(facilityIds: EntityId[]): Promise<FacilityWeeklyCounts> {
-		this.requested.push([...facilityIds]);
-		return { ...this.counts };
+	async getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
+		this.reservationRequested.push([...facilityIds]);
+		const {
+			uniquePlayersLast28Days: _uniquePlayersLast28Days,
+			uniquePlayersPrevious28Days: _uniquePlayersPrevious28Days,
+			activatedPlayersLast28Days: _activatedPlayersLast28Days,
+			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
+			...reservationStats
+		} = this.counts;
+		return { ...reservationStats };
+	}
+
+	async getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+		return this.comparisons.filter((row) => facilityIds.includes(row.facilityId));
+	}
+
+	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
+		this.playerRequested.push([...facilityIds]);
+		return {
+			uniquePlayersLast28Days: this.counts.uniquePlayersLast28Days,
+			uniquePlayersPrevious28Days: this.counts.uniquePlayersPrevious28Days,
+			activatedPlayersLast28Days: this.counts.activatedPlayersLast28Days,
+			activatedPlayersPrevious28Days: this.counts.activatedPlayersPrevious28Days,
+		};
 	}
 }

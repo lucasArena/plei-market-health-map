@@ -3,7 +3,10 @@ import { getInternalAccess } from "@/infrastructure/auth/internal-access";
 const mockAuth = vi.fn();
 
 vi.mock("@/infrastructure/auth/auth", () => ({ auth: () => mockAuth() }));
-vi.mock("@market-health-map/server", () => ({ getAllowedEmailDomain: () => "plei.com" }));
+vi.mock("@market-health-map/server", () => ({
+	getAllowedEmailDomain: () => "plei.com",
+	canViewAppMetrics: (email: string) => email === "lucas@plei.com",
+}));
 
 describe("getInternalAccess", () => {
 	it("is anonymous without a session or email", async () => {
@@ -23,15 +26,17 @@ describe("getInternalAccess", () => {
 			email: "lucas@plei.com",
 			name: "Lucas",
 			image: "https://img/l.png",
+			canViewAppMetrics: true,
 		});
 	});
 
 	it("falls back to the email when the session has no id, name or image", async () => {
-		mockAuth.mockResolvedValue({ user: { email: "lucas@plei.com" } });
+		mockAuth.mockResolvedValue({ user: { email: "alan@plei.com" } });
 		await expect(getInternalAccess()).resolves.toMatchObject({
-			userId: "lucas@plei.com",
+			userId: "alan@plei.com",
 			name: null,
 			image: null,
+			canViewAppMetrics: false,
 		});
 	});
 

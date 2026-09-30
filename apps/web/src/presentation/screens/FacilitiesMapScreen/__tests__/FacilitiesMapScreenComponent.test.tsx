@@ -1,9 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 const mockRules = vi.fn();
+
+vi.mock(
+	"@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent",
+	() => ({
+		useHeaderSlot: vi.fn(() => ({ searchSlot: null, setSearchSlot: vi.fn() })),
+	}),
+);
 
 vi.mock("maplibre-gl/dist/maplibre-gl.css", () => ({}));
 vi.mock("@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent", () => ({
@@ -13,6 +21,13 @@ vi.mock("@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelCo
 		</aside>
 	),
 }));
+vi.mock("@/presentation/components/feedbacks/Feedback/FeedbackComponent", () => ({
+	Feedback: ({ facilityId }: { facilityId: string | null }) => (
+		<button type="button" data-testid="feedback-widget" data-facility={facilityId ?? ""}>
+			?
+		</button>
+	),
+}));
 vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules", () => ({
 	useFacilitiesMapScreenRules: () => mockRules(),
 }));
@@ -20,6 +35,7 @@ vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent
 const FACILITY = {
 	id: "f1",
 	marketId: "austin",
+	marketName: "Austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
@@ -28,13 +44,17 @@ const FACILITY = {
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
+		clearSearchScope: vi.fn(),
 		closePanel: vi.fn(),
 		containerRef: { current: null },
+		facilities: [],
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
 		hovered: null,
 		isPanelClosing: false,
 		selectedFacilityId: null,
+		selectSearchFacility: vi.fn(),
+		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
 		status,
@@ -43,6 +63,24 @@ function rulesWith(status: string, overrides: object = {}) {
 }
 
 describe("FacilitiesMapScreen", () => {
+	it("renders the search into the header slot once the header provides it", () => {
+		mockRules.mockReturnValue(rulesWith("ready"));
+		const { unmount } = render(<FacilitiesMapScreen />);
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+		unmount();
+
+		const slot = document.createElement("div");
+		document.body.append(slot);
+		vi.mocked(useHeaderSlot).mockReturnValue({ searchSlot: slot, setSearchSlot: vi.fn() });
+		render(<FacilitiesMapScreen />);
+
+		expect(slot).toContainElement(
+			screen.getByRole("combobox", { name: "Search markets or facilities" }),
+		);
+		vi.mocked(useHeaderSlot).mockReturnValue({ searchSlot: null, setSearchSlot: vi.fn() });
+		slot.remove();
+	});
+
 	it("renders only the map and its attribution", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 
@@ -130,5 +168,22 @@ describe("FacilitiesMapScreen", () => {
 
 		expect(screen.getByTestId("detail-panel")).toHaveTextContent("f1");
 		expect(screen.getByTestId("detail-panel")).toHaveAttribute("data-closing", "true");
+	});
+
+	it("places the feedback button bottom left and moves the legend beside it", () => {
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				selectedFacilityId: "f1",
+				sessionScale: { low: 1, high: 10 },
+			}),
+		);
+
+		render(<FacilitiesMapScreen />);
+
+		expect(screen.getByTestId("feedback-widget")).toHaveAttribute("data-facility", "f1");
+		const legend = screen.getByTestId("session-heatmap-legend");
+		expect(legend).toHaveClass("bottom-8", "left-16");
+		expect(legend).not.toHaveClass("left-3");
 	});
 });

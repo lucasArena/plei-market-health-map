@@ -6,6 +6,7 @@ function facility(id: string, name: string) {
 	return {
 		id,
 		marketId: "austin",
+		marketName: "Austin",
 		name,
 		avatarUrl: null,
 		isActive: true,

@@ -1,4 +1,4 @@
-import type { FacilityRepository } from "@core/application/ports/facility-repository.types";
+import type { FacilityRepository } from "@core/application/repositories/facility-repository.types";
 import type { Facility } from "@core/domain";
 
 export class InMemoryFacilityRepository implements FacilityRepository {

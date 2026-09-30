@@ -1,24 +1,33 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import { createPortal } from "react-dom";
+import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
+import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
+import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 export function FacilitiesMapScreen() {
 	const {
+		clearSearchScope,
 		closePanel,
 		containerRef,
+		facilities,
 		handlePanelClosed,
 		hasSessionHeatmap,
 		hovered,
 		isPanelClosing,
 		messages,
 		selectedFacilityId,
+		selectSearchFacility,
+		selectSearchMarket,
 		sessionScale,
 		status,
 	} = useFacilitiesMapScreenRules();
+	const { searchSlot } = useHeaderSlot();
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
 	const numberFormatter = new Intl.NumberFormat(undefined, {
 		notation: "compact",
@@ -32,6 +41,17 @@ export function FacilitiesMapScreen() {
 			<div className="absolute inset-0">
 				<div ref={containerRef} data-testid="facilities-map" className="h-full w-full" />
 			</div>
+			{searchSlot &&
+				createPortal(
+					<MapSearch
+						facilities={facilities}
+						messages={messages}
+						onFacilitySelect={selectSearchFacility}
+						onMarketSelect={selectSearchMarket}
+						onClear={clearSearchScope}
+					/>,
+					searchSlot,
+				)}
 			{overlayMessage && (
 				<p
 					role="status"
@@ -44,7 +64,7 @@ export function FacilitiesMapScreen() {
 			{hasSessionHeatmap && (
 				<div
 					data-testid="session-heatmap-legend"
-					className="absolute bottom-8 left-3 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
+					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
 				>
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
 						{messages.sessionHeatmapLegend}
@@ -95,6 +115,7 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
+			<Feedback facilityId={selectedFacilityId} />
 			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"

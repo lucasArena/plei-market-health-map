@@ -1,5 +1,5 @@
-import type { Clock } from "@core/application/ports/clock.types";
-import type { IdGenerator } from "@core/application/ports/id-generator.types";
+import type { Clock } from "@core/application/providers/clock.types";
+import type { IdGenerator } from "@core/application/providers/id-generator.types";
 import type { EntityId } from "@core/domain";
 
 export class FixedClock implements Clock {

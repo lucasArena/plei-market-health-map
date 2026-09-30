@@ -8,7 +8,9 @@ describe("UserMenu", () => {
 	afterEach(() => vi.unstubAllEnvs());
 
 	it("opens to show the account and a sign-out action", () => {
-		renderWithMessages(<UserMenu name="Lucas Arena" email="lucas@plei.com" image={null} />);
+		renderWithMessages(
+			<UserMenu name="Lucas Arena" email="lucas@plei.com" image={null} canViewAppMetrics />,
+		);
 
 		const trigger = screen.getByRole("button", { name: "Account menu" });
 		expect(screen.getByText("LA")).toBeInTheDocument();
@@ -20,14 +22,21 @@ describe("UserMenu", () => {
 		expect(screen.getByRole("menu")).toHaveTextContent("Lucas Arena");
 		expect(screen.getByText("lucas@plei.com")).toBeInTheDocument();
 		expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
+		const metrics = screen.getByRole("menuitem", { name: "App metrics" });
+		expect(metrics).toHaveAttribute("href", "/metrics");
+		fireEvent.click(metrics);
+		expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 	});
 
 	it("shows the app version in the sign-out row", () => {
 		vi.stubEnv("NEXT_PUBLIC_APP_VERSION", "0.3.1");
-		renderWithMessages(<UserMenu name="Lucas" email="lucas@plei.com" image={null} />);
+		renderWithMessages(
+			<UserMenu name="Lucas" email="lucas@plei.com" image={null} canViewAppMetrics={false} />,
+		);
 
 		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 
+		expect(screen.queryByRole("menuitem", { name: "App metrics" })).not.toBeInTheDocument();
 		const version = screen.getByText("Version 0.3.1");
 		expect(version.parentElement).toBe(
 			screen.getByRole("menuitem", { name: "Sign out" }).parentElement,
@@ -35,13 +44,17 @@ describe("UserMenu", () => {
 	});
 
 	it("falls back to the email when there is no name", () => {
-		renderWithMessages(<UserMenu name={null} email="lucas@plei.com" image={null} />);
+		renderWithMessages(
+			<UserMenu name={null} email="lucas@plei.com" image={null} canViewAppMetrics={false} />,
+		);
 		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 		expect(screen.getAllByText("lucas@plei.com")).toHaveLength(2);
 	});
 
 	it("closes on Escape and on an outside click, but not on an inside click", () => {
-		renderWithMessages(<UserMenu name="Lucas" email="lucas@plei.com" image={null} />);
+		renderWithMessages(
+			<UserMenu name="Lucas" email="lucas@plei.com" image={null} canViewAppMetrics={false} />,
+		);
 		const trigger = screen.getByRole("button", { name: "Account menu" });
 
 		fireEvent.click(trigger);

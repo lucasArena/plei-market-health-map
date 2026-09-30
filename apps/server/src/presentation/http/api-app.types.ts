@@ -1,10 +1,29 @@
 import type { ServerContainer } from "@server/container.types";
-import type { ResolveAccess } from "@server/presentation/http/authenticate.types";
+import type {
+	AuthenticatedPrincipal,
+	ResolveAccess,
+} from "@server/presentation/http/authenticate.types";
 
 export type ApiServices = Pick<
 	ServerContainer,
-	"listFacilities" | "getFacilityDetail" | "listAppSessionHeatmap" | "listRecentLogins"
+	| "listFacilities"
+	| "getFacilityDetail"
+	| "getFacilityReservationStats"
+	| "getFacilityPlayerStats"
+	| "getMarketSummary"
+	| "getMarketGameInsights"
+	| "getMarketPlayerStats"
+	| "listAppSessionHeatmap"
+	| "listRecentLogins"
+	| "submitFeedback"
+	| "recordDailyActivity"
+	| "getAppMetrics"
+	| "listAppMetricsPeople"
 >;
+
+export type ApiEnv = {
+	Variables: { principal: AuthenticatedPrincipal };
+};
 
 export interface CreateApiAppOptions {
 	resolveAccess: ResolveAccess;

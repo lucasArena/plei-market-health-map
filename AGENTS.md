@@ -20,22 +20,25 @@ apps/
     infrastructure/
       api/                        the fetch apiClient
       ai/browser-llm/             BrowserLlm (WebLLM engine) and its web worker
-      ai/prompts/                 prompt builders (FacilitySummaryPrompt)
-      cache/local-storage/<name>/ browser caches (facility-summary)
+      ai/prompts/                 prompt builders (ActivitySummaryPrompt)
+      cache/local-storage/<name>/ browser caches (ai-summary)
+      activity/                   ActivityTracker: records visits, minutes and feature use for App metrics
       auth/                       Auth.js config, server actions, access checks
       i18n/                       request locale
     proxy.ts                      Next proxy (must stay at src/)
   server/src/
-    presentation/http/            createApiApp (Hono), routes/<resource>-routes.ts, auth guard, responses, errors
+    presentation/http/            createApiApp (Hono), controllers/<resource>-controller.ts, auth guard, responses, errors
     presentation/auth/            inbound adapters called by web (trackSignIn)
-    infrastructure/<source>/      adapters by data source: database/, warehouse/, sample/, system/
+    infrastructure/repositories/  repository implementations by source: database/, warehouse/, sample/
+      <source>/<name>/            one folder per unit: <name>.ts, <name>.types.ts, __tests__/<name>.test.ts
+    infrastructure/providers/     provider implementations: system/ (clock, ids), linear/ (issue tracker), same one-folder-per-unit layout
     container.ts                  composition root, the only place that builds concrete adapters
     env.ts                        server env parsing (Zod)
   server/prisma/                  schema and migrations
 packages/
   core/src/
     domain/                       entities/<entity>/, shared/ (guard, errors, ids); imports nothing
-    application/                  use-cases/, ports/, dtos/, mappers/, errors/, testing/ (fakes); imports only domain
+    application/                  services/, repositories/ and providers/ (interfaces), dtos/, mappers/, errors/, testing/ (fakes); imports only domain
     i18n/                         message catalogs and locale helpers; imports nothing
   config/                         shared tsconfig and Vitest presets
 .github/
@@ -51,8 +54,18 @@ Rules:
 - **Component folders** are PascalCase: `<Name>/<Name>Component.tsx` with `.rules.ts` (the `use<Name>Rules` hook holds all logic), `.types.ts`, optional `.styles.ts`, and tests in `__tests__/`. Screens follow the same shape (`<Name>ScreenComponent.tsx`).
 - **Hooks** live in `presentation/hooks/use-<subject>/use-<subject>-<what>.ts` (e.g. `use-facility/use-facility-list-all.ts` exports `useFacilityListAll`). Data hooks wrap `infrastructure/api/apiClient` with React Query.
 - **Infrastructure is grouped by technology**, then by purpose: `ai/`, `cache/local-storage/`, `api/`, `auth/`. Stateful services are classes with one shared instance exported next to them (`export const browserLlm = new BrowserLlm()`), and their dependencies are constructor options so tests pass fakes.
-- **Server:** one Hono route file per resource under `presentation/http/routes/`, mounted in `api-app.ts`. New adapters go in `infrastructure/<source>/` and are wired only in `container.ts`. Business rules never live in the server; they go in core use cases.
-- **Core stays framework-free.** Biome's `noRestrictedImports` blocks wrong imports (domain → application, core → apps, React, Next, Hono, Prisma). New entities go in `domain/entities/<entity>/`, new use cases in `application/use-cases/` as `makeVerbNoun`.
+- **Server layers are controllers → services → repositories.** One Hono controller per resource in `presentation/http/controllers/<resource>-controller.ts`, mounted in `api-app.ts`; it only reads the request, calls a service and responds. Business logic lives in core `application/services/` as `makeVerbNoun`. Storage goes through an interface in core `application/repositories/`, implemented in server `infrastructure/repositories/<source>/`; other outside needs (clock, ids, Linear) are `application/providers/` implemented in `infrastructure/providers/`. `container.ts` is the only place that picks implementations, so changing the database never touches controllers or services.
+- **One folder per server unit.** Every repository, provider and helper in `apps/server/src/infrastructure` lives in a folder named after it, with its types and tests beside it:
+
+  ```
+  infrastructure/repositories/warehouse/warehouse-facility-repository/
+    warehouse-facility-repository.ts
+    warehouse-facility-repository.types.ts
+    __tests__/warehouse-facility-repository.test.ts
+  ```
+
+  Import the file by its full path (`@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository`). Its `.types.ts` carries the same name as the file, and supporting data belongs to its unit (the sample CSV lives in `fixture-app-session-heatmap-repository/fixtures/`).
+- **Core stays framework-free.** Biome's `noRestrictedImports` blocks wrong imports (domain → application, core → apps, React, Next, Hono, Prisma). New entities go in `domain/entities/<entity>/`, new services in `application/services/` as `makeVerbNoun`.
 - **Tests** go in a `__tests__/` folder beside the file they cover, named `<file>.test.ts(x)`. Shared helpers go in `application/test/` (web), `testing/` (server) or `application/testing/` (core fakes).
 - **Types** go in a sibling `<file>.types.ts`, never inline.
 - **Imports** use aliases only: `@/…` in web, `@server/…` in server, `@core/…` in core, and `@market-health-map/core/<domain|application|i18n>` or `@market-health-map/server` across packages.
@@ -146,6 +159,7 @@ chore(ci): add a deploy timeout
 - The base is `staging`. The PR title becomes the squashed commit, so it must be a valid conventional message; it's what production counts later.
 - End the title with the Linear issue, e.g. `feat(map): add facility panel (PROD-451)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
 - `ci.pr.yml` must pass: the branch-name check and the unit tests. The Linear-issue check only warns.
+- Review it in Linear if you like: open `linear.review/lucasArena/plei-market-health-map/pull/<number>` (or the **Reviews** tab). `.gitattributes` groups the diff into implementation, tests, docs, agent guidance, localization, assets and generated files.
 - Merge with **Squash and merge**.
 - `cd.staging.yml` then deploys the branch head to **https://plei-market-health-map-staging.vercel.app**. Staging never bumps the version or creates a tag.
 - Verify the change on staging before promoting it.
@@ -169,11 +183,23 @@ Open a PR from `main` into `staging` and merge it with **Create a merge commit**
 
 Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Only branch from `main` in an emergency where staging holds work that must not ship. In that case, open the PR straight into `main` and back-merge `main` into `staging` right after.
 
+## Linear tracking (mandatory)
+
+Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.
+
+1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Product** team (`PROD`), in that project, assigned to the person you are working for.
+2. **Set it to In Progress** while you work.
+3. **Move it to Needs Review when the PR opens**, and attach the PR link to the ticket so the diff shows up there. Put the ticket ID in the branch slug (`feature/prod-467-<slug>`) and at the end of the PR title (see *Release workflow*).
+4. **Move it to Done when the PR merges**, unless the GitHub integration already did.
+
+Reach Linear through the Linear MCP server in your agent client, or the GraphQL API (`https://api.linear.app/graphql`) with your own API key from your environment. Never commit keys or paste them into tickets, PRs or logs. The app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` are only for in-app feedback, not for agent logging. If you can't reach Linear, tell the person you are working for.
+
 ## Before you finish a task
 
 - `pnpm check` passes.
 - New files follow the folder structure above, and docs in `CLAUDE.md` and `docs/` match what changed.
 - A row is added to `docs/agent-usage.md` for meaningful agent-assisted work (a project must-have).
+- The Linear ticket is linked to the PR and has the right status.
 
 <!-- BEGIN:turborepo-agent-rules -->
 

@@ -1,6 +1,11 @@
 import {
+	canViewAppMetrics,
 	getAllowedEmailDomain,
+	getFeedbackMode,
+	getLinearCredentials,
 	getServerEnv,
+	getTargetUserEmails,
+	hasPartialLinearAppCredentials,
 	isLoginTrackingConfigured,
 	resetServerEnvCache,
 } from "@server/env";
@@ -47,5 +52,87 @@ describe("server env", () => {
 		resetServerEnvCache();
 		vi.stubEnv("ALLOWED_EMAIL_DOMAIN", " example.org ");
 		expect(getAllowedEmailDomain()).toBe("example.org");
+	});
+
+	it("leaves feedback unconfigured without a Linear key", () => {
+		vi.stubEnv("LINEAR_CLIENT_ID", "");
+		vi.stubEnv("LINEAR_CLIENT_SECRET", "");
+		vi.stubEnv("LINEAR_API_KEY", "");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "");
+		expect(getFeedbackMode()).toBe("unconfigured");
+		expect(getLinearCredentials()).toBeNull();
+	});
+
+	it("falls back to the personal key without app credentials", () => {
+		vi.stubEnv("LINEAR_CLIENT_ID", "");
+		vi.stubEnv("LINEAR_CLIENT_SECRET", "");
+		vi.stubEnv("LINEAR_API_KEY", "lin_api_test");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "false");
+		expect(getFeedbackMode()).toBe("linear-api-key");
+		expect(getLinearCredentials()).toEqual({ kind: "api-key", apiKey: "lin_api_test" });
+	});
+
+	it("prefers the Linear app credentials over the personal key", () => {
+		vi.stubEnv("LINEAR_CLIENT_ID", " client-id ");
+		vi.stubEnv("LINEAR_CLIENT_SECRET", "client-secret");
+		vi.stubEnv("LINEAR_API_KEY", "lin_api_test");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "");
+		expect(getFeedbackMode()).toBe("linear-app");
+		expect(getLinearCredentials()).toEqual({
+			kind: "app",
+			clientId: "client-id",
+			clientSecret: "client-secret",
+		});
+		expect(hasPartialLinearAppCredentials()).toBe(false);
+	});
+
+	it("ignores half-configured app credentials", () => {
+		vi.stubEnv("LINEAR_CLIENT_ID", "client-id");
+		vi.stubEnv("LINEAR_CLIENT_SECRET", "");
+		vi.stubEnv("LINEAR_API_KEY", "lin_api_test");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "");
+		expect(hasPartialLinearAppCredentials()).toBe(true);
+		expect(getFeedbackMode()).toBe("linear-api-key");
+	});
+
+	it("prefers dry-run over a real key", () => {
+		vi.stubEnv("LINEAR_CLIENT_ID", "client-id");
+		vi.stubEnv("LINEAR_CLIENT_SECRET", "client-secret");
+		vi.stubEnv("LINEAR_API_KEY", "lin_api_test");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "true");
+		expect(getFeedbackMode()).toBe("dry-run");
+		resetServerEnvCache();
+		vi.stubEnv("LINEAR_CLIENT_ID", "");
+		vi.stubEnv("LINEAR_CLIENT_SECRET", "");
+		vi.stubEnv("LINEAR_API_KEY", "");
+		expect(getFeedbackMode()).toBe("dry-run");
+	});
+
+	it("fails fast on an unreadable dry-run flag", () => {
+		vi.stubEnv("FEEDBACK_DRY_RUN", "maybe");
+		expect(() => getServerEnv()).toThrow();
+	});
+
+	it("reads the target users as a clean, unique email list", () => {
+		vi.stubEnv(
+			"TARGET_USER_EMAILS",
+			" Stefano@plei.com, alan@plei.com;alan@plei.com\nmili@plei.com ",
+		);
+		expect(getTargetUserEmails()).toEqual(["stefano@plei.com", "alan@plei.com", "mili@plei.com"]);
+	});
+
+	it("lets only the listed people view App metrics", () => {
+		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "Lucas@plei.com, stefano@plei.com");
+		expect(canViewAppMetrics("lucas@plei.com")).toBe(true);
+		expect(canViewAppMetrics("STEFANO@plei.com")).toBe(true);
+		expect(canViewAppMetrics("alan@plei.com")).toBe(false);
+		resetServerEnvCache();
+		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "");
+		expect(canViewAppMetrics("lucas@plei.com")).toBe(false);
+	});
+
+	it("has no target users when the list is not set", () => {
+		vi.stubEnv("TARGET_USER_EMAILS", "");
+		expect(getTargetUserEmails()).toEqual([]);
 	});
 });

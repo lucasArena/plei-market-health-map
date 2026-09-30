@@ -13,6 +13,7 @@ export interface AllowedAccess {
 	email: string;
 	name: string | null;
 	image: string | null;
+	canViewAppMetrics: boolean;
 }
 
 export type InternalAccess = AnonymousAccess | DeniedAccess | AllowedAccess;

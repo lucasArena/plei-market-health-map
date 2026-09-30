@@ -1,12 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 
 const mockRules = vi.fn();
 
-vi.mock("@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent", () => ({
-	FacilityAiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
+vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
+	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
 vi.mock(
 	"@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules",
@@ -19,25 +18,55 @@ const VIEW = {
 	name: "Pegaso HTX",
 	address: "1 Main St, Houston, TX",
 	avatarUrl: null,
-	summary: "12 games played last week.",
+	summary: "41 games brought in 7 newly activated players.",
 	tiles: [
 		{
 			key: "played",
-			label: "Played last week",
-			value: "12",
-			hint: "+20% vs previous week",
+			label: "Games played",
+			value: "41",
+			hint: "+20% vs previous period",
 			hintDirection: "up",
+			isLoading: false,
 		},
-		{ key: "scheduled", label: "Scheduled", value: "16", hint: null, hintDirection: "flat" },
+		{
+			key: "confirmation",
+			label: "Confirmation rate",
+			value: "82%",
+			hint: null,
+			hintDirection: "flat",
+			isLoading: false,
+		},
 	],
-	weekLabel: "Week of Sep 21 – Sep 27, 2026",
+	weeklyActivity: [
+		{
+			key: "2026-09-21",
+			label: "Sep 21",
+			shortLabel: "Sep 21",
+			value: 12,
+			valueLabel: "12 games",
+			tooltip: "Sep 21: 12 games",
+		},
+	],
+	popularTimes: [
+		{
+			key: "1-0",
+			dayLabel: "Mon",
+			periodLabel: "AM",
+			value: 2,
+			tooltip: "Mon, AM: 2 games",
+			intensity: 4,
+		},
+	],
+	dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+	timePeriodLabels: ["AM", "Midday", "PM", "Late"],
 	lastPlayedLabel: "Last game played Sep 27, 2026",
 };
 
 function rulesWith(overrides: object = {}) {
 	return {
-		detail: FACILITY_DETAIL,
+		aiContext: { cacheKey: "v4:facility-889:2026-09-21:en", prompt: [] },
 		handleAnimationEnd: vi.fn(),
+		isAiPending: false,
 		isClosing: false,
 		messages: EN_MESSAGES.facilityDetail,
 		onClose: vi.fn(),
@@ -59,11 +88,48 @@ describe("FacilityDetailPanel", () => {
 		expect(panel).toHaveClass("panel-slide-in");
 		expect(screen.getByRole("heading", { name: "Pegaso HTX" })).toBeInTheDocument();
 		expect(screen.getByText("1 Main St, Houston, TX")).toBeInTheDocument();
-		expect(screen.getByText("12 games played last week.")).toBeInTheDocument();
-		expect(screen.getByText("+20% vs previous week")).toHaveClass("text-emerald-700");
-		expect(screen.getByText("16")).toBeInTheDocument();
-		expect(screen.getByText(VIEW.weekLabel)).toBeInTheDocument();
+		expect(screen.getByText("41 games brought in 7 newly activated players.")).toBeInTheDocument();
+		expect(screen.getByText("+20% vs previous period")).toHaveClass(
+			"whitespace-nowrap",
+			"text-emerald-700",
+		);
+		expect(screen.getByText("82%")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Sep 21: 12 games" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Mon, AM: 2 games" })).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
+		expect(screen.queryByText("Week of Sep 21 – Sep 27, 2026")).not.toBeInTheDocument();
+	});
+
+	it("renders reservation analytics while player stats and AI continue loading", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				aiContext: null,
+				isAiPending: true,
+				view: {
+					...VIEW,
+					summary: null,
+					tiles: [
+						VIEW.tiles[0],
+						{
+							key: "players",
+							label: "Unique players",
+							value: "",
+							hint: null,
+							hintDirection: "flat",
+							isLoading: true,
+						},
+					],
+				},
+			}),
+		);
+
+		render(<FacilityDetailPanel {...PROPS} />);
+
+		expect(screen.getByText("41")).toBeInTheDocument();
+		expect(screen.getByTestId("facility-stat-players-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("facility-ai-summary-skeleton")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
 	});
 
 	it("closes from the button and reports the end of the animation", () => {
