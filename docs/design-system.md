@@ -27,7 +27,7 @@ Three Tailwind utilities apply them. Only the fill changes between tiers:
 | --- | --- | --- | --- |
 | `glass` | white at 42% | near black at 45% | Small icon controls: the summary toggle, the avatar, the zoom buttons |
 | `glass-strong` | white at 60% | near black at 68% | Controls with text: the search field and its results list |
-| `glass-panel` | white at 74% | near black at 78% | Dense panels and drawers |
+| `glass-panel` | white at 74% | near black at 78% | Dense panels and drawers: the facility detail panel and the market summary drawer |
 
 `glass-strong` and `glass-panel` also swap `--muted-foreground` for `--glass-muted-foreground`, a darker
 gray (lighter in the dark theme), so secondary text keeps at least 4.5:1 contrast on the translucent
