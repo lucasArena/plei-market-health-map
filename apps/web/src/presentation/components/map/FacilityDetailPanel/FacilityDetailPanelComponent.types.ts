@@ -29,7 +29,6 @@ export interface FacilityDetailViewModel {
 	avatarUrl: string | null;
 	summary: string;
 	tiles: FacilityStatTile[];
-	weekLabel: string;
 	lastPlayedLabel: string;
 }
 
@@ -37,6 +36,5 @@ export interface DetailFormatters {
 	number: Intl.NumberFormat;
 	decimal: Intl.NumberFormat;
 	plural: Intl.PluralRules;
-	day: Intl.DateTimeFormat;
 	dayWithYear: Intl.DateTimeFormat;
 }

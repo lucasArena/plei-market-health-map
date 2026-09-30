@@ -21,7 +21,6 @@ export function createDetailFormatters(locale: string): DetailFormatters {
 		number: new Intl.NumberFormat(locale),
 		decimal: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
 		plural: new Intl.PluralRules(locale),
-		day: new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", timeZone: "UTC" }),
 		dayWithYear: new Intl.DateTimeFormat(locale, {
 			month: "short",
 			day: "numeric",
@@ -33,10 +32,6 @@ export function createDetailFormatters(locale: string): DetailFormatters {
 
 function localDate(isoDate: string): Date {
 	return new Date(`${isoDate}T00:00:00Z`);
-}
-
-function addDays(isoDate: string, days: number): Date {
-	return new Date(localDate(isoDate).getTime() + days * 86_400_000);
 }
 
 export function formatGames(count: number, messages: DetailMessages, formatters: DetailFormatters) {
@@ -60,11 +55,39 @@ export function buildSummary(
 	formatters: DetailFormatters,
 ): string {
 	if (stats.playedLast28Days === 0) return messages.summaryNone;
-	return formatMessage(messages.summaryPlayed, {
+	const busiest = stats.popularTimes.reduce(
+		(current, cell) => (cell.gamesPlayed > current.gamesPlayed ? cell : current),
+		{ dayOfWeek: 1, timePeriod: 0, gamesPlayed: 0 },
+	);
+	const confirmation =
+		stats.confirmationRate === null
+			? messages.unavailable
+			: `${formatters.decimal.format(stats.confirmationRate)}%`;
+	return formatMessage(messages.summaryActivity, {
 		games: formatGames(stats.playedLast28Days, messages, formatters),
-		start: formatters.day.format(addDays(stats.weekStart, -21)),
-		end: formatters.dayWithYear.format(addDays(stats.weekStart, 6)),
+		activated: formatters.number.format(stats.activatedPlayersLast28Days),
+		confirmation,
+		day: messages.dayLabels[busiest.dayOfWeek - 1] ?? messages.dayLabels[0] ?? "",
+		period: messages.timePeriodLabels[busiest.timePeriod] ?? messages.timePeriodLabels[0] ?? "",
 	});
+}
+
+function periodComparison(
+	change: number | null,
+	unit: "percent" | "points",
+	messages: DetailMessages,
+	formatters: DetailFormatters,
+): Pick<FacilityStatTile, "hint" | "hintDirection"> {
+	const hintDirection = directionOf(change);
+	if (change === null) return { hint: null, hintDirection };
+	const sign = { up: "+", down: "", flat: "" }[hintDirection];
+	const suffix = { percent: "%", points: "" }[unit];
+	const amount = `${sign}${formatters.decimal.format(change)}${suffix}`;
+	const template = {
+		percent: messages.vsPreviousPeriod,
+		points: messages.vsPreviousPeriodPoints,
+	}[unit];
+	return { hint: formatMessage(template, { change: amount }), hintDirection };
 }
 
 export function buildTiles(
@@ -72,42 +95,38 @@ export function buildTiles(
 	messages: DetailMessages,
 	formatters: DetailFormatters,
 ): FacilityStatTile[] {
-	const change = stats.playedChangePercent;
-	const sign = { up: "+", down: "", flat: "" }[directionOf(change)];
-	const signedChange = change === null ? null : `${sign}${formatters.decimal.format(change)}%`;
 	return [
 		{
 			key: "played",
-			label: messages.playedLastWeek,
-			value: formatters.number.format(stats.playedLastWeek),
-			hint: signedChange ? formatMessage(messages.vsPreviousWeek, { change: signedChange }) : null,
-			hintDirection: directionOf(change),
+			label: messages.gamesPlayed,
+			value: formatters.number.format(stats.playedLast28Days),
+			...periodComparison(stats.playedPeriodChangePercent, "percent", messages, formatters),
 		},
 		{
-			key: "scheduled",
-			label: messages.scheduled,
-			value: formatters.number.format(stats.scheduledLastWeek),
-			hint: null,
-			hintDirection: ChangeDirection.flat,
+			key: "confirmation",
+			label: messages.confirmationRate,
+			value:
+				stats.confirmationRate === null
+					? messages.unavailable
+					: `${formatters.decimal.format(stats.confirmationRate)}%`,
+			...periodComparison(stats.confirmationRateChangePoints, "points", messages, formatters),
 		},
 		{
-			key: "cancelled",
-			label: messages.cancelled,
-			value: formatters.number.format(stats.cancelledLastWeek),
-			hint:
-				stats.cancellationRate === null
-					? null
-					: formatMessage(messages.cancellationRate, {
-							rate: formatters.decimal.format(stats.cancellationRate),
-						}),
-			hintDirection: ChangeDirection.flat,
+			key: "players",
+			label: messages.uniquePlayers,
+			value: formatters.number.format(stats.uniquePlayersLast28Days),
+			...periodComparison(stats.uniquePlayersPeriodChangePercent, "percent", messages, formatters),
 		},
 		{
-			key: "upcoming",
-			label: messages.nextSevenDays,
-			value: formatters.number.format(stats.upcomingNextSevenDays),
-			hint: null,
-			hintDirection: ChangeDirection.flat,
+			key: "activated",
+			label: messages.activatedPlayers,
+			value: formatters.number.format(stats.activatedPlayersLast28Days),
+			...periodComparison(
+				stats.activatedPlayersPeriodChangePercent,
+				"percent",
+				messages,
+				formatters,
+			),
 		},
 	];
 }
@@ -124,10 +143,6 @@ export function buildDetailViewModel(
 		avatarUrl: facility.avatarUrl,
 		summary: buildSummary(stats, messages, formatters),
 		tiles: buildTiles(stats, messages, formatters),
-		weekLabel: formatMessage(messages.weekRange, {
-			start: formatters.day.format(localDate(stats.weekStart)),
-			end: formatters.dayWithYear.format(addDays(stats.weekStart, 6)),
-		}),
 		lastPlayedLabel: stats.lastPlayedDate
 			? formatMessage(messages.lastPlayed, {
 					date: formatters.dayWithYear.format(localDate(stats.lastPlayedDate)),
