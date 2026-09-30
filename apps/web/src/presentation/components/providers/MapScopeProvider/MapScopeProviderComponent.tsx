@@ -11,12 +11,18 @@ export const ALL_MARKETS_SCOPE: MapScope = { kind: "all" };
 
 const MapScopeContext = createContext<MapScopeContextValue>({
 	scope: ALL_MARKETS_SCOPE,
+	selectedFacilityId: null,
+	setSelectedFacilityId: () => undefined,
 	setScope: () => undefined,
 });
 
 export function MapScopeProvider({ children }: Readonly<MapScopeProviderProps>) {
 	const [scope, setScope] = useState<MapScope>(ALL_MARKETS_SCOPE);
-	const value = useMemo(() => ({ scope, setScope }), [scope]);
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
+	const value = useMemo(
+		() => ({ scope, setScope, selectedFacilityId, setSelectedFacilityId }),
+		[scope, selectedFacilityId],
+	);
 	return <MapScopeContext.Provider value={value}>{children}</MapScopeContext.Provider>;
 }
 

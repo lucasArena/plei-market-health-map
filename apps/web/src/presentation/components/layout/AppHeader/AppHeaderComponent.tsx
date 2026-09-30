@@ -1,8 +1,8 @@
 "use client";
 
+import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import type { AppHeaderProps } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.types";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
-import { UserMenu } from "@/presentation/components/layout/UserMenu/UserMenuComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 
 export function AppHeader({ user }: Readonly<AppHeaderProps>) {
@@ -16,9 +16,9 @@ export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 					className="flex min-w-0 flex-1 justify-end"
 				/>
 				<MarketSummaryToggle />
-				<div className="pointer-events-auto flex size-11 items-center justify-center rounded-full border bg-background/95 shadow-md backdrop-blur">
-					<UserMenu {...user} />
-				</div>
+			</div>
+			<div className="pointer-events-auto">
+				<Feedback user={user} />
 			</div>
 		</header>
 	);
