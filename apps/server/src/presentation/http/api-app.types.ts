@@ -10,6 +10,8 @@ export type ApiServices = Pick<
 	| "getFacilityDetail"
 	| "getFacilityReservationStats"
 	| "getFacilityPlayerStats"
+	| "getMarketSummary"
+	| "getMarketPlayerStats"
 	| "listAppSessionHeatmap"
 	| "listRecentLogins"
 	| "submitFeedback"

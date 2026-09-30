@@ -11,6 +11,8 @@ import {
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
 	makeGetFacilityReservationStats,
+	makeGetMarketPlayerStats,
+	makeGetMarketSummary,
 	makeListAppSessionHeatmap,
 	makeListFacilities,
 	makeListRecentLogins,
@@ -79,6 +81,8 @@ function buildFacilities() {
 		getFacilityDetail: makeGetFacilityDetail(repositories),
 		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
 		getFacilityPlayerStats: makeGetFacilityPlayerStats(repositories),
+		getMarketSummary: makeGetMarketSummary(repositories),
+		getMarketPlayerStats: makeGetMarketPlayerStats(repositories),
 	};
 }
 
@@ -173,6 +177,8 @@ const container = {
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
+	getMarketSummary: () => facilityModule().getMarketSummary(),
+	getMarketPlayerStats: () => facilityModule().getMarketPlayerStats(),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
 };
 

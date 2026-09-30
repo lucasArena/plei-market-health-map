@@ -67,6 +67,23 @@ export interface Messages {
 		lastPlayed: string;
 		neverPlayed: string;
 	};
+	marketSummary: {
+		open: string;
+		close: string;
+		label: string;
+		title: string;
+		subtitle: string;
+		failed: string;
+		summaryNone: string;
+		summaryActivity: string;
+		activeFacilities: string;
+		activeMarkets: string;
+		ofTotal: string;
+		topFacilities: string;
+		topMarkets: string;
+		marketFacilities: string;
+		noRankings: string;
+	};
 	feedback: {
 		open: string;
 		close: string;

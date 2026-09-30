@@ -39,6 +39,13 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
+export type {
+	MarketPlayerStatsView,
+	MarketSummaryFacilityRankView,
+	MarketSummaryMarketRankView,
+	MarketSummaryScopeView,
+	MarketSummaryView,
+} from "@core/application/dtos/market-summary-dto.types";
 export { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
 export { ForbiddenError } from "@core/application/errors/forbidden-error";
 export { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -61,6 +68,13 @@ export {
 	toFeedbackIssueTitle,
 } from "@core/application/mappers/feedback-issue-mapper";
 export { toLoginEventView } from "@core/application/mappers/login-event-mapper";
+export {
+	MARKET_SUMMARY_RANK_LIMIT,
+	toMarketMemberIds,
+	toMarketSummaryScope,
+	toTopFacilities,
+	toTopMarkets,
+} from "@core/application/mappers/market-summary-mapper";
 export type { AppSessionHeatmapRepository } from "@core/application/ports/app-session-heatmap-repository.types";
 export type { Clock } from "@core/application/ports/clock.types";
 export type { FacilityRepository } from "@core/application/ports/facility-repository.types";
@@ -83,6 +97,8 @@ export type { LoginEventRepository } from "@core/application/ports/login-event-r
 export { makeGetFacilityDetail } from "@core/application/use-cases/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/use-cases/get-facility-player-stats";
 export { makeGetFacilityReservationStats } from "@core/application/use-cases/get-facility-reservation-stats";
+export { makeGetMarketPlayerStats } from "@core/application/use-cases/get-market-player-stats";
+export { makeGetMarketSummary } from "@core/application/use-cases/get-market-summary";
 export { makeListAppSessionHeatmap } from "@core/application/use-cases/list-app-session-heatmap";
 export { makeListFacilities } from "@core/application/use-cases/list-facilities";
 export { makeListRecentLogins } from "@core/application/use-cases/list-recent-logins";
