@@ -3,26 +3,42 @@
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { browserLlm } from "@/infrastructure/ai/browser-llm/browser-llm";
-import { facilitySummaryPrompt } from "@/infrastructure/ai/prompts/facility-summary-prompt";
-import { facilitySummaryCache } from "@/infrastructure/cache/local-storage/facility-summary/facility-summary-cache";
+import { activitySummaryPrompt } from "@/infrastructure/ai/prompts/activity-summary-prompt";
+import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
+import { aiSummaryCache } from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache";
 import type {
-	FacilityAiSummaryProps,
-	FacilityAiSummaryState,
-} from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.types";
+	AiSummaryContext,
+	AiSummaryProps,
+	AiSummaryState,
+} from "@/presentation/components/displays/AiSummary/AiSummaryComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
-const CHECKING: FacilityAiSummaryState = { status: "checking", text: null, progress: 0 };
+export function aiSummaryContextFor(
+	subject: ActivitySummarySubject,
+	locale: string,
+): AiSummaryContext {
+	return {
+		cacheKey: aiSummaryCache.keyFor(
+			`${subject.kind}-${subject.id}`,
+			subject.stats.weekStart,
+			locale,
+		),
+		prompt: activitySummaryPrompt.build(subject, locale),
+	};
+}
 
-export function useFacilityAiSummaryRules({ detail, fallback }: FacilityAiSummaryProps) {
-	const { locale, messages } = useMessages();
-	const [state, setState] = useState<FacilityAiSummaryState>(CHECKING);
+const CHECKING: AiSummaryState = { status: "checking", text: null, progress: 0 };
+
+export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
+	const { messages } = useMessages();
+	const [state, setState] = useState<AiSummaryState>(CHECKING);
 	const [isRequested, setIsRequested] = useState(false);
-	const cacheKey = facilitySummaryCache.keyFor(detail, locale);
+	const { cacheKey, prompt } = context;
 
 	const handleGenerate = useCallback(() => setIsRequested(true), []);
 
 	useEffect(() => {
-		const cached = facilitySummaryCache.read(cacheKey);
+		const cached = aiSummaryCache.read(cacheKey);
 		if (cached) {
 			setState({ status: "ready", text: cached, progress: 1 });
 			return;
@@ -33,7 +49,7 @@ export function useFacilityAiSummaryRules({ detail, fallback }: FacilityAiSummar
 		}
 		const controller = new AbortController();
 		const { signal } = controller;
-		const update = (next: FacilityAiSummaryState) => {
+		const update = (next: AiSummaryState) => {
 			if (!signal.aborted) setState(next);
 		};
 		const run = async () => {
@@ -42,19 +58,19 @@ export function useFacilityAiSummaryRules({ detail, fallback }: FacilityAiSummar
 			if (signal.aborted) return;
 			if (!canRun) return update({ status: "idle", text: null, progress: 0 });
 			update({ status: "loading", text: null, progress: 0 });
-			const text = await browserLlm.generate(facilitySummaryPrompt.build(detail, locale), {
+			const text = await browserLlm.generate(prompt, {
 				signal,
 				onProgress: (progress) => update({ status: "loading", text: null, progress }),
 				onText: (partial) => update({ status: "generating", text: partial, progress: 1 }),
 			});
 			if (signal.aborted) return;
 			if (!text) throw new Error("Empty AI summary");
-			facilitySummaryCache.write(cacheKey, text);
+			aiSummaryCache.write(cacheKey, text);
 			update({ status: "ready", text, progress: 1 });
 		};
 		run().catch(() => update({ status: "error", text: null, progress: 0 }));
 		return () => controller.abort();
-	}, [cacheKey, detail, isRequested, locale]);
+	}, [cacheKey, prompt, isRequested]);
 
 	const progressPercent = Math.round(state.progress * 100);
 

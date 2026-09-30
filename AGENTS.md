@@ -20,8 +20,8 @@ apps/
     infrastructure/
       api/                        the fetch apiClient
       ai/browser-llm/             BrowserLlm (WebLLM engine) and its web worker
-      ai/prompts/                 prompt builders (FacilitySummaryPrompt)
-      cache/local-storage/<name>/ browser caches (facility-summary)
+      ai/prompts/                 prompt builders (ActivitySummaryPrompt)
+      cache/local-storage/<name>/ browser caches (ai-summary)
       auth/                       Auth.js config, server actions, access checks
       i18n/                       request locale
     proxy.ts                      Next proxy (must stay at src/)

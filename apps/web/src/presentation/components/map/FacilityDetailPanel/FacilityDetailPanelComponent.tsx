@@ -1,8 +1,8 @@
 "use client";
 
+import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
-import { FacilityAiSummary } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent";
 import { useFacilityDetailPanelRules } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import { PANEL_CLASS } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.styles";
 import type { FacilityDetailPanelProps } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
@@ -34,7 +34,7 @@ function FacilityDetailSkeleton() {
 }
 
 export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
-	const { detail, handleAnimationEnd, isAiPending, isClosing, messages, onClose, status, view } =
+	const { aiContext, handleAnimationEnd, isAiPending, isClosing, messages, onClose, status, view } =
 		useFacilityDetailPanelRules(props);
 
 	return (
@@ -69,8 +69,8 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 								<p className="truncate text-xs text-muted-foreground">{view.address}</p>
 							</div>
 						</header>
-						{detail && view.summary ? (
-							<FacilityAiSummary detail={detail} fallback={view.summary} />
+						{aiContext && view.summary ? (
+							<AiSummary context={aiContext} fallback={view.summary} />
 						) : isAiPending ? (
 							<div
 								data-testid="facility-ai-summary-skeleton"

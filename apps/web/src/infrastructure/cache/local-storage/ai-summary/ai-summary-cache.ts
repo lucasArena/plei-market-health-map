@@ -1,7 +1,6 @@
-import type { FacilityDetailView } from "@market-health-map/core/application";
-import type { ResolveStorage } from "@/infrastructure/cache/local-storage/facility-summary/facility-summary-cache.types";
+import type { ResolveStorage } from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache.types";
 
-export const FACILITY_SUMMARY_STORAGE_PREFIX = "market-health-map:facility-summary:";
+export const AI_SUMMARY_STORAGE_PREFIX = "market-health-map:ai-summary:";
 
 function browserStorage(): Storage | null {
 	try {
@@ -11,11 +10,11 @@ function browserStorage(): Storage | null {
 	}
 }
 
-export class FacilitySummaryCache {
+export class AiSummaryCache {
 	constructor(private readonly resolveStorage: ResolveStorage = browserStorage) {}
 
-	keyFor({ facility, stats }: FacilityDetailView, locale: string): string {
-		return `v3:${facility.id}:${stats.weekStart}:${locale}`;
+	keyFor(subject: string, weekStart: string, locale: string): string {
+		return `v4:${subject.replaceAll(":", "-")}:${weekStart}:${locale}`;
 	}
 
 	read(key: string): string | null {
@@ -48,13 +47,13 @@ export class FacilitySummaryCache {
 	}
 
 	private removeOtherWeeks(storage: Storage, key: string): void {
-		const [, facilityId, , locale] = key.split(":");
+		const [, subject, , locale] = key.split(":");
 		const current = this.storageKey(key);
 		for (const storageKey of this.ownKeys(storage)) {
-			const [, otherFacility, , otherLocale] = storageKey
-				.slice(FACILITY_SUMMARY_STORAGE_PREFIX.length)
+			const [, otherSubject, , otherLocale] = storageKey
+				.slice(AI_SUMMARY_STORAGE_PREFIX.length)
 				.split(":");
-			if (storageKey !== current && otherFacility === facilityId && otherLocale === locale) {
+			if (storageKey !== current && otherSubject === subject && otherLocale === locale) {
 				storage.removeItem(storageKey);
 			}
 		}
@@ -63,13 +62,13 @@ export class FacilitySummaryCache {
 	private ownKeys(storage: Storage): string[] {
 		return Array.from({ length: storage.length }, (_, index) => storage.key(index)).filter(
 			(storageKey): storageKey is string =>
-				storageKey?.startsWith(FACILITY_SUMMARY_STORAGE_PREFIX) ?? false,
+				storageKey?.startsWith(AI_SUMMARY_STORAGE_PREFIX) ?? false,
 		);
 	}
 
 	private storageKey(key: string): string {
-		return `${FACILITY_SUMMARY_STORAGE_PREFIX}${key}`;
+		return `${AI_SUMMARY_STORAGE_PREFIX}${key}`;
 	}
 }
 
-export const facilitySummaryCache = new FacilitySummaryCache();
+export const aiSummaryCache = new AiSummaryCache();
