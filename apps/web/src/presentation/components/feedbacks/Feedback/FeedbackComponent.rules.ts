@@ -19,15 +19,15 @@ import {
 	useState,
 } from "react";
 import { ApiError } from "@/infrastructure/api/client";
-import { FEEDBACK_ERROR_KEY_BY_STATUS } from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent.styles";
+import { FEEDBACK_ERROR_KEY_BY_STATUS } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
 import type {
 	FeedbackAttachment,
 	FeedbackErrorView,
 	FeedbackImageSelection,
 	FeedbackMessages,
+	FeedbackProps,
 	FeedbackStep,
-	FeedbackWidgetProps,
-} from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent.types";
+} from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFeedbackSubmit } from "@/presentation/hooks/use-feedback/use-feedback-submit";
 
@@ -94,7 +94,7 @@ export function feedbackView(facilityId: string | null | undefined): string {
 	return facilityId ? `${FEEDBACK_VIEW} (facility ${facilityId})` : FEEDBACK_VIEW;
 }
 
-export function useFeedbackWidgetRules({ facilityId }: FeedbackWidgetProps) {
+export function useFeedbackRules({ facilityId }: FeedbackProps) {
 	const { messages } = useMessages();
 	const feedbackMessages = messages.feedback;
 	const submission = useFeedbackSubmit();

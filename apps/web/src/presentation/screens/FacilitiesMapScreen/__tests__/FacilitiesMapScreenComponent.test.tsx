@@ -13,8 +13,8 @@ vi.mock("@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelCo
 		</aside>
 	),
 }));
-vi.mock("@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent", () => ({
-	FeedbackWidget: ({ facilityId }: { facilityId: string | null }) => (
+vi.mock("@/presentation/components/feedbacks/Feedback/FeedbackComponent", () => ({
+	Feedback: ({ facilityId }: { facilityId: string | null }) => (
 		<button type="button" data-testid="feedback-widget" data-facility={facilityId ?? ""}>
 			?
 		</button>

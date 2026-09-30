@@ -1,7 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { FeedbackWidget } from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent";
+import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
@@ -96,7 +96,7 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
-			<FeedbackWidget facilityId={selectedFacilityId} />
+			<Feedback facilityId={selectedFacilityId} />
 			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"

@@ -39,15 +39,13 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
-export {
-	FeedbackNotConfiguredError,
-	ForbiddenError,
-	InvalidRequestError,
-	IssueTrackerError,
-	NotFoundError,
-	PayloadTooLargeError,
-	UnauthorizedError,
-} from "@core/application/errors/use-case-error";
+export { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
+export { ForbiddenError } from "@core/application/errors/forbidden-error";
+export { InvalidRequestError } from "@core/application/errors/invalid-request-error";
+export { IssueTrackerError } from "@core/application/errors/issue-tracker-error";
+export { NotFoundError } from "@core/application/errors/not-found-error";
+export { PayloadTooLargeError } from "@core/application/errors/payload-too-large-error";
+export { UnauthorizedError } from "@core/application/errors/unauthorized-error";
 export { toFacilityPointView } from "@core/application/mappers/facility-mapper";
 export {
 	toFacilityPlayerStatsView,

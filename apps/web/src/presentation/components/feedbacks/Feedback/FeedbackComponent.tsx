@@ -3,16 +3,16 @@
 import { formatMessage } from "@market-health-map/core/i18n";
 import {
 	FEEDBACK_IMAGE_ACCEPT,
-	useFeedbackWidgetRules,
-} from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent.rules";
+	useFeedbackRules,
+} from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.rules";
 import {
 	FEEDBACK_DROPZONE_CLASS,
 	FEEDBACK_PANEL_ANIMATION_CLASS,
 	FEEDBACK_PANEL_CLASS,
 	FEEDBACK_TRIGGER_CLASS,
 	FEEDBACK_TYPE_OPTIONS,
-} from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent.styles";
-import type { FeedbackWidgetProps } from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent.types";
+} from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
+import type { FeedbackProps } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
 
 function TypeIcon({ type }: Readonly<{ type: string }>) {
 	if (type === "bug") {
@@ -45,7 +45,7 @@ function TypeIcon({ type }: Readonly<{ type: string }>) {
 	);
 }
 
-export function FeedbackWidget(props: Readonly<FeedbackWidgetProps>) {
+export function Feedback(props: Readonly<FeedbackProps>) {
 	const {
 		attachHint,
 		attachments,
@@ -83,7 +83,7 @@ export function FeedbackWidget(props: Readonly<FeedbackWidgetProps>) {
 		textareaRef,
 		toggle,
 		type,
-	} = useFeedbackWidgetRules(props);
+	} = useFeedbackRules(props);
 	const option = FEEDBACK_TYPE_OPTIONS.find((candidate) => candidate.type === type);
 	const animationClass = FEEDBACK_PANEL_ANIMATION_CLASS[isClosing ? "closing" : "open"];
 	const dropzoneClass = FEEDBACK_DROPZONE_CLASS[isDragging ? "dragging" : "idle"];

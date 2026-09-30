@@ -6,11 +6,9 @@ import type {
 	FeedbackIssueView,
 	SubmitFeedbackInput,
 } from "@core/application/dtos/feedback-dto.types";
-import {
-	FeedbackNotConfiguredError,
-	InvalidRequestError,
-	PayloadTooLargeError,
-} from "@core/application/errors/use-case-error";
+import { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
+import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
+import { PayloadTooLargeError } from "@core/application/errors/payload-too-large-error";
 import { toFeedbackIssueDraft } from "@core/application/mappers/feedback-issue-mapper";
 import type { SubmitFeedbackDeps } from "@core/application/use-cases/submit-feedback.types";
 

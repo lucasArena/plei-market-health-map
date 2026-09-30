@@ -1,4 +1,4 @@
-import type { FeedbackTypeOption } from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent.types";
+import type { FeedbackTypeOption } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
 
 export const FEEDBACK_TYPE_OPTIONS: readonly FeedbackTypeOption[] = [
 	{

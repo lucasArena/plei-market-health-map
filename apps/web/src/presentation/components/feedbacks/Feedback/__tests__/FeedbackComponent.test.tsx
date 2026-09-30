@@ -2,7 +2,7 @@ import { act, createEvent, fireEvent, screen, waitFor } from "@testing-library/r
 import type { ReactElement } from "react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
 import { renderWithMessages } from "@/application/test/render-with-messages";
-import { FeedbackWidget } from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent";
+import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 
 const createObjectURL = vi.fn((file: File) => `blob:${file.name}`);
 const revokeObjectURL = vi.fn();
@@ -11,7 +11,7 @@ function png(name = "shot.png", size = 3) {
 	return new File(["x".repeat(size)], name, { type: "image/png" });
 }
 
-function renderWidget(ui: ReactElement = <FeedbackWidget />) {
+function renderWidget(ui: ReactElement = <Feedback />) {
 	const { Wrapper } = createQueryWrapper();
 	return renderWithMessages(<Wrapper>{ui}</Wrapper>);
 }
@@ -40,7 +40,7 @@ function finishClosing() {
 	endAnimation(screen.getByRole("dialog"));
 }
 
-describe("FeedbackWidget", () => {
+describe("Feedback", () => {
 	beforeEach(() => {
 		Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
 		Object.defineProperty(URL, "revokeObjectURL", { value: revokeObjectURL, configurable: true });
@@ -232,7 +232,7 @@ describe("FeedbackWidget", () => {
 				}),
 		);
 		vi.stubGlobal("fetch", fetchMock);
-		renderWidget(<FeedbackWidget facilityId="889" />);
+		renderWidget(<Feedback facilityId="889" />);
 		const textarea = openForm();
 		fireEvent.change(textarea, { target: { value: "  Legend overlaps the map  " } });
 		fireEvent.change(screen.getByTestId("feedback-file-input"), {

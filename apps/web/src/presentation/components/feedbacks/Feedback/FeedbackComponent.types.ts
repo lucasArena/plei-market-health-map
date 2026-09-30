@@ -1,7 +1,7 @@
 import type { FeedbackType } from "@market-health-map/core/application";
 import type { Messages } from "@market-health-map/core/i18n";
 
-export interface FeedbackWidgetProps {
+export interface FeedbackProps {
 	facilityId?: string | null;
 }
 

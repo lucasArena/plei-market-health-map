@@ -3,7 +3,7 @@ import type {
 	FacilityPlayerStatsView,
 	GetFacilityPlayerStatsInput,
 } from "@core/application/dtos/facility-detail-dto.types";
-import { NotFoundError } from "@core/application/errors/use-case-error";
+import { NotFoundError } from "@core/application/errors/not-found-error";
 import { toFacilityPlayerStatsView } from "@core/application/mappers/facility-stats-mapper";
 import type { GetFacilityPlayerStatsDeps } from "@core/application/use-cases/get-facility-player-stats.types";
 import { asEntityId } from "@core/domain";
