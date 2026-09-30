@@ -1,12 +1,10 @@
 "use client";
 
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
+import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { FacilityAiSummary } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent";
 import { useFacilityDetailPanelRules } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
-import {
-	HINT_CLASS,
-	PANEL_CLASS,
-} from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.styles";
+import { PANEL_CLASS } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.styles";
 import type { FacilityDetailPanelProps } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 import { WeeklyActivityChart } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent";
@@ -80,28 +78,7 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 								className="h-20 animate-pulse rounded-xl bg-pleiful-moonlight-5"
 							/>
 						) : null}
-						<dl className="grid grid-cols-2 gap-2.5">
-							{view.tiles.map((tile) => (
-								<div key={tile.key} className="rounded-xl border bg-card p-3.5">
-									<dt className="text-xs text-muted-foreground">{tile.label}</dt>
-									{tile.isLoading ? (
-										<dd
-											data-testid={`facility-stat-${tile.key}-skeleton`}
-											className="mt-2 h-7 w-16 animate-pulse rounded bg-muted"
-										/>
-									) : (
-										<dd className="mt-1 text-2xl font-semibold tabular-nums">{tile.value}</dd>
-									)}
-									{tile.hint && (
-										<dd
-											className={`mt-0.5 whitespace-nowrap text-[11px] ${HINT_CLASS[tile.hintDirection]}`}
-										>
-											{tile.hint}
-										</dd>
-									)}
-								</div>
-							))}
-						</dl>
+						<StatTiles tiles={view.tiles} testIdPrefix="facility-stat" />
 						<WeeklyActivityChart
 							title={messages.weeklyActivity}
 							legend={messages.gamesLegend}
