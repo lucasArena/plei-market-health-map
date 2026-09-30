@@ -2,6 +2,7 @@ import type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	GetMarketSummaryInput,
 	IssueTracker,
 	ListRecentLoginsInput,
 	RecordLoginInput,
@@ -177,8 +178,9 @@ const container = {
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
-	getMarketSummary: () => facilityModule().getMarketSummary(),
-	getMarketPlayerStats: () => facilityModule().getMarketPlayerStats(),
+	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
+	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>
+		facilityModule().getMarketPlayerStats(input),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
 };
 

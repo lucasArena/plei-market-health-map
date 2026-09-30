@@ -66,6 +66,7 @@ function rulesWith(overrides: object = {}) {
 	return {
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
+		heading: { title: "All markets", subtitle: EN_MESSAGES.marketSummary.subtitle },
 		isClosing: false,
 		isSummaryPending: false,
 		messages: EN_MESSAGES.marketSummary,
@@ -87,7 +88,7 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByRole("complementary", { name: "Market summary" })).toHaveClass(
 			"panel-slide-in",
 		);
-		expect(screen.getByRole("heading", { name: "Market summary" })).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "All markets" })).toBeInTheDocument();
 		expect(screen.getByText(VIEW.summary)).toBeInTheDocument();
 		expect(screen.getByText("of 142")).toBeInTheDocument();
 		expect(screen.getByTestId("market-stat-players-skeleton")).toBeInTheDocument();
@@ -97,6 +98,23 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByText("6 of 9 facilities active")).toBeInTheDocument();
 		expect(screen.getByText(EN_MESSAGES.marketSummary.noRankings)).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
+	});
+
+	it("hides the scope tiles and rankings a single facility does not need", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				heading: { title: "Pegaso HTX", subtitle: "Facility in Houston, last 28 days" },
+				view: { ...VIEW, scopeTiles: [], topMarkets: null, topFacilities: null },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByRole("heading", { name: "Pegaso HTX" })).toBeInTheDocument();
+		expect(screen.getByText("Facility in Houston, last 28 days")).toBeInTheDocument();
+		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
+		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("heading", { name: "Top facilities" })).not.toBeInTheDocument();
 	});
 
 	it("shows a sentence skeleton while player analytics load", () => {

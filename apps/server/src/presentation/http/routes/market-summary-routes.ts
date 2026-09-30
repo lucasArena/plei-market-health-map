@@ -4,6 +4,10 @@ import { Hono } from "hono";
 
 export function marketSummaryRoutes(services: () => ApiServices) {
 	return new Hono()
-		.get("/", async () => ok(await services().getMarketSummary()))
-		.get("/players", async () => ok(await services().getMarketPlayerStats()));
+		.get("/", async (context) =>
+			ok(await services().getMarketSummary({ market: context.req.query("market") })),
+		)
+		.get("/players", async (context) =>
+			ok(await services().getMarketPlayerStats({ market: context.req.query("market") })),
+		);
 }

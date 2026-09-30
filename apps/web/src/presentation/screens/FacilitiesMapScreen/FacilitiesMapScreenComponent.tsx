@@ -1,15 +1,18 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import { createPortal } from "react-dom";
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
+import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 export function FacilitiesMapScreen() {
 	const {
+		clearSearchScope,
 		closePanel,
 		containerRef,
 		facilities,
@@ -24,6 +27,7 @@ export function FacilitiesMapScreen() {
 		sessionScale,
 		status,
 	} = useFacilitiesMapScreenRules();
+	const { searchSlot } = useHeaderSlot();
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
 	const numberFormatter = new Intl.NumberFormat(undefined, {
 		notation: "compact",
@@ -37,12 +41,17 @@ export function FacilitiesMapScreen() {
 			<div className="absolute inset-0">
 				<div ref={containerRef} data-testid="facilities-map" className="h-full w-full" />
 			</div>
-			<MapSearch
-				facilities={facilities}
-				messages={messages}
-				onFacilitySelect={selectSearchFacility}
-				onMarketSelect={selectSearchMarket}
-			/>
+			{searchSlot &&
+				createPortal(
+					<MapSearch
+						facilities={facilities}
+						messages={messages}
+						onFacilitySelect={selectSearchFacility}
+						onMarketSelect={selectSearchMarket}
+						onClear={clearSearchScope}
+					/>,
+					searchSlot,
+				)}
 			{overlayMessage && (
 				<p
 					role="status"

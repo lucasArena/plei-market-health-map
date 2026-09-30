@@ -1,6 +1,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import {
+	MapScopeProvider,
+	useMapScope,
+} from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
 	appSessionHeatmapAreas,
@@ -493,6 +497,44 @@ describe("useFacilitiesMapScreenRules", () => {
 		);
 		expect(map?.easeTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom: 11 }));
 		act(() => result.current.selectSearchMarket({ id: "empty", name: "Empty", facilities: [] }));
+	});
+
+	it("shares the searched facility or market as the summary scope and resets it on clear", async () => {
+		const container = document.createElement("div");
+		const { result } = renderHook(
+			() => {
+				const rules = useFacilitiesMapScreenRules();
+				rules.containerRef.current ??= container;
+				return { rules, scope: useMapScope().scope };
+			},
+			{
+				wrapper: ({ children }: { children: ReactNode }) =>
+					wrapper({ children: createElement(MapScopeProvider, null, children) }),
+			},
+		);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(result.current.scope).toEqual({ kind: "all" });
+
+		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		expect(result.current.scope).toEqual({
+			kind: "facility",
+			id: "f1",
+			name: FACILITY.name,
+			marketName: "Austin",
+		});
+
+		act(() =>
+			result.current.rules.selectSearchMarket({
+				id: "austin",
+				name: "Austin",
+				facilities: [FACILITY],
+			}),
+		);
+		expect(result.current.scope).toEqual({ kind: "market", id: "austin", name: "Austin" });
+
+		act(() => result.current.rules.clearSearchScope());
+		expect(result.current.scope).toEqual({ kind: "all" });
 	});
 
 	it("zooms to search selections", async () => {

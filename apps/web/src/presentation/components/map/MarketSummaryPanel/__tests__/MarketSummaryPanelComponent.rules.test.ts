@@ -1,28 +1,62 @@
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
+import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { MARKET_PLAYER_STATS, MARKET_SUMMARY } from "@/application/test/market-summary";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { createDetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import {
 	buildFacilityRows,
+	buildFacilitySummaryViewModel,
 	buildMarketRows,
 	buildMarketSummaryText,
 	buildMarketSummaryViewModel,
+	buildScopeHeading,
 	buildScopeTiles,
 	useMarketSummaryPanelRules,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
+import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockUseMarketSummary = vi.fn();
 const mockUseMarketPlayerStats = vi.fn();
+const mockUseFacilityReservationStats = vi.fn();
+const mockUseFacilityPlayerStats = vi.fn();
+let mockScope: MapScope = { kind: "all" };
 
 vi.mock("@/presentation/hooks/use-market/use-market-summary", () => ({
-	useMarketSummary: () => mockUseMarketSummary(),
+	useMarketSummary: (...args: unknown[]) => mockUseMarketSummary(...args),
 }));
 
 vi.mock("@/presentation/hooks/use-market/use-market-player-stats", () => ({
-	useMarketPlayerStats: () => mockUseMarketPlayerStats(),
+	useMarketPlayerStats: (...args: unknown[]) => mockUseMarketPlayerStats(...args),
 }));
+
+vi.mock("@/presentation/hooks/use-facility/use-facility-reservation-stats", () => ({
+	useFacilityReservationStats: (...args: unknown[]) => mockUseFacilityReservationStats(...args),
+}));
+
+vi.mock("@/presentation/hooks/use-facility/use-facility-player-stats", () => ({
+	useFacilityPlayerStats: (...args: unknown[]) => mockUseFacilityPlayerStats(...args),
+}));
+
+vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
+	useMapScope: () => ({ scope: mockScope, setScope: vi.fn() }),
+}));
+
+const IDLE_QUERY = { data: undefined, isPending: true, isError: false };
+const {
+	uniquePlayersLast28Days,
+	uniquePlayersPrevious28Days,
+	activatedPlayersLast28Days,
+	activatedPlayersPrevious28Days,
+	uniquePlayersPeriodChangePercent,
+	activatedPlayersPeriodChangePercent,
+	...FACILITY_RESERVATION_STATS
+} = FACILITY_DETAIL.stats;
+const FACILITY_REPORT = {
+	facility: FACILITY_DETAIL.facility,
+	stats: FACILITY_RESERVATION_STATS,
+};
 
 const messages = EN_MESSAGES.marketSummary;
 const detailMessages = EN_MESSAGES.facilityDetail;
@@ -123,11 +157,74 @@ describe("market summary builders", () => {
 		);
 		expect(empty.lastPlayedLabel).toBe(detailMessages.neverPlayed);
 		expect(empty.tiles[2]?.isLoading).toBe(true);
+		expect(view.topMarkets).toHaveLength(1);
+		expect(view.scopeTiles).toHaveLength(2);
+	});
+
+	it("drops the markets tile and ranking when scoped to one market", () => {
+		const view = buildMarketSummaryViewModel(
+			{ ...MARKET_SUMMARY, stats: { ...MARKET_SUMMARY.stats, playedLast28Days: 0 } },
+			MARKET_PLAYER_STATS,
+			false,
+			messages,
+			detailMessages,
+			formatters,
+			true,
+		);
+
+		expect(view.topMarkets).toBeNull();
+		expect(view.topFacilities).toHaveLength(2);
+		expect(view.scopeTiles.map((tile) => tile.key)).toEqual(["facilities"]);
+		expect(view.summary).toBe(messages.marketSummaryNone);
+	});
+
+	it("builds a facility view without scope tiles or rankings", () => {
+		const view = buildFacilitySummaryViewModel(
+			FACILITY_RESERVATION_STATS,
+			MARKET_PLAYER_STATS,
+			false,
+			detailMessages,
+			formatters,
+		);
+
+		expect(view.scopeTiles).toEqual([]);
+		expect(view.topMarkets).toBeNull();
+		expect(view.topFacilities).toBeNull();
+		expect(view.summary).toContain("212 games");
+		expect(view.popularTimes).toHaveLength(28);
+		expect(
+			buildFacilitySummaryViewModel(
+				FACILITY_RESERVATION_STATS,
+				undefined,
+				true,
+				detailMessages,
+				formatters,
+			).summary,
+		).toBeNull();
+	});
+
+	it("titles the drawer after its scope", () => {
+		expect(buildScopeHeading({ kind: "all" }, messages)).toEqual({
+			title: "All markets",
+			subtitle: messages.subtitle,
+		});
+		expect(buildScopeHeading({ kind: "market", id: "houston", name: "Houston" }, messages)).toEqual(
+			{ title: "Houston", subtitle: "Market summary, last 28 days" },
+		);
+		expect(
+			buildScopeHeading(
+				{ kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" },
+				messages,
+			),
+		).toEqual({ title: "Pegaso HTX", subtitle: "Facility in Houston, last 28 days" });
 	});
 });
 
 describe("useMarketSummaryPanelRules", () => {
 	beforeEach(() => {
+		mockScope = { kind: "all" };
+		mockUseFacilityReservationStats.mockReturnValue(IDLE_QUERY);
+		mockUseFacilityPlayerStats.mockReturnValue(IDLE_QUERY);
 		mockUseMarketSummary.mockReturnValue({
 			data: MARKET_SUMMARY,
 			isPending: false,
@@ -159,6 +256,59 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(result.current.view?.summary).toContain("84 active facilities");
 		expect(result.current.isSummaryPending).toBe(false);
 		expect(result.current.messages).toBe(messages);
+		expect(result.current.heading.title).toBe("All markets");
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith(null);
+	});
+
+	it("follows a market scope and updates when the filter changes while open", () => {
+		const { result, rerender } = renderRules();
+
+		mockScope = { kind: "market", id: "houston", name: "Houston" };
+		rerender({ isClosing: false });
+
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith("houston", true);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith("houston", true);
+		expect(result.current.heading.title).toBe("Houston");
+		expect(result.current.view?.topMarkets).toBeNull();
+		expect(result.current.view?.scopeTiles).toHaveLength(1);
+	});
+
+	it("reuses the facility endpoints for a facility scope and skips the market queries", () => {
+		mockScope = { kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" };
+		mockUseFacilityReservationStats.mockReturnValue({
+			data: FACILITY_REPORT,
+			isPending: false,
+			isError: false,
+		});
+		mockUseFacilityPlayerStats.mockReturnValue({
+			data: MARKET_PLAYER_STATS,
+			isPending: false,
+			isError: false,
+		});
+
+		const { result } = renderRules();
+
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, false);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, false);
+		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith("889");
+		expect(mockUseFacilityPlayerStats).toHaveBeenLastCalledWith("889");
+		expect(result.current.status).toBe("ready");
+		expect(result.current.heading).toEqual({
+			title: "Pegaso HTX",
+			subtitle: "Facility in Houston, last 28 days",
+		});
+		expect(result.current.view?.topFacilities).toBeNull();
+	});
+
+	it("shows the loading state while a facility report is pending", () => {
+		mockScope = { kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" };
+
+		const { result } = renderRules();
+
+		expect(result.current.status).toBe("loading");
+		expect(result.current.view).toBeNull();
 	});
 
 	it("shows the loading state before the summary arrives", () => {

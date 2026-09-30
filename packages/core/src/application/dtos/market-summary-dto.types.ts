@@ -2,6 +2,10 @@ import type {
 	FacilityPlayerStatsView,
 	FacilityReservationStatsView,
 } from "@core/application/dtos/facility-detail-dto.types";
+import type { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
+import type { z } from "zod";
+
+export type GetMarketSummaryInput = z.input<typeof getMarketSummarySchema>;
 
 export interface MarketSummaryScopeView {
 	facilityCount: number;

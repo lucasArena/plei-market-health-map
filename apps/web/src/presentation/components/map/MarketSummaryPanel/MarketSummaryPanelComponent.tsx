@@ -63,6 +63,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 	const {
 		detailMessages,
 		handleAnimationEnd,
+		heading,
 		isClosing,
 		isSummaryPending,
 		messages,
@@ -97,8 +98,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 				{status === "ready" && view && (
 					<div className="space-y-4 p-5">
 						<header className="pr-8">
-							<h2 className="text-base font-semibold">{messages.title}</h2>
-							<p className="text-xs text-muted-foreground">{messages.subtitle}</p>
+							<h2 className="truncate text-base font-semibold">{heading.title}</h2>
+							<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
 						</header>
 						{view.summary && (
 							<p className="rounded-xl bg-pleiful-moonlight-5 p-3.5 text-sm leading-relaxed">
@@ -112,7 +113,9 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 								className="h-20 animate-pulse rounded-xl bg-pleiful-moonlight-5"
 							/>
 						)}
-						<StatTiles tiles={view.scopeTiles} testIdPrefix="market-scope" />
+						{view.scopeTiles.length > 0 && (
+							<StatTiles tiles={view.scopeTiles} testIdPrefix="market-scope" />
+						)}
 						<StatTiles tiles={view.tiles} testIdPrefix="market-stat" />
 						<WeeklyActivityChart
 							title={detailMessages.weeklyActivity}
@@ -127,16 +130,20 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							quietLabel={detailMessages.quiet}
 							busyLabel={detailMessages.busy}
 						/>
-						<RankList
-							title={messages.topMarkets}
-							rows={view.topMarkets}
-							emptyLabel={messages.noRankings}
-						/>
-						<RankList
-							title={messages.topFacilities}
-							rows={view.topFacilities}
-							emptyLabel={messages.noRankings}
-						/>
+						{view.topMarkets && (
+							<RankList
+								title={messages.topMarkets}
+								rows={view.topMarkets}
+								emptyLabel={messages.noRankings}
+							/>
+						)}
+						{view.topFacilities && (
+							<RankList
+								title={messages.topFacilities}
+								rows={view.topFacilities}
+								emptyLabel={messages.noRankings}
+							/>
+						)}
 						<footer className="border-t pt-3 text-[11px] text-muted-foreground">
 							<p>{view.lastPlayedLabel}</p>
 						</footer>

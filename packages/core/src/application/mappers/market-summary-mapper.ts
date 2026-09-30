@@ -3,6 +3,7 @@ import type {
 	MarketSummaryMarketRankView,
 	MarketSummaryScopeView,
 } from "@core/application/dtos/market-summary-dto.types";
+import { NotFoundError } from "@core/application/errors/not-found-error";
 import type { EntityId, Facility } from "@core/domain";
 
 export const MARKET_SUMMARY_RANK_LIMIT = 5;
@@ -20,6 +21,13 @@ function byGamesThenName<Rank extends { gamesLast28Days: number; name: string }>
 
 export function toMarketMemberIds(facilities: Facility[]): EntityId[] {
 	return [...new Set(facilities.flatMap((facility) => facility.memberIds))];
+}
+
+export function selectMarketFacilities(facilities: Facility[], market?: string): Facility[] {
+	if (market === undefined) return facilities;
+	const selected = facilities.filter((facility) => facility.marketId === market);
+	if (selected.length === 0) throw new NotFoundError("Market");
+	return selected;
 }
 
 export function toMarketSummaryScope(facilities: Facility[]): MarketSummaryScopeView {
