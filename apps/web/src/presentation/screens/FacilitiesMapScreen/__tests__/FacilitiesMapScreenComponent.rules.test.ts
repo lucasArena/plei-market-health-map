@@ -37,6 +37,7 @@ import {
 	FACILITIES_LAYER_ID,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
+import type { ClusterTreeSource } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 const mapState = vi.hoisted(() => ({
 	instances: [] as Array<Record<string, ReturnType<typeof vi.fn>>>,
@@ -254,13 +255,14 @@ describe("active cluster reveal", () => {
 				return leaves;
 			}),
 		};
-		await expect(activeClusterRevealTarget(source, 1, [-97.7, 30.3], 0)).resolves.toEqual({
+		const tree = source as ClusterTreeSource;
+		await expect(activeClusterRevealTarget(tree, 1, [-97.7, 30.3], 0)).resolves.toEqual({
 			zoom: 1,
 			center: [-97.5, 30.3],
 		});
 		expect(source.getClusterLeaves).toHaveBeenCalledWith(1, 1, 0);
 		expect(source.getClusterLeaves).toHaveBeenCalledWith(2, 1, 0);
-		await expect(activeClusterRevealTarget(source, 4, [-97.7, 30.3], 3)).resolves.toEqual({
+		await expect(activeClusterRevealTarget(tree, 4, [-97.7, 30.3], 3)).resolves.toEqual({
 			zoom: 4,
 			center: [-97.5, 30.3],
 		});
@@ -1064,6 +1066,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		const { rerender, unmount } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
 		const container = document.createElement("div");
 		map.getContainer = vi.fn(() => container);
 		map.getLayer = vi.fn(() => ({ id: "facilities" }));
