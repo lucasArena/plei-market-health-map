@@ -711,6 +711,7 @@ export function useFacilitiesMapScreenRules() {
 	const selectedFacilityIdRef = useRef<string | null>(null);
 	const mapLayers = useMapLayers();
 	const showFacilities = mapLayers?.showFacilities ?? true;
+	const showSessions = mapLayers?.showSessions ?? true;
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
 	const facilitiesWereShownRef = useRef(showFacilities);
@@ -1037,7 +1038,13 @@ export function useFacilitiesMapScreenRules() {
 		refreshHeatmap,
 	]);
 
-	const hasSessionHeatmap = heatmapFeatureCollection.features.length > 0;
+	const hasSessionHeatmap = showSessions && heatmapFeatureCollection.features.length > 0;
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
+		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showSessions);
+	}, [isMapReady, showSessions]);
 
 	useEffect(() => {
 		const map = mapRef.current;

@@ -37,6 +37,7 @@ export const en: Messages = {
 		layersBrand: "Plei Market",
 		layersHeading: "Layers",
 		layersFacilities: "Facilities",
+		layersSessions: "App sessions",
 		layersCollapse: "Hide layers",
 		layersExpand: "Show layers",
 	},

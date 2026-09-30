@@ -34,6 +34,7 @@ export interface Messages {
 		layersBrand: string;
 		layersHeading: string;
 		layersFacilities: string;
+		layersSessions: string;
 		layersCollapse: string;
 		layersExpand: string;
 	};
