@@ -1,4 +1,5 @@
 import type {
+	FeedbackTitleGenerator,
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
@@ -21,11 +22,16 @@ import {
 	makeSubmitFeedback,
 } from "@market-health-map/core/application";
 import {
+	getAiGatewayApiKey,
 	getFeedbackMode,
 	getLinearCredentials,
 	getServerEnv,
 	hasPartialLinearAppCredentials,
 } from "@server/env";
+import {
+	AiGatewayFeedbackTitleGenerator,
+	FEEDBACK_TITLE_MODEL,
+} from "@server/infrastructure/ai-gateway/ai-gateway-feedback-title-generator";
 import { getPrismaClient } from "@server/infrastructure/database/prisma-client";
 import { PrismaLoginEventRepository } from "@server/infrastructure/database/prisma-login-event-repository";
 import { DryRunIssueTracker } from "@server/infrastructure/linear/dry-run-issue-tracker";
@@ -43,6 +49,7 @@ import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/war
 import { WarehouseFacilityRepository } from "@server/infrastructure/warehouse/warehouse-facility-repository";
 import { WarehouseFacilityStatsRepository } from "@server/infrastructure/warehouse/warehouse-facility-stats-repository";
 import { getWarehousePool } from "@server/infrastructure/warehouse/warehouse-pool";
+import { createGateway } from "ai";
 
 function buildLogins() {
 	const databaseUrl = getServerEnv().DATABASE_URL;
@@ -137,9 +144,20 @@ function buildIssueTracker(): IssueTracker | null {
 	return new LinearIssueTracker({ auth });
 }
 
+function buildFeedbackTitles(): FeedbackTitleGenerator | null {
+	const apiKey = getAiGatewayApiKey();
+	if (!apiKey) return null;
+	const model = createGateway({ apiKey })(FEEDBACK_TITLE_MODEL);
+	return new AiGatewayFeedbackTitleGenerator({ model });
+}
+
 function buildFeedback() {
 	return {
-		submitFeedback: makeSubmitFeedback({ issues: buildIssueTracker(), clock: new SystemClock() }),
+		submitFeedback: makeSubmitFeedback({
+			issues: buildIssueTracker(),
+			titles: buildFeedbackTitles(),
+			clock: new SystemClock(),
+		}),
 	};
 }
 

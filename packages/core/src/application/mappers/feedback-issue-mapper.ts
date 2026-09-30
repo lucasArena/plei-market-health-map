@@ -4,20 +4,34 @@ import type {
 	FeedbackIssueSubmitter,
 } from "@core/application/ports/issue-tracker.types";
 
-export const FEEDBACK_TITLE_LENGTH = 80;
+export const MAX_FEEDBACK_TITLE_LENGTH = 80;
+export const MAX_FEEDBACK_TITLE_WORDS = 10;
 
-export const FEEDBACK_TITLE_PREFIXES: Record<FeedbackType, string> = {
-	improvement: "[MHM feedback]",
-	bug: "[MHM bug]",
+export const FEEDBACK_FALLBACK_TITLES: Record<FeedbackType, string> = {
+	improvement: "Feedback",
+	bug: "Bug Report",
 };
 
-export function toFeedbackIssueTitle(type: FeedbackType, message: string): string {
-	const flat = message.replace(/\s+/g, " ").trim();
-	const summary =
-		flat.length > FEEDBACK_TITLE_LENGTH
-			? `${flat.slice(0, FEEDBACK_TITLE_LENGTH).trimEnd()}...`
-			: flat;
-	return `${FEEDBACK_TITLE_PREFIXES[type]} ${summary}`;
+/**
+ * Cleans a generated title: first line only, no "Title:" label, quotes, markdown or
+ * trailing period, first letter upper case. Returns null when nothing usable is left
+ * or when it is too long to be a title.
+ */
+export function normalizeFeedbackTitle(raw: string | null | undefined): string | null {
+	const line = raw?.split(/\r?\n/).find((part) => part.trim()) ?? "";
+	const title = line
+		.replace(/^\s*title\s*:\s*/i, "")
+		.replace(/^[\s"'`*#_]+|[\s"'`*_]+$/g, "")
+		.replace(/\s+/g, " ")
+		.replace(/[.\s]+$/, "");
+	if (!title) return null;
+	if (title.length > MAX_FEEDBACK_TITLE_LENGTH) return null;
+	if (title.split(" ").length > MAX_FEEDBACK_TITLE_WORDS) return null;
+	return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+export function toFeedbackIssueTitle(type: FeedbackType, generated?: string | null): string {
+	return normalizeFeedbackTitle(generated) ?? FEEDBACK_FALLBACK_TITLES[type];
 }
 
 export function toFeedbackIssueDescription(
@@ -47,10 +61,11 @@ export function toFeedbackIssueDraft(
 	feedback: Feedback,
 	assetUrls: string[],
 	submittedAt: Date,
+	generatedTitle?: string | null,
 ): FeedbackIssueDraft {
 	return {
 		type: feedback.type,
-		title: toFeedbackIssueTitle(feedback.type, feedback.message),
+		title: toFeedbackIssueTitle(feedback.type, generatedTitle),
 		description: toFeedbackIssueDescription(feedback, assetUrls, submittedAt),
 		submitter: toFeedbackIssueSubmitter(feedback),
 	};

@@ -1,5 +1,6 @@
 import type { Feedback } from "@core/application/dtos/feedback-dto.types";
 import {
+	normalizeFeedbackTitle,
 	toFeedbackIssueDescription,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
@@ -17,18 +18,43 @@ const FEEDBACK: Feedback = {
 };
 
 describe("toFeedbackIssueTitle", () => {
-	it("prefixes improvements and bugs differently", () => {
-		expect(toFeedbackIssueTitle("improvement", "Add filters")).toBe("[MHM feedback] Add filters");
-		expect(toFeedbackIssueTitle("bug", "Map is blank")).toBe("[MHM bug] Map is blank");
+	it("uses the generated title when there is one", () => {
+		expect(toFeedbackIssueTitle("bug", "Map pins overlap at high zoom")).toBe(
+			"Map pins overlap at high zoom",
+		);
 	});
 
-	it("flattens whitespace and cuts long messages at 80 characters", () => {
-		const long = `${"word ".repeat(30)}\nend`;
-		const title = toFeedbackIssueTitle("improvement", long);
+	it("falls back to a generic title by type", () => {
+		expect(toFeedbackIssueTitle("improvement")).toBe("Feedback");
+		expect(toFeedbackIssueTitle("bug", null)).toBe("Bug Report");
+		expect(toFeedbackIssueTitle("bug", "  ")).toBe("Bug Report");
+	});
+});
 
-		expect(title).not.toContain("\n");
-		expect(title.endsWith("...")).toBe(true);
-		expect(title.length).toBeLessThanOrEqual("[MHM feedback] ".length + 80 + 3);
+describe("normalizeFeedbackTitle", () => {
+	it("strips labels, quotes, markdown and the trailing period", () => {
+		expect(normalizeFeedbackTitle('Title: "Map pins overlap at high zoom."')).toBe(
+			"Map pins overlap at high zoom",
+		);
+		expect(normalizeFeedbackTitle("**Add a market filter**")).toBe("Add a market filter");
+		expect(normalizeFeedbackTitle("  side  panel\tcovers zoom buttons...  ")).toBe(
+			"Side panel covers zoom buttons",
+		);
+	});
+
+	it("keeps only the first non-empty line", () => {
+		expect(normalizeFeedbackTitle("\nSearch misses facilities\nBecause the list is stale")).toBe(
+			"Search misses facilities",
+		);
+	});
+
+	it("rejects empty or overly long output", () => {
+		expect(normalizeFeedbackTitle(undefined)).toBeNull();
+		expect(normalizeFeedbackTitle('"".')).toBeNull();
+		expect(
+			normalizeFeedbackTitle("one two three four five six seven eight nine ten eleven"),
+		).toBeNull();
+		expect(normalizeFeedbackTitle("x".repeat(81))).toBeNull();
 	});
 });
 
@@ -63,12 +89,19 @@ describe("toFeedbackIssueDescription", () => {
 });
 
 describe("toFeedbackIssueDraft", () => {
-	it("builds the draft for the issue tracker", () => {
-		expect(toFeedbackIssueDraft(FEEDBACK, [], AT)).toMatchObject({
+	it("builds the draft for the issue tracker with the generated title", () => {
+		expect(toFeedbackIssueDraft(FEEDBACK, [], AT, "Side panel covers zoom buttons")).toMatchObject({
 			type: "bug",
-			title: "[MHM bug] The side panel covers the zoom buttons. Steps: open any facility.",
+			title: "Side panel covers zoom buttons",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
+	});
+
+	it("keeps the full message in the description when the title is generic", () => {
+		const draft = toFeedbackIssueDraft(FEEDBACK, [], AT);
+
+		expect(draft.title).toBe("Bug Report");
+		expect(draft.description.startsWith(FEEDBACK.message)).toBe(true);
 	});
 });
 

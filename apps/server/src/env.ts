@@ -16,6 +16,7 @@ export const serverEnvSchema = z.object({
 	LINEAR_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
 	LINEAR_API_KEY: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
 	FEEDBACK_DRY_RUN: z.preprocess(emptyAsUndefined, z.stringbool().default(false)),
+	AI_GATEWAY_API_KEY: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
 });
 
 let cached: z.infer<typeof serverEnvSchema> | undefined;
@@ -51,6 +52,11 @@ export function getFeedbackMode(): FeedbackMode {
 	const credentials = getLinearCredentials();
 	if (!credentials) return "unconfigured";
 	return credentials.kind === "app" ? "linear-app" : "linear-api-key";
+}
+
+/** Vercel AI Gateway key for feedback titles. Without it, issues get a generic title. */
+export function getAiGatewayApiKey(): string | undefined {
+	return getServerEnv().AI_GATEWAY_API_KEY;
 }
 
 export function resetServerEnvCache() {

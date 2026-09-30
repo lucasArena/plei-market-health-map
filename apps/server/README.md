@@ -8,6 +8,7 @@ The HTTP API (Hono) and every adapter to the outside world: the Neon Postgres da
 | --- | --- |
 | `src/presentation/http` | `createApiApp` (Hono), one route file per resource, the auth guard, response envelopes and error mapping |
 | `src/infrastructure/linear` | `LinearIssueTracker` (feedback to Linear issues), `LinearAppAuth` / `LinearApiKeyAuth` (OAuth app token or personal key), its dry-run twin and the team, state, label and project IDs |
+| `src/infrastructure/ai-gateway` | `AiGatewayFeedbackTitleGenerator`: short feedback titles from Vercel AI Gateway, used only when `AI_GATEWAY_API_KEY` is set |
 | `src/presentation/auth` | `trackSignIn`, called from Auth.js when someone signs in |
 | `src/infrastructure` | Prisma repository, warehouse repositories and caches, sample data, clock and ids |
 | `src/container.ts` | Composition root: picks warehouse or sample adapters from the environment and wires the use cases |
