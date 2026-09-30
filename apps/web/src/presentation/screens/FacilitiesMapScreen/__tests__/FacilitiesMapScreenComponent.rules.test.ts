@@ -107,12 +107,14 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 	useFacilityListAll: () => mockUseFacilities(),
 }));
 
-const layersState = vi.hoisted(() => ({ showFacilities: true }));
+const layersState = vi.hoisted(() => ({ showFacilities: true, showSessions: true }));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
 	useMapLayers: () => ({
 		showFacilities: layersState.showFacilities,
 		setShowFacilities: vi.fn(),
+		showSessions: layersState.showSessions,
+		setShowSessions: vi.fn(),
 	}),
 }));
 
@@ -685,6 +687,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		layersState.showFacilities = true;
+		layersState.showSessions = true;
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -1060,6 +1063,36 @@ describe("useFacilitiesMapScreenRules", () => {
 			zoom: 12,
 			duration: 500,
 		});
+	});
+
+	it("hides the session heatmap and its legend when app sessions are off", async () => {
+		const { result, rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
+		map.getLayer = vi.fn(() => ({ id: APP_SESSION_HEATMAP_LAYER_ID }));
+		map.setLayoutProperty = vi.fn();
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.hasSessionHeatmap).toBe(true);
+
+		layersState.showSessions = false;
+		rerender();
+		expect(map.setLayoutProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"visibility",
+			"none",
+		);
+		expect(result.current.hasSessionHeatmap).toBe(false);
+
+		layersState.showSessions = true;
+		rerender();
+		expect(map.setLayoutProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"visibility",
+			"visible",
+		);
+		expect(result.current.hasSessionHeatmap).toBe(true);
 	});
 
 	it("fades facility markers in and out with the facilities switch", async () => {

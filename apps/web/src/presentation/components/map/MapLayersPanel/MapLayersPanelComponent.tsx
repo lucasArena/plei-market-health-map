@@ -38,8 +38,10 @@ export function MapLayersPanel() {
 		isExpanded,
 		messages,
 		showFacilities,
+		showSessions,
 		toggleExpanded,
 		toggleFacilities,
+		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
 		[`${!isExpanded}`]: messages.layersExpand,
@@ -95,6 +97,16 @@ export function MapLayersPanel() {
 							checked={showFacilities}
 							label={messages.layersFacilities}
 							onToggle={toggleFacilities}
+						/>
+					</div>
+					<div className="flex w-full items-center justify-between gap-3">
+						<p className="text-[12px] leading-none font-medium text-foreground">
+							{messages.layersSessions}
+						</p>
+						<LayerSwitch
+							checked={showSessions}
+							label={messages.layersSessions}
+							onToggle={toggleSessions}
 						/>
 					</div>
 				</div>
