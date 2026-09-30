@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLEI_LOGO_URL, PLEI_LOGO_WHITE_URL } from "@/application/constants/plei-logo";
+import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type { MarketSearchResult } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 import {
@@ -801,6 +802,7 @@ export function useFacilitiesMapScreenRules() {
 		(event: MapLayerMouseEvent) => {
 			const facility = facilityFromEvent(event);
 			if (!facility) return;
+			activityTracker.count("facilitiesOpened");
 			handleHoverEnd();
 			setIsPanelClosing(false);
 			setSelectedFacilityId(facility.id);
@@ -815,6 +817,7 @@ export function useFacilitiesMapScreenRules() {
 
 	const selectSearchFacility = useCallback(
 		(facility: FacilityPointView) => {
+			activityTracker.count("facilitiesOpened");
 			handleHoverEnd();
 			setScope({
 				kind: "facility",

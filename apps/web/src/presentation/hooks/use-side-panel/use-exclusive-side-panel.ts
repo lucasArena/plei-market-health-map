@@ -5,8 +5,10 @@ import { useSidePanels } from "@/presentation/components/providers/SidePanelProv
 import type { SidePanelId } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent.types";
 
 export function useExclusiveSidePanel(id: SidePanelId, isOpen: boolean, close: () => void): void {
-	const { activePanel, openPanel, releasePanel } = useSidePanels();
+	const { activePanel, openPanel, releasePanel, registerCloser } = useSidePanels();
 	const lastActivePanelRef = useRef(activePanel);
+
+	useEffect(() => registerCloser(id, close), [close, id, registerCloser]);
 
 	useEffect(() => {
 		if (isOpen) openPanel(id);

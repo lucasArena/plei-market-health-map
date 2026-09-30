@@ -16,6 +16,9 @@ function setup(access: AccessDecision = ALLOWED) {
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
 		listRecentLogins: vi.fn().mockResolvedValue([{ id: "l1" }]),
 		submitFeedback: vi.fn().mockResolvedValue({ identifier: "REQ-1", url: "https://linear.app/x" }),
+		recordDailyActivity: vi.fn().mockResolvedValue(undefined),
+		getAppMetrics: vi.fn().mockResolvedValue({ targetPercent: 82 }),
+		listAppMetricsPeople: vi.fn().mockResolvedValue({ rows: [], page: 2 }),
 	};
 	const resolveAccess = vi.fn().mockResolvedValue(access);
 	const app = createApiApp({ resolveAccess, services: () => services });

@@ -9,6 +9,7 @@ const base = createVitestConfig({
 		"src/container.ts",
 		"src/infrastructure/repositories/database/prisma-client/prisma-client.ts",
 		"src/infrastructure/repositories/database/prisma-login-event-repository/prisma-login-event-repository.ts",
+		"src/infrastructure/repositories/database/prisma-daily-activity-repository/prisma-daily-activity-repository.ts",
 		"src/infrastructure/repositories/warehouse/warehouse-pool/warehouse-pool.ts",
 	],
 });

@@ -17,6 +17,7 @@ export type {
 	MarketProps,
 } from "@core/domain/entities/market/market.types";
 export { DomainError, ValidationError } from "@core/domain/shared/domain-error";
+export { addDays, easternDay, weekStartOf } from "@core/domain/shared/eastern-calendar";
 export { hasEmailDomain } from "@core/domain/shared/email-domain";
 export type { GeoPoint } from "@core/domain/shared/geo-point.types";
 export { guard } from "@core/domain/shared/guard";

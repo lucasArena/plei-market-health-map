@@ -7,10 +7,16 @@ export interface WeeklyActivityPointView {
 	tooltip: string;
 }
 
+export interface WeeklyActivitySeries {
+	legend: string;
+	points: WeeklyActivityPointView[];
+}
+
 export interface WeeklyActivityChartProps {
 	title: string;
 	legend: string;
 	points: WeeklyActivityPointView[];
+	secondary?: WeeklyActivitySeries;
 }
 
 export interface PositionedWeeklyActivityPoint extends WeeklyActivityPointView {
@@ -25,4 +31,11 @@ export interface WeeklyActivityChartView {
 	areaPath: string;
 	linePath: string;
 	points: PositionedWeeklyActivityPoint[];
+	secondaryLinePath: string;
+	secondaryPoints: PositionedWeeklyActivityPoint[];
+}
+
+export interface ChartPointsProps {
+	points: PositionedWeeklyActivityPoint[];
+	dotClass: string;
 }

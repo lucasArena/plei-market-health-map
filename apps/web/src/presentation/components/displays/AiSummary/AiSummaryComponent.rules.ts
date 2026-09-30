@@ -2,6 +2,7 @@
 
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useState } from "react";
+import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { browserLlm } from "@/infrastructure/ai/browser-llm/browser-llm";
 import { activitySummaryPrompt } from "@/infrastructure/ai/prompts/activity-summary-prompt";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
@@ -66,6 +67,7 @@ export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
 			if (signal.aborted) return;
 			if (!text) throw new Error("Empty AI summary");
 			aiSummaryCache.write(cacheKey, text);
+			activityTracker.count("aiSummaries");
 			update({ status: "ready", text, progress: 1 });
 		};
 		run().catch(() => update({ status: "error", text: null, progress: 0 }));

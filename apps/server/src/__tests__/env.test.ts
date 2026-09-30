@@ -1,8 +1,10 @@
 import {
+	canViewAppMetrics,
 	getAllowedEmailDomain,
 	getFeedbackMode,
 	getLinearCredentials,
 	getServerEnv,
+	getTargetUserEmails,
 	hasPartialLinearAppCredentials,
 	isLoginTrackingConfigured,
 	resetServerEnvCache,
@@ -109,5 +111,28 @@ describe("server env", () => {
 	it("fails fast on an unreadable dry-run flag", () => {
 		vi.stubEnv("FEEDBACK_DRY_RUN", "maybe");
 		expect(() => getServerEnv()).toThrow();
+	});
+
+	it("reads the target users as a clean, unique email list", () => {
+		vi.stubEnv(
+			"TARGET_USER_EMAILS",
+			" Stefano@plei.com, alan@plei.com;alan@plei.com\nmili@plei.com ",
+		);
+		expect(getTargetUserEmails()).toEqual(["stefano@plei.com", "alan@plei.com", "mili@plei.com"]);
+	});
+
+	it("lets only the listed people view App metrics", () => {
+		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "Lucas@plei.com, stefano@plei.com");
+		expect(canViewAppMetrics("lucas@plei.com")).toBe(true);
+		expect(canViewAppMetrics("STEFANO@plei.com")).toBe(true);
+		expect(canViewAppMetrics("alan@plei.com")).toBe(false);
+		resetServerEnvCache();
+		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "");
+		expect(canViewAppMetrics("lucas@plei.com")).toBe(false);
+	});
+
+	it("has no target users when the list is not set", () => {
+		vi.stubEnv("TARGET_USER_EMAILS", "");
+		expect(getTargetUserEmails()).toEqual([]);
 	});
 });

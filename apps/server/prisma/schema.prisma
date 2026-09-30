@@ -18,3 +18,23 @@ model LoginEvent {
   @@index([userId, signedInAt(sort: Desc)])
   @@map("login_events")
 }
+
+model DailyActivity {
+  userId                String   @map("user_id")
+  day                   DateTime @db.Date
+  email                 String
+  name                  String?
+  firstSeenAt           DateTime @map("first_seen_at") @db.Timestamptz(3)
+  lastSeenAt            DateTime @map("last_seen_at") @db.Timestamptz(3)
+  minutesActive         Int      @default(0) @map("minutes_active")
+  visits                Int      @default(0)
+  facilitiesOpened      Int      @default(0) @map("facilities_opened")
+  marketSummariesOpened Int      @default(0) @map("market_summaries_opened")
+  searches              Int      @default(0)
+  aiSummaries           Int      @default(0) @map("ai_summaries")
+  feedbackSent          Int      @default(0) @map("feedback_sent")
+
+  @@id([userId, day])
+  @@index([day])
+  @@map("daily_activity")
+}

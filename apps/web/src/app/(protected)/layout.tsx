@@ -4,6 +4,7 @@ import { signInErrorUrl } from "@/infrastructure/auth/sign-in-policy";
 import { AppHeader } from "@/presentation/components/layout/AppHeader/AppHeaderComponent";
 import { MapLayersPanel } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent";
 import { MapLayersProvider } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { ActivityTracker } from "@/presentation/components/providers/ActivityTracker/ActivityTrackerComponent";
 
 export default async function ProtectedLayout({
 	children,
@@ -16,7 +17,15 @@ export default async function ProtectedLayout({
 	return (
 		<MapLayersProvider>
 			<main className="relative h-dvh overflow-hidden bg-background">
-				<AppHeader user={{ name: access.name, email: access.email, image: access.image }} />
+				<ActivityTracker />
+				<AppHeader
+					user={{
+						name: access.name,
+						email: access.email,
+						image: access.image,
+						canViewAppMetrics: access.canViewAppMetrics,
+					}}
+				/>
 				<MapLayersPanel />
 				{children}
 			</main>

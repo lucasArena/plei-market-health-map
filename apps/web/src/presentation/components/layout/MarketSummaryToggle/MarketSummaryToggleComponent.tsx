@@ -8,8 +8,10 @@ import {
 import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent";
 
 export function MarketSummaryToggle() {
-	const { close, handleClosed, isActive, isClosing, isMounted, messages, toggle } =
+	const { close, handleClosed, isActive, isClosing, isMounted, isOnMap, messages, toggle } =
 		useMarketSummaryToggleRules();
+
+	if (!isOnMap) return null;
 
 	return (
 		<>

@@ -1,4 +1,4 @@
-import { buildWeeklyActivityChart } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent.rules";
+import { buildWeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.rules";
 
 const POINTS = [
 	{
@@ -51,5 +51,14 @@ describe("buildWeeklyActivityChart", () => {
 			},
 		]);
 		expect(middle.points[1]?.tooltipClass).toBe("left-1/2 -translate-x-1/2");
+	});
+
+	it("scales a second series against the same maximum", () => {
+		const secondary = POINTS.map((point) => ({ ...point, value: point.value * 2 }));
+		const chart = buildWeeklyActivityChart(POINTS, secondary);
+		expect(chart.linePath).toBe("M 10 64.5 L 310 47");
+		expect(chart.secondaryLinePath).toBe("M 10 47 L 310 12");
+		expect(chart.secondaryPoints).toHaveLength(2);
+		expect(buildWeeklyActivityChart(POINTS).secondaryLinePath).toBe("");
 	});
 });

@@ -3,11 +3,11 @@
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
+import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { useFacilityDetailPanelRules } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import { PANEL_CLASS } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.styles";
 import type { FacilityDetailPanelProps } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
-import { WeeklyActivityChart } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent";
 
 const SKELETON_TILES = ["played", "confirmation", "players", "activated"];
 

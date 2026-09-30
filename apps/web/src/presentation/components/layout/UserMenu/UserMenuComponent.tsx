@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { signOutOfApp } from "@/infrastructure/auth/actions";
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { useUserMenuRules } from "@/presentation/components/layout/UserMenu/UserMenuComponent.rules";
 import type { UserMenuProps } from "@/presentation/components/layout/UserMenu/UserMenuComponent.types";
 
-export function UserMenu({ name, email, image }: Readonly<UserMenuProps>) {
+export function UserMenu({ name, email, image, canViewAppMetrics }: Readonly<UserMenuProps>) {
 	const { containerRef, isOpen, messages, toggle, versionLabel } = useUserMenuRules();
 	const displayName = name ?? email;
 
@@ -27,6 +28,16 @@ export function UserMenu({ name, email, image }: Readonly<UserMenuProps>) {
 				>
 					<p className="truncate text-sm font-medium">{displayName}</p>
 					<p className="truncate text-xs text-muted-foreground">{email}</p>
+					{canViewAppMetrics && (
+						<Link
+							href="/metrics"
+							role="menuitem"
+							onClick={toggle}
+							className="mt-3 block rounded-md border-t px-2 pt-3 pb-1.5 text-sm transition-colors hover:bg-muted"
+						>
+							{messages.appMetrics}
+						</Link>
+					)}
 					<form action={signOutOfApp} className="mt-3 flex items-center gap-2 border-t pt-3">
 						<button
 							type="submit"

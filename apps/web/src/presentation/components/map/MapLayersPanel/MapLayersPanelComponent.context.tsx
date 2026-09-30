@@ -9,7 +9,7 @@ import type {
 const MapLayersContext = createContext<MapLayersValue | null>(null);
 
 export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>) {
-	const [showFacilities, setShowFacilities] = useState(false);
+	const [showFacilities, setShowFacilities] = useState(true);
 	const [showSessions, setShowSessions] = useState(true);
 	const value = useMemo(
 		() => ({ showFacilities, setShowFacilities, showSessions, setShowSessions }),

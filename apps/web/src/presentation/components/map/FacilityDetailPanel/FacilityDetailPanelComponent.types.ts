@@ -1,6 +1,6 @@
 import type { Messages } from "@market-health-map/core/i18n";
+import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 import type { PopularTimeCellView } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.types";
-import type { WeeklyActivityPointView } from "@/presentation/components/map/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 
 export const ChangeDirection = { up: "up", down: "down", flat: "flat" } as const;
 

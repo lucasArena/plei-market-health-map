@@ -3,11 +3,13 @@ import { getMessages, parseAcceptLanguage } from "@market-health-map/core/i18n";
 import { getContainer } from "@server/container";
 import type { ApiEnv, CreateApiAppOptions } from "@server/presentation/http/api-app.types";
 import { requireUser } from "@server/presentation/http/authenticate";
+import { activityController } from "@server/presentation/http/controllers/activity-controller";
 import { appSessionHeatmapController } from "@server/presentation/http/controllers/app-session-heatmap-controller";
 import { facilityController } from "@server/presentation/http/controllers/facility-controller";
 import { feedbackController } from "@server/presentation/http/controllers/feedback-controller";
 import { loginController } from "@server/presentation/http/controllers/login-controller";
 import { marketSummaryController } from "@server/presentation/http/controllers/market-summary-controller";
+import { metricsController } from "@server/presentation/http/controllers/metrics-controller";
 import { toErrorResponse } from "@server/presentation/http/errors";
 import { Hono } from "hono";
 
@@ -25,6 +27,8 @@ export function createApiApp({ resolveAccess, services = getContainer }: CreateA
 		.route("/app-session-heatmap", appSessionHeatmapController(services))
 		.route("/logins", loginController(services))
 		.route("/feedback", feedbackController(services))
+		.route("/activity", activityController(services))
+		.route("/metrics", metricsController(services))
 		.notFound(() => {
 			throw new NotFoundError("Route");
 		})

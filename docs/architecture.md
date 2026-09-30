@@ -143,6 +143,23 @@ The panel-toggle button beside the avatar opens the same kind of floating panel 
 
 The panel follows the map search. `MapScopeProvider` (in `AppProviders`) holds the current scope: picking a market in `MapSearch` sets a market scope, picking a facility sets a facility scope, and clearing the search (the × button or an empty box) goes back to all markets. The panel title names the scope ("All markets", the market name, or the facility name) and changes while the panel is open. A market scope calls both endpoints with `?market=<marketId>`; the use cases aggregate only that market's visible facilities and answer 404 for a market with no visible facility and 400 for a blank value. The panel then drops the "Active markets" tile and the top markets list. A facility scope reuses the facility detail endpoints (`/facilities/:id/reservations` and `/players`, shared with the detail panel's cache) and hides the scope tiles and both rankings. Each scope has its own React Query entry, so switching back is instant, and nothing is fetched while the panel is closed.
 
+## App metrics (project success tracking)
+
+The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/metrics`, from the avatar menu) measures it. Only the people in `APP_METRICS_VIEWER_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
+
+```
+ActivityTracker (web, every signed-in page)  ->  POST /api/v1/activity   (activity-controller)
+  -> recordDailyActivity (core service)  ->  DailyActivityRepository  ->  daily_activity (Neon)
+AppMetricsScreen  ->  GET /api/v1/metrics, GET /api/v1/metrics/people?page=   (metrics-controller)
+  -> getAppMetrics, listAppMetricsPeople  ->  CachedDailyActivityRepository (5 min)  ->  Prisma
+```
+
+- **Everyone is recorded; only target users count toward the goal.** The user always comes from the session, never from the request body.
+- **One row per person per US Eastern day** in `daily_activity` (first and last seen, minutes, visits, and counters for facilities opened, market summaries, searches, AI summaries and feedback). This keeps the Neon free plan's compute low: the first visit of the day sends one request, remembered in `localStorage`; everything else is sent in one `sendBeacon` when the tab is hidden or closed. There are no periodic check-ins.
+- A person is **active in a week** (Monday–Sunday, US Eastern) if they have at least one row that week. The page shows the weekly goal (green when ≥ 75%), active users, target users not active yet, an 8-week chart (`WeeklyActivityChart`) and a paginated people table (`DataTable` + `Pagination`), target users first.
+- Reads are cached for 5 minutes on the server and in React Query, so viewing the page doesn't wake the database. Rows older than 180 days are deleted once a day.
+- Without `DATABASE_URL`, activity is kept in memory (`MemoryDailyActivityRepository`), so local development works without a database.
+
 ## Feedback (Linear)
 
 `POST /api/v1/feedback` turns the in-app "Help us improve" form into a Linear issue. It takes `multipart/form-data` and needs a signed-in Plei session like every other route (401 / 403).

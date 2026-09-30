@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import AppMetricsPage from "@/app/(protected)/metrics/page";
 import HomePage from "@/app/(protected)/page";
 import OfflinePage from "@/app/~offline/page";
 import manifest from "@/app/manifest";
@@ -10,7 +11,12 @@ const mockRedirect = vi.fn((url: string) => {
 	throw new Error(`redirect:${url}`);
 });
 
-vi.mock("next/navigation", () => ({ redirect: (url: string) => mockRedirect(url) }));
+vi.mock("next/navigation", () => ({
+	redirect: (url: string) => mockRedirect(url),
+	notFound: () => {
+		throw new Error("not-found");
+	},
+}));
 vi.mock("@/infrastructure/auth/internal-access", () => ({ getInternalAccess: () => mockAccess() }));
 vi.mock("@market-health-map/server", () => ({ getAllowedEmailDomain: () => "plei.com" }));
 
@@ -23,6 +29,10 @@ vi.mock("@/presentation/screens/SignInScreen/SignInScreenComponent", () => ({
 
 vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent", () => ({
 	FacilitiesMapScreen: () => <div data-testid="facilities-map" />,
+}));
+
+vi.mock("@/presentation/screens/AppMetricsScreen/AppMetricsScreenComponent", () => ({
+	AppMetricsScreen: () => <div data-testid="app-metrics" />,
 }));
 
 vi.mock("@/infrastructure/i18n/get-request-locale", () => ({
@@ -72,6 +82,18 @@ describe("pages", () => {
 	it("renders the facilities map on the home page", () => {
 		render(<HomePage />);
 		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
+	});
+
+	it("shows App metrics only to its viewers", async () => {
+		const allowed = { status: "allowed", email: "lucas@plei.com", canViewAppMetrics: true };
+		mockAccess.mockResolvedValue(allowed);
+		render(await AppMetricsPage());
+		expect(screen.getByTestId("app-metrics")).toBeInTheDocument();
+
+		mockAccess.mockResolvedValue({ ...allowed, canViewAppMetrics: false });
+		await expect(AppMetricsPage()).rejects.toThrow("not-found");
+		mockAccess.mockResolvedValue({ status: "anonymous" });
+		await expect(AppMetricsPage()).rejects.toThrow("not-found");
 	});
 
 	it("renders a localized offline fallback", async () => {

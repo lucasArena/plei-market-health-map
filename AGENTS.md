@@ -22,6 +22,7 @@ apps/
       ai/browser-llm/             BrowserLlm (WebLLM engine) and its web worker
       ai/prompts/                 prompt builders (ActivitySummaryPrompt)
       cache/local-storage/<name>/ browser caches (ai-summary)
+      activity/                   ActivityTracker: records visits, minutes and feature use for App metrics
       auth/                       Auth.js config, server actions, access checks
       i18n/                       request locale
     proxy.ts                      Next proxy (must stay at src/)
