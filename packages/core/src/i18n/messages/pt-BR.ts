@@ -44,13 +44,14 @@ export const ptBR: Messages = {
 		layersExpand: "Mostrar camadas",
 	},
 	facilityAi: {
-		generate: "Gerar resumo com IA",
+		generate: "Encontrar principais sinais",
 		downloadHint:
 			"Baixa uma única vez um modelo gratuito de 880 MB, que depois roda de forma privada neste dispositivo.",
 		loading: "Carregando o modelo de IA neste dispositivo… {percent}%",
-		writing: "Escrevendo resumo…",
-		label: "Resumo por IA",
-		failed: "O resumo por IA não está disponível neste dispositivo, então este é o resumo padrão.",
+		writing: "Identificando principais sinais…",
+		label: "Principais sinais",
+		failed:
+			"A IA não está disponível neste dispositivo. Mostrando as maiores variações do período.",
 	},
 	facilityDetail: {
 		label: "Detalhes da instalação",
@@ -62,6 +63,9 @@ export const ptBR: Messages = {
 		summaryActivity:
 			"{games} trouxeram {activated} novos jogadores ativados, com taxa de confirmação de {confirmation}. A atividade foi maior em {day} de {period}.",
 		unavailable: "Indisponível",
+		insightsNone: "Nenhum sinal direcional claro nas comparações disponíveis.",
+		insightChange:
+			"{metric}: {change}% em relação aos 28 dias anteriores ({previous} → {current}).",
 		gamesPlayed: "Jogos realizados",
 		confirmationRate: "Taxa de confirmação",
 		uniquePlayers: "Jogadores únicos",
@@ -94,6 +98,17 @@ export const ptBR: Messages = {
 		activeMarkets: "Mercados ativos",
 		ofTotal: "de {total}",
 		topFacilities: "Principais instalações",
+		overallGameChange:
+			"Total de jogos: {previous} → {current}, variação líquida de {change} em relação aos 28 dias anteriores. Maiores contribuições:",
+		insightsFailed:
+			"Não foi possível carregar os sinais. Os indicadores e gráficos continuam disponíveis.",
+		keyInsights: "Principais sinais",
+		gameChange: "{previous} → {current} jogos ({percent}) em relação aos 28 dias anteriores",
+		noBaseline: "sem jogos anteriores; sem base percentual",
+		marketGameInsight:
+			"{name}: jogos {direction}, {comparison}; contribuição para a variação total: {change} jogos.",
+		gamesDeclined: "diminuíram",
+		gamesIncreased: "aumentaram",
 		topMarkets: "Principais mercados",
 		marketFacilities: "{active} de {total} instalações ativas",
 		noRankings: "Nenhum jogo realizado nos últimos 28 dias.",

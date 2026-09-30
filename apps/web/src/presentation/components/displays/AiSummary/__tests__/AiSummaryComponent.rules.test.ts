@@ -171,8 +171,8 @@ describe("useAiSummaryRules", () => {
 			"en",
 		);
 
-		expect(facility.cacheKey).toBe("v4:facility-889:2026-09-21:en");
-		expect(market.cacheKey).toBe("v4:market-2:2026-09-21:en");
+		expect(facility.cacheKey).toBe("v5:facility-889:2026-09-21:en");
+		expect(market.cacheKey).toBe("v5:market-2:2026-09-21:en");
 		expect(market.prompt.at(-1)?.content).toContain("Market: Houston.");
 	});
 });

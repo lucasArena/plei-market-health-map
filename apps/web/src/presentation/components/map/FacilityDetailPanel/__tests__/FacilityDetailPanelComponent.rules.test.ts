@@ -102,13 +102,31 @@ describe("directionOf", () => {
 });
 
 describe("buildSummary", () => {
-	it("summarizes high-level facility activity", () => {
-		expect(buildSummary(STATS, messages, formatters)).toBe(
-			"41 games brought in 7 newly activated players, with a confirmation rate of 82%. Activity was strongest on Sat PM.",
-		);
-		expect(buildSummary({ ...STATS, playedLast28Days: 1 }, messages, formatters)).toBe(
-			"1 game brought in 7 newly activated players, with a confirmation rate of 82%. Activity was strongest on Sat PM.",
-		);
+	it("ranks activation decline ahead of a smaller games decline", () => {
+		expect(
+			buildSummary(
+				{
+					...STATS,
+					activatedPlayersPeriodChangePercent: -29,
+					playedPeriodChangePercent: -9.9,
+					uniquePlayersPeriodChangePercent: -11.4,
+				},
+				messages,
+				formatters,
+			),
+		).toContain("Activated players: -29%");
+		expect(
+			buildSummary(
+				{
+					...STATS,
+					activatedPlayersPeriodChangePercent: 0,
+					playedPeriodChangePercent: null,
+					uniquePlayersPeriodChangePercent: 0,
+				},
+				messages,
+				formatters,
+			),
+		).toBe(messages.insightsNone);
 	});
 
 	it("says when nothing was played", () => {
@@ -127,7 +145,7 @@ describe("buildSummary", () => {
 			{ ...messages, dayLabels: [], timePeriodLabels: [] },
 			formatters,
 		);
-		expect(summary).toContain("confirmation rate of Unavailable");
+		expect(summary).toContain("versus the previous 28 days");
 	});
 });
 
@@ -200,10 +218,18 @@ describe("buildProgressiveTiles", () => {
 describe("buildWeeklyActivity", () => {
 	it("formats each week as a chart point", () => {
 		expect(buildWeeklyActivity(STATS, messages, formatters)[0]).toMatchObject({
-			shortLabel: "Aug 31",
+			key: "2026-08-31",
+			shortLabel: "Sep 6",
 			value: 8,
-			tooltip: "Aug 31: 8 games",
+			tooltip: "Sep 6: 8 games",
 		});
+	});
+
+	it("labels each Monday to Sunday week by the Sunday it ends on", () => {
+		const points = buildWeeklyActivity(STATS, messages, formatters);
+
+		expect(points.map((point) => point.label)).toEqual(["Sep 6", "Sep 13", "Sep 20", "Sep 27"]);
+		expect(points.at(-1)).toMatchObject({ label: "Sep 27", tooltip: "Sep 27: 12 games" });
 	});
 });
 
@@ -304,7 +330,7 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.name).toBe("Pegaso HTX");
 		expect(result.current.aiContext?.cacheKey).toBe(
-			`v4:facility-${DETAIL.facility.id}:${DETAIL.stats.weekStart}:en`,
+			`v5:facility-${DETAIL.facility.id}:${DETAIL.stats.weekStart}:en`,
 		);
 		expect(result.current.aiContext?.prompt.at(-1)?.content).toContain(DETAIL.facility.name);
 		expect(result.current.messages).toBe(messages);

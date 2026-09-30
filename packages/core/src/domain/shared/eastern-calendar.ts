@@ -15,8 +15,3 @@ export function easternDay(date: Date): string {
 export function addDays(day: string, days: number): string {
 	return new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
-
-export function weekStartOf(day: string): string {
-	const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
-	return addDays(day, -((weekday + 6) % 7));
-}

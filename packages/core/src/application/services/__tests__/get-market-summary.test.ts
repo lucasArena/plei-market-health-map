@@ -1,5 +1,6 @@
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import { NotFoundError } from "@core/application/errors/not-found-error";
+import { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 import { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 import { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
@@ -166,4 +167,42 @@ describe("market summary", () => {
 		await expect(getMarketSummary({ market: "  " })).rejects.toBeInstanceOf(InvalidRequestError);
 		await expect(getMarketPlayerStats({ market: "" })).rejects.toBeInstanceOf(InvalidRequestError);
 	});
+});
+
+it("returns game comparisons for every market, including inactive facilities", async () => {
+	const facilities = new InMemoryFacilityRepository([
+		facility("1", "houston", 0),
+		facility("2", "philly", 50),
+	]);
+	const stats = new InMemoryFacilityStatsRepository(COUNTS, [
+		{ facilityId: asEntityId("1"), playedLast28Days: 0, playedPrevious28Days: 100 },
+		{ facilityId: asEntityId("2"), playedLast28Days: 50, playedPrevious28Days: 25 },
+	]);
+	const changes = await makeGetMarketGameInsights({ facilities, stats })();
+	expect(changes).toMatchObject([
+		{ id: "houston", change: -100, changePercent: -100 },
+		{ id: "philly", change: 25, changePercent: 100 },
+	]);
+	const selected = await makeGetMarketGameInsights({ facilities, stats })({ market: "houston" });
+	expect(selected.map((market) => market.id)).toEqual(["houston"]);
+});
+
+it("loads the main report without invoking slow or failing insight analytics", async () => {
+	const facilities = new InMemoryFacilityRepository([facility("1", "houston", 20)]);
+	const stats = new InMemoryFacilityStatsRepository(COUNTS);
+	const comparisons = vi
+		.spyOn(stats, "getGameComparisons")
+		.mockImplementation(() => new Promise(() => undefined));
+	const result = await makeGetMarketSummary({ facilities, stats })();
+	expect(result.stats.playedLast28Days).toBe(212);
+	expect(comparisons).not.toHaveBeenCalled();
+});
+it("validates insight scope before requesting comparisons", async () => {
+	const facilities = new InMemoryFacilityRepository([facility("1", "houston", 20)]);
+	const stats = new InMemoryFacilityStatsRepository(COUNTS);
+	const comparisons = vi.spyOn(stats, "getGameComparisons");
+	const insights = makeGetMarketGameInsights({ facilities, stats });
+	await expect(insights({ market: " " })).rejects.toBeInstanceOf(InvalidRequestError);
+	await expect(insights({ market: "unknown" })).rejects.toBeInstanceOf(NotFoundError);
+	expect(comparisons).not.toHaveBeenCalled();
 });

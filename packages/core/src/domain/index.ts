@@ -17,9 +17,10 @@ export type {
 	MarketProps,
 } from "@core/domain/entities/market/market.types";
 export { DomainError, ValidationError } from "@core/domain/shared/domain-error";
-export { addDays, easternDay, weekStartOf } from "@core/domain/shared/eastern-calendar";
+export { addDays, easternDay } from "@core/domain/shared/eastern-calendar";
 export { hasEmailDomain } from "@core/domain/shared/email-domain";
 export type { GeoPoint } from "@core/domain/shared/geo-point.types";
 export { guard } from "@core/domain/shared/guard";
 export { asEntityId } from "@core/domain/shared/id";
 export type { EntityId } from "@core/domain/shared/id.types";
+export { lastCompletedWeekStart, weekEndOf, weekStartOf } from "@core/domain/shared/week";

@@ -7,7 +7,10 @@ import { apiClient } from "@/infrastructure/api/client";
 export const marketSummaryQueryKey = (marketId: string | null = null) =>
 	["market-summary", "reservations", marketId ?? "all"] as const;
 
-export function marketSummaryPath(resource: "" | "/players", marketId: string | null) {
+export function marketSummaryPath(
+	resource: "" | "/players" | "/insights",
+	marketId: string | null,
+) {
 	const query = marketId === null ? "" : `?market=${encodeURIComponent(marketId)}`;
 	return `/api/v1/market-summary${resource}${query}`;
 }

@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
+import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
 import {
 	marketPlayerStatsQueryKey,
 	useMarketPlayerStats,
@@ -73,7 +74,22 @@ describe("market summary hooks", () => {
 
 		renderHook(() => useMarketSummary(null, false), { wrapper: Wrapper });
 		renderHook(() => useMarketPlayerStats(null, false), { wrapper: Wrapper });
+		renderHook(() => useMarketGameInsights(null, false), { wrapper: Wrapper });
 
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
+});
+
+it("loads market insights separately and caches them by scope", async () => {
+	const fetchMock = stubFetch([]);
+	const { Wrapper } = createQueryWrapper();
+	const first = renderHook(() => useMarketGameInsights("philly & co", true), { wrapper: Wrapper });
+	await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+	first.unmount();
+	renderHook(() => useMarketGameInsights("philly & co", true), { wrapper: Wrapper });
+	expect(fetchMock).toHaveBeenCalledOnce();
+	expect(fetchMock.mock.calls[0]?.[0]).toBe(
+		"/api/v1/market-summary/insights?market=philly%20%26%20co",
+	);
+	vi.unstubAllGlobals();
 });

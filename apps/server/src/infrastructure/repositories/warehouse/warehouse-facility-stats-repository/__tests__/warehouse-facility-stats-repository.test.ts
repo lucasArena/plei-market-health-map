@@ -47,6 +47,21 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("dim_player");
 	});
 
+	it("buckets weekly activity into completed Monday to Sunday weeks", () => {
+		// Postgres date_trunc('week') starts weeks on Monday.
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"date_trunc('week', current_date)::date as this_week",
+		);
+		// A Sunday game falls before week_start + 7 and a Monday game starts the next week.
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"g.game_date >= w.week_start and g.game_date < w.week_start + 7",
+		);
+		// The last week is the one before this_week, so the week in progress is left out.
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"generate_series(b.this_week - 28, b.this_week - 7, interval '7 days')",
+		);
+	});
+
 	it("queries current and previous 28-day player analytics separately", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");
@@ -119,5 +134,20 @@ describe("WarehouseFacilityStatsRepository", () => {
 		await expect(
 			new WarehouseFacilityStatsRepository({ query }).getPlayerStats(["889" as never]),
 		).rejects.toThrow("No player stats row returned for facility 889.");
+	});
+});
+
+describe("facility game comparison batch", () => {
+	it("reads both complete periods in one parameterized query", async () => {
+		const query = vi.fn().mockResolvedValue({
+			rows: [{ location_id: 889, played_last_28_days: "30", played_previous_28_days: "50" }],
+		});
+		const result = await new WarehouseFacilityStatsRepository({ query }).getGameComparisons([
+			"889" as never,
+		]);
+		expect(result).toEqual([{ facilityId: "889", playedLast28Days: 30, playedPrevious28Days: 50 }]);
+		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [[889]]);
+		expect(query.mock.calls[0]?.[0]).toContain("r.confirmed and r.status <> 'cancelled'");
+		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.this_week");
 	});
 });

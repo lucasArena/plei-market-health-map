@@ -40,6 +40,7 @@ import type { MapScope } from "@/presentation/components/providers/MapScopeProvi
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityPlayerStats } from "@/presentation/hooks/use-facility/use-facility-player-stats";
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
+import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
 import { useMarketPlayerStats } from "@/presentation/hooks/use-market/use-market-player-stats";
 import { useMarketSummary } from "@/presentation/hooks/use-market/use-market-summary";
 
@@ -93,7 +94,43 @@ export function buildMarketSummaryText(
 	detailMessages: DetailMessages,
 	formatters: DetailFormatters,
 	summaryNone: string = messages.summaryNone,
+	isSingleMarket = false,
 ): string | null {
+	const markets = summary.gameChanges ?? [];
+	const changes = isSingleMarket ? markets.flatMap((market) => market.facilities) : markets;
+	const declines = changes
+		.filter((item) => item.change < 0)
+		.sort((a, b) => a.change - b.change || a.name.localeCompare(b.name))
+		.slice(0, 2);
+	const increases = changes
+		.filter((item) => item.change > 0)
+		.sort((a, b) => b.change - a.change || a.name.localeCompare(b.name))
+		.slice(0, 2);
+	const selected = [...declines, ...increases];
+	if (selected.length > 0) {
+		const totalChange = summary.stats.playedLast28Days - summary.stats.playedPrevious28Days;
+		const overall = formatMessage(messages.overallGameChange, {
+			change: formatters.number.format(totalChange),
+			previous: formatters.number.format(summary.stats.playedPrevious28Days),
+			current: formatters.number.format(summary.stats.playedLast28Days),
+		});
+		const insights = selected.map((item) =>
+			formatMessage(messages.marketGameInsight, {
+				name: item.name,
+				direction: item.change < 0 ? messages.gamesDeclined : messages.gamesIncreased,
+				comparison: formatMessage(messages.gameChange, {
+					previous: formatters.number.format(item.playedPrevious28Days),
+					current: formatters.number.format(item.playedLast28Days),
+					percent:
+						item.changePercent === null
+							? messages.noBaseline
+							: `${formatters.decimal.format(item.changePercent)}%`,
+				}),
+				change: formatters.number.format(item.change),
+			}),
+		);
+		return [overall, ...insights].join("\n\n");
+	}
 	if (!playerStats) return null;
 	const facilities = formatters.number.format(summary.scope.activeFacilityCount);
 	return buildSummary(
@@ -187,8 +224,9 @@ export function buildMarketSummaryViewModel(
 			detailMessages,
 			formatters,
 			isSingleMarket ? messages.marketSummaryNone : messages.summaryNone,
+			isSingleMarket,
 		),
-		scopeTiles: isSingleMarket ? scopeTiles.filter((tile) => tile.key !== "markets") : scopeTiles,
+		scopeTiles: isSingleMarket ? [] : scopeTiles,
 		topMarkets: isSingleMarket
 			? null
 			: buildMarketRows(summary.topMarkets, messages, detailMessages, formatters),
@@ -267,6 +305,7 @@ export function useMarketSummaryPanelRules({
 	const marketId = scope.kind === "market" ? scope.id : null;
 	const isMarketScope = facilityId === null;
 	const summaryQuery = useMarketSummary(marketId, isMarketScope);
+	const insightsQuery = useMarketGameInsights(marketId, isMarketScope && !!summaryQuery.data);
 	const marketPlayerQuery = useMarketPlayerStats(marketId, isMarketScope);
 	const facilityQuery = useFacilityReservationStats(facilityId);
 	const facilityPlayerQuery = useFacilityPlayerStats(facilityId);
@@ -290,7 +329,7 @@ export function useMarketSummaryPanelRules({
 		}
 		return summary
 			? buildMarketSummaryViewModel(
-					summary,
+					{ ...summary, gameChanges: insightsQuery.data },
 					playerStats,
 					playerQuery.isPending,
 					messages.marketSummary,
@@ -304,20 +343,37 @@ export function useMarketSummaryPanelRules({
 		formatters,
 		isMarketScope,
 		marketId,
+		insightsQuery.data,
 		messages.facilityDetail,
 		messages.marketSummary,
 		playerQuery.isPending,
 		playerStats,
 		summary,
 	]);
+	const insightsView =
+		isMarketScope && insightsQuery.isPending && view ? { ...view, summary: null } : view;
 	const heading = useMemo(
 		() => buildScopeHeading(scope, messages.marketSummary),
 		[scope, messages.marketSummary],
 	);
 	const aiContext = useMemo(() => {
+		if (isMarketScope && (insightsQuery.isPending || insightsQuery.isError)) return null;
 		const subject = buildMarketAiSubject(scope, heading, summary, facilityReport, playerStats);
-		return subject ? aiSummaryContextFor(subject, locale) : null;
-	}, [scope, heading, summary, facilityReport, playerStats, locale]);
+		return subject
+			? aiSummaryContextFor({ ...subject, insightFacts: view?.summary ?? undefined }, locale)
+			: null;
+	}, [
+		scope,
+		heading,
+		summary,
+		facilityReport,
+		playerStats,
+		insightsQuery.isPending,
+		insightsQuery.isError,
+		view?.summary,
+		isMarketScope,
+		locale,
+	]);
 	const status = resolveDetailStatus(reportQuery.isPending, reportQuery.isError);
 
 	const handleAnimationEnd = useCallback(() => {
@@ -338,10 +394,14 @@ export function useMarketSummaryPanelRules({
 		handleAnimationEnd,
 		heading,
 		isClosing,
-		isSummaryPending: status === "ready" && playerQuery.isPending,
+		isSummaryPending:
+			status === "ready" &&
+			((isMarketScope && insightsQuery.isPending) ||
+				(!insightsView?.summary && playerQuery.isPending)),
+		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
 		status,
-		view,
+		view: insightsView,
 	};
 }

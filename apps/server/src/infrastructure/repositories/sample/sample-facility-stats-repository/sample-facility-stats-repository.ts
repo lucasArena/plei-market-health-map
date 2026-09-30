@@ -1,27 +1,18 @@
 import type {
 	Clock,
+	FacilityGameComparison,
 	FacilityPlayerStats,
 	FacilityReservationStats,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@market-health-map/core/application";
-import type { EntityId } from "@market-health-map/core/domain";
+import { type EntityId, lastCompletedWeekStart } from "@market-health-map/core/domain";
 import { createSeededRandom } from "@server/infrastructure/repositories/sample/seeded-random/seeded-random";
 
 const DAY_MS = 86_400_000;
 
 function isoDate(date: Date): string {
 	return date.toISOString().slice(0, 10);
-}
-
-export function lastWeekStart(now: Date): string {
-	const daysSinceMonday = (now.getUTCDay() + 6) % 7;
-	const monday = Date.UTC(
-		now.getUTCFullYear(),
-		now.getUTCMonth(),
-		now.getUTCDate() - daysSinceMonday,
-	);
-	return isoDate(new Date(monday - 7 * DAY_MS));
 }
 
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
@@ -35,7 +26,54 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
 			...reservationStats
 		} = this.makeCounts(facilityIds);
-		return reservationStats;
+		const members = facilityIds.map((id) => this.makeCounts([id]));
+		return {
+			...reservationStats,
+			playedLastWeek: members.reduce((total, member) => total + member.playedLastWeek, 0),
+			playedPreviousWeek: members.reduce((total, member) => total + member.playedPreviousWeek, 0),
+			playedLast28Days: members.reduce((total, member) => total + member.playedLast28Days, 0),
+			playedPrevious28Days: members.reduce(
+				(total, member) => total + member.playedPrevious28Days,
+				0,
+			),
+			scheduledLast28Days: members.reduce((total, member) => total + member.scheduledLast28Days, 0),
+			scheduledPrevious28Days: members.reduce(
+				(total, member) => total + member.scheduledPrevious28Days,
+				0,
+			),
+			scheduledLastWeek: members.reduce((total, member) => total + member.scheduledLastWeek, 0),
+			cancelledLastWeek: members.reduce((total, member) => total + member.cancelledLastWeek, 0),
+			upcomingNextSevenDays: members.reduce(
+				(total, member) => total + member.upcomingNextSevenDays,
+				0,
+			),
+			weeklyActivity: reservationStats.weeklyActivity.map((week, index) => ({
+				...week,
+				gamesPlayed: members.reduce(
+					(total, member) => total + (member.weeklyActivity[index]?.gamesPlayed ?? 0),
+					0,
+				),
+			})),
+			popularTimes: reservationStats.popularTimes.map((cell, index) => ({
+				...cell,
+				gamesPlayed: members.reduce(
+					(total, member) => total + (member.popularTimes[index]?.gamesPlayed ?? 0),
+					0,
+				),
+			})),
+			lastPlayedDate: members.length > 0 ? reservationStats.lastPlayedDate : null,
+		};
+	}
+
+	async getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+		return facilityIds.map((facilityId) => {
+			const counts = this.makeCounts([facilityId]);
+			return {
+				facilityId,
+				playedLast28Days: counts.playedLast28Days,
+				playedPrevious28Days: counts.playedPrevious28Days,
+			};
+		});
 	}
 
 	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
@@ -71,10 +109,11 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		const activatedPlayersPrevious28Days = Math.round(
 			playedPrevious28Days * (0.25 + random() * 0.3),
 		);
-		const start = new Date(`${lastWeekStart(now)}T00:00:00Z`);
+		const weekStart = lastCompletedWeekStart(now);
+		const start = new Date(`${weekStart}T00:00:00Z`);
 		start.setUTCDate(start.getUTCDate() - 21);
 		return {
-			weekStart: lastWeekStart(now),
+			weekStart,
 			playedLastWeek,
 			playedPreviousWeek,
 			playedLast28Days,

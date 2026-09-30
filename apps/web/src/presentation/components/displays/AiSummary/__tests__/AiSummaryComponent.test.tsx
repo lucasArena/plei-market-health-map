@@ -71,7 +71,7 @@ describe("AiSummary", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 		renderSummary();
 
-		expect(screen.getByText("AI summary")).toBeInTheDocument();
+		expect(screen.getByText("Key insights")).toBeInTheDocument();
 		expect(screen.getByTestId("ai-summary-icon")).toBeInTheDocument();
 	});
 });

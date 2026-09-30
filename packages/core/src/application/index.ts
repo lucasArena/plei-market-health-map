@@ -63,7 +63,9 @@ export type {
 } from "@core/application/dtos/login-event-dto.types";
 export { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
 export type {
+	FacilityGameChangeView,
 	GetMarketSummaryInput,
+	MarketGameChangeView,
 	MarketPlayerStatsView,
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
@@ -111,6 +113,8 @@ export type { AppSessionHeatmapRepository } from "@core/application/repositories
 export type { DailyActivityRepository } from "@core/application/repositories/daily-activity-repository.types";
 export type { FacilityRepository } from "@core/application/repositories/facility-repository.types";
 export type {
+	FacilityGameComparison,
+	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
 	FacilityPlayerStatsRepository,
 	FacilityReservationStats,
@@ -123,6 +127,7 @@ export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
 export { makeGetFacilityReservationStats } from "@core/application/services/get-facility-reservation-stats";
+export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";

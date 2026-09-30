@@ -118,7 +118,10 @@ reads the last played date separately. The slower player query reads qualifying 
 `fct_games_opened` for the same two 28-day periods. `toFacilityStatsView` can still merge both
 slices for callers that need the complete detail. The panel shows four scorecards, a weekly activity
 chart, and a popular-times heatmap; every chart point and heatmap cell is available by hover and
-keyboard focus. All copy lives in the `facilityDetail` i18n block.
+keyboard focus. The weekly activity chart shows the last four completed Monday to Sunday weeks
+(the SQL buckets them from `date_trunc('week', current_date)` and leaves out the week in
+progress). Each point is labeled by the Sunday that ends its week (`weekEndOf` in core), so
+Mon Sep 21 to Sun Sep 27 shows as Sep 27. All copy lives in the `facilityDetail` i18n block.
 
 ### AI summary (in the browser)
 
@@ -174,7 +177,7 @@ AppMetricsScreen  ->  GET /api/v1/metrics, GET /api/v1/metrics/people?page=   (m
 
 It answers `201 { data: { identifier, url } }`. Errors use the usual envelope: `400 VALIDATION_ERROR` (with Zod `details`), `413 PAYLOAD_TOO_LARGE` when the request is over 4 MB, `502 ISSUE_TRACKER_FAILED` when Linear fails, and `503 FEEDBACK_NOT_CONFIGURED` when there are no Linear credentials.
 
-`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue. The title is "Bug Report from <name>" for bugs and "Feedback from <name>" for improvements, using the session name. It uses the email when there is no name, and just "Bug Report" or "Feedback" when there is neither. The markdown description holds the full message, the submitter's name and email from the session ("Submitted by"), the page and view, an ISO timestamp, and every screenshot inline as `![](assetUrl)`. `LinearIssueTracker` (`apps/server/src/infrastructure/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and then calls `issueCreate`. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
+`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue. The title is "Bug Report from <name>" for bugs and "Feedback from <name>" for improvements, using the session name. It uses the email when there is no name, and just "Bug Report" or "Feedback" when there is neither. The markdown description holds the full message, the submitter's name and email from the session ("Submitted by"), the page and view, an ISO timestamp, and every screenshot inline as `![](assetUrl)`. `LinearIssueTracker` (`apps/server/src/infrastructure/providers/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and then calls `issueCreate`. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
 
 `container.ts` picks the adapter from the environment:
 
@@ -200,3 +203,5 @@ Dry-run wins over real credentials so local UI work never files real tickets. Th
 The locale comes from `Accept-Language` (`getRequestLocale`), falling back to `en`. The root layout passes the catalog to `MessagesProvider`.
 
 Serwist builds `public/sw.js` from `src/app/sw.ts`, which precaches the build and falls back to `/~offline` for document requests. `src/app/manifest.ts` produces the web manifest.
+
+Key insights prioritize period comparisons and scoped game contributions over scorecard recaps. The app's markets are warehouse regions: All markets names the largest market increases and declines by absolute games; a selected market names facility contributors, including opposing changes. Counts compare the same two completed 28-day periods, and a zero baseline has no percentage change. Contributor analytics load separately at `/api/v1/market-summary/insights`, after the main report; its loading or failure cannot block scorecards and charts. Browser AI generation stays in the child component and WebLLM worker, grounded in the computed contributor facts. Shared `KeyInsights` displays the sparkle icon, a plain overall-change introduction, contributor bullets, and 14px body text. Active-facility and active-market scope cards appear only in All markets. The available history does not establish statistical anomalies or seasonality.

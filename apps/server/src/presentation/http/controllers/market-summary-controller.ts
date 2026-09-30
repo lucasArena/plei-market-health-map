@@ -7,6 +7,9 @@ export function marketSummaryController(services: () => ApiServices) {
 		.get("/", async (context) =>
 			ok(await services().getMarketSummary({ market: context.req.query("market") })),
 		)
+		.get("/insights", async (context) =>
+			ok(await services().getMarketGameInsights({ market: context.req.query("market") })),
+		)
 		.get("/players", async (context) =>
 			ok(await services().getMarketPlayerStats({ market: context.req.query("market") })),
 		);

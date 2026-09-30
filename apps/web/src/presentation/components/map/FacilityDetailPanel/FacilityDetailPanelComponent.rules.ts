@@ -7,6 +7,7 @@ import type {
 	FacilityReservationStatsView,
 	FacilityStatsView,
 } from "@market-health-map/core/application";
+import { weekEndOf } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
@@ -64,21 +65,40 @@ export function buildSummary(
 	formatters: DetailFormatters,
 ): string {
 	if (stats.playedLast28Days === 0) return messages.summaryNone;
-	const busiest = stats.popularTimes.reduce(
-		(current, cell) => (cell.gamesPlayed > current.gamesPlayed ? cell : current),
-		{ dayOfWeek: 1, timePeriod: 0, gamesPlayed: 0 },
-	);
-	const confirmation =
-		stats.confirmationRate === null
-			? messages.unavailable
-			: `${formatters.decimal.format(stats.confirmationRate)}%`;
-	return formatMessage(messages.summaryActivity, {
-		games: formatGames(stats.playedLast28Days, messages, formatters),
-		activated: formatters.number.format(stats.activatedPlayersLast28Days),
-		confirmation,
-		day: messages.dayLabels[busiest.dayOfWeek - 1] ?? messages.dayLabels[0] ?? "",
-		period: messages.timePeriodLabels[busiest.timePeriod] ?? messages.timePeriodLabels[0] ?? "",
-	});
+	const signals = [
+		{
+			label: messages.gamesPlayed,
+			change: stats.playedPeriodChangePercent,
+			previous: stats.playedPrevious28Days,
+			current: stats.playedLast28Days,
+		},
+		{
+			label: messages.uniquePlayers,
+			change: stats.uniquePlayersPeriodChangePercent,
+			previous: stats.uniquePlayersPrevious28Days,
+			current: stats.uniquePlayersLast28Days,
+		},
+		{
+			label: messages.activatedPlayers,
+			change: stats.activatedPlayersPeriodChangePercent,
+			previous: stats.activatedPlayersPrevious28Days,
+			current: stats.activatedPlayersLast28Days,
+		},
+	]
+		.filter((signal) => signal.change !== null && signal.change !== 0)
+		.sort((left, right) => Math.abs(right.change ?? 0) - Math.abs(left.change ?? 0))
+		.slice(0, 2);
+	if (signals.length === 0) return messages.insightsNone;
+	return signals
+		.map((signal) =>
+			formatMessage(messages.insightChange, {
+				metric: signal.label,
+				change: formatters.decimal.format(signal.change ?? 0),
+				previous: formatters.number.format(signal.previous),
+				current: formatters.number.format(signal.current),
+			}),
+		)
+		.join(" ");
 }
 
 function periodComparison(
@@ -237,7 +257,7 @@ export function buildWeeklyActivity(
 	formatters: DetailFormatters,
 ) {
 	return stats.weeklyActivity.map((point) => {
-		const label = formatters.week.format(localDate(point.weekStart));
+		const label = formatters.week.format(localDate(weekEndOf(point.weekStart)));
 		const games = formatGames(point.gamesPlayed, messages, formatters);
 		return {
 			key: point.weekStart,
