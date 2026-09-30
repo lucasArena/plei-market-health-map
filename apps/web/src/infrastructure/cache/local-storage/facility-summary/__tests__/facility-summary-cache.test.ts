@@ -11,7 +11,7 @@ describe("FacilitySummaryCache", () => {
 	it("keys summaries by facility, week and locale and keeps them in localStorage", () => {
 		const cache = new FacilitySummaryCache();
 		const key = cache.keyFor(FACILITY_DETAIL, "en");
-		expect(key).toBe("889:2026-09-21:en");
+		expect(key).toBe("v3:889:2026-09-21:en");
 		expect(cache.read(key)).toBeNull();
 
 		cache.write(key, "Busy week.");
@@ -23,20 +23,20 @@ describe("FacilitySummaryCache", () => {
 	it("replaces an older week's summary for the same facility and locale", () => {
 		const cache = new FacilitySummaryCache();
 		localStorage.setItem("unrelated", "keep");
-		cache.write("889:2026-09-14:en", "Old week.");
-		cache.write("889:2026-09-14:pt-BR", "Semana antiga.");
-		cache.write("890:2026-09-14:en", "Other facility.");
+		cache.write("v3:889:2026-09-14:en", "Old week.");
+		cache.write("v3:889:2026-09-14:pt-BR", "Semana antiga.");
+		cache.write("v3:890:2026-09-14:en", "Other facility.");
 
-		cache.write("889:2026-09-21:en", "New week.");
+		cache.write("v3:889:2026-09-21:en", "New week.");
 
-		expect(cache.read("889:2026-09-14:en")).toBeNull();
-		expect(cache.read("889:2026-09-14:pt-BR")).toBe("Semana antiga.");
-		expect(cache.read("890:2026-09-14:en")).toBe("Other facility.");
-		expect(cache.read("889:2026-09-21:en")).toBe("New week.");
+		expect(cache.read("v3:889:2026-09-14:en")).toBeNull();
+		expect(cache.read("v3:889:2026-09-14:pt-BR")).toBe("Semana antiga.");
+		expect(cache.read("v3:890:2026-09-14:en")).toBe("Other facility.");
+		expect(cache.read("v3:889:2026-09-21:en")).toBe("New week.");
 
 		cache.clear();
 
-		expect(cache.read("889:2026-09-21:en")).toBeNull();
+		expect(cache.read("v3:889:2026-09-21:en")).toBeNull();
 		expect(localStorage.getItem("unrelated")).toBe("keep");
 	});
 

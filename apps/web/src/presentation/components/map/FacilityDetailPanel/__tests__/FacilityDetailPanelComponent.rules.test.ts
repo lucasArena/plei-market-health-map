@@ -4,6 +4,7 @@ import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
 import {
 	buildDetailViewModel,
+	buildPopularTimes,
 	buildSummary,
 	buildTiles,
 	buildWeeklyActivity,
@@ -182,6 +183,22 @@ describe("buildWeeklyActivity", () => {
 	});
 });
 
+describe("buildPopularTimes", () => {
+	it("fills the complete day and time grid", () => {
+		const popularTimes = buildPopularTimes(STATS, messages, formatters);
+		expect(popularTimes).toHaveLength(28);
+		expect(popularTimes.find((cell) => cell.key === "6-2")).toMatchObject({
+			value: 9,
+			intensity: 4,
+			tooltip: "Sat, PM: 9 games",
+		});
+		expect(popularTimes.find((cell) => cell.key === "1-0")).toMatchObject({
+			value: 0,
+			intensity: 0,
+		});
+	});
+});
+
 describe("buildDetailViewModel", () => {
 	it("labels the last game", () => {
 		const view = buildDetailViewModel(DETAIL, messages, formatters);
@@ -193,6 +210,7 @@ describe("buildDetailViewModel", () => {
 		});
 		expect(view.tiles).toHaveLength(4);
 		expect(view.weeklyActivity).toHaveLength(4);
+		expect(view.popularTimes).toHaveLength(28);
 	});
 
 	it("says when nothing was ever played", () => {

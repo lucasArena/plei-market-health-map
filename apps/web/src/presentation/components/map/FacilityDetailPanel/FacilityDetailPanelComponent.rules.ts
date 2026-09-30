@@ -151,6 +151,36 @@ export function buildWeeklyActivity(
 	});
 }
 
+export function buildPopularTimes(
+	stats: FacilityStatsView,
+	messages: DetailMessages,
+	formatters: DetailFormatters,
+) {
+	const maximum = Math.max(1, ...stats.popularTimes.map((cell) => cell.gamesPlayed));
+	return messages.timePeriodLabels.flatMap((periodLabel, timePeriod) =>
+		messages.dayLabels.map((dayLabel, dayIndex) => {
+			const dayOfWeek = dayIndex + 1;
+			const value =
+				stats.popularTimes.find(
+					(cell) => cell.dayOfWeek === dayOfWeek && cell.timePeriod === timePeriod,
+				)?.gamesPlayed ?? 0;
+			const games = formatGames(value, messages, formatters);
+			return {
+				key: `${dayOfWeek}-${timePeriod}`,
+				dayLabel,
+				periodLabel,
+				value,
+				tooltip: formatMessage(messages.popularTimeTooltip, {
+					day: dayLabel,
+					period: periodLabel,
+					games,
+				}),
+				intensity: value === 0 ? 0 : Math.max(1, Math.ceil((value / maximum) * 4)),
+			};
+		}),
+	);
+}
+
 export function buildDetailViewModel(
 	detail: FacilityDetailView,
 	messages: DetailMessages,
@@ -164,6 +194,9 @@ export function buildDetailViewModel(
 		summary: buildSummary(stats, messages, formatters),
 		tiles: buildTiles(stats, messages, formatters),
 		weeklyActivity: buildWeeklyActivity(stats, messages, formatters),
+		popularTimes: buildPopularTimes(stats, messages, formatters),
+		dayLabels: [...messages.dayLabels],
+		timePeriodLabels: [...messages.timePeriodLabels],
 		lastPlayedLabel: stats.lastPlayedDate
 			? formatMessage(messages.lastPlayed, {
 					date: formatters.dayWithYear.format(localDate(stats.lastPlayedDate)),

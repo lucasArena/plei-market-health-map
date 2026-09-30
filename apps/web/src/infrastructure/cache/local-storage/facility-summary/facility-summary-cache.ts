@@ -15,7 +15,7 @@ export class FacilitySummaryCache {
 	constructor(private readonly resolveStorage: ResolveStorage = browserStorage) {}
 
 	keyFor({ facility, stats }: FacilityDetailView, locale: string): string {
-		return `${facility.id}:${stats.weekStart}:${locale}`;
+		return `v3:${facility.id}:${stats.weekStart}:${locale}`;
 	}
 
 	read(key: string): string | null {
@@ -48,10 +48,10 @@ export class FacilitySummaryCache {
 	}
 
 	private removeOtherWeeks(storage: Storage, key: string): void {
-		const [facilityId, , locale] = key.split(":");
+		const [, facilityId, , locale] = key.split(":");
 		const current = this.storageKey(key);
 		for (const storageKey of this.ownKeys(storage)) {
-			const [otherFacility, , otherLocale] = storageKey
+			const [, otherFacility, , otherLocale] = storageKey
 				.slice(FACILITY_SUMMARY_STORAGE_PREFIX.length)
 				.split(":");
 			if (storageKey !== current && otherFacility === facilityId && otherLocale === locale) {
