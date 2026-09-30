@@ -1,6 +1,7 @@
 "use client";
 
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
+import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
@@ -68,6 +69,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		heading,
 		isClosing,
 		isSummaryPending,
+		isInsightsFailed,
 		messages,
 		onClose,
 		status,
@@ -103,10 +105,14 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							<h2 className="truncate text-base font-semibold">{heading.title}</h2>
 							<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
 						</header>
-						{view.summary && aiContext && (
-							<div className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
-								<AiSummary context={aiContext} fallback={view.summary} />
-							</div>
+						{view.summary && (
+							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+								{aiContext ? (
+									<AiSummary context={aiContext} fallback={view.summary} introFirst />
+								) : (
+									<KeyInsights title={messages.keyInsights} text={view.summary} introFirst />
+								)}
+							</section>
 						)}
 						{!view.summary && isSummaryPending && (
 							<div
@@ -114,6 +120,11 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 								aria-busy="true"
 								className="h-20 animate-pulse rounded-xl bg-pleiful-moonlight-5"
 							/>
+						)}
+						{isInsightsFailed && (
+							<p role="status" className="text-xs text-muted-foreground">
+								{messages.insightsFailed}
+							</p>
 						)}
 						{view.scopeTiles.length > 0 && (
 							<StatTiles tiles={view.scopeTiles} testIdPrefix="market-scope" />

@@ -2,6 +2,7 @@
 
 import { useAiSummaryRules } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import type { AiSummaryProps } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.types";
+import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 
 export function AiSummary(props: Readonly<AiSummaryProps>) {
 	const { handleGenerate, messages, progressLabel, progressPercent, status, text } =
@@ -12,13 +13,7 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 			className="space-y-2 rounded-xl bg-pleiful-moonlight-5 p-3.5"
 			aria-busy={status === "loading" || status === "generating"}
 		>
-			<p className="flex items-center gap-1.5 text-xs font-semibold text-pleiful-moonlight-70">
-				<svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5 fill-current">
-					<path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9zM5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7z" />
-				</svg>
-				{messages.label}
-			</p>
-			<p className="text-xs leading-relaxed">{text}</p>
+			<KeyInsights title={messages.label} text={text} introFirst={props.introFirst} />
 			{status === "idle" && (
 				<div className="space-y-1">
 					<button

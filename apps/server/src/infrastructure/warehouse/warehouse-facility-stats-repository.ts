@@ -1,14 +1,30 @@
 import type {
+	FacilityGameComparison,
 	FacilityPlayerStats,
 	FacilityReservationStats,
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
 import type {
+	WarehouseFacilityGameComparisonRow,
 	WarehouseFacilityPlayerStatsRow,
 	WarehouseFacilityReservationStatsRow,
 	WarehouseParameterizedQueryable,
 } from "@server/infrastructure/warehouse/warehouse-facility-stats.types";
+
+export const FACILITY_GAME_COMPARISONS_SQL = `
+with bounds as (select date_trunc('week', current_date)::date as this_week)
+select r.location_id,
+ count(distinct r.reservation_id) filter (where r.date_with_time::date >= b.this_week - 28) as played_last_28_days,
+ count(distinct r.reservation_id) filter (where r.date_with_time::date < b.this_week - 28) as played_previous_28_days
+from plei_gold.dim_reservation r
+cross join bounds b
+where r.location_id = any($1::int[])
+ and r.reservation_type = 'OpenReservation'
+ and r.confirmed and r.status <> 'cancelled'
+ and r.date_with_time::date >= b.this_week - 56
+ and r.date_with_time::date < b.this_week
+group by r.location_id`;
 
 export const FACILITY_RESERVATION_STATS_SQL = `
 with bounds as (
@@ -207,6 +223,18 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 			throw new Error(`No reservation stats row returned for facility ${facilityIds.join(", ")}.`);
 		}
 		return toReservationStats(row);
+	}
+
+	async getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+		const { rows } = await this.warehouse.query<WarehouseFacilityGameComparisonRow>(
+			FACILITY_GAME_COMPARISONS_SQL,
+			[facilityIds.map(Number)],
+		);
+		return rows.map((row) => ({
+			facilityId: String(row.location_id) as EntityId,
+			playedLast28Days: Number(row.played_last_28_days),
+			playedPrevious28Days: Number(row.played_previous_28_days),
+		}));
 	}
 
 	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {

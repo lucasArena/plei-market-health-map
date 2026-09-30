@@ -32,8 +32,27 @@ export interface MarketSummaryMarketRankView {
 export interface MarketSummaryView {
 	scope: MarketSummaryScopeView;
 	stats: FacilityReservationStatsView;
+	gameChanges?: MarketGameChangeView[];
 	topFacilities: MarketSummaryFacilityRankView[];
 	topMarkets: MarketSummaryMarketRankView[];
 }
 
 export type MarketPlayerStatsView = FacilityPlayerStatsView;
+
+export interface MarketGameChangeView {
+	id: string;
+	name: string;
+	playedLast28Days: number;
+	playedPrevious28Days: number;
+	change: number;
+	changePercent: number | null;
+	facilities: FacilityGameChangeView[];
+}
+export interface FacilityGameChangeView {
+	id: string;
+	name: string;
+	playedLast28Days: number;
+	playedPrevious28Days: number;
+	change: number;
+	changePercent: number | null;
+}

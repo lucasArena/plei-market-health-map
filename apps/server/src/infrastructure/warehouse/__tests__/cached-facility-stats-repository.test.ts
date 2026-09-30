@@ -27,14 +27,16 @@ function setup() {
 	let now = 0;
 	const getReservationStats = vi.fn().mockResolvedValue(RESERVATION_STATS);
 	const getPlayerStats = vi.fn().mockResolvedValue(PLAYER_STATS);
+	const getGameComparisons = vi.fn().mockResolvedValue([]);
 	const repository = new CachedFacilityStatsRepository(
-		{ getReservationStats, getPlayerStats },
+		{ getReservationStats, getPlayerStats, getGameComparisons },
 		{ now: () => new Date(now) },
 		1000,
 	);
 	return {
 		getReservationStats,
 		getPlayerStats,
+		getGameComparisons,
 		repository,
 		advance: (ms: number) => (now += ms),
 	};
@@ -73,8 +75,9 @@ describe("CachedFacilityStatsRepository", () => {
 	it("uses a five-minute cache by default", async () => {
 		const getReservationStats = vi.fn().mockResolvedValue(RESERVATION_STATS);
 		const getPlayerStats = vi.fn().mockResolvedValue(PLAYER_STATS);
+		const getGameComparisons = vi.fn().mockResolvedValue([]);
 		const repository = new CachedFacilityStatsRepository(
-			{ getReservationStats, getPlayerStats },
+			{ getReservationStats, getPlayerStats, getGameComparisons },
 			{ now: () => new Date(0) },
 		);
 
@@ -82,5 +85,21 @@ describe("CachedFacilityStatsRepository", () => {
 		await repository.getReservationStats(["889" as never]);
 
 		expect(getReservationStats).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("game comparison cache", () => {
+	it("shares pending batches, expires results, and retries failed requests", async () => {
+		const { repository, getGameComparisons, advance } = setup();
+		await repository.getGameComparisons(["1" as never, "2" as never]);
+		await repository.getGameComparisons(["2" as never, "1" as never]);
+		expect(getGameComparisons).toHaveBeenCalledTimes(1);
+		advance(1000);
+		getGameComparisons.mockRejectedValueOnce(new Error("unavailable"));
+		await expect(repository.getGameComparisons(["1" as never, "2" as never])).rejects.toThrow(
+			"unavailable",
+		);
+		await expect(repository.getGameComparisons(["1" as never, "2" as never])).resolves.toEqual([]);
+		expect(getGameComparisons).toHaveBeenCalledTimes(3);
 	});
 });

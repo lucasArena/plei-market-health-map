@@ -8,6 +8,7 @@ export interface AiSummaryContext {
 export interface AiSummaryProps {
 	context: AiSummaryContext;
 	fallback: string;
+	introFirst?: boolean;
 }
 
 export type AiSummaryStatus =

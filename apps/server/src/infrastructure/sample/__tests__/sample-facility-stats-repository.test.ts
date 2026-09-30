@@ -31,3 +31,31 @@ describe("lastWeekStart", () => {
 		expect(lastWeekStart(new Date("2026-10-04T23:00:00Z"))).toBe("2026-09-21");
 	});
 });
+
+describe("sample game comparisons", () => {
+	it("returns both period counts per facility", async () => {
+		const ids = ["austin-facility-1" as never];
+		const comparisons = await repository.getGameComparisons(ids);
+		const stats = await repository.getReservationStats(ids);
+		expect(comparisons).toEqual([
+			{
+				facilityId: ids[0],
+				playedLast28Days: stats.playedLast28Days,
+				playedPrevious28Days: stats.playedPrevious28Days,
+			},
+		]);
+	});
+});
+
+it("reconciles sample market totals to facility contributions", async () => {
+	const ids = ["one" as never, "two" as never];
+	const comparisons = await repository.getGameComparisons(ids);
+	const stats = await repository.getReservationStats(ids);
+	expect(stats.playedLast28Days).toBe(
+		comparisons.reduce((sum, row) => sum + row.playedLast28Days, 0),
+	);
+	expect(stats.playedPrevious28Days).toBe(
+		comparisons.reduce((sum, row) => sum + row.playedPrevious28Days, 0),
+	);
+	expect((await repository.getReservationStats([])).playedLast28Days).toBe(0);
+});

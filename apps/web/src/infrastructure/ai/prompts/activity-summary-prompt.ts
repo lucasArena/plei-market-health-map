@@ -4,9 +4,7 @@ import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activit
 const DAY_MS = 86_400_000;
 const DEFAULT_LANGUAGE = "English";
 const DEFAULT_EXAMPLE_SUMMARY =
-	"Riverside Arena played 86 games with an 84% confirmation rate, serving 126 players including 24 newly activated players; Saturday evenings were busiest.";
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const TIME_PERIOD_NAMES = ["mornings", "midday", "evenings", "late evenings"];
+	"- New player activation fell 29% versus the previous 28 days, while games fell 10%.\n- Activation is weakening faster than game activity; investigate the gap.";
 
 export class ActivitySummaryPrompt {
 	private static readonly LANGUAGE_BY_LOCALE: Record<string, string> = {
@@ -20,13 +18,14 @@ export class ActivitySummaryPrompt {
 		"Confirmation rate: 84%.",
 		"Unique players: 126.",
 		"Newly activated players: 24.",
-		"Busiest time: Saturday evenings.",
+		"Games change versus previous 28 days: -10% (96 to 86).",
+		"Activated players change versus previous 28 days: -29% (34 to 24).",
 	];
 
 	private static readonly EXAMPLE_SUMMARY_BY_LOCALE: Record<string, string> = {
 		en: DEFAULT_EXAMPLE_SUMMARY,
 		"pt-BR":
-			"A Riverside Arena teve 86 jogos, taxa de confirmação de 84% e 126 jogadores, incluindo 24 novos ativados; as noites de sábado foram o período mais movimentado.",
+			"- A ativação de novos jogadores caiu 29% em relação aos 28 dias anteriores, enquanto os jogos caíram 10%.\n- A ativação está enfraquecendo mais rapidamente; investigue essa diferença.",
 	};
 
 	build(subject: ActivitySummarySubject, locale: string): LlmMessage[] {
@@ -37,13 +36,13 @@ export class ActivitySummaryPrompt {
 			{ role: "assistant", content: this.exampleSummaryFor(locale) },
 			{
 				role: "user",
-				content: `${this.factsMessage(this.factsFor(subject, locale))}\n\nWrite the summary in ${language}.`,
+				content: `${this.factsMessage(this.factsFor(subject, locale))}\n\nWrite the key insights in ${language}.`,
 			},
 		];
 	}
 
 	private instructions(language: string): string {
-		return `You summarize pickup soccer activity over the last 28 days for a facility, a market or all Plei markets, for Plei's operations team. Write one concise sentence in ${language} covering the most useful game, confirmation, player and timing signals. Use only the facts given and never add causes. No lists, headings or markdown.`;
+		return `Identify the most useful signals in the last 28 days for Plei's operations team. Write 2–3 short bullet points in ${language}. Lead with the strongest change, then explain a divergence between activation, players, games or confirmation when supported. Include the comparison period and supporting numbers, not a recap of scorecards or busiest times. Suggest what to investigate without inventing causes. A zero previous count means no percentage baseline, not infinite growth. Small counts are weak evidence. Four weekly points and one previous period cannot establish historical normality, seasonality or a statistical anomaly; never claim unusual or more-than-normal activity. If changes are flat or unavailable, say there is no clear signal in the available comparisons. Use only supplied facts. For markets, write a plain overall-change opening paragraph, followed by contributor bullets. All markets names markets only; a selected market names facilities only. Preserve the supplied contributors and their counts. Use one bullet per line, starting with "- ". No headings or other markdown.`;
 	}
 
 	private subjectFact({ kind, name }: ActivitySummarySubject): string {
@@ -65,10 +64,6 @@ export class ActivitySummaryPrompt {
 		const { stats } = subject;
 		const start = this.formatDay(stats.weekStart, -21, locale, false);
 		const end = this.formatDay(stats.weekStart, 6, locale, true);
-		const busiest = stats.popularTimes.reduce(
-			(current, cell) => (cell.gamesPlayed > current.gamesPlayed ? cell : current),
-			{ dayOfWeek: 1, timePeriod: 0, gamesPlayed: 0 },
-		);
 		const confirmationRate =
 			stats.confirmationRate === null ? "unavailable" : `${stats.confirmationRate}%`;
 		const periodChange =
@@ -78,12 +73,21 @@ export class ActivitySummaryPrompt {
 		return [
 			this.subjectFact(subject),
 			...this.scopeFacts(subject),
+			...(subject.insightFacts
+				? [
+						`Verified key insights (preserve named contributors and counts): ${subject.insightFacts}`,
+					]
+				: []),
 			`Pickup games played in the last 28 days (${start} to ${end}): ${stats.playedLast28Days}.`,
 			`Confirmation rate: ${confirmationRate}.`,
 			`Unique players: ${stats.uniquePlayersLast28Days}.`,
 			`Activated players: ${stats.activatedPlayersLast28Days}.`,
 			`Change versus the previous 28 days: ${periodChange}.`,
-			`Busiest time: ${DAY_NAMES[busiest.dayOfWeek - 1]} ${TIME_PERIOD_NAMES[busiest.timePeriod]}.`,
+			`Games comparison: ${stats.playedPrevious28Days} to ${stats.playedLast28Days}.`,
+			`Unique players comparison: ${stats.uniquePlayersPrevious28Days} to ${stats.uniquePlayersLast28Days}; change: ${stats.uniquePlayersPeriodChangePercent ?? "unavailable"}%.`,
+			`Activated players comparison: ${stats.activatedPlayersPrevious28Days} to ${stats.activatedPlayersLast28Days}; change: ${stats.activatedPlayersPeriodChangePercent ?? "unavailable"}%.`,
+			`Confirmation rate change: ${stats.confirmationRateChangePoints ?? "unavailable"} percentage points.`,
+			`Weekly games (oldest first): ${stats.weeklyActivity.map((week) => `${week.weekStart}: ${week.gamesPlayed}`).join(", ")}.`,
 		];
 	}
 

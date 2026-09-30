@@ -121,3 +121,18 @@ describe("WarehouseFacilityStatsRepository", () => {
 		).rejects.toThrow("No player stats row returned for facility 889.");
 	});
 });
+
+describe("facility game comparison batch", () => {
+	it("reads both complete periods in one parameterized query", async () => {
+		const query = vi.fn().mockResolvedValue({
+			rows: [{ location_id: 889, played_last_28_days: "30", played_previous_28_days: "50" }],
+		});
+		const result = await new WarehouseFacilityStatsRepository({ query }).getGameComparisons([
+			"889" as never,
+		]);
+		expect(result).toEqual([{ facilityId: "889", playedLast28Days: 30, playedPrevious28Days: 50 }]);
+		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [[889]]);
+		expect(query.mock.calls[0]?.[0]).toContain("r.confirmed and r.status <> 'cancelled'");
+		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.this_week");
+	});
+});

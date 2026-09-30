@@ -35,3 +35,9 @@ export interface WarehousePopularTimeRow {
 export interface WarehouseParameterizedQueryable {
 	query<Row>(sql: string, values: unknown[]): Promise<{ rows: Row[] }>;
 }
+
+export interface WarehouseFacilityGameComparisonRow {
+	location_id: number;
+	played_last_28_days: string | number;
+	played_previous_28_days: string | number;
+}

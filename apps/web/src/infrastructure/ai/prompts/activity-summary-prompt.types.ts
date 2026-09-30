@@ -14,4 +14,5 @@ export interface ActivitySummarySubject {
 	name: string;
 	stats: ActivitySummaryStats;
 	scope?: MarketSummaryScopeView;
+	insightFacts?: string;
 }
