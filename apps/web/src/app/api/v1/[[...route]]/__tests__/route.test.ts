@@ -22,6 +22,17 @@ describe("GET /api/v1/*", () => {
 		expect(response.status).toBe(200);
 	});
 
+	it("hands POST requests, like feedback, to the server's API app", async () => {
+		const { POST } = await import("@/app/api/v1/[[...route]]/route");
+		const request = new Request("http://localhost/api/v1/feedback", { method: "POST" });
+		mockFetch.mockReturnValue(new Response("{}", { status: 201 }));
+
+		const response = await POST(request);
+
+		expect(mockFetch).toHaveBeenCalledWith(request);
+		expect(response.status).toBe(201);
+	});
+
 	it("checks access with the Auth.js session", async () => {
 		await import("@/app/api/v1/[[...route]]/route");
 		mockAccess.mockResolvedValue({ status: "anonymous" });

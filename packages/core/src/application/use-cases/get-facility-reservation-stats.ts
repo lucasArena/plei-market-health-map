@@ -3,7 +3,7 @@ import type {
 	FacilityReservationDetailView,
 	GetFacilityReservationStatsInput,
 } from "@core/application/dtos/facility-detail-dto.types";
-import { NotFoundError } from "@core/application/errors/use-case-error";
+import { NotFoundError } from "@core/application/errors/not-found-error";
 import { toFacilityPointView } from "@core/application/mappers/facility-mapper";
 import { toFacilityReservationStatsView } from "@core/application/mappers/facility-stats-mapper";
 import type { GetFacilityReservationStatsDeps } from "@core/application/use-cases/get-facility-reservation-stats.types";

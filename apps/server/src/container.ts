@@ -2,8 +2,10 @@ import type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	IssueTracker,
 	ListRecentLoginsInput,
 	RecordLoginInput,
+	SubmitFeedbackInput,
 } from "@market-health-map/core/application";
 import {
 	makeGetFacilityDetail,
@@ -13,10 +15,19 @@ import {
 	makeListFacilities,
 	makeListRecentLogins,
 	makeRecordLogin,
+	makeSubmitFeedback,
 } from "@market-health-map/core/application";
-import { getServerEnv } from "@server/env";
+import {
+	getFeedbackMode,
+	getLinearCredentials,
+	getServerEnv,
+	hasPartialLinearAppCredentials,
+} from "@server/env";
 import { getPrismaClient } from "@server/infrastructure/database/prisma-client";
 import { PrismaLoginEventRepository } from "@server/infrastructure/database/prisma-login-event-repository";
+import { DryRunIssueTracker } from "@server/infrastructure/linear/dry-run-issue-tracker";
+import { LinearApiKeyAuth, LinearAppAuth } from "@server/infrastructure/linear/linear-auth";
+import { LinearIssueTracker } from "@server/infrastructure/linear/linear-issue-tracker";
 import { FixtureAppSessionHeatmapRepository } from "@server/infrastructure/sample/fixture-app-session-heatmap-repository";
 import { SampleFacilityRepository } from "@server/infrastructure/sample/sample-facility-repository";
 import { SampleFacilityStatsRepository } from "@server/infrastructure/sample/sample-facility-stats-repository";
@@ -99,9 +110,38 @@ function buildAppSessionHeatmap() {
 	};
 }
 
+function buildIssueTracker(): IssueTracker | null {
+	if (getFeedbackMode() === "dry-run") {
+		console.warn("[feedback] FEEDBACK_DRY_RUN is on: feedback is logged, not sent to Linear.");
+		return new DryRunIssueTracker();
+	}
+	if (hasPartialLinearAppCredentials()) {
+		console.warn(
+			"[feedback] Set both LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET to file issues as the Linear app.",
+		);
+	}
+	const credentials = getLinearCredentials();
+	if (!credentials) return null;
+	const auth =
+		credentials.kind === "app"
+			? new LinearAppAuth({
+					clientId: credentials.clientId,
+					clientSecret: credentials.clientSecret,
+				})
+			: new LinearApiKeyAuth(credentials.apiKey);
+	return new LinearIssueTracker({ auth });
+}
+
+function buildFeedback() {
+	return {
+		submitFeedback: makeSubmitFeedback({ issues: buildIssueTracker(), clock: new SystemClock() }),
+	};
+}
+
 let logins: ReturnType<typeof buildLogins> | undefined;
 let facilities: ReturnType<typeof buildFacilities> | undefined;
 let appSessionHeatmap: ReturnType<typeof buildAppSessionHeatmap> | undefined;
+let feedback: ReturnType<typeof buildFeedback> | undefined;
 
 function loginModule() {
 	logins ??= buildLogins();
@@ -118,6 +158,11 @@ function appSessionHeatmapModule() {
 	return appSessionHeatmap;
 }
 
+function feedbackModule() {
+	feedback ??= buildFeedback();
+	return feedback;
+}
+
 const container = {
 	recordLogin: (input: RecordLoginInput) => loginModule().recordLogin(input),
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
@@ -128,6 +173,7 @@ const container = {
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
+	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
 };
 
 export function getContainer() {

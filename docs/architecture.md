@@ -109,6 +109,35 @@ keyboard focus. All copy lives in the `facilityDetail` i18n block.
 
 `FacilityAiSummary` rewrites the stats into a short summary with Llama 3.2 1B (`Llama-3.2-1B-Instruct-q4f16_1-MLC`), run by WebLLM on the viewer's GPU through WebGPU. Nothing is sent to a server, and there is no key, plan or cost. The `BrowserLlm` class (`apps/web/src/infrastructure/ai/browser-llm/`) loads the engine once in a web worker (`browser-llm.worker.ts`), queues requests, and interrupts a stream when the panel switches facility. The first summary needs the viewer's consent, because the browser downloads about 880 MB from Hugging Face once and caches it. After that, summaries are generated automatically (about 3 s to load from cache and 3 s to write) and kept in `localStorage` per facility, week and locale by `FacilitySummaryCache` (`infrastructure/cache/local-storage/facility-summary/`), which drops the older week when a new one is written. The summary covers the last 28 days (the last 4 completed Monday–Sunday weeks): games played, confirmation rate, unique players, activated players, the change versus the previous 28 days, and the busiest day and time. `FacilitySummaryPrompt` (`infrastructure/ai/prompts/`) sends those facts with the date range, a worked example in the viewer's language, and the language again in the last message. The 1B model embellishes and drifts into English without these. The template summary says the same thing. Where WebGPU is missing, or the model fails, the panel keeps the template summary. A finished summary is labeled "AI summary" with a sparkle icon. The slide animations are the `panel-slide-in` / `panel-slide-out` classes in `globals.css` and collapse to 1 ms under `prefers-reduced-motion`.
 
+## Feedback (Linear)
+
+`POST /api/v1/feedback` turns the in-app "Help us improve" form into a Linear issue. It takes `multipart/form-data` and needs a signed-in Plei session like every other route (401 / 403).
+
+| Field | Rules |
+| --- | --- |
+| `type` | `improvement` or `bug` (required) |
+| `message` | Required, trimmed, at most 5000 characters |
+| `images` | Repeat the field once per file: 0 to 5 files, `image/png`, `image/jpeg`, `image/webp` or `image/gif`, 10 MB each |
+| `pageUrl`, `view` | Optional strings, at most 2048 characters |
+| Whole request | At most 4 MB (`MAX_FEEDBACK_REQUEST_BYTES` in `packages/core/src/application/dtos/feedback-dto.ts`), below Vercel's 4.5 MB cap. The client compresses screenshots to stay under it |
+
+It answers `201 { data: { identifier, url } }`. Errors use the usual envelope: `400 VALIDATION_ERROR` (with Zod `details`), `413 PAYLOAD_TOO_LARGE` when the request is over 4 MB, `502 ISSUE_TRACKER_FAILED` when Linear fails, and `503 FEEDBACK_NOT_CONFIGURED` when there are no Linear credentials.
+
+`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue: the title is `[MHM feedback]` or `[MHM bug]` plus the first 80 characters of the message, and the markdown description holds the full message, the submitter's name and email from the session ("Submitted by"), the page and view, an ISO timestamp, and every screenshot inline as `![](assetUrl)`. `LinearIssueTracker` (`apps/server/src/infrastructure/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and then calls `issueCreate`. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
+
+`container.ts` picks the adapter from the environment:
+
+| `FEEDBACK_DRY_RUN` | `LINEAR_CLIENT_ID` + `LINEAR_CLIENT_SECRET` | `LINEAR_API_KEY` | Result |
+| --- | --- | --- | --- |
+| `true` | any | any | `DryRunIssueTracker`: no network calls; logs the would-be `issueCreate` input and answers `201 { identifier: "DRY-n", url: "https://linear.app/dry-run/issue/DRY-n" }` |
+| unset or `false` | both set | any | Real Linear issues created by the "Market Health Map" Linear app |
+| unset or `false` | not both set | set | Real Linear issues created by the key's owner |
+| unset or `false` | not both set | unset | `503 FEEDBACK_NOT_CONFIGURED` |
+
+With app credentials, `LinearAppAuth` exchanges them for an app token (`POST https://api.linear.app/oauth/token`, `grant_type=client_credentials`, scope `read,write`), keeps it in memory until five minutes before it expires (tokens last about 30 days), and fetches a new one when Linear answers 401. Both the `fileUpload` and `issueCreate` calls send it as `Authorization: Bearer <token>`. Because the app is the actor, `issueCreate` also sends `createAsUser` (the submitter's name, or email) and `displayIconUrl` (their Google avatar, when the session has one), so Linear shows who submitted it. A personal key is sent without the `Bearer` prefix and without those two fields, which Linear only accepts from app tokens. Setting only one of the two app variables logs a warning and falls back to the key.
+
+Dry-run wins over real credentials so local UI work never files real tickets. The credentials are server-only; never expose them with a `NEXT_PUBLIC_` prefix. The 4 MB limit is enforced three times: the route answers 413 from `Content-Length` before reading anything, it counts bytes while streaming the body (so a missing or understated header can't get around it), and the use case rejects screenshots that add up to more than the limit. The per-file 10 MB and five-image rules still apply.
+
 ## API conventions
 
 - One Hono app (`apps/server/src/presentation/http/api-app.ts`) with base path `/api/v1`, one route file per resource in `presentation/http/routes/`, and one Next catch-all that mounts it.

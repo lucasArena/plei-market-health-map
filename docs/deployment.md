@@ -45,6 +45,9 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth client credentials |
 | `DATA_WAREHOUSE_URL` | Read-only Postgres URL for the `dataplei` warehouse (facilities). The warehouse must accept connections from the host. Vercel has no fixed outbound IPs on Hobby, so an IP allowlist on the warehouse will block it |
 | `ALLOWED_EMAIL_DOMAIN` | Email domain allowed in (default `plei.com`) |
+| `LINEAR_CLIENT_ID` / `LINEAR_CLIENT_SECRET` | Server-only credentials of the "Market Health Map" Linear OAuth app, with the client credentials grant enabled. The in-app feedback form (`POST /api/v1/feedback`) files issues as the app, showing the submitter's name and avatar. Preferred over `LINEAR_API_KEY` when both are set |
+| `LINEAR_API_KEY` | Fallback: a personal Linear API key. Issues are then created as that person. Without app credentials or a key, feedback answers 503 |
+| `FEEDBACK_DRY_RUN` | `true` logs feedback instead of creating Linear issues and returns a fake `DRY-n` ticket, even when credentials are set. Leave unset or `false` in staging and production |
 
 `DATABASE_URL_UNPOOLED` is only needed in GitHub Actions, for migrations.
 

@@ -1,6 +1,10 @@
 import {
+	FeedbackNotConfiguredError,
 	ForbiddenError,
+	InvalidRequestError,
+	IssueTrackerError,
 	NotFoundError,
+	PayloadTooLargeError,
 	UnauthorizedError,
 } from "@market-health-map/core/application";
 import { ValidationError } from "@market-health-map/core/domain";
@@ -11,6 +15,19 @@ import { ZodError } from "zod";
 export function toErrorResponse(error: unknown, messages: Messages): Response {
 	if (error instanceof ZodError) {
 		return fail("VALIDATION_ERROR", messages.errors.invalidRequest, 422, error.issues);
+	}
+	if (error instanceof InvalidRequestError) {
+		return fail(error.code, messages.errors.invalidRequest, 400, error.details);
+	}
+	if (error instanceof PayloadTooLargeError) {
+		return fail(error.code, messages.errors.payloadTooLarge, 413);
+	}
+	if (error instanceof FeedbackNotConfiguredError) {
+		return fail(error.code, messages.errors.feedbackNotConfigured, 503);
+	}
+	if (error instanceof IssueTrackerError) {
+		console.error("[issue-tracker]", error.message, error.cause ?? "");
+		return fail(error.code, messages.errors.feedbackDeliveryFailed, 502);
 	}
 	if (error instanceof ValidationError) return fail(error.code, error.message, 422);
 	if (error instanceof UnauthorizedError)

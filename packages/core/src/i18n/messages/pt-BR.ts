@@ -67,6 +67,44 @@ export const ptBR: Messages = {
 		lastPlayed: "Último jogo em {date}",
 		neverPlayed: "Nenhum jogo realizado ainda",
 	},
+	feedback: {
+		open: "Enviar feedback",
+		close: "Fechar feedback",
+		title: "Ajude a melhorar",
+		subtitle: "Sua mensagem vai direto para o time de produto da Plei.",
+		improvementTitle: "Sugerir uma melhoria",
+		improvementDescription: "Compartilhe uma ideia que deixaria o mapa mais útil.",
+		bugTitle: "Reportar um bug",
+		bugDescription: "Conte o que deu errado para podermos corrigir.",
+		back: "Voltar",
+		messageLabel: "Sua mensagem",
+		improvementPlaceholder: "O que você gostaria de ver? Quanto mais detalhes, melhor.",
+		bugPlaceholder: "O que aconteceu e o que você esperava que acontecesse?",
+		characterCount: "{count}/{max}",
+		attachLabel: "Capturas de tela",
+		attachHint: "Arraste, cole ou escolha. Até {max} imagens de 10 MB cada.",
+		attachButton: "Adicionar imagens",
+		dropHere: "Solte as imagens aqui",
+		removeImage: "Remover {name}",
+		unsupportedImage: "{name} não é uma imagem PNG, JPG, WebP ou GIF.",
+		imageTooLarge: "{name} tem mais de 10 MB.",
+		tooManyImages: "Você pode anexar até {max} imagens.",
+		submit: "Enviar",
+		submitting: "Enviando…",
+		successTitle: "Obrigado, recebemos!",
+		successDescription: "Registramos seu feedback como",
+		sendAnother: "Enviar outro feedback",
+		retry: "Tentar novamente",
+		notConfigured:
+			"O feedback ainda não está ativado aqui. Tente novamente mais tarde ou fale com o time no Slack.",
+		deliveryFailed:
+			"Não conseguimos falar com o Linear agora. Sua mensagem continua aqui, então tente novamente.",
+		tooLarge:
+			"Suas capturas de tela continuam grandes demais mesmo depois de comprimidas. Remova uma ou duas e tente novamente.",
+		invalid:
+			"Algo no formulário não parece certo. Revise a mensagem e as imagens e tente novamente.",
+		failed: "Algo deu errado no envio. Tente novamente.",
+	},
 	offline: {
 		title: "Você está offline",
 		description: "Reconecte-se à internet para continuar explorando a saúde dos mercados.",
@@ -77,5 +115,10 @@ export const ptBR: Messages = {
 		notFound: "O recurso solicitado não foi encontrado.",
 		invalidRequest: "A requisição é inválida.",
 		internal: "Algo deu errado. Tente novamente.",
+		feedbackNotConfigured:
+			"O envio de feedback ainda não está configurado neste servidor. Tente novamente mais tarde.",
+		payloadTooLarge:
+			"Seu feedback ficou grande demais para enviar. Anexe menos capturas de tela ou capturas menores (4 MB no total).",
+		feedbackDeliveryFailed: "Não foi possível enviar seu feedback ao Linear. Tente novamente.",
 	},
 };

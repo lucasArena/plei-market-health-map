@@ -1,4 +1,4 @@
-import { NotFoundError } from "@core/application/errors/use-case-error";
+import { NotFoundError } from "@core/application/errors/not-found-error";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { makeGetFacilityDetail } from "@core/application/use-cases/get-facility-detail";
