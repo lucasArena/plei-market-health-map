@@ -4,6 +4,7 @@ import type { FacilityPointView } from "@market-health-map/core/application";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MarketSearchResult } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
 	type AppSessionHeatmapCellView,
@@ -70,6 +71,7 @@ export function toFacilityFeatureCollection(
 			properties: {
 				id: facility.id,
 				marketId: facility.marketId,
+				marketName: facility.marketName,
 				name: facility.name,
 				isActive: facility.isActive,
 			},
@@ -175,6 +177,18 @@ export function facilitiesForIds(
 		const facility = typeof id === "string" ? facilitiesById.get(id) : undefined;
 		return facility ? [facility] : [];
 	});
+}
+
+export function marketBounds(
+	facilities: FacilityPointView[],
+): [[number, number], [number, number]] | null {
+	if (facilities.length === 0) return null;
+	const longitudes = facilities.map((facility) => facility.location.longitude);
+	const latitudes = facilities.map((facility) => facility.location.latitude);
+	return [
+		[Math.min(...longitudes), Math.min(...latitudes)],
+		[Math.max(...longitudes), Math.max(...latitudes)],
+	];
 }
 
 export function placeHover(
@@ -312,6 +326,41 @@ export function useFacilitiesMapScreenRules() {
 		},
 		[facilityFromEvent, handleHoverEnd],
 	);
+
+	const selectSearchFacility = useCallback(
+		(facility: FacilityPointView) => {
+			handleHoverEnd();
+			setIsPanelClosing(false);
+			setSelectedFacilityId(facility.id);
+			mapRef.current?.easeTo({
+				center: [facility.location.longitude, facility.location.latitude],
+				zoom: 14,
+				padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
+				duration: 700,
+			});
+		},
+		[handleHoverEnd],
+	);
+
+	const selectSearchMarket = useCallback((market: MarketSearchResult) => {
+		const map = mapRef.current;
+		const bounds = marketBounds(market.facilities);
+		if (!map || !bounds) return;
+		setSelectedFacilityId(null);
+		setIsPanelClosing(false);
+		if (market.facilities.length === 1) {
+			const [facility] = market.facilities;
+			if (!facility) return;
+			map.easeTo({
+				center: [facility.location.longitude, facility.location.latitude],
+				zoom: 11,
+				padding: { top: 0, bottom: 0, left: 0, right: 0 },
+				duration: 700,
+			});
+			return;
+		}
+		map.fitBounds(bounds, { padding: 72, maxZoom: 11, duration: 700 });
+	}, []);
 
 	const closePanel = useCallback(() => {
 		setIsPanelClosing(true);
@@ -511,6 +560,7 @@ export function useFacilitiesMapScreenRules() {
 	return {
 		closePanel,
 		containerRef,
+		facilities: query.data ?? [],
 		hasSessionHeatmap,
 		handlePanelClosed,
 		hovered,
@@ -518,6 +568,8 @@ export function useFacilitiesMapScreenRules() {
 		messages: messages.map,
 		sessionScale,
 		selectedFacilityId,
+		selectSearchFacility,
+		selectSearchMarket,
 		status,
 	};
 }

@@ -11,6 +11,7 @@ export interface FacilityMetrics {
 export interface FacilityProps {
 	id: EntityId;
 	marketId: EntityId;
+	marketName?: string;
 	name: string;
 	address: string;
 	location: GeoPoint;

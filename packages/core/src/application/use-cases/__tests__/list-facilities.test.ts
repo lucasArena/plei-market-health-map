@@ -24,6 +24,7 @@ describe("listFacilities", () => {
 			{
 				id: "a",
 				marketId: "austin",
+				marketName: "austin",
 				name: "Location a",
 				avatarUrl: null,
 				isActive: true,
@@ -32,6 +33,7 @@ describe("listFacilities", () => {
 			{
 				id: "b",
 				marketId: "austin",
+				marketName: "austin",
 				name: "Location b",
 				avatarUrl: null,
 				isActive: false,

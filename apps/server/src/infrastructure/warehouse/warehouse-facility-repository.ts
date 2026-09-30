@@ -55,6 +55,7 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 		return Facility.create({
 			id: asEntityId(String(row.location_id)),
 			marketId: asEntityId(row.region_id === null ? UNASSIGNED_MARKET : String(row.region_id)),
+			marketName: row.region_name ?? "Unassigned",
 			name: row.location_name,
 			address: formatAddress(row),
 			location: { latitude, longitude },

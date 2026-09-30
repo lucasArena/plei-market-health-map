@@ -27,6 +27,7 @@ export type FacilitiesMapStatus = "loading" | "error" | "ready";
 export interface FacilityFeatureProperties {
 	id: string;
 	marketId: string;
+	marketName: string;
 	name: string;
 	isActive: boolean;
 }

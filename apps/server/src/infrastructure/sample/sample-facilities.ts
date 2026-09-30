@@ -70,6 +70,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 	return weights.map((_, index) => ({
 		id: asEntityId(`${market.id}-facility-${index + 1}`),
 		marketId: market.id,
+		marketName: market.name,
 		name: names[index] as string,
 		address: `${100 + Math.floor(random() * 9800)} ${pick(STREETS, random)} St, ${market.name}, ${market.state}`,
 		location: scatterAround(market.location, random),

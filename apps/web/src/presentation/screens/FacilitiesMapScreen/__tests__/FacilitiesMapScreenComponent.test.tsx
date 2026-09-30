@@ -27,6 +27,7 @@ vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent
 const FACILITY = {
 	id: "f1",
 	marketId: "austin",
+	marketName: "Austin",
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
@@ -37,11 +38,14 @@ function rulesWith(status: string, overrides: object = {}) {
 	return {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
+		facilities: [],
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
 		hovered: null,
 		isPanelClosing: false,
 		selectedFacilityId: null,
+		selectSearchFacility: vi.fn(),
+		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
 		status,
