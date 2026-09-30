@@ -62,8 +62,7 @@ export {
 	toFacilityStatsView,
 } from "@core/application/mappers/facility-stats-mapper";
 export {
-	FEEDBACK_TITLE_LENGTH,
-	FEEDBACK_TITLE_PREFIXES,
+	FEEDBACK_TITLES,
 	toFeedbackIssueDescription,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
