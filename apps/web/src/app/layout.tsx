@@ -39,8 +39,8 @@ export default async function RootLayout({
 }>) {
 	const locale = await getRequestLocale();
 	return (
-		<html lang={locale}>
-			<body className={`${inter.variable} font-sans antialiased`}>
+		<html lang={locale} suppressHydrationWarning>
+			<body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
 				<AppProviders locale={locale} messages={getMessages(locale)}>
 					{children}
 				</AppProviders>
