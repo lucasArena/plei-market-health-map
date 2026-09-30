@@ -3,8 +3,11 @@ import { createElement, type ReactNode } from "react";
 import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
 import type { BrowserLlmCallbacks } from "@/infrastructure/ai/browser-llm/browser-llm.types";
-import { facilitySummaryCache } from "@/infrastructure/cache/local-storage/facility-summary/facility-summary-cache";
-import { useFacilityAiSummaryRules } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.rules";
+import { aiSummaryCache } from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache";
+import {
+	aiSummaryContextFor,
+	useAiSummaryRules,
+} from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const llm = vi.hoisted(() => ({
@@ -21,10 +24,17 @@ function wrapper({ children }: { children: ReactNode }) {
 	return createElement(MessagesProvider, { locale: "en", messages: EN_MESSAGES, children });
 }
 
+function contextFor(detail = FACILITY_DETAIL) {
+	return aiSummaryContextFor(
+		{ kind: "facility", id: detail.facility.id, name: detail.facility.name, stats: detail.stats },
+		"en",
+	);
+}
+
 function renderRules(detail = FACILITY_DETAIL) {
-	return renderHook((props) => useFacilityAiSummaryRules(props), {
+	return renderHook((props) => useAiSummaryRules(props), {
 		wrapper,
-		initialProps: { detail, fallback: FALLBACK },
+		initialProps: { context: contextFor(detail), fallback: FALLBACK },
 	});
 }
 
@@ -32,10 +42,10 @@ function lastCallbacks(): BrowserLlmCallbacks {
 	return llm.generate.mock.lastCall?.[1];
 }
 
-describe("useFacilityAiSummaryRules", () => {
+describe("useAiSummaryRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		facilitySummaryCache.clear();
+		aiSummaryCache.clear();
 		llm.isSupported.mockReturnValue(true);
 		llm.isReady.mockResolvedValue(true);
 	});
@@ -93,7 +103,7 @@ describe("useFacilityAiSummaryRules", () => {
 	});
 
 	it("uses a cached summary without touching the model", async () => {
-		facilitySummaryCache.write(facilitySummaryCache.keyFor(FACILITY_DETAIL, "en"), "Cached.");
+		aiSummaryCache.write(contextFor().cacheKey, "Cached.");
 		const { result } = renderRules();
 
 		await waitFor(() => expect(result.current.status).toBe("ready"));
@@ -122,7 +132,10 @@ describe("useFacilityAiSummaryRules", () => {
 		const firstCallbacks = lastCallbacks();
 
 		rerender({
-			detail: { ...FACILITY_DETAIL, facility: { ...FACILITY_DETAIL.facility, id: "890" } },
+			context: contextFor({
+				...FACILITY_DETAIL,
+				facility: { ...FACILITY_DETAIL.facility, id: "890" },
+			}),
 			fallback: FALLBACK,
 		});
 
@@ -143,5 +156,23 @@ describe("useFacilityAiSummaryRules", () => {
 		unmount();
 		await act(async () => answer(true));
 		expect(llm.generate).not.toHaveBeenCalled();
+	});
+
+	it("builds a context whose cache key and prompt follow the subject", () => {
+		const facility = contextFor();
+		const market = aiSummaryContextFor(
+			{
+				kind: "market",
+				id: "2",
+				name: "Houston",
+				stats: FACILITY_DETAIL.stats,
+				scope: { facilityCount: 48, activeFacilityCount: 31, marketCount: 1, activeMarketCount: 1 },
+			},
+			"en",
+		);
+
+		expect(facility.cacheKey).toBe("v4:facility-889:2026-09-21:en");
+		expect(market.cacheKey).toBe("v4:market-2:2026-09-21:en");
+		expect(market.prompt.at(-1)?.content).toContain("Market: Houston.");
 	});
 });

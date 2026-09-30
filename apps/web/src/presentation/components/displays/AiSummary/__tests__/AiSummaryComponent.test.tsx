@@ -1,12 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
-import { FacilityAiSummary } from "@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent";
+import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 
 const mockRules = vi.fn();
 
-vi.mock("@/presentation/components/map/FacilityAiSummary/FacilityAiSummaryComponent.rules", () => ({
-	useFacilityAiSummaryRules: () => mockRules(),
+vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent.rules", () => ({
+	useAiSummaryRules: () => mockRules(),
 }));
 
 const messages = EN_MESSAGES.facilityAi;
@@ -24,10 +23,10 @@ function rulesWith(status: string, overrides: object = {}) {
 }
 
 function renderSummary() {
-	render(<FacilityAiSummary detail={FACILITY_DETAIL} fallback="Summary text." />);
+	render(<AiSummary context={{ cacheKey: "k", prompt: [] }} fallback="Summary text." />);
 }
 
-describe("FacilityAiSummary", () => {
+describe("AiSummary", () => {
 	it("offers the one-time download", () => {
 		const rules = rulesWith("idle");
 		mockRules.mockReturnValue(rules);

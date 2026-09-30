@@ -1,27 +1,27 @@
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import {
-	FACILITY_SUMMARY_STORAGE_PREFIX,
-	FacilitySummaryCache,
-	facilitySummaryCache,
-} from "@/infrastructure/cache/local-storage/facility-summary/facility-summary-cache";
+	AI_SUMMARY_STORAGE_PREFIX,
+	AiSummaryCache,
+	aiSummaryCache,
+} from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache";
 
-describe("FacilitySummaryCache", () => {
+describe("AiSummaryCache", () => {
 	beforeEach(() => localStorage.clear());
 
-	it("keys summaries by facility, week and locale and keeps them in localStorage", () => {
-		const cache = new FacilitySummaryCache();
-		const key = cache.keyFor(FACILITY_DETAIL, "en");
-		expect(key).toBe("v3:889:2026-09-21:en");
+	it("keys summaries by subject, week and locale and keeps them in localStorage", () => {
+		const cache = new AiSummaryCache();
+		const key = cache.keyFor("facility-889", "2026-09-21", "en");
+		expect(key).toBe("v4:facility-889:2026-09-21:en");
+		expect(cache.keyFor("market:2", "2026-09-21", "pt-BR")).toBe("v4:market-2:2026-09-21:pt-BR");
 		expect(cache.read(key)).toBeNull();
 
 		cache.write(key, "Busy week.");
 
-		expect(localStorage.getItem(`${FACILITY_SUMMARY_STORAGE_PREFIX}${key}`)).toBe("Busy week.");
-		expect(new FacilitySummaryCache().read(key)).toBe("Busy week.");
+		expect(localStorage.getItem(`${AI_SUMMARY_STORAGE_PREFIX}${key}`)).toBe("Busy week.");
+		expect(new AiSummaryCache().read(key)).toBe("Busy week.");
 	});
 
-	it("replaces an older week's summary for the same facility and locale", () => {
-		const cache = new FacilitySummaryCache();
+	it("replaces an older week's summary for the same subject and locale", () => {
+		const cache = new AiSummaryCache();
 		localStorage.setItem("unrelated", "keep");
 		cache.write("v3:889:2026-09-14:en", "Old week.");
 		cache.write("v3:889:2026-09-14:pt-BR", "Semana antiga.");
@@ -41,7 +41,7 @@ describe("FacilitySummaryCache", () => {
 	});
 
 	it("does nothing without storage", () => {
-		const cache = new FacilitySummaryCache(() => null);
+		const cache = new AiSummaryCache(() => null);
 
 		cache.write("889:2026-09-21:en", "Busy week.");
 		cache.clear();
@@ -61,7 +61,7 @@ describe("FacilitySummaryCache", () => {
 				throw new Error("full");
 			},
 		} as unknown as Storage;
-		const cache = new FacilitySummaryCache(() => broken);
+		const cache = new AiSummaryCache(() => broken);
 
 		expect(() => cache.write("889:2026-09-21:en", "Busy week.")).not.toThrow();
 		expect(() => cache.clear()).not.toThrow();
@@ -73,11 +73,11 @@ describe("FacilitySummaryCache", () => {
 			throw new Error("denied");
 		});
 
-		expect(new FacilitySummaryCache().read("889:2026-09-21:en")).toBeNull();
+		expect(new AiSummaryCache().read("889:2026-09-21:en")).toBeNull();
 		spy.mockRestore();
 	});
 
 	it("shares one cache across the app", () => {
-		expect(facilitySummaryCache).toBeInstanceOf(FacilitySummaryCache);
+		expect(aiSummaryCache).toBeInstanceOf(AiSummaryCache);
 	});
 });
