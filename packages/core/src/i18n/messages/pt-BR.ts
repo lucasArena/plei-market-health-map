@@ -35,6 +35,11 @@ export const ptBR: Messages = {
 		sessionHeatmapNoActivity: "Nenhuma sessão na visualização atual do mapa",
 		sessionHeatmapLowValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",
+		layersBrand: "Plei Market",
+		layersHeading: "Camadas",
+		layersFacilities: "Instalações",
+		layersCollapse: "Ocultar camadas",
+		layersExpand: "Mostrar camadas",
 	},
 	facilityAi: {
 		generate: "Gerar resumo com IA",
