@@ -124,7 +124,7 @@ describe("MapSearch", () => {
 		expect(screen.getByRole("listbox")).toBeInTheDocument();
 	});
 
-	it("sits in the header row just left of the summary toggle and avatar", () => {
+	it("flows inside the header row instead of floating over it", () => {
 		const { container } = render(
 			<MapSearch
 				facilities={FACILITIES}
@@ -134,9 +134,12 @@ describe("MapSearch", () => {
 				onClear={vi.fn()}
 			/>,
 		);
+		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		fireEvent.focus(input);
 
 		const root = container.firstElementChild;
-		expect(root).toHaveClass("top-4", "right-[6.75rem]", "w-[min(24rem,calc(100%-11rem))]");
-		expect(root).not.toHaveClass("left-1/2");
+		expect(root).toHaveClass("relative", "w-full", "max-w-96", "min-w-0");
+		expect(root).not.toHaveClass("absolute");
+		expect(screen.getByRole("listbox")).toHaveClass("absolute", "top-full");
 	});
 });
