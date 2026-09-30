@@ -57,6 +57,7 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
 		expect(screen.getByText("Layers")).toHaveClass("text-[10px]");
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("toggles the facilities layer", () => {
@@ -86,6 +87,28 @@ describe("MapLayersPanel", () => {
 		expect(screen.getByText("true")).toBeInTheDocument();
 		fireEvent.click(switchByName("Facilities"));
 		expect(screen.getByText("false")).toBeInTheDocument();
+	});
+
+	it("tells the map to hide app sessions when the switch is turned off", () => {
+		function SessionsState() {
+			const layers = useMapLayers();
+			return <span>{`sessions:${String(layers?.showSessions)}`}</span>;
+		}
+
+		renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<SessionsState />
+			</MapLayersProvider>,
+		);
+
+		expect(screen.getByText("sessions:true")).toBeInTheDocument();
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		fireEvent.click(switchByName("App sessions"));
+		expect(screen.getByText("sessions:false")).toBeInTheDocument();
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("App sessions"));
+		expect(screen.getByText("sessions:true")).toBeInTheDocument();
 	});
 
 	it("hides the layer list until it is expanded again", () => {

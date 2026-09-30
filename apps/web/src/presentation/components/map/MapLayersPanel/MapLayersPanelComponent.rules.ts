@@ -17,7 +17,9 @@ export function useMapLayersPanelRules() {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const [cardMotion, setCardMotion] = useState<LayersCardMotion>("resting");
 	const [localShowFacilities, setLocalShowFacilities] = useState(false);
+	const [localShowSessions, setLocalShowSessions] = useState(true);
 	const showFacilities = layers?.showFacilities ?? localShowFacilities;
+	const showSessions = layers?.showSessions ?? localShowSessions;
 
 	const toggleExpanded = useCallback(() => {
 		setCardMotion(isExpanded ? "exit" : "enter");
@@ -48,6 +50,13 @@ export function useMapLayersPanelRules() {
 		}
 		setLocalShowFacilities((current) => !current);
 	}, [layers]);
+	const toggleSessions = useCallback(() => {
+		if (layers) {
+			layers.setShowSessions(!layers.showSessions);
+			return;
+		}
+		setLocalShowSessions((current) => !current);
+	}, [layers]);
 	const isCardShown = isExpanded || cardMotion === "exit";
 
 	return {
@@ -57,7 +66,9 @@ export function useMapLayersPanelRules() {
 		isExpanded,
 		messages: messages.map,
 		showFacilities,
+		showSessions,
 		toggleExpanded,
 		toggleFacilities,
+		toggleSessions,
 	};
 }
