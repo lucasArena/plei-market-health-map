@@ -42,3 +42,12 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-09-30 | Cursor Grok 4.7 | Merged staging into the layers panel so search, the summary toggle, and the account menu stay on the right while the layers chip stays top-left | Header and map screen tests pass |
 | 2026-09-30 | Cursor Grok 4.7 | Removed the Users layer from the control panel, including its switch and filters | Layers panel tests pass |
 | 2026-09-30 | Cursor Grok 4.7 | Made the layers card the same width as the Plei Market header | Layers panel tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Restored the glass facility discs and inset green cluster rings on the local map | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Kept inactive facility dots and clusters on glass, and switched their stroke and count to readable grays | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Lightened the inactive cluster stroke and the facility dot fill by 20% | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Used a white mark on inactive facility dots and kept the logo's dark center | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Lightened only the inactive facility-dot center by 25% and kept the active logo center unchanged | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Restored the facilities-layer fade and vertical move when the switch turns on and off | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Thickened the facility dot inset stroke by 1px | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Cleared the facilities fade transform after it finished so cluster glass blur samples the map again | Map screen tests pass |
+| 2026-09-30 | Cursor Grok 4.7 | Zoomed an active cluster click until one of its active facilities was drawn as its own dot | Map screen tests pass |

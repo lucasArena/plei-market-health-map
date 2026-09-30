@@ -4,15 +4,24 @@ import {
 	APP_SESSION_HEATMAP_LAYER_ID,
 	APP_SESSION_HEATMAP_PAINT,
 	APP_SESSION_HEATMAP_SOURCE_ID,
+	CLUSTER_ACTIVE_COUNT_EXPRESSION,
+	CLUSTER_ACTIVE_COUNT_KEY,
+	CLUSTER_BORDER_COLOR,
+	CLUSTER_CIRCLE_RADIUS,
 	CLUSTER_COUNT_LAYOUT,
 	CLUSTER_COUNT_PAINT,
 	CLUSTER_FILTER,
+	CLUSTER_GLASS_STROKE,
+	CLUSTER_GLASS_STROKE_INSET,
+	CLUSTER_OUTER_DIAMETER,
 	CLUSTER_PAINT,
 	FACILITIES_LAYER_ID,
 	FACILITIES_SOURCE_ID,
 	FACILITY_COLOR,
 	FACILITY_DOT_LAYOUT,
 	FACILITY_DOT_PAINT,
+	FACILITY_GLASS_CORE_SIZE,
+	FACILITY_GLASS_DIAMETER,
 	FACILITY_LOGO_LAYOUT,
 	SESSION_HEATMAP_BUCKET_COLORS,
 	SESSION_HEATMAP_BUCKET_OPACITIES,
@@ -39,9 +48,19 @@ function styleErrors(
 }
 
 describe("cluster styles", () => {
-	it("uses the facility green for cluster fill", () => {
-		expect(FACILITY_COLOR).toBe("#0B3B2E");
-		expect(CLUSTER_PAINT?.["circle-color"]).toBe(FACILITY_COLOR);
+	it("keeps the cluster circle as an invisible hit target under the glass disc", () => {
+		expect(CLUSTER_OUTER_DIAMETER).toBe(41);
+		expect(CLUSTER_GLASS_STROKE).toBe(2);
+		expect(CLUSTER_GLASS_STROKE_INSET).toBe(3);
+		expect(CLUSTER_BORDER_COLOR).toBe("#86EFAC");
+		expect(CLUSTER_PAINT?.["circle-opacity"]).toBe(0);
+		expect(CLUSTER_PAINT?.["circle-radius"]).toBe(CLUSTER_CIRCLE_RADIUS);
+		expect(CLUSTER_COUNT_PAINT?.["text-opacity"]).toBe(0);
+		expect(CLUSTER_ACTIVE_COUNT_KEY).toBe("activeCount");
+		expect(CLUSTER_ACTIVE_COUNT_EXPRESSION).toEqual([
+			"+",
+			["case", ["==", ["get", "isActive"], true], 1, 0],
+		]);
 	});
 
 	it("are valid MapLibre cluster layers", () => {
@@ -102,7 +121,11 @@ describe("facility stacking order", () => {
 });
 
 describe("facility dot styles", () => {
-	it("is a valid MapLibre circle paint", () => {
+	it("is an invisible hit circle under a 29px glass disc", () => {
+		expect(FACILITY_GLASS_DIAMETER).toBe(29);
+		expect(FACILITY_GLASS_CORE_SIZE).toBe(17);
+		expect(FACILITY_DOT_PAINT?.["circle-opacity"]).toBe(0);
+		expect(FACILITY_DOT_PAINT?.["circle-radius"]).toBe(14.5);
 		expect(styleErrors(FACILITY_DOT_PAINT)).toEqual([]);
 	});
 });
