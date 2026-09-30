@@ -1,5 +1,4 @@
 import {
-	getAiGatewayApiKey,
 	getAllowedEmailDomain,
 	getFeedbackMode,
 	getLinearCredentials,
@@ -110,13 +109,5 @@ describe("server env", () => {
 	it("fails fast on an unreadable dry-run flag", () => {
 		vi.stubEnv("FEEDBACK_DRY_RUN", "maybe");
 		expect(() => getServerEnv()).toThrow();
-	});
-
-	it("reads the optional AI Gateway key for feedback titles", () => {
-		vi.stubEnv("AI_GATEWAY_API_KEY", "");
-		expect(getAiGatewayApiKey()).toBeUndefined();
-		resetServerEnvCache();
-		vi.stubEnv("AI_GATEWAY_API_KEY", " gw-key ");
-		expect(getAiGatewayApiKey()).toBe("gw-key");
 	});
 });

@@ -7,7 +7,7 @@ import type { SubmitFeedbackInput } from "@core/application/dtos/feedback-dto.ty
 import { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import { PayloadTooLargeError } from "@core/application/errors/payload-too-large-error";
-import { FixedClock, StubFeedbackTitleGenerator } from "@core/application/testing/fakes";
+import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryIssueTracker } from "@core/application/testing/in-memory-issue-tracker";
 import { makeSubmitFeedback } from "@core/application/use-cases/submit-feedback";
 
@@ -21,9 +21,9 @@ const INPUT: SubmitFeedbackInput = {
 	submitter: { name: "Stefano Sanchez", email: "stefano@plei.com" },
 };
 
-function setup(titles?: StubFeedbackTitleGenerator) {
+function setup() {
 	const issues = new InMemoryIssueTracker();
-	const submitFeedback = makeSubmitFeedback({ issues, titles, clock: new FixedClock(NOW) });
+	const submitFeedback = makeSubmitFeedback({ issues, clock: new FixedClock(NOW) });
 	return { issues, submitFeedback };
 }
 
@@ -35,32 +35,6 @@ async function rejection(input: SubmitFeedbackInput) {
 }
 
 describe("submitFeedback", () => {
-	it("titles the issue with the generated title and keeps the full message", async () => {
-		const titles = new StubFeedbackTitleGenerator("Show market name on hover.");
-		const { issues, submitFeedback } = setup(titles);
-
-		await submitFeedback(INPUT);
-
-		expect(titles.requests).toEqual([
-			{ type: "improvement", message: "Show the market name on hover" },
-		]);
-		expect(issues.issues[0]?.title).toBe("Show market name on hover");
-		expect(issues.issues[0]?.description).toContain("Show the market name on hover");
-	});
-
-	it.each([
-		["the generator fails", new StubFeedbackTitleGenerator(new Error("timeout")), "Bug Report"],
-		["the generator returns nothing", new StubFeedbackTitleGenerator(null), "Bug Report"],
-		["no generator is configured", undefined, "Bug Report"],
-	])("uses the generic title when %s", async (_label, titles, expected) => {
-		const { issues, submitFeedback } = setup(titles);
-
-		const view = await submitFeedback({ ...INPUT, type: "bug" });
-
-		expect(view.identifier).toBe("TEST-1");
-		expect(issues.issues[0]?.title).toBe(expected);
-	});
-
 	it("creates an improvement issue and returns its identifier and url", async () => {
 		const { issues, submitFeedback } = setup();
 
@@ -69,7 +43,7 @@ describe("submitFeedback", () => {
 		expect(view).toEqual({ identifier: "TEST-1", url: "https://linear.test/issue/TEST-1" });
 		expect(issues.issues).toHaveLength(1);
 		expect(issues.issues[0]?.type).toBe("improvement");
-		expect(issues.issues[0]?.title).toBe("Feedback");
+		expect(issues.issues[0]?.title).toBe("Feedback from Stefano Sanchez");
 		expect(issues.issues[0]?.description).toContain("2026-09-29T20:00:00.000Z");
 		expect(issues.attachments).toHaveLength(0);
 	});
@@ -104,7 +78,10 @@ describe("submitFeedback", () => {
 
 		await submitFeedback({ ...INPUT, type: "bug", message: "Map goes blank" });
 
-		expect(issues.issues[0]).toMatchObject({ type: "bug", title: "Bug Report" });
+		expect(issues.issues[0]).toMatchObject({
+			type: "bug",
+			title: "Bug Report from Stefano Sanchez",
+		});
 	});
 
 	it("uploads every screenshot in order before creating the issue", async () => {

@@ -1,6 +1,5 @@
 import type { Feedback } from "@core/application/dtos/feedback-dto.types";
 import {
-	normalizeFeedbackTitle,
 	toFeedbackIssueDescription,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
@@ -18,43 +17,25 @@ const FEEDBACK: Feedback = {
 };
 
 describe("toFeedbackIssueTitle", () => {
-	it("uses the generated title when there is one", () => {
-		expect(toFeedbackIssueTitle("bug", "Map pins overlap at high zoom")).toBe(
-			"Map pins overlap at high zoom",
+	it("names the reporter after the type", () => {
+		const submitter = { name: "Lucas Arena", email: "lucas@plei.com" };
+
+		expect(toFeedbackIssueTitle("bug", submitter)).toBe("Bug Report from Lucas Arena");
+		expect(toFeedbackIssueTitle("improvement", submitter)).toBe("Feedback from Lucas Arena");
+	});
+
+	it("uses the email when there is no name", () => {
+		expect(toFeedbackIssueTitle("bug", { name: " ", email: "lucas@plei.com" })).toBe(
+			"Bug Report from lucas@plei.com",
+		);
+		expect(toFeedbackIssueTitle("improvement", { name: null, email: "lucas@plei.com" })).toBe(
+			"Feedback from lucas@plei.com",
 		);
 	});
 
-	it("falls back to a generic title by type", () => {
-		expect(toFeedbackIssueTitle("improvement")).toBe("Feedback");
-		expect(toFeedbackIssueTitle("bug", null)).toBe("Bug Report");
-		expect(toFeedbackIssueTitle("bug", "  ")).toBe("Bug Report");
-	});
-});
-
-describe("normalizeFeedbackTitle", () => {
-	it("strips labels, quotes, markdown and the trailing period", () => {
-		expect(normalizeFeedbackTitle('Title: "Map pins overlap at high zoom."')).toBe(
-			"Map pins overlap at high zoom",
-		);
-		expect(normalizeFeedbackTitle("**Add a market filter**")).toBe("Add a market filter");
-		expect(normalizeFeedbackTitle("  side  panel\tcovers zoom buttons...  ")).toBe(
-			"Side panel covers zoom buttons",
-		);
-	});
-
-	it("keeps only the first non-empty line", () => {
-		expect(normalizeFeedbackTitle("\nSearch misses facilities\nBecause the list is stale")).toBe(
-			"Search misses facilities",
-		);
-	});
-
-	it("rejects empty or overly long output", () => {
-		expect(normalizeFeedbackTitle(undefined)).toBeNull();
-		expect(normalizeFeedbackTitle('"".')).toBeNull();
-		expect(
-			normalizeFeedbackTitle("one two three four five six seven eight nine ten eleven"),
-		).toBeNull();
-		expect(normalizeFeedbackTitle("x".repeat(81))).toBeNull();
+	it("falls back to the plain title without a name or email", () => {
+		expect(toFeedbackIssueTitle("bug")).toBe("Bug Report");
+		expect(toFeedbackIssueTitle("improvement", { name: "", email: "" })).toBe("Feedback");
 	});
 });
 
@@ -89,18 +70,14 @@ describe("toFeedbackIssueDescription", () => {
 });
 
 describe("toFeedbackIssueDraft", () => {
-	it("builds the draft for the issue tracker with the generated title", () => {
-		expect(toFeedbackIssueDraft(FEEDBACK, [], AT, "Side panel covers zoom buttons")).toMatchObject({
-			type: "bug",
-			title: "Side panel covers zoom buttons",
-			submitter: { displayName: "Stefano Sanchez" },
-		});
-	});
-
-	it("keeps the full message in the description when the title is generic", () => {
+	it("builds the draft with the generic title and the full message", () => {
 		const draft = toFeedbackIssueDraft(FEEDBACK, [], AT);
 
-		expect(draft.title).toBe("Bug Report");
+		expect(draft).toMatchObject({
+			type: "bug",
+			title: "Bug Report from Stefano Sanchez",
+			submitter: { displayName: "Stefano Sanchez" },
+		});
 		expect(draft.description.startsWith(FEEDBACK.message)).toBe(true);
 	});
 });

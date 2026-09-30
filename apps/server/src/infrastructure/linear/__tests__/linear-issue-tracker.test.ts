@@ -70,7 +70,7 @@ function setupWith(auth: LinearAuth, ...responses: Array<Response | Error>) {
 const ATTACHMENT = { filename: "shot.png", contentType: "image/png", bytes: PNG };
 const DRAFT = {
 	type: "bug" as const,
-	title: "Map is blank",
+	title: "[MHM bug] Map blank",
 	description: "Body",
 	submitter: { displayName: "Stefano Sanchez", avatarUrl: "https://img/s.png" },
 };
@@ -123,7 +123,7 @@ describe("LinearIssueTracker", () => {
 				stateId: "904a3068-92b9-4e7d-bd86-bc52cde54a83",
 				projectId: "98a63408-5cac-4a0e-85a9-1b73d17ea096",
 				labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
-				title: "Map is blank",
+				title: "[MHM bug] Map blank",
 				description: "Body",
 			},
 		});

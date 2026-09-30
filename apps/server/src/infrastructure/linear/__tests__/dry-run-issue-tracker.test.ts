@@ -12,13 +12,13 @@ describe("DryRunIssueTracker", () => {
 		});
 		const first = await tracker.createIssue({
 			type: "bug",
-			title: "Blank map",
+			title: "[MHM bug] a",
 			description: "b",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
 		const second = await tracker.createIssue({
 			type: "improvement",
-			title: "Show market names",
+			title: "[MHM feedback] c",
 			description: "d",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
@@ -34,7 +34,7 @@ describe("DryRunIssueTracker", () => {
 		expect(payload).toMatchObject({
 			teamId: "bd06d3df-8b17-42f7-96b1-0b6b7b3eb5ad",
 			labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
-			title: "Blank map",
+			title: "[MHM bug] a",
 		});
 		expect(payload).not.toHaveProperty("createAsUser");
 	});

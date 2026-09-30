@@ -3,7 +3,7 @@ import {
 	toLinearIssueInput,
 } from "@server/infrastructure/linear/linear-feedback-config";
 
-const BUG = { type: "bug" as const, title: "Blank map", description: "b" };
+const BUG = { type: "bug" as const, title: "[MHM bug] a", description: "b" };
 
 describe("toLinearIssueInput", () => {
 	it("sends improvements to Requests triage in the Market health map project", () => {
@@ -11,7 +11,7 @@ describe("toLinearIssueInput", () => {
 			toLinearIssueInput(
 				{
 					type: "improvement",
-					title: "Add a market filter",
+					title: "[MHM feedback] a",
 					description: "b",
 					submitter: { displayName: "Stefano Sanchez" },
 				},
@@ -22,7 +22,7 @@ describe("toLinearIssueInput", () => {
 			stateId: "973949af-0a76-4de3-a870-de074888bc75",
 			projectId: "98a63408-5cac-4a0e-85a9-1b73d17ea096",
 			labelIds: [],
-			title: "Add a market filter",
+			title: "[MHM feedback] a",
 			description: "b",
 		});
 	});

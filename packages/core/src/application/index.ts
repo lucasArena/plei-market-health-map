@@ -62,10 +62,7 @@ export {
 	toFacilityStatsView,
 } from "@core/application/mappers/facility-stats-mapper";
 export {
-	FEEDBACK_FALLBACK_TITLES,
-	MAX_FEEDBACK_TITLE_LENGTH,
-	MAX_FEEDBACK_TITLE_WORDS,
-	normalizeFeedbackTitle,
+	FEEDBACK_TITLES,
 	toFeedbackIssueDescription,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
@@ -91,10 +88,6 @@ export type {
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@core/application/ports/facility-stats-repository.types";
-export type {
-	FeedbackTitleGenerator,
-	FeedbackTitleRequest,
-} from "@core/application/ports/feedback-title-generator.types";
 export type { IdGenerator } from "@core/application/ports/id-generator.types";
 export type {
 	FeedbackIssueDraft,

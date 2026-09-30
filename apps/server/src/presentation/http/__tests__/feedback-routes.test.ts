@@ -1,13 +1,9 @@
-import type { FeedbackTitleGenerator, IssueTracker } from "@market-health-map/core/application";
+import type { IssueTracker } from "@market-health-map/core/application";
 import {
 	MAX_FEEDBACK_REQUEST_BYTES,
 	makeSubmitFeedback,
 } from "@market-health-map/core/application";
-import {
-	FixedClock,
-	InMemoryIssueTracker,
-	StubFeedbackTitleGenerator,
-} from "@market-health-map/core/application/testing";
+import { FixedClock, InMemoryIssueTracker } from "@market-health-map/core/application/testing";
 import { DryRunIssueTracker } from "@server/infrastructure/linear/dry-run-issue-tracker";
 import { createApiApp } from "@server/presentation/http/api-app";
 import type { ApiServices } from "@server/presentation/http/api-app.types";
@@ -25,12 +21,8 @@ const ALLOWED: AccessDecision = {
 };
 const PNG_BYTES = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 
-function setup(
-	issues: IssueTracker | null,
-	access: AccessDecision = ALLOWED,
-	titles?: FeedbackTitleGenerator,
-) {
-	const submitFeedback = vi.fn(makeSubmitFeedback({ issues, titles, clock: new FixedClock(NOW) }));
+function setup(issues: IssueTracker | null, access: AccessDecision = ALLOWED) {
+	const submitFeedback = vi.fn(makeSubmitFeedback({ issues, clock: new FixedClock(NOW) }));
 	const services = { submitFeedback } as unknown as ApiServices;
 	const app = createApiApp({
 		resolveAccess: vi.fn().mockResolvedValue(access),
@@ -82,7 +74,7 @@ describe("POST /api/v1/feedback", () => {
 		expect(issues.attachments[0]?.bytes).toEqual(PNG_BYTES);
 		const draft = issues.issues[0];
 		expect(draft?.type).toBe("bug");
-		expect(draft?.title).toBe("Bug Report");
+		expect(draft?.title).toBe("Bug Report from Stefano Sanchez");
 		expect(draft?.description).toContain("Stefano Sanchez (stefano@plei.com)");
 		expect(draft?.description).toContain("![](https://uploads.test/2/two.png)");
 		expect(draft?.submitter).toEqual({
@@ -153,17 +145,6 @@ describe("POST /api/v1/feedback", () => {
 			url: "https://linear.app/dry-run/issue/DRY-1",
 		});
 		expect(log).toHaveBeenCalledWith("[feedback:dry-run] would create issue", expect.any(String));
-	});
-
-	it("logs the generated title in dry-run mode", async () => {
-		const log = vi.fn();
-		const titles = new StubFeedbackTitleGenerator("Add market filters");
-		const { post } = setup(new DryRunIssueTracker({ log }), ALLOWED, titles);
-
-		expect((await post(form({ type: "improvement", message: "Add filters" }))).status).toBe(201);
-		const payload = JSON.parse(log.mock.calls[0]?.[1] as string);
-		expect(payload).toMatchObject({ title: "Add market filters" });
-		expect(payload.description).toContain("Add filters");
 	});
 
 	it("requires a session like every other route", async () => {
