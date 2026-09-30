@@ -5,23 +5,13 @@ import type {
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@market-health-map/core/application";
-import type { EntityId } from "@market-health-map/core/domain";
+import { type EntityId, lastCompletedWeekStart } from "@market-health-map/core/domain";
 import { createSeededRandom } from "@server/infrastructure/sample/seeded-random";
 
 const DAY_MS = 86_400_000;
 
 function isoDate(date: Date): string {
 	return date.toISOString().slice(0, 10);
-}
-
-export function lastWeekStart(now: Date): string {
-	const daysSinceMonday = (now.getUTCDay() + 6) % 7;
-	const monday = Date.UTC(
-		now.getUTCFullYear(),
-		now.getUTCMonth(),
-		now.getUTCDate() - daysSinceMonday,
-	);
-	return isoDate(new Date(monday - 7 * DAY_MS));
 }
 
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
@@ -71,10 +61,11 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		const activatedPlayersPrevious28Days = Math.round(
 			playedPrevious28Days * (0.25 + random() * 0.3),
 		);
-		const start = new Date(`${lastWeekStart(now)}T00:00:00Z`);
+		const weekStart = lastCompletedWeekStart(now);
+		const start = new Date(`${weekStart}T00:00:00Z`);
 		start.setUTCDate(start.getUTCDate() - 21);
 		return {
-			weekStart: lastWeekStart(now),
+			weekStart,
 			playedLastWeek,
 			playedPreviousWeek,
 			playedLast28Days,

@@ -105,7 +105,10 @@ reads the last played date separately. The slower player query reads qualifying 
 `fct_games_opened` for the same two 28-day periods. `toFacilityStatsView` can still merge both
 slices for callers that need the complete detail. The panel shows four scorecards, a weekly activity
 chart, and a popular-times heatmap; every chart point and heatmap cell is available by hover and
-keyboard focus. All copy lives in the `facilityDetail` i18n block.
+keyboard focus. The weekly activity chart shows the last four completed Monday to Sunday weeks
+(the SQL buckets them from `date_trunc('week', current_date)` and leaves out the week in
+progress). Each point is labeled by the Sunday that ends its week (`weekEndOf` in core), so
+Mon Sep 21 to Sun Sep 27 shows as Sep 27. All copy lives in the `facilityDetail` i18n block.
 
 ### AI summary (in the browser)
 

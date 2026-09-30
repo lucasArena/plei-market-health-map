@@ -1,8 +1,5 @@
 import { FixedClock } from "@market-health-map/core/application/testing";
-import {
-	lastWeekStart,
-	SampleFacilityStatsRepository,
-} from "@server/infrastructure/sample/sample-facility-stats-repository";
+import { SampleFacilityStatsRepository } from "@server/infrastructure/sample/sample-facility-stats-repository";
 
 const repository = new SampleFacilityStatsRepository(
 	new FixedClock(new Date("2026-09-29T12:00:00Z")),
@@ -25,9 +22,30 @@ describe("SampleFacilityStatsRepository", () => {
 	});
 });
 
-describe("lastWeekStart", () => {
-	it("returns the Monday of the previous week", () => {
-		expect(lastWeekStart(new Date("2026-09-28T00:00:00Z"))).toBe("2026-09-21");
-		expect(lastWeekStart(new Date("2026-10-04T23:00:00Z"))).toBe("2026-09-21");
+describe("sample weekly activity", () => {
+	it("shows four completed Monday to Sunday weeks and leaves out the current week", async () => {
+		const sunday = new SampleFacilityStatsRepository(
+			new FixedClock(new Date("2026-09-27T23:00:00Z")),
+		);
+		const monday = new SampleFacilityStatsRepository(
+			new FixedClock(new Date("2026-09-28T00:00:00Z")),
+		);
+		const ids = ["austin-facility-1" as never];
+
+		const onSunday = await sunday.getReservationStats(ids);
+		const onMonday = await monday.getReservationStats(ids);
+
+		expect(onSunday.weeklyActivity.map((week) => week.weekStart)).toEqual([
+			"2026-08-24",
+			"2026-08-31",
+			"2026-09-07",
+			"2026-09-14",
+		]);
+		expect(onMonday.weeklyActivity.map((week) => week.weekStart)).toEqual([
+			"2026-08-31",
+			"2026-09-07",
+			"2026-09-14",
+			"2026-09-21",
+		]);
 	});
 });

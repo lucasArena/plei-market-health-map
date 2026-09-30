@@ -22,3 +22,4 @@ export type { GeoPoint } from "@core/domain/shared/geo-point.types";
 export { guard } from "@core/domain/shared/guard";
 export { asEntityId } from "@core/domain/shared/id";
 export type { EntityId } from "@core/domain/shared/id.types";
+export { lastCompletedWeekStart, weekEndOf, weekStartOf } from "@core/domain/shared/week";
