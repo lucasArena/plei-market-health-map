@@ -45,6 +45,8 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth client credentials |
 | `DATA_WAREHOUSE_URL` | Read-only Postgres URL for the `dataplei` warehouse (facilities). The warehouse must accept connections from the host. Vercel has no fixed outbound IPs on Hobby, so an IP allowlist on the warehouse will block it |
 | `ALLOWED_EMAIL_DOMAIN` | Email domain allowed in (default `plei.com`) |
+| `LINEAR_API_KEY` | Server-only Linear API key for the in-app feedback form (`POST /api/v1/feedback`). Without it, feedback answers 503 |
+| `FEEDBACK_DRY_RUN` | `true` logs feedback instead of creating Linear issues and returns a fake `DRY-n` ticket, even when a key is set. Leave unset or `false` in staging and production |
 
 `DATABASE_URL_UNPOOLED` is only needed in GitHub Actions, for migrations.
 

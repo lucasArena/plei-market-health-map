@@ -6,3 +6,7 @@ const api = createApiApp({ resolveAccess: () => getInternalAccess() });
 export function GET(request: Request): Promise<Response> {
 	return Promise.resolve(api.fetch(request));
 }
+
+export function POST(request: Request): Promise<Response> {
+	return Promise.resolve(api.fetch(request));
+}

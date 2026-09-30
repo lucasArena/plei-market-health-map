@@ -24,3 +24,41 @@ export class ForbiddenError extends Error {
 		this.name = "ForbiddenError";
 	}
 }
+
+export class InvalidRequestError extends Error {
+	readonly code = "VALIDATION_ERROR";
+	readonly details: unknown;
+
+	constructor(details: unknown) {
+		super("The request is invalid.");
+		this.name = "InvalidRequestError";
+		this.details = details;
+	}
+}
+
+export class PayloadTooLargeError extends Error {
+	readonly code = "PAYLOAD_TOO_LARGE";
+
+	constructor(limitBytes: number) {
+		super(`The request is larger than ${limitBytes} bytes.`);
+		this.name = "PayloadTooLargeError";
+	}
+}
+
+export class FeedbackNotConfiguredError extends Error {
+	readonly code = "FEEDBACK_NOT_CONFIGURED";
+
+	constructor() {
+		super("Feedback is not configured on this server.");
+		this.name = "FeedbackNotConfiguredError";
+	}
+}
+
+export class IssueTrackerError extends Error {
+	readonly code = "ISSUE_TRACKER_FAILED";
+
+	constructor(message: string, options?: ErrorOptions) {
+		super(message, options);
+		this.name = "IssueTrackerError";
+	}
+}

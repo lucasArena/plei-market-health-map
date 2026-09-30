@@ -1,3 +1,4 @@
+import type { FeedbackMode } from "@server/env.types";
 import { z } from "zod";
 
 const emptyAsUndefined = (value: unknown) => (value === "" ? undefined : value);
@@ -11,6 +12,8 @@ export const serverEnvSchema = z.object({
 		emptyAsUndefined,
 		z.string().trim().min(1).default(DEFAULT_ALLOWED_EMAIL_DOMAIN),
 	),
+	LINEAR_API_KEY: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
+	FEEDBACK_DRY_RUN: z.preprocess(emptyAsUndefined, z.stringbool().default(false)),
 });
 
 let cached: z.infer<typeof serverEnvSchema> | undefined;
@@ -26,6 +29,12 @@ export function isLoginTrackingConfigured(): boolean {
 
 export function getAllowedEmailDomain(): string {
 	return getServerEnv().ALLOWED_EMAIL_DOMAIN;
+}
+
+export function getFeedbackMode(): FeedbackMode {
+	const { FEEDBACK_DRY_RUN, LINEAR_API_KEY } = getServerEnv();
+	if (FEEDBACK_DRY_RUN) return "dry-run";
+	return LINEAR_API_KEY ? "linear" : "unconfigured";
 }
 
 export function resetServerEnvCache() {

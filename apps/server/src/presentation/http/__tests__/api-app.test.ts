@@ -12,6 +12,7 @@ function setup(access: AccessDecision = ALLOWED) {
 		getFacilityPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 126 }),
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
 		listRecentLogins: vi.fn().mockResolvedValue([{ id: "l1" }]),
+		submitFeedback: vi.fn().mockResolvedValue({ identifier: "REQ-1", url: "https://linear.app/x" }),
 	};
 	const resolveAccess = vi.fn().mockResolvedValue(access);
 	const app = createApiApp({ resolveAccess, services: () => services });

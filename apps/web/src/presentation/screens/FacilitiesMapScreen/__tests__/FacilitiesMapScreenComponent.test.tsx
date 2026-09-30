@@ -13,6 +13,13 @@ vi.mock("@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelCo
 		</aside>
 	),
 }));
+vi.mock("@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent", () => ({
+	FeedbackWidget: ({ facilityId }: { facilityId: string | null }) => (
+		<button type="button" data-testid="feedback-widget" data-facility={facilityId ?? ""}>
+			?
+		</button>
+	),
+}));
 vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules", () => ({
 	useFacilitiesMapScreenRules: () => mockRules(),
 }));
@@ -130,5 +137,22 @@ describe("FacilitiesMapScreen", () => {
 
 		expect(screen.getByTestId("detail-panel")).toHaveTextContent("f1");
 		expect(screen.getByTestId("detail-panel")).toHaveAttribute("data-closing", "true");
+	});
+
+	it("places the feedback button bottom left and moves the legend beside it", () => {
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				selectedFacilityId: "f1",
+				sessionScale: { low: 1, high: 10 },
+			}),
+		);
+
+		render(<FacilitiesMapScreen />);
+
+		expect(screen.getByTestId("feedback-widget")).toHaveAttribute("data-facility", "f1");
+		const legend = screen.getByTestId("session-heatmap-legend");
+		expect(legend).toHaveClass("bottom-8", "left-16");
+		expect(legend).not.toHaveClass("left-3");
 	});
 });

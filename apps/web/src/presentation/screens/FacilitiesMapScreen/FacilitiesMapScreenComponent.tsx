@@ -1,6 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import { FeedbackWidget } from "@/presentation/components/layout/FeedbackWidget/FeedbackWidgetComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
@@ -44,7 +45,7 @@ export function FacilitiesMapScreen() {
 			{hasSessionHeatmap && (
 				<div
 					data-testid="session-heatmap-legend"
-					className="absolute bottom-8 left-3 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
+					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
 				>
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
 						{messages.sessionHeatmapLegend}
@@ -95,6 +96,7 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
+			<FeedbackWidget facilityId={selectedFacilityId} />
 			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"

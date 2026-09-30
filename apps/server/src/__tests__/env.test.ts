@@ -1,5 +1,6 @@
 import {
 	getAllowedEmailDomain,
+	getFeedbackMode,
 	getServerEnv,
 	isLoginTrackingConfigured,
 	resetServerEnvCache,
@@ -47,5 +48,32 @@ describe("server env", () => {
 		resetServerEnvCache();
 		vi.stubEnv("ALLOWED_EMAIL_DOMAIN", " example.org ");
 		expect(getAllowedEmailDomain()).toBe("example.org");
+	});
+
+	it("leaves feedback unconfigured without a Linear key", () => {
+		vi.stubEnv("LINEAR_API_KEY", "");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "");
+		expect(getFeedbackMode()).toBe("unconfigured");
+	});
+
+	it("sends feedback to Linear when the key is set", () => {
+		vi.stubEnv("LINEAR_API_KEY", "lin_api_test");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "false");
+		expect(getFeedbackMode()).toBe("linear");
+		expect(getServerEnv().LINEAR_API_KEY).toBe("lin_api_test");
+	});
+
+	it("prefers dry-run over a real key", () => {
+		vi.stubEnv("LINEAR_API_KEY", "lin_api_test");
+		vi.stubEnv("FEEDBACK_DRY_RUN", "true");
+		expect(getFeedbackMode()).toBe("dry-run");
+		resetServerEnvCache();
+		vi.stubEnv("LINEAR_API_KEY", "");
+		expect(getFeedbackMode()).toBe("dry-run");
+	});
+
+	it("fails fast on an unreadable dry-run flag", () => {
+		vi.stubEnv("FEEDBACK_DRY_RUN", "maybe");
+		expect(() => getServerEnv()).toThrow();
 	});
 });
