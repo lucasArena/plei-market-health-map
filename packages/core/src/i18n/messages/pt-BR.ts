@@ -38,6 +38,7 @@ export const ptBR: Messages = {
 		layersBrand: "Plei Market",
 		layersHeading: "Camadas",
 		layersFacilities: "Instalações",
+		layersSessions: "Sessões do app",
 		layersCollapse: "Ocultar camadas",
 		layersExpand: "Mostrar camadas",
 	},
