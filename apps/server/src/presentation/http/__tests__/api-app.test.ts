@@ -11,6 +11,7 @@ function setup(access: AccessDecision = ALLOWED) {
 		getFacilityDetail: vi.fn().mockResolvedValue({ facility: { id: "889" } }),
 		getFacilityReservationStats: vi.fn().mockResolvedValue({ playedLastWeek: 55 }),
 		getFacilityPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 126 }),
+		getMarketGameInsights: vi.fn().mockResolvedValue([]),
 		getMarketSummary: vi.fn().mockResolvedValue({ scope: { facilityCount: 42 } }),
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
@@ -146,5 +147,17 @@ describe("createApiApp", () => {
 
 	it("uses the real container by default", () => {
 		expect(createApiApp({ resolveAccess: vi.fn() })).toBeDefined();
+	});
+});
+
+describe("market insights route", () => {
+	it("loads insights through their own authenticated scoped endpoint", async () => {
+		const { get, services } = setup();
+		expect(await get("/market-summary/insights?market=houston")).toEqual({
+			status: 200,
+			body: { data: [] },
+		});
+		expect(services.getMarketGameInsights).toHaveBeenCalledWith({ market: "houston" });
+		expect(services.getMarketSummary).not.toHaveBeenCalled();
 	});
 });

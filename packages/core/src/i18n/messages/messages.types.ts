@@ -54,6 +54,8 @@ export interface Messages {
 		gamesOther: string;
 		summaryNone: string;
 		summaryActivity: string;
+		insightsNone: string;
+		insightChange: string;
 		unavailable: string;
 		gamesPlayed: string;
 		confirmationRate: string;
@@ -87,6 +89,14 @@ export interface Messages {
 		ofTotal: string;
 		topFacilities: string;
 		topMarkets: string;
+		overallGameChange: string;
+		insightsFailed: string;
+		keyInsights: string;
+		gameChange: string;
+		noBaseline: string;
+		marketGameInsight: string;
+		gamesDeclined: string;
+		gamesIncreased: string;
 		marketFacilities: string;
 		noRankings: string;
 		allMarkets: string;

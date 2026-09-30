@@ -42,12 +42,12 @@ export const en: Messages = {
 		layersExpand: "Show layers",
 	},
 	facilityAi: {
-		generate: "Write an AI summary",
+		generate: "Find key insights",
 		downloadHint: "Downloads a free 880 MB model once, then runs privately on this device.",
 		loading: "Loading the AI model on this device… {percent}%",
-		writing: "Writing summary…",
-		label: "AI summary",
-		failed: "The AI summary isn't available on this device, so this is the standard summary.",
+		writing: "Finding key insights…",
+		label: "Key insights",
+		failed: "AI insights aren't available on this device. Showing the strongest period changes.",
 	},
 	facilityDetail: {
 		label: "Facility details",
@@ -59,6 +59,8 @@ export const en: Messages = {
 		summaryActivity:
 			"{games} brought in {activated} newly activated players, with a confirmation rate of {confirmation}. Activity was strongest on {day} {period}.",
 		unavailable: "Unavailable",
+		insightsNone: "No clear directional signal in the available period comparisons.",
+		insightChange: "{metric}: {change}% versus the previous 28 days ({previous} → {current}).",
 		gamesPlayed: "Games played",
 		confirmationRate: "Confirmation rate",
 		uniquePlayers: "Unique players",
@@ -91,6 +93,17 @@ export const en: Messages = {
 		activeMarkets: "Active markets",
 		ofTotal: "of {total}",
 		topFacilities: "Top facilities",
+		overallGameChange:
+			"Overall games: {previous} → {current}, a net change of {change} versus the previous 28 days. Largest contributors:",
+		insightsFailed:
+			"Could not load market insights. The scorecards and charts are still available.",
+		keyInsights: "Key insights",
+		gameChange: "{previous} → {current} games ({percent}) versus the previous 28 days",
+		noBaseline: "no previous games; no percentage baseline",
+		marketGameInsight:
+			"{name}: games {direction}, {comparison}; contribution to the overall change: {change} games.",
+		gamesDeclined: "declined",
+		gamesIncreased: "increased",
 		topMarkets: "Top markets",
 		marketFacilities: "{active} of {total} facilities active",
 		noRankings: "No games played in the last 28 days.",

@@ -47,3 +47,12 @@ export interface FacilityPlayerStatsRepository {
 export interface FacilityStatsRepository
 	extends FacilityReservationStatsRepository,
 		FacilityPlayerStatsRepository {}
+
+export interface FacilityGameComparison {
+	facilityId: EntityId;
+	playedLast28Days: number;
+	playedPrevious28Days: number;
+}
+export interface FacilityGameComparisonRepository {
+	getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]>;
+}

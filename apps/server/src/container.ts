@@ -12,6 +12,7 @@ import {
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
 	makeGetFacilityReservationStats,
+	makeGetMarketGameInsights,
 	makeGetMarketPlayerStats,
 	makeGetMarketSummary,
 	makeListAppSessionHeatmap,
@@ -83,6 +84,7 @@ function buildFacilities() {
 		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
 		getFacilityPlayerStats: makeGetFacilityPlayerStats(repositories),
 		getMarketSummary: makeGetMarketSummary(repositories),
+		getMarketGameInsights: makeGetMarketGameInsights(repositories),
 		getMarketPlayerStats: makeGetMarketPlayerStats(repositories),
 	};
 }
@@ -178,6 +180,8 @@ const container = {
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
+	getMarketGameInsights: (input?: GetMarketSummaryInput) =>
+		facilityModule().getMarketGameInsights(input),
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
 	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>
 		facilityModule().getMarketPlayerStats(input),

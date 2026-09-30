@@ -102,13 +102,31 @@ describe("directionOf", () => {
 });
 
 describe("buildSummary", () => {
-	it("summarizes high-level facility activity", () => {
-		expect(buildSummary(STATS, messages, formatters)).toBe(
-			"41 games brought in 7 newly activated players, with a confirmation rate of 82%. Activity was strongest on Sat PM.",
-		);
-		expect(buildSummary({ ...STATS, playedLast28Days: 1 }, messages, formatters)).toBe(
-			"1 game brought in 7 newly activated players, with a confirmation rate of 82%. Activity was strongest on Sat PM.",
-		);
+	it("ranks activation decline ahead of a smaller games decline", () => {
+		expect(
+			buildSummary(
+				{
+					...STATS,
+					activatedPlayersPeriodChangePercent: -29,
+					playedPeriodChangePercent: -9.9,
+					uniquePlayersPeriodChangePercent: -11.4,
+				},
+				messages,
+				formatters,
+			),
+		).toContain("Activated players: -29%");
+		expect(
+			buildSummary(
+				{
+					...STATS,
+					activatedPlayersPeriodChangePercent: 0,
+					playedPeriodChangePercent: null,
+					uniquePlayersPeriodChangePercent: 0,
+				},
+				messages,
+				formatters,
+			),
+		).toBe(messages.insightsNone);
 	});
 
 	it("says when nothing was played", () => {
@@ -127,7 +145,7 @@ describe("buildSummary", () => {
 			{ ...messages, dayLabels: [], timePeriodLabels: [] },
 			formatters,
 		);
-		expect(summary).toContain("confirmation rate of Unavailable");
+		expect(summary).toContain("versus the previous 28 days");
 	});
 });
 
@@ -312,7 +330,7 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.name).toBe("Pegaso HTX");
 		expect(result.current.aiContext?.cacheKey).toBe(
-			`v4:facility-${DETAIL.facility.id}:${DETAIL.stats.weekStart}:en`,
+			`v5:facility-${DETAIL.facility.id}:${DETAIL.stats.weekStart}:en`,
 		);
 		expect(result.current.aiContext?.prompt.at(-1)?.content).toContain(DETAIL.facility.name);
 		expect(result.current.messages).toBe(messages);

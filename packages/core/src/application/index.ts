@@ -41,7 +41,9 @@ export type {
 } from "@core/application/dtos/login-event-dto.types";
 export { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
 export type {
+	FacilityGameChangeView,
 	GetMarketSummaryInput,
+	MarketGameChangeView,
 	MarketPlayerStatsView,
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
@@ -81,6 +83,8 @@ export type { AppSessionHeatmapRepository } from "@core/application/ports/app-se
 export type { Clock } from "@core/application/ports/clock.types";
 export type { FacilityRepository } from "@core/application/ports/facility-repository.types";
 export type {
+	FacilityGameComparison,
+	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
 	FacilityPlayerStatsRepository,
 	FacilityReservationStats,
@@ -99,6 +103,7 @@ export type { LoginEventRepository } from "@core/application/ports/login-event-r
 export { makeGetFacilityDetail } from "@core/application/use-cases/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/use-cases/get-facility-player-stats";
 export { makeGetFacilityReservationStats } from "@core/application/use-cases/get-facility-reservation-stats";
+export { makeGetMarketGameInsights } from "@core/application/use-cases/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/use-cases/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/use-cases/get-market-summary";
 export { makeListAppSessionHeatmap } from "@core/application/use-cases/list-app-session-heatmap";

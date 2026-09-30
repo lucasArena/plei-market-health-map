@@ -7,6 +7,7 @@ import { createDetailFormatters } from "@/presentation/components/map/FacilityDe
 import {
 	buildFacilityRows,
 	buildFacilitySummaryViewModel,
+	buildMarketAiSubject,
 	buildMarketRows,
 	buildMarketSummaryText,
 	buildMarketSummaryViewModel,
@@ -17,6 +18,12 @@ import {
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
+const mockUseMarketGameInsights = vi
+	.fn()
+	.mockReturnValue({ data: [], isPending: false, isError: false });
+vi.mock("@/presentation/hooks/use-market/use-market-game-insights", () => ({
+	useMarketGameInsights: (...args: unknown[]) => mockUseMarketGameInsights(...args),
+}));
 const mockUseMarketSummary = vi.fn();
 const mockUseMarketPlayerStats = vi.fn();
 const mockUseFacilityReservationStats = vi.fn();
@@ -101,7 +108,7 @@ describe("market summary builders", () => {
 				formatters,
 			),
 		).toBe(
-			"212 games across 84 active facilities brought in 24 newly activated players, with a confirmation rate of 84.8%. Activity was strongest on Sat PM.",
+			"Activated players: 20% versus the previous 28 days (20 → 24). Games played: 6% versus the previous 28 days (200 → 212).",
 		);
 		expect(
 			buildMarketSummaryText(
@@ -174,7 +181,7 @@ describe("market summary builders", () => {
 
 		expect(view.topMarkets).toBeNull();
 		expect(view.topFacilities).toHaveLength(2);
-		expect(view.scopeTiles.map((tile) => tile.key)).toEqual(["facilities"]);
+		expect(view.scopeTiles).toEqual([]);
 		expect(view.summary).toBe(messages.marketSummaryNone);
 	});
 
@@ -190,7 +197,7 @@ describe("market summary builders", () => {
 		expect(view.scopeTiles).toEqual([]);
 		expect(view.topMarkets).toBeNull();
 		expect(view.topFacilities).toBeNull();
-		expect(view.summary).toContain("212 games");
+		expect(view.summary).toContain("Games played: 6%");
 		expect(view.popularTimes).toHaveLength(28);
 		expect(
 			buildFacilitySummaryViewModel(
@@ -223,6 +230,7 @@ describe("market summary builders", () => {
 describe("useMarketSummaryPanelRules", () => {
 	beforeEach(() => {
 		mockScope = { kind: "all" };
+		mockUseMarketGameInsights.mockReturnValue({ data: [], isPending: false, isError: false });
 		mockUseFacilityReservationStats.mockReturnValue(IDLE_QUERY);
 		mockUseFacilityPlayerStats.mockReturnValue(IDLE_QUERY);
 		mockUseMarketSummary.mockReturnValue({
@@ -248,12 +256,41 @@ describe("useMarketSummaryPanelRules", () => {
 		return { ...rendered, onClose, onClosed };
 	}
 
+	it("keeps the card ready while insights are pending or fail", () => {
+		mockUseMarketGameInsights.mockReturnValue(IDLE_QUERY);
+		const { result, rerender } = renderRules();
+		expect(result.current.status).toBe("ready");
+		expect(result.current.view?.tiles).toHaveLength(4);
+		expect(result.current.view?.weeklyActivity.length).toBeGreaterThan(0);
+		expect(result.current.view?.summary).toBeNull();
+		expect(result.current.isSummaryPending).toBe(true);
+		mockUseMarketGameInsights.mockReturnValue({ data: undefined, isPending: false, isError: true });
+		rerender({ isClosing: false });
+		expect(result.current.status).toBe("ready");
+		expect(result.current.isInsightsFailed).toBe(true);
+		expect(result.current.view?.tiles).toHaveLength(4);
+	});
+	it("defers insights until the main report arrives and disables them for facility scope", () => {
+		mockUseMarketSummary.mockReturnValue(IDLE_QUERY);
+		const { rerender } = renderRules();
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, false);
+		mockUseMarketSummary.mockReturnValue({
+			data: MARKET_SUMMARY,
+			isPending: false,
+			isError: false,
+		});
+		rerender({ isClosing: false });
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, true);
+		mockScope = { kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" };
+		rerender({ isClosing: false });
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, false);
+	});
 	it("builds the market-wide view", () => {
 		const { result } = renderRules();
 
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.scopeTiles).toHaveLength(2);
-		expect(result.current.view?.summary).toContain("84 active facilities");
+		expect(result.current.view?.summary).toContain("Activated players: 20%");
 		expect(result.current.isSummaryPending).toBe(false);
 		expect(result.current.messages).toBe(messages);
 		expect(result.current.heading.title).toBe("All markets");
@@ -272,7 +309,7 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith("houston", true);
 		expect(result.current.heading.title).toBe("Houston");
 		expect(result.current.view?.topMarkets).toBeNull();
-		expect(result.current.view?.scopeTiles).toHaveLength(1);
+		expect(result.current.view?.scopeTiles).toHaveLength(0);
 	});
 
 	it("reuses the facility endpoints for a facility scope and skips the market queries", () => {
@@ -345,5 +382,121 @@ describe("useMarketSummaryPanelRules", () => {
 		result.current.handleAnimationEnd();
 		expect(onClosed).toHaveBeenCalledOnce();
 		unmount();
+	});
+});
+
+describe("scope-specific game contributors", () => {
+	const summary = {
+		...MARKET_SUMMARY,
+		gameChanges: [
+			{
+				id: "houston",
+				name: "Houston",
+				playedLast28Days: 100,
+				playedPrevious28Days: 200,
+				change: -100,
+				changePercent: -50,
+				facilities: [
+					{
+						id: "1",
+						name: "Arena A",
+						playedLast28Days: 20,
+						playedPrevious28Days: 140,
+						change: -120,
+						changePercent: -85.7,
+					},
+					{
+						id: "2",
+						name: "Arena B",
+						playedLast28Days: 80,
+						playedPrevious28Days: 60,
+						change: 20,
+						changePercent: 33.3,
+					},
+				],
+			},
+			{
+				id: "philly",
+				name: "Philadelphia",
+				playedLast28Days: 80,
+				playedPrevious28Days: 0,
+				change: 80,
+				changePercent: null,
+				facilities: [],
+			},
+		],
+	};
+	it("names markets and their contributions without facilities in all-markets scope", () => {
+		const text = buildMarketSummaryText(summary, undefined, messages, detailMessages, formatters);
+		expect(text).toContain("Houston: games declined");
+		expect(text).toContain("contribution to the overall change: -100 games");
+		expect(text).toContain("Philadelphia: games increased");
+		expect(text).toContain("no previous games");
+		expect(text).not.toContain("Arena");
+	});
+	it("names declining and growing facilities in a selected market even when they offset", () => {
+		const view = buildMarketSummaryViewModel(
+			{
+				...summary,
+				stats: { ...summary.stats, playedLast28Days: 200, playedPrevious28Days: 200 },
+				gameChanges: summary.gameChanges.slice(0, 1).map((market) => ({ ...market, change: 0 })),
+			},
+			undefined,
+			true,
+			messages,
+			detailMessages,
+			formatters,
+			true,
+		);
+		expect(view.summary).toContain("Arena A: games declined");
+		expect(view.summary).toContain("Arena B: games increased");
+		expect(view.summary).not.toContain("Philadelphia");
+		expect(view.summary).not.toContain("Houston: games");
+	});
+});
+
+describe("AI subject readiness", () => {
+	it("does not start AI while required analytics are absent", () => {
+		const heading = { title: "All markets", subtitle: "" };
+		expect(
+			buildMarketAiSubject({ kind: "all" }, heading, MARKET_SUMMARY, undefined, undefined),
+		).toBeNull();
+		expect(
+			buildMarketAiSubject({ kind: "all" }, heading, undefined, undefined, MARKET_PLAYER_STATS),
+		).toBeNull();
+		expect(
+			buildMarketAiSubject(
+				{ kind: "facility", id: "889", name: "Arena", marketName: "Houston" },
+				heading,
+				undefined,
+				undefined,
+				MARKET_PLAYER_STATS,
+			),
+		).toBeNull();
+	});
+	it("identifies all markets, one market and one facility", () => {
+		const heading = { title: "Houston", subtitle: "" };
+		expect(
+			buildMarketAiSubject({ kind: "all" }, heading, MARKET_SUMMARY, undefined, MARKET_PLAYER_STATS)
+				?.kind,
+		).toBe("all-markets");
+		expect(
+			buildMarketAiSubject(
+				{ kind: "market", id: "houston", name: "Houston" },
+				heading,
+				MARKET_SUMMARY,
+				undefined,
+				MARKET_PLAYER_STATS,
+			)?.kind,
+		).toBe("market");
+		expect(
+			buildMarketAiSubject(
+				{ kind: "facility", id: "889", name: "Arena", marketName: "Houston" },
+				heading,
+				undefined,
+				FACILITY_REPORT,
+				MARKET_PLAYER_STATS,
+			)?.kind,
+		).toBe("facility");
 	});
 });
