@@ -182,11 +182,23 @@ Open a PR from `main` into `staging` and merge it with **Create a merge commit**
 
 Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Only branch from `main` in an emergency where staging holds work that must not ship. In that case, open the PR straight into `main` and back-merge `main` into `staging` right after.
 
+## Linear tracking (mandatory)
+
+Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.
+
+1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Product** team (`PROD`), in that project, assigned to the person you are working for.
+2. **Set it to In Progress** while you work.
+3. **Move it to Needs Review when the PR opens**, and attach the PR link to the ticket so the diff shows up there. Put the ticket ID in the branch slug (`feature/prod-467-<slug>`) and at the end of the PR title (see *Release workflow*).
+4. **Move it to Done when the PR merges**, unless the GitHub integration already did.
+
+Reach Linear through the Linear MCP server in your agent client, or the GraphQL API (`https://api.linear.app/graphql`) with your own API key from your environment. Never commit keys or paste them into tickets, PRs or logs. The app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` are only for in-app feedback, not for agent logging. If you can't reach Linear, tell the person you are working for.
+
 ## Before you finish a task
 
 - `pnpm check` passes.
 - New files follow the folder structure above, and docs in `CLAUDE.md` and `docs/` match what changed.
 - A row is added to `docs/agent-usage.md` for meaningful agent-assisted work (a project must-have).
+- The Linear ticket is linked to the PR and has the right status.
 
 <!-- BEGIN:turborepo-agent-rules -->
 

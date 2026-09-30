@@ -17,18 +17,25 @@ const FEEDBACK: Feedback = {
 };
 
 describe("toFeedbackIssueTitle", () => {
-	it("prefixes improvements and bugs differently", () => {
-		expect(toFeedbackIssueTitle("improvement", "Add filters")).toBe("[MHM feedback] Add filters");
-		expect(toFeedbackIssueTitle("bug", "Map is blank")).toBe("[MHM bug] Map is blank");
+	it("names the reporter after the type", () => {
+		const submitter = { name: "Lucas Arena", email: "lucas@plei.com" };
+
+		expect(toFeedbackIssueTitle("bug", submitter)).toBe("Bug Report from Lucas Arena");
+		expect(toFeedbackIssueTitle("improvement", submitter)).toBe("Feedback from Lucas Arena");
 	});
 
-	it("flattens whitespace and cuts long messages at 80 characters", () => {
-		const long = `${"word ".repeat(30)}\nend`;
-		const title = toFeedbackIssueTitle("improvement", long);
+	it("uses the email when there is no name", () => {
+		expect(toFeedbackIssueTitle("bug", { name: " ", email: "lucas@plei.com" })).toBe(
+			"Bug Report from lucas@plei.com",
+		);
+		expect(toFeedbackIssueTitle("improvement", { name: null, email: "lucas@plei.com" })).toBe(
+			"Feedback from lucas@plei.com",
+		);
+	});
 
-		expect(title).not.toContain("\n");
-		expect(title.endsWith("...")).toBe(true);
-		expect(title.length).toBeLessThanOrEqual("[MHM feedback] ".length + 80 + 3);
+	it("falls back to the plain title without a name or email", () => {
+		expect(toFeedbackIssueTitle("bug")).toBe("Bug Report");
+		expect(toFeedbackIssueTitle("improvement", { name: "", email: "" })).toBe("Feedback");
 	});
 });
 
@@ -63,12 +70,15 @@ describe("toFeedbackIssueDescription", () => {
 });
 
 describe("toFeedbackIssueDraft", () => {
-	it("builds the draft for the issue tracker", () => {
-		expect(toFeedbackIssueDraft(FEEDBACK, [], AT)).toMatchObject({
+	it("builds the draft with the generic title and the full message", () => {
+		const draft = toFeedbackIssueDraft(FEEDBACK, [], AT);
+
+		expect(draft).toMatchObject({
 			type: "bug",
-			title: "[MHM bug] The side panel covers the zoom buttons. Steps: open any facility.",
+			title: "Bug Report from Stefano Sanchez",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
+		expect(draft.description.startsWith(FEEDBACK.message)).toBe(true);
 	});
 });
 

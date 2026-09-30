@@ -43,7 +43,7 @@ describe("submitFeedback", () => {
 		expect(view).toEqual({ identifier: "TEST-1", url: "https://linear.test/issue/TEST-1" });
 		expect(issues.issues).toHaveLength(1);
 		expect(issues.issues[0]?.type).toBe("improvement");
-		expect(issues.issues[0]?.title).toBe("[MHM feedback] Show the market name on hover");
+		expect(issues.issues[0]?.title).toBe("Feedback from Stefano Sanchez");
 		expect(issues.issues[0]?.description).toContain("2026-09-29T20:00:00.000Z");
 		expect(issues.attachments).toHaveLength(0);
 	});
@@ -78,7 +78,10 @@ describe("submitFeedback", () => {
 
 		await submitFeedback({ ...INPUT, type: "bug", message: "Map goes blank" });
 
-		expect(issues.issues[0]).toMatchObject({ type: "bug", title: "[MHM bug] Map goes blank" });
+		expect(issues.issues[0]).toMatchObject({
+			type: "bug",
+			title: "Bug Report from Stefano Sanchez",
+		});
 	});
 
 	it("uploads every screenshot in order before creating the issue", async () => {
