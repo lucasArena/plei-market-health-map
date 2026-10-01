@@ -51,15 +51,15 @@ describe("UserMenu", () => {
 		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
 	});
 
-	it("opens a flat account menu with feedback types above the scale slot", () => {
+	it("opens a flat account menu right above the avatar, over the scale slot", () => {
 		renderMenu();
 		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 
 		const dialog = screen.getByRole("dialog", { name: "Account menu" });
+		expect(screen.getByTestId("profile-legend-slot")).toHaveClass("invisible");
 		expect(dialog).toHaveClass(
-			"bottom-full",
+			"bottom-[calc(var(--map-profile-size)+var(--map-profile-legend-gap))]",
 			"left-0",
-			"mb-[var(--map-profile-legend-gap)]",
 			"map-glass",
 			"shadow-[var(--map-shadow)]",
 		);

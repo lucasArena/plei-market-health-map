@@ -13,6 +13,7 @@ import {
 	FEEDBACK_DROPZONE_CLASS,
 	FEEDBACK_ICON_WELL_CLASS,
 	FEEDBACK_LEGEND_SLOT_CLASS,
+	FEEDBACK_LEGEND_SLOT_VISIBILITY_CLASS,
 	FEEDBACK_MENU_ITEM_CLASS,
 	FEEDBACK_MENU_SEPARATOR_CLASS,
 	FEEDBACK_PANEL_ANIMATION_CLASS,
@@ -148,7 +149,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 			<div
 				ref={setLegendSlot}
 				data-testid="profile-legend-slot"
-				className={FEEDBACK_LEGEND_SLOT_CLASS}
+				className={`${FEEDBACK_LEGEND_SLOT_CLASS} ${FEEDBACK_LEGEND_SLOT_VISIBILITY_CLASS[isOpen ? "open" : "closed"]}`}
 			/>
 			<button
 				ref={triggerRef}

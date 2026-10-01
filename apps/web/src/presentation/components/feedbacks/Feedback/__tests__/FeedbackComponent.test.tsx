@@ -102,8 +102,8 @@ describe("Feedback", () => {
 		expect(dialog).toHaveClass(
 			"map-glass",
 			"shadow-[var(--map-shadow)]",
-			"bottom-full",
-			"mb-[var(--map-profile-legend-gap)]",
+			"bottom-[calc(var(--map-profile-size)+var(--map-profile-legend-gap))]",
+			"z-50",
 		);
 		expect(dialog).toHaveTextContent("Lucas Arena");
 		expect(dialog).toHaveTextContent("Suggest an improvement");
