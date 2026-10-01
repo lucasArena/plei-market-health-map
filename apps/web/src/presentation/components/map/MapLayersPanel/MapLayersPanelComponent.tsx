@@ -2,7 +2,11 @@
 
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
-import { MAP_MENU_SURFACE_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
+import {
+	MAP_MENU_GROUP_LABEL_CLASS,
+	MAP_MENU_ROW_LABEL_CLASS,
+	MAP_MENU_SURFACE_CLASS,
+} from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	const track = {
@@ -104,33 +108,30 @@ export function MapLayersPanel() {
 					onAnimationEnd={finishCardMotion}
 					className={`${MAP_MENU_SURFACE_CLASS} right-0 w-max ${cardMotionClass}`}
 				>
-					<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase">
-						{messages.layersHeading}
-					</p>
-					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersDemand}
 					</h2>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersSessions}</p>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
+						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersSessions}</p>
 						<LayerSwitch
 							checked={showSessions}
 							label={messages.layersSessions}
 							onToggle={toggleSessions}
 						/>
 					</div>
-					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersSupply}
 					</h2>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersActiveFacilities}</p>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
+						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersActiveFacilities}</p>
 						<LayerSwitch
 							checked={showActiveFacilities}
 							label={messages.layersActiveFacilities}
 							onToggle={toggleActiveFacilities}
 						/>
 					</div>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersInactiveFacilities}</p>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
+						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
 						<LayerSwitch
 							checked={showInactiveFacilities}
 							label={messages.layersInactiveFacilities}
