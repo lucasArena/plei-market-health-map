@@ -30,8 +30,6 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	);
 }
 
-const LAYERS_BUTTON_STATE_CLASS = { on: "map-icon-button-on", off: "" };
-
 export function MapLayersPanel() {
 	const {
 		cardMotion,
@@ -77,7 +75,7 @@ export function MapLayersPanel() {
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
 				data-active={hasLayersOn}
-				className={`map-icon-button map-glass pointer-events-auto flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none ${LAYERS_BUTTON_STATE_CLASS[hasLayersOn ? "on" : "off"]}`}
+				className={`map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none`}
 			>
 				<svg
 					viewBox="0 0 16 16"
@@ -93,6 +91,13 @@ export function MapLayersPanel() {
 					<circle cx="11.333" cy="11.333" r="2" />
 					<circle cx="4.667" cy="4.667" r="2" />
 				</svg>
+				{hasLayersOn && (
+					<span
+						data-testid="layers-indicator"
+						aria-hidden="true"
+						className="absolute top-0 right-0 size-2 rounded-full bg-pleiful-pitch-green-50 ring-2 ring-background"
+					/>
+				)}
 			</button>
 			{isCardShown && (
 				<div

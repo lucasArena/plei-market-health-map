@@ -244,7 +244,7 @@ describe("MapLayersPanel", () => {
 		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
 	});
 
-	it("shows the button as active while any layer is on", () => {
+	it("shows a dot on the button while any layer is on", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
@@ -252,14 +252,20 @@ describe("MapLayersPanel", () => {
 		);
 		const button = screen.getByRole("button", { name: "Hide layers" });
 		expect(button).toHaveAttribute("data-active", "true");
-		expect(button).toHaveClass("map-icon-button-on");
+		expect(screen.getByTestId("layers-indicator")).toHaveClass(
+			"absolute",
+			"top-0",
+			"right-0",
+			"rounded-full",
+			"bg-pleiful-pitch-green-50",
+		);
 
 		fireEvent.click(switchByName("App sessions"));
 		fireEvent.click(switchByName("Active facilities"));
 		expect(button).toHaveAttribute("data-active", "true");
 		fireEvent.click(switchByName("Inactive facilities"));
 		expect(button).toHaveAttribute("data-active", "false");
-		expect(button).not.toHaveClass("map-icon-button-on");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
 		fireEvent.click(switchByName("App sessions"));
 		expect(button).toHaveAttribute("data-active", "true");
 	});
