@@ -12,6 +12,7 @@ import type {
 	SubmitFeedbackInput,
 } from "@market-health-map/core/application";
 import {
+	type AppSessionFilters,
 	makeGetAppMetrics,
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
@@ -20,6 +21,7 @@ import {
 	makeGetMarketPlayerStats,
 	makeGetMarketSummary,
 	makeListAppMetricsPeople,
+	makeListAppSessionFilterOptions,
 	makeListAppSessionHeatmap,
 	makeListEnabledFeatureFlags,
 	makeListFacilities,
@@ -155,19 +157,20 @@ function buildAppSessionHeatmapRepository() {
 }
 
 function buildAppSessionHeatmap() {
-	const listAppSessionHeatmap = makeListAppSessionHeatmap({
-		appSessionHeatmap: buildAppSessionHeatmapRepository(),
-	});
+	const appSessionHeatmap = buildAppSessionHeatmapRepository();
+	const listAppSessionHeatmap = makeListAppSessionHeatmap({ appSessionHeatmap });
+	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({ appSessionHeatmap });
 	return {
-		listAppSessionHeatmap: async () => {
+		listAppSessionFilterOptions,
+		listAppSessionHeatmap: async (filters: AppSessionFilters = {}) => {
 			try {
-				return await listAppSessionHeatmap();
+				return await listAppSessionHeatmap(filters);
 			} catch (error) {
 				console.error(
 					"[app-session-heatmap]",
 					error instanceof Error ? error.stack : String(error),
 				);
-				return [];
+				throw error;
 			}
 		},
 	};
@@ -242,7 +245,9 @@ const container = {
 	recordLogin: (input: RecordLoginInput) => loginModule().recordLogin(input),
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
 	listFacilities: () => facilityModule().listFacilities(),
-	listAppSessionHeatmap: () => appSessionHeatmapModule().listAppSessionHeatmap(),
+	listAppSessionHeatmap: (filters?: AppSessionFilters) =>
+		appSessionHeatmapModule().listAppSessionHeatmap(filters),
+	listAppSessionFilterOptions: () => appSessionHeatmapModule().listAppSessionFilterOptions(),
 	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
 	getFacilityReservationStats: (input: GetFacilityReservationStatsInput) =>
 		facilityModule().getFacilityReservationStats(input),

@@ -43,3 +43,11 @@ MapLibre's zoom control is styled through its own classes (`.maplibregl-ctrl-gro
 so MapLibre still wires the buttons.
 
 The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. All switches start enabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities.
+
+When `player-demographic-filters` is enabled, the layers menu is 280px wide and scrolls within the available viewport. Player filters under Demand start with an Add filter button. A custom glass menu offers Gender, Player skill level and Player age; only added fields appear as compact removable chips. Each chip opens a styled option list with a selected checkmark, keyboard navigation and Escape support. Apply submits the draft together; Reset restores All immediately. An applied-cohort summary also appears in the map legend. Pending edits, loading, failures with Retry, and empty results have separate messages. Supply switches remain below the Demand controls.
+
+Age filters offer optional minimum and maximum whole-year inputs (0–120) without preset shortcuts. Blank bounds are unlimited; reversed ranges block Apply.
+
+Gender and skill menus support multiple checked choices and remain open while selecting. Values within each field match with OR; separate fields combine with AND.
+
+Skill choices follow Beginner, Intermediate, Advanced, Expert progression while retaining warehouse-backed values.

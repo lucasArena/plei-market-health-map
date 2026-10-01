@@ -3,3 +3,9 @@ export interface WarehouseAppSessionHeatmapRow {
 	lng: number | string | null;
 	session_weight: number | string | null;
 }
+
+export interface WarehouseAppSessionFilterRow {
+	age: number | string | null;
+	gender: string | null;
+	skill: string | null;
+}

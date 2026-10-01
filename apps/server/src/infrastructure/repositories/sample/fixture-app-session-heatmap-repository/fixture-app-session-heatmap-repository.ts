@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
+	AppSessionFilters,
 	AppSessionHeatmapCellView,
 	AppSessionHeatmapRepository,
 } from "@market-health-map/core/application";
@@ -41,7 +42,12 @@ export class FixtureAppSessionHeatmapRepository implements AppSessionHeatmapRepo
 
 	constructor(private readonly fixturePath: string = DEFAULT_APP_SESSION_HEATMAP_FIXTURE_PATH) {}
 
-	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {
+	async listFilterOptions() {
+		return { genders: [], skills: [], ages: [] };
+	}
+
+	async listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
+		if (Object.keys(filters).length) return [];
 		this.cells ??= parseAppSessionHeatmapCsv(readFileSync(this.fixturePath, "utf8"));
 		return [...this.cells];
 	}

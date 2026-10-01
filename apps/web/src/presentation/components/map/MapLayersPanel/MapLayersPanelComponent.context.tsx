@@ -1,5 +1,6 @@
 "use client";
 
+import type { AppSessionFilters } from "@market-health-map/core/application";
 import { createContext, useContext, useMemo, useState } from "react";
 import type {
 	MapLayersProviderProps,
@@ -12,16 +13,19 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 	const [showActiveFacilities, setShowActiveFacilities] = useState(true);
 	const [showInactiveFacilities, setShowInactiveFacilities] = useState(true);
 	const [showSessions, setShowSessions] = useState(true);
+	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({});
 	const value = useMemo(
 		() => ({
 			showActiveFacilities,
 			setShowActiveFacilities,
 			showInactiveFacilities,
 			setShowInactiveFacilities,
+			sessionFilters,
+			setSessionFilters,
 			showSessions,
 			setShowSessions,
 		}),
-		[showActiveFacilities, showInactiveFacilities, showSessions],
+		[showActiveFacilities, showInactiveFacilities, showSessions, sessionFilters],
 	);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }
