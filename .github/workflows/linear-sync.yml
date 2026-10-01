@@ -24,8 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Move the ticket to PO Review
-        run: node .github/scripts/linear/move-issues.mjs "PO Review" "$TITLE" "$HEAD_REF" --skip-from Done,Released,Canceled
+      - name: Move the ticket to Code Review
+        run: node .github/scripts/linear/move-issues.mjs "Code Review" "$TITLE" "$HEAD_REF" --skip-from Done,Released,Canceled
 
   changes-requested:
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'changes_requested'
