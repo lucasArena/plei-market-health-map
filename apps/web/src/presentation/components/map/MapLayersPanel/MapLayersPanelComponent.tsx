@@ -105,7 +105,7 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics ? "w-[280px] max-w-[calc(100vw-32px)]" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+36px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
 				>
 					<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase">
 						{messages.layersHeading}
