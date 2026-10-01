@@ -7,27 +7,24 @@ import type {
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
-import {
-	DEFAULT_MAX_STALE_MS,
-	StaleWhileRevalidateCache,
-} from "@server/infrastructure/repositories/warehouse/stale-while-revalidate-cache/stale-while-revalidate-cache";
+import { RefreshAheadCache } from "@server/infrastructure/repositories/warehouse/refresh-ahead-cache/refresh-ahead-cache";
 
 export const FACILITY_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class CachedFacilityStatsRepository implements FacilityStatsRepository {
-	private readonly reservationCache: StaleWhileRevalidateCache<FacilityReservationStats>;
-	private readonly comparisonCache: StaleWhileRevalidateCache<FacilityGameComparison[]>;
-	private readonly playerCache: StaleWhileRevalidateCache<FacilityPlayerStats>;
+	private readonly reservationCache: RefreshAheadCache<FacilityReservationStats>;
+	private readonly comparisonCache: RefreshAheadCache<FacilityGameComparison[]>;
+	private readonly playerCache: RefreshAheadCache<FacilityPlayerStats>;
 
 	constructor(
 		private readonly inner: FacilityStatsRepository & FacilityGameComparisonRepository,
 		clock: Clock,
 		ttlMs: number = FACILITY_STATS_CACHE_TTL_MS,
 	) {
-		const options = { now: () => clock.now().getTime(), ttlMs, maxStaleMs: DEFAULT_MAX_STALE_MS };
-		this.reservationCache = new StaleWhileRevalidateCache(options);
-		this.comparisonCache = new StaleWhileRevalidateCache(options);
-		this.playerCache = new StaleWhileRevalidateCache(options);
+		const options = { now: () => clock.now().getTime(), ttlMs };
+		this.reservationCache = new RefreshAheadCache(options);
+		this.comparisonCache = new RefreshAheadCache(options);
+		this.playerCache = new RefreshAheadCache(options);
 	}
 
 	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {

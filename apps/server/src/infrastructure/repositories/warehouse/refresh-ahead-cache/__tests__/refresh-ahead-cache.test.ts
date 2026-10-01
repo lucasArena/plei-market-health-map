@@ -1,12 +1,8 @@
-import { StaleWhileRevalidateCache } from "@server/infrastructure/repositories/warehouse/stale-while-revalidate-cache/stale-while-revalidate-cache";
+import { RefreshAheadCache } from "@server/infrastructure/repositories/warehouse/refresh-ahead-cache/refresh-ahead-cache";
 
 function setup() {
 	let now = 0;
-	const cache = new StaleWhileRevalidateCache<string>({
-		now: () => now,
-		ttlMs: 1000,
-		maxStaleMs: 5000,
-	});
+	const cache = new RefreshAheadCache<string>({ now: () => now, ttlMs: 1000 });
 	return { cache, advance: (ms: number) => (now += ms) };
 }
 
@@ -20,13 +16,17 @@ function deferred() {
 	return { promise, resolve, reject };
 }
 
-describe("StaleWhileRevalidateCache", () => {
-	it("loads once and serves fresh values from memory", async () => {
+async function settle() {
+	for (let tick = 0; tick < 3; tick += 1) await Promise.resolve();
+}
+
+describe("RefreshAheadCache", () => {
+	it("loads once and serves the value from memory before the refresh point", async () => {
 		const { cache, advance } = setup();
 		const load = vi.fn().mockResolvedValue("v1");
 
 		await expect(cache.get("k", load)).resolves.toBe("v1");
-		advance(999);
+		advance(799);
 		await expect(cache.get("k", load)).resolves.toBe("v1");
 		expect(load).toHaveBeenCalledTimes(1);
 	});
@@ -44,10 +44,10 @@ describe("StaleWhileRevalidateCache", () => {
 		expect(load).toHaveBeenCalledTimes(1);
 	});
 
-	it("answers with the stale value right away and refreshes it in the background once", async () => {
+	it("refreshes in the background once near the end, still answering instantly", async () => {
 		const { cache, advance } = setup();
 		await cache.get("k", () => Promise.resolve("v1"));
-		advance(1000);
+		advance(800);
 		const next = deferred();
 		const load = vi.fn().mockReturnValue(next.promise);
 
@@ -60,24 +60,56 @@ describe("StaleWhileRevalidateCache", () => {
 		await expect(cache.get("k", load)).resolves.toBe("v2");
 	});
 
-	it("keeps the stale value when a background refresh fails, and retries on the next call", async () => {
+	it("never serves a value past its time to live", async () => {
 		const { cache, advance } = setup();
 		await cache.get("k", () => Promise.resolve("v1"));
 		advance(1000);
-		const failing = vi.fn().mockRejectedValue(new Error("warehouse down"));
+		const next = deferred();
+		const load = vi.fn().mockReturnValue(next.promise);
 
-		await expect(cache.get("k", failing)).resolves.toBe("v1");
-		await Promise.resolve();
-		await Promise.resolve();
-		await expect(cache.get("k", () => Promise.resolve("v2"))).resolves.toBe("v1");
-		await Promise.resolve();
-		await expect(cache.get("k", failing)).resolves.toBe("v2");
+		const answer = cache.get("k", load);
+		next.resolve("v2");
+
+		await expect(answer).resolves.toBe("v2");
 	});
 
-	it("waits for a fresh value once the entry is too old to serve", async () => {
+	it("waits for a refresh already running once the value has expired", async () => {
 		const { cache, advance } = setup();
 		await cache.get("k", () => Promise.resolve("v1"));
-		advance(6000);
+		advance(900);
+		const next = deferred();
+		const load = vi.fn().mockReturnValue(next.promise);
+		await cache.get("k", load);
+		advance(200);
+
+		const answer = cache.get("k", load);
+		next.resolve("v2");
+
+		await expect(answer).resolves.toBe("v2");
+		expect(load).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps the current value when an early refresh fails, and retries on the next call", async () => {
+		const { cache, advance } = setup();
+		await cache.get("k", () => Promise.resolve("v1"));
+		advance(800);
+
+		await expect(cache.get("k", () => Promise.reject(new Error("down")))).resolves.toBe("v1");
+		await settle();
+		await expect(cache.get("k", () => Promise.resolve("v2"))).resolves.toBe("v1");
+		await settle();
+		await expect(cache.get("k", () => Promise.resolve("v3"))).resolves.toBe("v2");
+	});
+
+	it("drops the value when a refresh fails after it expired", async () => {
+		const { cache, advance } = setup();
+		await cache.get("k", () => Promise.resolve("v1"));
+		advance(900);
+		const next = deferred();
+		await cache.get("k", () => next.promise);
+		advance(200);
+		next.reject(new Error("down"));
+		await settle();
 
 		await expect(cache.get("k", () => Promise.resolve("v2"))).resolves.toBe("v2");
 	});
