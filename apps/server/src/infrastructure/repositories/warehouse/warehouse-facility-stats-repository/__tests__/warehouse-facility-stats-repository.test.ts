@@ -66,8 +66,11 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("player_lifecycle = 'Activated'");
-		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.this_week - 56");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain(
+			"f.date_played >= date_trunc('week', current_date)::date - 56",
+		);
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.this_week - 28");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("exists (");
 		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("dim_reservation");
 	});
 });

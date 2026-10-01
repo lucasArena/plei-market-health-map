@@ -3,12 +3,16 @@ import type {
 	AppSessionHeatmapRepository,
 	Clock,
 } from "@market-health-map/core/application";
-import type { CachedAppSessionHeatmap } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository.types";
+import {
+	isExpired,
+	remember,
+} from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry";
+import type { CacheEntry } from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry.types";
 
 export const APP_SESSION_HEATMAP_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
-	private cached: CachedAppSessionHeatmap | null = null;
+	private readonly cache = new Map<string, CacheEntry<AppSessionHeatmapCellView[]>>();
 
 	constructor(
 		private readonly inner: AppSessionHeatmapRepository,
@@ -18,12 +22,10 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 
 	listLast28Days(): Promise<AppSessionHeatmapCellView[]> {
 		const now = this.clock.now().getTime();
-		if (this.cached && this.cached.expiresAt > now) return this.cached.value;
-		const value = this.inner.listLast28Days();
-		this.cached = { expiresAt: now + this.ttlMs, value };
-		value.catch(() => {
-			this.cached = null;
-		});
-		return value;
+		const cached = this.cache.get("last-28-days");
+		if (!cached || isExpired(cached, now)) {
+			return remember(this.cache, "last-28-days", this.inner.listLast28Days(), now + this.ttlMs);
+		}
+		return cached.value;
 	}
 }

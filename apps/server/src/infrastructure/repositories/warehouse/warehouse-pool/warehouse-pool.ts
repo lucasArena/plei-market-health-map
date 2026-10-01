@@ -13,7 +13,7 @@ export function getWarehousePool(
 		idleTimeoutMillis: 30_000,
 		connectionTimeoutMillis: 10_000,
 		statement_timeout: 20_000,
-		options: "-c default_transaction_read_only=on",
+		options: "-c default_transaction_read_only=on -c enable_parallel_hash=off",
 	});
 	return globalForWarehouse.warehousePool as unknown as WarehouseQueryable &
 		WarehouseParameterizedQueryable;
