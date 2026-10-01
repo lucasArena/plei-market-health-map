@@ -7,14 +7,14 @@ import type {
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
-import { RefreshAheadCache } from "@server/infrastructure/repositories/warehouse/refresh-ahead-cache/refresh-ahead-cache";
+import { TtlCache } from "@server/infrastructure/repositories/warehouse/ttl-cache/ttl-cache";
 
 export const FACILITY_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class CachedFacilityStatsRepository implements FacilityStatsRepository {
-	private readonly reservationCache: RefreshAheadCache<FacilityReservationStats>;
-	private readonly comparisonCache: RefreshAheadCache<FacilityGameComparison[]>;
-	private readonly playerCache: RefreshAheadCache<FacilityPlayerStats>;
+	private readonly reservationCache: TtlCache<FacilityReservationStats>;
+	private readonly comparisonCache: TtlCache<FacilityGameComparison[]>;
+	private readonly playerCache: TtlCache<FacilityPlayerStats>;
 
 	constructor(
 		private readonly inner: FacilityStatsRepository & FacilityGameComparisonRepository,
@@ -22,9 +22,9 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		ttlMs: number = FACILITY_STATS_CACHE_TTL_MS,
 	) {
 		const options = { now: () => clock.now().getTime(), ttlMs };
-		this.reservationCache = new RefreshAheadCache(options);
-		this.comparisonCache = new RefreshAheadCache(options);
-		this.playerCache = new RefreshAheadCache(options);
+		this.reservationCache = new TtlCache(options);
+		this.comparisonCache = new TtlCache(options);
+		this.playerCache = new TtlCache(options);
 	}
 
 	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {

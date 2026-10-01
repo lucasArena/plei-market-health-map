@@ -14,16 +14,16 @@ function setup() {
 }
 
 describe("CachedAppSessionHeatmapRepository", () => {
-	it("serves repeat calls from the cache and refreshes it before it expires", async () => {
+	it("serves repeat calls from the cache until it expires", async () => {
 		const { listLast28Days, repository, advance } = setup();
 
 		await repository.listLast28Days();
-		advance(799);
+		advance(999);
 		await expect(repository.listLast28Days()).resolves.toEqual([CELL]);
 		expect(listLast28Days).toHaveBeenCalledTimes(1);
 
 		advance(1);
-		await expect(repository.listLast28Days()).resolves.toEqual([CELL]);
+		await repository.listLast28Days();
 		expect(listLast28Days).toHaveBeenCalledTimes(2);
 	});
 

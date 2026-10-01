@@ -19,16 +19,16 @@ function setup() {
 }
 
 describe("CachedFacilityRepository", () => {
-	it("serves repeat calls from the cache and refreshes it before it expires", async () => {
+	it("serves repeat calls from the cache until it expires", async () => {
 		const { listAll, repository, advance } = setup();
 
 		await repository.listAll();
-		advance(799);
+		advance(999);
 		await expect(repository.listAll()).resolves.toEqual([FACILITY]);
 		expect(listAll).toHaveBeenCalledTimes(1);
 
 		advance(1);
-		await expect(repository.listAll()).resolves.toEqual([FACILITY]);
+		await repository.listAll();
 		expect(listAll).toHaveBeenCalledTimes(2);
 	});
 
