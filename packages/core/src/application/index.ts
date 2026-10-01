@@ -33,6 +33,14 @@ export type {
 	GetFacilityReservationStatsInput,
 } from "@core/application/dtos/facility-detail-dto.types";
 export type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
+export { FEATURE_FLAG_KEYS, setFeatureFlagSchema } from "@core/application/dtos/feature-flags-dto";
+export type {
+	EnabledFeatureFlagsView,
+	FeatureFlagKey,
+	FeatureFlagRecord,
+	FeatureFlagView,
+	SetFeatureFlagInput,
+} from "@core/application/dtos/feature-flags-dto.types";
 export {
 	DEFAULT_FEEDBACK_IMAGE_NAME,
 	FEEDBACK_IMAGE_CONTENT_TYPES,
@@ -122,6 +130,7 @@ export type {
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
+export type { FeatureFlagRepository } from "@core/application/repositories/feature-flag-repository.types";
 export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
@@ -132,8 +141,11 @@ export { makeGetMarketPlayerStats } from "@core/application/services/get-market-
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
+export { makeListEnabledFeatureFlags } from "@core/application/services/list-enabled-feature-flags";
 export { makeListFacilities } from "@core/application/services/list-facilities";
+export { makeListFeatureFlags } from "@core/application/services/list-feature-flags";
 export { makeListRecentLogins } from "@core/application/services/list-recent-logins";
 export { makeRecordDailyActivity } from "@core/application/services/record-daily-activity";
 export { makeRecordLogin } from "@core/application/services/record-login";
+export { makeSetFeatureFlag } from "@core/application/services/set-feature-flag";
 export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

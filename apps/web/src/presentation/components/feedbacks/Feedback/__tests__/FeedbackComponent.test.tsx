@@ -44,12 +44,10 @@ function finishClosing() {
 
 describe("Feedback", () => {
 	it.each([true, false])(
-		"keeps the metrics viewer rule and places sign-out last (%s)",
-		(canViewAppMetrics) => {
+		"shows the admin links only to admins and places sign-out last (%s)",
+		(isAdmin) => {
 			renderWidget(
-				<Feedback
-					user={{ name: "Stefano", email: "stefano@plei.com", image: null, canViewAppMetrics }}
-				/>,
+				<Feedback user={{ name: "Stefano", email: "stefano@plei.com", image: null, isAdmin }} />,
 			);
 			fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 			const signOut = screen.getByRole("button", { name: "Sign out" });
@@ -57,8 +55,14 @@ describe("Feedback", () => {
 				signOut.closest("form")?.parentElement?.lastElementChild,
 			);
 			const metrics = screen.queryByRole("link", { name: "App metrics" });
-			if (canViewAppMetrics) expect(metrics).toHaveAttribute("href", "/metrics");
-			else expect(metrics).not.toBeInTheDocument();
+			const flags = screen.queryByRole("link", { name: "Feature flags" });
+			if (isAdmin) {
+				expect(metrics).toHaveAttribute("href", "/metrics");
+				expect(flags).toHaveAttribute("href", "/feature-flags");
+			} else {
+				expect(metrics).not.toBeInTheDocument();
+				expect(flags).not.toBeInTheDocument();
+			}
 		},
 	);
 
@@ -69,7 +73,7 @@ describe("Feedback", () => {
 					name: "Lucas Arena",
 					email: "lucas@plei.com",
 					image: null,
-					canViewAppMetrics: false,
+					isAdmin: false,
 				}}
 			/>,
 		);

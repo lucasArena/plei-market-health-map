@@ -58,6 +58,23 @@ function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 	);
 }
 
+function FlagIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+			className="size-4"
+		>
+			<path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+		</svg>
+	);
+}
+
 function MetricsIcon() {
 	return (
 		<svg
@@ -124,7 +141,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 	const triggerLabel = user ? accountMessages.accountMenu : messages.open;
 	const dialogLabel = user && step === "home" ? accountMessages.accountMenu : messages.title;
 	const showHome = !created && step === "home";
-	const showAppMetrics = Boolean(user?.canViewAppMetrics);
+	const showAdminLinks = Boolean(user?.isAdmin);
 
 	return (
 		<div ref={containerRef} data-testid="feedback-widget" className={FEEDBACK_STACK_CLASS}>
@@ -217,17 +234,29 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 										</span>
 									</button>
 								))}
-								{showAppMetrics && (
-									<Link
-										href={{ pathname: "/metrics" }}
-										onClick={close}
-										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
-									>
-										<span className={FEEDBACK_ICON_WELL_CLASS}>
-											<MetricsIcon />
-										</span>
-										<span className="font-medium">{accountMessages.appMetrics}</span>
-									</Link>
+								{showAdminLinks && (
+									<>
+										<Link
+											href={{ pathname: "/metrics" }}
+											onClick={close}
+											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+										>
+											<span className={FEEDBACK_ICON_WELL_CLASS}>
+												<MetricsIcon />
+											</span>
+											<span className="font-medium">{accountMessages.appMetrics}</span>
+										</Link>
+										<Link
+											href={{ pathname: "/feature-flags" }}
+											onClick={close}
+											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+										>
+											<span className={FEEDBACK_ICON_WELL_CLASS}>
+												<FlagIcon />
+											</span>
+											<span className="font-medium">{accountMessages.featureFlags}</span>
+										</Link>
+									</>
 								)}
 							</div>
 							{user && (

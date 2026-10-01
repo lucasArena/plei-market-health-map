@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import FeatureFlagsPage from "@/app/(protected)/feature-flags/page";
 import AppMetricsPage from "@/app/(protected)/metrics/page";
 import HomePage from "@/app/(protected)/page";
 import OfflinePage from "@/app/~offline/page";
@@ -33,6 +34,10 @@ vi.mock("@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent
 
 vi.mock("@/presentation/screens/AppMetricsScreen/AppMetricsScreenComponent", () => ({
 	AppMetricsScreen: () => <div data-testid="app-metrics" />,
+}));
+
+vi.mock("@/presentation/screens/FeatureFlagsScreen/FeatureFlagsScreenComponent", () => ({
+	FeatureFlagsScreen: () => <div data-testid="feature-flags" />,
 }));
 
 vi.mock("@/infrastructure/i18n/get-request-locale", () => ({
@@ -85,15 +90,25 @@ describe("pages", () => {
 	});
 
 	it("shows App metrics only to its viewers", async () => {
-		const allowed = { status: "allowed", email: "lucas@plei.com", canViewAppMetrics: true };
+		const allowed = { status: "allowed", email: "lucas@plei.com", isAdmin: true };
 		mockAccess.mockResolvedValue(allowed);
 		render(await AppMetricsPage());
 		expect(screen.getByTestId("app-metrics")).toBeInTheDocument();
 
-		mockAccess.mockResolvedValue({ ...allowed, canViewAppMetrics: false });
+		mockAccess.mockResolvedValue({ ...allowed, isAdmin: false });
 		await expect(AppMetricsPage()).rejects.toThrow("not-found");
 		mockAccess.mockResolvedValue({ status: "anonymous" });
 		await expect(AppMetricsPage()).rejects.toThrow("not-found");
+	});
+
+	it("shows feature flags only to admins", async () => {
+		const allowed = { status: "allowed", email: "lucas@plei.com", isAdmin: true };
+		mockAccess.mockResolvedValue(allowed);
+		render(await FeatureFlagsPage());
+		expect(screen.getByTestId("feature-flags")).toBeInTheDocument();
+
+		mockAccess.mockResolvedValue({ ...allowed, isAdmin: false });
+		await expect(FeatureFlagsPage()).rejects.toThrow("not-found");
 	});
 
 	it("renders a localized offline fallback", async () => {

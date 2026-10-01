@@ -10,3 +10,7 @@ export function GET(request: Request): Promise<Response> {
 export function POST(request: Request): Promise<Response> {
 	return Promise.resolve(api.fetch(request));
 }
+
+export function PUT(request: Request): Promise<Response> {
+	return Promise.resolve(api.fetch(request));
+}

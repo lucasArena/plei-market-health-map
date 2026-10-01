@@ -5,7 +5,7 @@ const mockAuth = vi.fn();
 vi.mock("@/infrastructure/auth/auth", () => ({ auth: () => mockAuth() }));
 vi.mock("@market-health-map/server", () => ({
 	getAllowedEmailDomain: () => "plei.com",
-	canViewAppMetrics: (email: string) => email === "lucas@plei.com",
+	isAdmin: (email: string) => email === "lucas@plei.com",
 }));
 
 describe("getInternalAccess", () => {
@@ -26,7 +26,7 @@ describe("getInternalAccess", () => {
 			email: "lucas@plei.com",
 			name: "Lucas",
 			image: "https://img/l.png",
-			canViewAppMetrics: true,
+			isAdmin: true,
 		});
 	});
 
@@ -36,7 +36,7 @@ describe("getInternalAccess", () => {
 			userId: "alan@plei.com",
 			name: null,
 			image: null,
-			canViewAppMetrics: false,
+			isAdmin: false,
 		});
 	});
 

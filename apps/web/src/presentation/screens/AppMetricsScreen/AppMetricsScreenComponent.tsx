@@ -5,6 +5,7 @@ import { DataTable } from "@/presentation/components/displays/DataTable/DataTabl
 import { Pagination } from "@/presentation/components/displays/Pagination/PaginationComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
+import { AdminTabs } from "@/presentation/components/layout/AdminTabs/AdminTabsComponent";
 import { useAppMetricsScreenRules } from "@/presentation/screens/AppMetricsScreen/AppMetricsScreenComponent.rules";
 
 export function AppMetricsScreen() {
@@ -22,6 +23,7 @@ export function AppMetricsScreen() {
 	return (
 		<div className="absolute inset-0 overflow-y-auto">
 			<div className="mx-auto max-w-4xl space-y-6 px-4 pt-20 pb-10">
+				<AdminTabs active="metrics" />
 				<header className="flex flex-wrap items-end justify-between gap-2">
 					<div>
 						<h1 className="text-xl font-semibold">{messages.title}</h1>

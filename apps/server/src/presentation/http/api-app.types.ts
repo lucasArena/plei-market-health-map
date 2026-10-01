@@ -19,6 +19,9 @@ export type ApiServices = Pick<
 	| "recordDailyActivity"
 	| "getAppMetrics"
 	| "listAppMetricsPeople"
+	| "listEnabledFeatureFlags"
+	| "listFeatureFlags"
+	| "setFeatureFlag"
 >;
 
 export type ApiEnv = {

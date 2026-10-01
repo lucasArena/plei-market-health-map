@@ -9,16 +9,11 @@ vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
 
 const globalsCss = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
-function renderMenu(name: string | null = "Lucas Arena", canViewAppMetrics = true) {
+function renderMenu(name: string | null = "Lucas Arena", isAdmin = true) {
 	const { Wrapper } = createQueryWrapper();
 	return renderWithMessages(
 		<Wrapper>
-			<UserMenu
-				name={name}
-				email="lucas@plei.com"
-				image={null}
-				canViewAppMetrics={canViewAppMetrics}
-			/>
+			<UserMenu name={name} email="lucas@plei.com" image={null} isAdmin={isAdmin} />
 		</Wrapper>,
 	);
 }
@@ -77,15 +72,20 @@ describe("UserMenu", () => {
 			"py-1.5",
 		);
 		expect(screen.getByRole("link", { name: "App metrics" })).toHaveAttribute("href", "/metrics");
+		expect(screen.getByRole("link", { name: "Feature flags" })).toHaveAttribute(
+			"href",
+			"/feature-flags",
+		);
 		expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 		expect(screen.queryByText(/Version/)).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
 	});
 
-	it("hides app metrics when the viewer flag is off", () => {
+	it("hides the admin links from non-admins", () => {
 		renderMenu("Lucas Arena", false);
 		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 		expect(screen.queryByRole("link", { name: "App metrics" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: "Feature flags" })).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 	});
 
