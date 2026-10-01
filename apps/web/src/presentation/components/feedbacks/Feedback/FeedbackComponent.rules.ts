@@ -19,6 +19,7 @@ import {
 	useState,
 } from "react";
 import { ApiError } from "@/infrastructure/api/client";
+import { getAppVersion } from "@/infrastructure/app-version";
 import { FEEDBACK_ERROR_KEY_BY_STATUS } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
 import type {
 	FeedbackAttachment,
@@ -328,5 +329,6 @@ export function useFeedbackRules({ facilityId: suppliedFacilityId, user }: Feedb
 		toggle,
 		type,
 		user,
+		versionLabel: formatMessage(messages.auth.version, { version: getAppVersion() }),
 	};
 }

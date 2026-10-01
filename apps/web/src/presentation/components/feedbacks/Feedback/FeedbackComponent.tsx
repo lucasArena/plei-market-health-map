@@ -13,6 +13,7 @@ import {
 	FEEDBACK_DROPZONE_CLASS,
 	FEEDBACK_ICON_WELL_CLASS,
 	FEEDBACK_LEGEND_SLOT_CLASS,
+	FEEDBACK_LEGEND_SLOT_VISIBILITY_CLASS,
 	FEEDBACK_MENU_ITEM_CLASS,
 	FEEDBACK_MENU_SEPARATOR_CLASS,
 	FEEDBACK_PANEL_ANIMATION_CLASS,
@@ -132,6 +133,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 		triggerRef,
 		type,
 		user,
+		versionLabel,
 	} = useFeedbackRules(props);
 	const { setLegendSlot } = useHeaderSlot();
 	const option = FEEDBACK_TYPE_OPTIONS.find((candidate) => candidate.type === type);
@@ -148,7 +150,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 			<div
 				ref={setLegendSlot}
 				data-testid="profile-legend-slot"
-				className={FEEDBACK_LEGEND_SLOT_CLASS}
+				className={`${FEEDBACK_LEGEND_SLOT_CLASS} ${FEEDBACK_LEGEND_SLOT_VISIBILITY_CLASS[isOpen ? "open" : "closed"]}`}
 			/>
 			<button
 				ref={triggerRef}
@@ -267,6 +269,13 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 											{accountMessages.signOut}
 										</button>
 									</form>
+									<div className={FEEDBACK_MENU_SEPARATOR_CLASS} />
+									<p
+										data-testid="app-version"
+										className="px-2 py-1.5 text-[11px] text-muted-foreground tabular-nums"
+									>
+										{versionLabel}
+									</p>
 								</>
 							)}
 						</div>
