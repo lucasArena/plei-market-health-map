@@ -36,7 +36,7 @@ export const ptBR: Messages = {
 		sessionHeatmapNoActivity: "Nenhuma sessão na visualização atual do mapa",
 		sessionHeatmapLowValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",
-		layersBrand: "Plei Market",
+		layersBrand: "Market Health Map",
 		layersHeading: "Camadas",
 		layersFacilities: "Instalações",
 		layersSessions: "Sessões do app",

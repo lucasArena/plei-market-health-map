@@ -35,7 +35,7 @@ export const en: Messages = {
 		sessionHeatmapNoActivity: "No sessions in the current map view",
 		sessionHeatmapLowValue: "{count} sessions in a shaded area",
 		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
-		layersBrand: "Plei Market",
+		layersBrand: "Market Health Map",
 		layersHeading: "Layers",
 		layersFacilities: "Facilities",
 		layersSessions: "App sessions",
