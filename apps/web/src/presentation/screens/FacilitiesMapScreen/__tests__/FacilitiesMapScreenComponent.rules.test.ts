@@ -1082,6 +1082,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		act(() => mapState.handlers.get("load")?.());
 
 		expect(result.current.hasSessionHeatmap).toBe(true);
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-in");
 
 		layersState.showSessions = false;
 		rerender();
@@ -1091,6 +1093,8 @@ describe("useFacilitiesMapScreenRules", () => {
 			"none",
 		);
 		expect(result.current.hasSessionHeatmap).toBe(false);
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-out");
 
 		layersState.showSessions = true;
 		rerender();

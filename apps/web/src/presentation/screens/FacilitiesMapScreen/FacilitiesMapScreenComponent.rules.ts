@@ -20,6 +20,7 @@ import {
 import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
+import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
@@ -1165,13 +1166,29 @@ export function useFacilitiesMapScreenRules() {
 		return bindFacilityGlass(map, facilitiesGlassLiveRef, selectedFacilityIdRef);
 	}, [isMapReady]);
 
+	const {
+		finishReveal: finishLegendMotion,
+		isShown: isLegendShown,
+		motion: legendMotion,
+	} = useRevealMotion(hasSessionHeatmap, PANEL_SLIDE_MS);
+
+	const legendMotionClass = {
+		hidden: "",
+		enter: "session-legend-in",
+		shown: "",
+		exit: "session-legend-out",
+	}[legendMotion];
+
 	return {
 		clearSearchScope,
 		closePanel,
 		containerRef,
 		facilities: query.data ?? [],
+		finishLegendMotion,
 		hasSessionHeatmap,
 		handlePanelClosed,
+		isLegendShown,
+		legendMotionClass,
 		hovered,
 		isPanelClosing,
 		messages: messages.map,
