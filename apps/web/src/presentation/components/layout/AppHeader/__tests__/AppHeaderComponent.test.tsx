@@ -50,6 +50,7 @@ describe("AppHeader", () => {
 		expect(slot).toHaveClass("min-w-0", "flex-1");
 		expect(row?.firstElementChild).toBe(slot);
 		expect(row?.contains(screen.getByRole("button", { name: "Market summary" }))).toBe(true);
+		expect(screen.getByRole("button", { name: "Market summary" })).toHaveClass("glass");
 		expect(row?.contains(screen.getByRole("button", { name: "Account menu" }))).toBe(false);
 		expect(screen.getByRole("button", { name: "Account menu" })).toHaveClass("bottom-8", "left-3");
 	});
