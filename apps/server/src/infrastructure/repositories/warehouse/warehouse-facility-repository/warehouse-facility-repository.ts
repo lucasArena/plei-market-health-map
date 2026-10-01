@@ -1,5 +1,6 @@
 import type { FacilityRepository } from "@market-health-map/core/application";
 import { asEntityId, Facility } from "@market-health-map/core/domain";
+import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse/is-ignored-facility/is-ignored-facility";
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
 import { isWithinServiceArea } from "@server/infrastructure/repositories/warehouse/service-area/service-area";
@@ -47,7 +48,13 @@ function formatAddress(row: WarehouseLocationRow): string {
 }
 
 export function toFacility(row: WarehouseLocationRow): Facility | null {
-	if (!row.location_name?.trim() || isTestFacility(row.location_name, row.region_name)) return null;
+	if (
+		!row.location_name?.trim() ||
+		isTestFacility(row.location_name, row.region_name) ||
+		isIgnoredFacility(row.location_name)
+	) {
+		return null;
+	}
 	const latitude = Number(row.location_latitude);
 	const longitude = Number(row.location_longitude);
 	if (!isWithinServiceArea(latitude, longitude)) return null;

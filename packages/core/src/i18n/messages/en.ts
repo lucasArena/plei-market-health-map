@@ -34,6 +34,7 @@ export const en: Messages = {
 		sessionHeatmapContext: "Scale updates for the current map view",
 		sessionHeatmapNoActivity: "No sessions in the current map view",
 		sessionHeatmapLowValue: "{count} sessions in a shaded area",
+		sessionHeatmapMidValue: "{count} sessions in a shaded area",
 		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
 		layersBrand: "Market Health Map",
 		layersHeading: "Layers",
