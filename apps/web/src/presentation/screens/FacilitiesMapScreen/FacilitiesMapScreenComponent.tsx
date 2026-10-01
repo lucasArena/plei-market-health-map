@@ -20,8 +20,6 @@ export function FacilitiesMapScreen() {
 		facilities,
 		finishLegendMotion,
 		handlePanelClosed,
-		heatmapCopy,
-		heatmapScale,
 		hovered,
 		isLegendShown,
 		legendMotionClass,
@@ -30,6 +28,7 @@ export function FacilitiesMapScreen() {
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
+		sessionScale,
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { searchSlot } = useHeaderSlot();
@@ -38,9 +37,9 @@ export function FacilitiesMapScreen() {
 		notation: "compact",
 		maximumFractionDigits: 1,
 	});
-	const lowValue = numberFormatter.format(heatmapScale.low);
-	const midValue = numberFormatter.format(Math.round((heatmapScale.low + heatmapScale.high) / 2));
-	const highValue = numberFormatter.format(heatmapScale.high);
+	const lowValue = numberFormatter.format(sessionScale.low);
+	const midValue = numberFormatter.format(Math.round((sessionScale.low + sessionScale.high) / 2));
+	const highValue = numberFormatter.format(sessionScale.high);
 
 	return (
 		<section aria-label={messages.title} className="absolute inset-0">
@@ -69,17 +68,19 @@ export function FacilitiesMapScreen() {
 			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
 			{isLegendShown && (
 				<div
-					data-testid="demand-heatmap-legend"
+					data-testid="session-heatmap-legend"
 					onAnimationEnd={finishLegendMotion}
 					className={`${SESSION_HEATMAP_LEGEND_CLASS} ${legendMotionClass}`}
 				>
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
-						{heatmapCopy.legend}
+						{messages.sessionHeatmapLegend}
 					</p>
-					<p className="mt-0.5 text-[10px] text-muted-foreground">{heatmapCopy.context}</p>
-					{heatmapScale.high === 0 ? (
+					<p className="mt-0.5 text-[10px] text-muted-foreground">
+						{messages.sessionHeatmapContext}
+					</p>
+					{sessionScale.high === 0 ? (
 						<p className="mt-2 text-[10px] font-medium text-muted-foreground">
-							{heatmapCopy.noActivity}
+							{messages.sessionHeatmapNoActivity}
 						</p>
 					) : (
 						<div className="mt-2 flex flex-col gap-1">
@@ -94,14 +95,18 @@ export function FacilitiesMapScreen() {
 								<span aria-hidden="true" className="text-[10px] tabular-nums text-muted-foreground">
 									{lowValue}
 								</span>
-								<span className="sr-only">{heatmapCopy.lowValue.replace("{count}", lowValue)}</span>
+								<span className="sr-only">
+									{messages.sessionHeatmapLowValue.replace("{count}", lowValue)}
+								</span>
 								<span
 									aria-hidden="true"
 									className="absolute left-1/2 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
 								>
 									{midValue}
 								</span>
-								<span className="sr-only">{heatmapCopy.midValue.replace("{count}", midValue)}</span>
+								<span className="sr-only">
+									{messages.sessionHeatmapMidValue.replace("{count}", midValue)}
+								</span>
 								<span
 									aria-hidden="true"
 									className="text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
@@ -109,7 +114,7 @@ export function FacilitiesMapScreen() {
 									{highValue}+
 								</span>
 								<span className="sr-only">
-									{heatmapCopy.highValue.replace("{count}", highValue)}
+									{messages.sessionHeatmapHighValue.replace("{count}", highValue)}
 								</span>
 							</div>
 						</div>

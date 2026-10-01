@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useMemo, useState } from "react";
 import type {
-	DemandHeatmapMetric,
 	MapLayersProviderProps,
 	MapLayersValue,
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
@@ -12,17 +11,17 @@ const MapLayersContext = createContext<MapLayersValue | null>(null);
 export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>) {
 	const [showActiveFacilities, setShowActiveFacilities] = useState(true);
 	const [showInactiveFacilities, setShowInactiveFacilities] = useState(true);
-	const [demandMetric, setDemandMetric] = useState<DemandHeatmapMetric>("app-sessions");
+	const [showSessions, setShowSessions] = useState(true);
 	const value = useMemo(
 		() => ({
 			showActiveFacilities,
 			setShowActiveFacilities,
 			showInactiveFacilities,
 			setShowInactiveFacilities,
-			demandMetric,
-			setDemandMetric,
+			showSessions,
+			setShowSessions,
 		}),
-		[showActiveFacilities, showInactiveFacilities, demandMetric],
+		[showActiveFacilities, showInactiveFacilities, showSessions],
 	);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }

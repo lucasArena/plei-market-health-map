@@ -41,13 +41,13 @@ export function MapLayersPanel() {
 		isOnMap,
 		messages,
 		rootRef,
-		demandMetric,
-		selectDemandMetric,
 		showActiveFacilities,
 		showInactiveFacilities,
+		showSessions,
 		toggleExpanded,
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
+		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
 		[`${!isExpanded}`]: messages.layersExpand,
@@ -59,10 +59,6 @@ export function MapLayersPanel() {
 		shown: "",
 		exit: "search-results-out",
 	}[cardMotion];
-	const demandOptions = [
-		{ metric: "registrations", label: messages.layersRegistrations },
-		{ metric: "app-sessions", label: messages.layersSessions },
-	] as const;
 
 	if (!isOnMap) return null;
 
@@ -93,34 +89,13 @@ export function MapLayersPanel() {
 					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
 						{messages.layersDemand}
 					</h2>
-					<div
-						role="radiogroup"
-						aria-label={messages.layersDemand}
-						className="mx-2 mb-1 grid grid-cols-2 rounded-md border border-border bg-muted/60 p-0.5"
-					>
-						{demandOptions.map((option) => {
-							const selected = demandMetric === option.metric;
-							const optionClass = {
-								[`${!selected}`]: "text-muted-foreground hover:bg-background/60",
-								[`${selected}`]: "bg-pleiful-pitch-green-80 text-white shadow-sm",
-							}.true as string;
-							return (
-								<label
-									key={option.metric}
-									className={`cursor-pointer rounded-[5px] px-2 py-1.5 text-center text-[10px] leading-none font-medium transition-colors ${optionClass}`}
-								>
-									<input
-										type="radio"
-										name="demand-heatmap"
-										aria-label={option.label}
-										checked={selected}
-										onChange={() => selectDemandMetric(option.metric)}
-										className="sr-only"
-									/>
-									{option.label}
-								</label>
-							);
-						})}
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersSessions}</p>
+						<LayerSwitch
+							checked={showSessions}
+							label={messages.layersSessions}
+							onToggle={toggleSessions}
+						/>
 					</div>
 					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
 						{messages.layersSupply}

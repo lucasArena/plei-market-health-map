@@ -33,17 +33,11 @@ export interface Messages {
 		sessionHeatmapLowValue: string;
 		sessionHeatmapMidValue: string;
 		sessionHeatmapHighValue: string;
-		registrationHeatmapLegend: string;
-		registrationHeatmapContext: string;
-		registrationHeatmapNoActivity: string;
-		registrationHeatmapLowValue: string;
-		registrationHeatmapMidValue: string;
-		registrationHeatmapHighValue: string;
 		layersBrand: string;
 		layersHeading: string;
+		layersFacilities: string;
 		layersDemand: string;
 		layersSupply: string;
-		layersRegistrations: string;
 		layersActiveFacilities: string;
 		layersInactiveFacilities: string;
 		layersSessions: string;

@@ -70,8 +70,7 @@ describe("MapLayersPanel", () => {
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 		expect(screen.getByText("Active facilities").previousElementSibling).toBeNull();
 		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
-		expect(screen.getByRole("radio", { name: "App sessions" })).toBeChecked();
-		expect(screen.getByRole("radio", { name: "Registrations" })).not.toBeChecked();
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("toggles inactive facilities independently", () => {
@@ -102,6 +101,10 @@ describe("MapLayersPanel", () => {
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "false");
 		expect(switchByName("Active facilities")).toHaveClass("bg-[#e5e5e5]");
 		expect(switchByName("Active facilities").firstElementChild).toHaveClass("translate-x-0");
+		fireEvent.click(switchByName("App sessions"));
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("App sessions"));
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("tells the map to hide and show facilities with the switch", () => {
@@ -124,23 +127,26 @@ describe("MapLayersPanel", () => {
 		expect(screen.getByText("true")).toBeInTheDocument();
 	});
 
-	it("tells the map which demand metric is selected", () => {
-		function DemandState() {
+	it("tells the map to hide app sessions when the switch is turned off", () => {
+		function SessionsState() {
 			const layers = useMapLayers();
-			return <span>{`demand:${String(layers?.demandMetric)}`}</span>;
+			return <span>{`sessions:${String(layers?.showSessions)}`}</span>;
 		}
 
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
-				<DemandState />
+				<SessionsState />
 			</MapLayersProvider>,
 		);
 
-		expect(screen.getByText("demand:app-sessions")).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("radio", { name: "Registrations" }));
-		expect(screen.getByText("demand:registrations")).toBeInTheDocument();
-		expect(screen.getByRole("radio", { name: "Registrations" })).toBeChecked();
+		expect(screen.getByText("sessions:true")).toBeInTheDocument();
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		fireEvent.click(switchByName("App sessions"));
+		expect(screen.getByText("sessions:false")).toBeInTheDocument();
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("App sessions"));
+		expect(screen.getByText("sessions:true")).toBeInTheDocument();
 	});
 
 	it("hides the layer list until it is expanded again", () => {

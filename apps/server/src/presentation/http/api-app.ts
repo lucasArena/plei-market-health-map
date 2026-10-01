@@ -10,7 +10,6 @@ import { feedbackController } from "@server/presentation/http/controllers/feedba
 import { loginController } from "@server/presentation/http/controllers/login-controller";
 import { marketSummaryController } from "@server/presentation/http/controllers/market-summary-controller";
 import { metricsController } from "@server/presentation/http/controllers/metrics-controller";
-import { registrationHeatmapController } from "@server/presentation/http/controllers/registration-heatmap-controller";
 import { toErrorResponse } from "@server/presentation/http/errors";
 import { Hono } from "hono";
 
@@ -26,7 +25,6 @@ export function createApiApp({ resolveAccess, services = getContainer }: CreateA
 		.route("/facilities", facilityController(services))
 		.route("/market-summary", marketSummaryController(services))
 		.route("/app-session-heatmap", appSessionHeatmapController(services))
-		.route("/registration-heatmap", registrationHeatmapController(services))
 		.route("/logins", loginController(services))
 		.route("/feedback", feedbackController(services))
 		.route("/activity", activityController(services))

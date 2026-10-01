@@ -110,7 +110,7 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 const layersState = vi.hoisted(() => ({
 	showActiveFacilities: true,
 	showInactiveFacilities: true,
-	demandMetric: "app-sessions" as "app-sessions" | "registrations",
+	showSessions: true,
 	hasProvider: true,
 }));
 
@@ -122,8 +122,8 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					showInactiveFacilities: layersState.showInactiveFacilities,
 					setShowActiveFacilities: vi.fn(),
 					setShowInactiveFacilities: vi.fn(),
-					demandMetric: layersState.demandMetric,
-					setDemandMetric: vi.fn(),
+					showSessions: layersState.showSessions,
+					setShowSessions: vi.fn(),
 				}
 			: null,
 }));
@@ -131,11 +131,6 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
-}));
-
-const mockUseRegistrationHeatmap = vi.fn();
-vi.mock("@/presentation/hooks/use-app/use-registration-heatmap", () => ({
-	useRegistrationHeatmap: () => mockUseRegistrationHeatmap(),
 }));
 
 const FACILITY = {
@@ -703,18 +698,13 @@ describe("useFacilitiesMapScreenRules", () => {
 		vi.clearAllMocks();
 		layersState.showActiveFacilities = true;
 		layersState.showInactiveFacilities = true;
-		layersState.demandMetric = "app-sessions";
+		layersState.showSessions = true;
 		layersState.hasProvider = true;
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
 		mockUseAppSessionHeatmap.mockReturnValue({
 			data: [{ lat: 29.75, lng: -95.35, sessionWeight: 10 }],
-			isPending: false,
-			isError: false,
-		});
-		mockUseRegistrationHeatmap.mockReturnValue({
-			data: [{ lat: 25.76, lng: -80.19, registrationWeight: 6 }],
 			isPending: false,
 			isError: false,
 		});
@@ -830,7 +820,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		);
 		expect(result.current.status).toBe("ready");
 		expect(result.current.messages).toBe(EN_MESSAGES.map);
-		expect(result.current.heatmapScale).toEqual({ low: 10, high: 10 });
+		expect(result.current.sessionScale).toEqual({ low: 10, high: 10 });
 		mapState.setData.mockClear();
 		act(() => mapState.handlers.get("moveend")?.());
 		expect(mapState.setData).toHaveBeenCalledWith(
@@ -1138,21 +1128,38 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 	});
 
-	it("switches the heatmap and legend copy to registrations", async () => {
+	it("hides the session heatmap and its legend when app sessions are off", async () => {
 		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
+		map.getLayer = vi.fn(() => ({ id: APP_SESSION_HEATMAP_LAYER_ID }));
+		map.setLayoutProperty = vi.fn();
 		act(() => mapState.handlers.get("load")?.());
 
+		expect(result.current.hasSessionHeatmap).toBe(true);
 		expect(result.current.isLegendShown).toBe(true);
 		expect(result.current.legendMotionClass).toBe("session-legend-in");
-		expect(result.current.heatmapCopy.legend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
 
-		layersState.demandMetric = "registrations";
+		layersState.showSessions = false;
 		rerender();
-		expect(mapState.setData).toHaveBeenLastCalledWith(
-			toAppSessionHeatmapFeatureCollection([{ lat: 25.76, lng: -80.19, sessionWeight: 6 }]),
+		expect(map.setLayoutProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"visibility",
+			"none",
 		);
-		expect(result.current.heatmapCopy.legend).toBe(EN_MESSAGES.map.registrationHeatmapLegend);
+		expect(result.current.hasSessionHeatmap).toBe(false);
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-out");
+
+		layersState.showSessions = true;
+		rerender();
+		expect(map.setLayoutProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"visibility",
+			"visible",
+		);
+		expect(result.current.hasSessionHeatmap).toBe(true);
 	});
 
 	it("fades facility markers in and out with the facilities switch", async () => {

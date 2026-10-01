@@ -102,4 +102,4 @@ Key insights prioritize period comparisons and scoped game contributions over sc
 
 The combined account and feedback control lives at the bottom left: improvement, bug report, the existing App metrics link for authorized viewers, then sign-out with the version. The header supplies the authenticated user and MapScopeProvider shares the current facility selection with feedback. Metrics storage, tracking and permissions are unchanged.
 
-The map layers control selects Registrations or App sessions under Demand and provides independent Active facilities and Inactive facilities switches under Supply. App sessions starts selected and both facility statuses start visible; filtering uses `isActive` before clustering so counts and previews follow the selected supply scope.
+The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. Both facility statuses start visible; filtering uses `isActive` before clustering so counts and previews follow the selected supply scope.

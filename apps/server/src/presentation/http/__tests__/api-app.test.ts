@@ -15,7 +15,6 @@ function setup(access: AccessDecision = ALLOWED) {
 		getMarketSummary: vi.fn().mockResolvedValue({ scope: { facilityCount: 42 } }),
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
-		listRegistrationHeatmap: vi.fn().mockResolvedValue([{ h3: "y", registrations: 2 }]),
 		listRecentLogins: vi.fn().mockResolvedValue([{ id: "l1" }]),
 		submitFeedback: vi.fn().mockResolvedValue({ identifier: "REQ-1", url: "https://linear.app/x" }),
 		recordDailyActivity: vi.fn().mockResolvedValue(undefined),
@@ -110,14 +109,6 @@ describe("createApiApp", () => {
 		const { get } = setup();
 
 		expect((await get("/app-session-heatmap")).body).toEqual({ data: [{ h3: "x", sessions: 3 }] });
-	});
-
-	it("returns the registration heatmap", async () => {
-		const { get } = setup();
-
-		expect((await get("/registration-heatmap")).body).toEqual({
-			data: [{ h3: "y", registrations: 2 }],
-		});
 	});
 
 	it("passes the logins limit through", async () => {

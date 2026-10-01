@@ -72,7 +72,6 @@ export type {
 	MarketSummaryScopeView,
 	MarketSummaryView,
 } from "@core/application/dtos/market-summary-dto.types";
-export type { RegistrationHeatmapCellView } from "@core/application/dtos/registration-heatmap-dto.types";
 export { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
 export { ForbiddenError } from "@core/application/errors/forbidden-error";
 export { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -124,7 +123,6 @@ export type {
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
 export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
-export type { RegistrationHeatmapRepository } from "@core/application/repositories/registration-heatmap-repository.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
@@ -136,7 +134,6 @@ export { makeListAppMetricsPeople } from "@core/application/services/list-app-me
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
 export { makeListFacilities } from "@core/application/services/list-facilities";
 export { makeListRecentLogins } from "@core/application/services/list-recent-logins";
-export { makeListRegistrationHeatmap } from "@core/application/services/list-registration-heatmap";
 export { makeRecordDailyActivity } from "@core/application/services/record-daily-activity";
 export { makeRecordLogin } from "@core/application/services/record-login";
 export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

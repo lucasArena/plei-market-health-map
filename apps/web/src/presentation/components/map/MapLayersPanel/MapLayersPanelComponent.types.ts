@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
 
-export type DemandHeatmapMetric = "registrations" | "app-sessions";
-
 export interface MapLayersValue {
 	showActiveFacilities: boolean;
 	setShowActiveFacilities: (showActiveFacilities: boolean) => void;
 	showInactiveFacilities: boolean;
 	setShowInactiveFacilities: (showInactiveFacilities: boolean) => void;
-	demandMetric: DemandHeatmapMetric;
-	setDemandMetric: (demandMetric: DemandHeatmapMetric) => void;
+	showSessions: boolean;
+	setShowSessions: (showSessions: boolean) => void;
 }
 
 export interface MapLayersProviderProps {

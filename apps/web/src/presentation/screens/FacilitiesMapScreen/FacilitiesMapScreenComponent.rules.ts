@@ -17,7 +17,6 @@ import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
-import { useRegistrationHeatmap } from "@/presentation/hooks/use-app/use-registration-heatmap";
 import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
@@ -703,11 +702,10 @@ export function useFacilitiesMapScreenRules() {
 	const { setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
-	const appSessionHeatmapQuery = useAppSessionHeatmap();
-	const registrationHeatmapQuery = useRegistrationHeatmap();
+	const heatmapQuery = useAppSessionHeatmap();
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
-	const [heatmapScale, setHeatmapScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
+	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 	useEffect(() => {
 		shareSelectedFacilityId(selectedFacilityId);
@@ -721,7 +719,7 @@ export function useFacilitiesMapScreenRules() {
 	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
 	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
-	const demandMetric = mapLayers?.demandMetric ?? "app-sessions";
+	const showSessions = mapLayers?.showSessions ?? true;
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
 	const facilitiesWereShownRef = useRef(showFacilities);
@@ -737,29 +735,12 @@ export function useFacilitiesMapScreenRules() {
 			),
 		[query.data, showActiveFacilities, showInactiveFacilities],
 	);
-	const registrationHeatmapData = useMemo(
-		() =>
-			registrationHeatmapQuery.data?.map((cell) => ({
-				lat: cell.lat,
-				lng: cell.lng,
-				sessionWeight: cell.registrationWeight,
-			})),
-		[registrationHeatmapQuery.data],
-	);
-	const heatmapData = {
-		"app-sessions": appSessionHeatmapQuery.data,
-		registrations: registrationHeatmapData,
-	}[demandMetric];
-	const heatmapError = {
-		"app-sessions": appSessionHeatmapQuery.isError,
-		registrations: registrationHeatmapQuery.isError,
-	}[demandMetric];
 	const heatmapFeatureCollection = useMemo(
 		() =>
-			heatmapError || !heatmapData
+			heatmapQuery.isError || !heatmapQuery.data
 				? EMPTY_HEATMAP
-				: toAppSessionHeatmapFeatureCollection(heatmapData),
-		[heatmapData, heatmapError],
+				: toAppSessionHeatmapFeatureCollection(heatmapQuery.data),
+		[heatmapQuery.data, heatmapQuery.isError],
 	);
 	const facilitiesById = useMemo(
 		() => new Map((query.data ?? []).map((facility) => [facility.id, facility])),
@@ -926,16 +907,16 @@ export function useFacilitiesMapScreenRules() {
 
 	const refreshHeatmap = useCallback(() => {
 		const map = mapRef.current;
-		if (!map || heatmapError || !heatmapData) return;
+		if (!map || heatmapQuery.isError || !heatmapQuery.data) return;
 		const bounds = map.getBounds();
 		map
 			.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)
-			?.setData(toAppSessionHeatmapFeatureCollection(heatmapData, bounds));
-		const nextScale = appSessionHeatmapScale(heatmapData, bounds);
-		setHeatmapScale((current) =>
+			?.setData(toAppSessionHeatmapFeatureCollection(heatmapQuery.data, bounds));
+		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds);
+		setSessionScale((current) =>
 			current.low === nextScale.low && current.high === nextScale.high ? current : nextScale,
 		);
-	}, [heatmapData, heatmapError]);
+	}, [heatmapQuery.data, heatmapQuery.isError]);
 
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
 	useExclusiveSidePanel(
@@ -1028,12 +1009,12 @@ export function useFacilitiesMapScreenRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
-		if (heatmapError || !heatmapData) {
+		if (heatmapQuery.isError || !heatmapQuery.data) {
 			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
 			return;
 		}
 		refreshHeatmap();
-	}, [heatmapData, heatmapError, isMapReady, refreshHeatmap]);
+	}, [heatmapQuery.data, heatmapQuery.isError, isMapReady, refreshHeatmap]);
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -1073,25 +1054,13 @@ export function useFacilitiesMapScreenRules() {
 		refreshHeatmap,
 	]);
 
-	const hasDemandHeatmap = heatmapFeatureCollection.features.length > 0;
-	const heatmapCopy = {
-		"app-sessions": {
-			legend: messages.map.sessionHeatmapLegend,
-			context: messages.map.sessionHeatmapContext,
-			noActivity: messages.map.sessionHeatmapNoActivity,
-			lowValue: messages.map.sessionHeatmapLowValue,
-			midValue: messages.map.sessionHeatmapMidValue,
-			highValue: messages.map.sessionHeatmapHighValue,
-		},
-		registrations: {
-			legend: messages.map.registrationHeatmapLegend,
-			context: messages.map.registrationHeatmapContext,
-			noActivity: messages.map.registrationHeatmapNoActivity,
-			lowValue: messages.map.registrationHeatmapLowValue,
-			midValue: messages.map.registrationHeatmapMidValue,
-			highValue: messages.map.registrationHeatmapHighValue,
-		},
-	}[demandMetric];
+	const hasSessionHeatmap = showSessions && heatmapFeatureCollection.features.length > 0;
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
+		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showSessions);
+	}, [isMapReady, showSessions]);
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -1209,7 +1178,7 @@ export function useFacilitiesMapScreenRules() {
 		finishReveal: finishLegendMotion,
 		isShown: isLegendShown,
 		motion: legendMotion,
-	} = useRevealMotion(hasDemandHeatmap, PANEL_SLIDE_MS);
+	} = useRevealMotion(hasSessionHeatmap, PANEL_SLIDE_MS);
 
 	const legendMotionClass = {
 		hidden: "",
@@ -1224,14 +1193,14 @@ export function useFacilitiesMapScreenRules() {
 		containerRef,
 		facilities: query.data ?? [],
 		finishLegendMotion,
+		hasSessionHeatmap,
 		handlePanelClosed,
-		heatmapCopy,
-		heatmapScale,
 		isLegendShown,
 		legendMotionClass,
 		hovered,
 		isPanelClosing,
 		messages: messages.map,
+		sessionScale,
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,

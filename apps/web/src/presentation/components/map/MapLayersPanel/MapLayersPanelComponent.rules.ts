@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
-import type { DemandHeatmapMetric } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 
@@ -16,10 +15,10 @@ export function useMapLayersPanelRules() {
 	const rootRef = useRef<HTMLElement>(null);
 	const [localShowActiveFacilities, setLocalShowActiveFacilities] = useState(true);
 	const [localShowInactiveFacilities, setLocalShowInactiveFacilities] = useState(true);
-	const [localDemandMetric, setLocalDemandMetric] = useState<DemandHeatmapMetric>("app-sessions");
+	const [localShowSessions, setLocalShowSessions] = useState(true);
 	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
-	const demandMetric = layers?.demandMetric ?? localDemandMetric;
+	const showSessions = layers?.showSessions ?? localShowSessions;
 
 	useEffect(() => {
 		const closeWhenOutside = (event: PointerEvent) => {
@@ -50,16 +49,13 @@ export function useMapLayersPanelRules() {
 		}
 		setLocalShowInactiveFacilities((current) => !current);
 	}, [layers]);
-	const selectDemandMetric = useCallback(
-		(metric: DemandHeatmapMetric) => {
-			if (layers) {
-				layers.setDemandMetric(metric);
-				return;
-			}
-			setLocalDemandMetric(metric);
-		},
-		[layers],
-	);
+	const toggleSessions = useCallback(() => {
+		if (layers) {
+			layers.setShowSessions(!layers.showSessions);
+			return;
+		}
+		setLocalShowSessions((current) => !current);
+	}, [layers]);
 
 	return {
 		cardMotion: motion,
@@ -70,12 +66,12 @@ export function useMapLayersPanelRules() {
 		isOnMap,
 		messages: messages.map,
 		rootRef,
-		demandMetric,
-		selectDemandMetric,
 		showActiveFacilities,
 		showInactiveFacilities,
+		showSessions,
 		toggleExpanded,
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
+		toggleSessions,
 	};
 }
