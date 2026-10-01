@@ -57,8 +57,26 @@ describe("MapSearch", () => {
 		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
 
 		fireEvent.focus(input);
-		expect(screen.getByText("Markets")).toBeInTheDocument();
-		expect(screen.getByText("Facilities")).toBeInTheDocument();
+		expect(screen.getByText("Markets")).toHaveClass(
+			"text-[10px]",
+			"font-semibold",
+			"tracking-wider",
+			"text-muted-foreground",
+			"uppercase",
+		);
+		expect(screen.getByText("Facilities")).toHaveClass(
+			"text-[10px]",
+			"font-semibold",
+			"tracking-wider",
+			"text-muted-foreground",
+			"uppercase",
+		);
+		expect(
+			screen.getByRole("option", { name: /Austin.*2 facilities/ }).querySelector("span"),
+		).toHaveClass("text-sm", "font-medium");
+		expect(
+			screen.getByRole("option", { name: /Eastside Futsal Arena/ }).querySelector("span"),
+		).toHaveClass("text-sm", "font-medium");
 		fireEvent.change(input, { target: { value: "Austin" } });
 		expect(screen.getByRole("option", { name: /Austin.*2 facilities/ })).toBeInTheDocument();
 		expect(screen.queryByText("Miami")).not.toBeInTheDocument();

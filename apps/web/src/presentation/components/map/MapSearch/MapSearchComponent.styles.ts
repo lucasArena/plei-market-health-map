@@ -10,3 +10,8 @@ export const MAP_SEARCH_FIELD_CLASS =
 
 export const MAP_SEARCH_OPTION_HOVER_CLASS =
 	"hover:bg-foreground/[0.07] focus:bg-foreground/[0.07] focus:outline-none";
+
+export const MAP_MENU_GROUP_LABEL_CLASS =
+	"text-[10px] font-semibold tracking-wider text-muted-foreground uppercase";
+
+export const MAP_MENU_ROW_LABEL_CLASS = "text-sm font-medium";
