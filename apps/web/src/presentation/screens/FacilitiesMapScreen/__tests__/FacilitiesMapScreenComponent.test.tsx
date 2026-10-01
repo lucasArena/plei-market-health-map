@@ -48,10 +48,13 @@ function rulesWith(status: string, overrides: object = {}) {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],
+		finishLegendMotion: vi.fn(),
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
 		hovered: null,
+		isLegendShown: false,
 		isPanelClosing: false,
+		legendMotionClass: "",
 		selectedFacilityId: null,
 		selectSearchFacility: vi.fn(),
 		selectSearchMarket: vi.fn(),
@@ -101,6 +104,8 @@ describe("FacilitiesMapScreen", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
+				isLegendShown: true,
+				legendMotionClass: "session-legend-in",
 				sessionScale: { low: 12, high: 480 },
 			}),
 		);
@@ -110,18 +115,25 @@ describe("FacilitiesMapScreen", () => {
 		const legend = screen.getByTestId("session-heatmap-legend");
 		expect(legend).toHaveTextContent("Sessions per shaded area · last 28 days");
 		expect(legend).toHaveTextContent("Scale updates for the current map view");
+		expect(screen.getByText("Scale updates for the current map view")).toHaveClass("text-[10px]");
 		expect(legend).toHaveTextContent("12");
+		expect(legend).toHaveTextContent("246");
 		expect(legend).toHaveTextContent("480+");
 		expect(screen.getByText("12 sessions in a shaded area")).toBeInTheDocument();
+		expect(screen.getByText("246 sessions in a shaded area")).toBeInTheDocument();
 		expect(screen.getByText("480+ sessions in a shaded area")).toBeInTheDocument();
-		expect(screen.getByTestId("session-heatmap-gradient")).toHaveStyle({
+		expect(screen.getByText("246")).toHaveClass("left-1/2", "-translate-x-1/2");
+		const gradient = screen.getByTestId("session-heatmap-gradient");
+		expect(gradient).toHaveClass("w-full");
+		expect(gradient.parentElement).toHaveClass("flex-col");
+		expect(gradient).toHaveStyle({
 			backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
 		});
-		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#E0F2FE", "#7DD3FC", "#0EA5E9", "#7C3AED"]);
+		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#7DD3FC", "#0080FF", "#7C3AED"]);
 	});
 
 	it("explains when the current map view has no sessions", () => {
-		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true }));
+		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true, isLegendShown: true }));
 
 		render(<FacilitiesMapScreen />);
 
@@ -174,6 +186,8 @@ describe("FacilitiesMapScreen", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
+				isLegendShown: true,
+				legendMotionClass: "session-legend-in",
 				selectedFacilityId: "f1",
 				sessionScale: { low: 1, high: 10 },
 			}),
@@ -183,7 +197,29 @@ describe("FacilitiesMapScreen", () => {
 
 		expect(screen.getByTestId("feedback-widget")).toHaveAttribute("data-facility", "f1");
 		const legend = screen.getByTestId("session-heatmap-legend");
-		expect(legend).toHaveClass("bottom-8", "left-16");
+		expect(legend).toHaveClass("bottom-8", "left-16", "glass-panel", "session-legend-in");
 		expect(legend).not.toHaveClass("left-3");
+	});
+
+	it("slides the session legend out before removing it", () => {
+		let exiting = false;
+		let shown = true;
+		mockRules.mockImplementation(() =>
+			rulesWith("ready", {
+				isLegendShown: shown,
+				legendMotionClass: exiting ? "session-legend-out" : "session-legend-in",
+				sessionScale: { low: 1, high: 4 },
+			}),
+		);
+		const { rerender } = render(<FacilitiesMapScreen />);
+		expect(screen.getByTestId("session-heatmap-legend")).toHaveClass("session-legend-in");
+
+		exiting = true;
+		rerender(<FacilitiesMapScreen />);
+		expect(screen.getByTestId("session-heatmap-legend")).toHaveClass("session-legend-out");
+
+		shown = false;
+		rerender(<FacilitiesMapScreen />);
+		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
 	});
 });
