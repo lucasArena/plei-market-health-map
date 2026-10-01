@@ -1,6 +1,6 @@
 import type { Locale } from "@core/i18n/locales.types";
 
-export const SUPPORTED_LOCALES = ["en", "pt-BR"] as const;
+export const SUPPORTED_LOCALES = ["en", "pt-BR", "es"] as const;
 export const DEFAULT_LOCALE: Locale = "en";
 
 export function isLocale(value: string): value is Locale {

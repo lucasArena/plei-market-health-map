@@ -19,7 +19,7 @@ packages/
   core/                   pure TypeScript, no framework
     src/domain/             entities, value rules (guard), DomainError, EntityId
     src/application/        services/, repositories/ and providers/ (interfaces), Zod DTOs, mappers, errors; fakes in testing/
-    src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
+    src/i18n/               typed en, pt-BR and es catalogs, getMessages, parseAcceptLanguage
   config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
 
@@ -217,7 +217,7 @@ Dry-run wins over real credentials so local UI work never files real tickets. Th
 
 ## i18n and PWA
 
-The locale comes from `Accept-Language` (`getRequestLocale`), falling back to `en`. The root layout passes the catalog to `MessagesProvider`.
+The locale comes from `Accept-Language` (`getRequestLocale`): English (`en`), Brazilian Portuguese (`pt-BR`) or Spanish (`es`, for any `es-*` browser), falling back to `en`. The root layout passes the catalog to `MessagesProvider`.
 
 Serwist builds `public/sw.js` from `src/app/sw.ts`, which precaches the build and falls back to `/~offline` for document requests. `src/app/manifest.ts` produces the web manifest.
 
