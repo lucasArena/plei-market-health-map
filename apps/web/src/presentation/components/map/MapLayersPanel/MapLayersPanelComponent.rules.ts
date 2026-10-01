@@ -11,7 +11,7 @@ import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion"
 export const MAP_LAYER_COUNT = 3;
 
 export function layersBadge(layersOn: number): string | null {
-	return layersOn < MAP_LAYER_COUNT ? String(layersOn) : null;
+	return layersOn > 0 ? String(layersOn) : null;
 }
 
 export function useMapLayersPanelRules() {

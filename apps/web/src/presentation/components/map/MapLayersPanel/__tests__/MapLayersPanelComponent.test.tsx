@@ -234,7 +234,7 @@ describe("MapLayersPanel", () => {
 			"false",
 		);
 		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
-		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
+		expect(screen.getByTestId("layers-badge")).toHaveTextContent("3");
 	});
 
 	it("remembers whether the panel was left open or closed", () => {
@@ -247,25 +247,23 @@ describe("MapLayersPanel", () => {
 		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
 	});
 
-	it("badges the button with the layers that are on only when some are off", () => {
+	it("badges the button with how many layers are on, and hides the badge at zero", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
 			</MapLayersProvider>,
 		);
 		const button = screen.getByRole("button", { name: "Hide layers" });
-		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
-		expect(button).not.toHaveAttribute("aria-describedby");
+		expect(screen.getByTestId("layers-badge")).toHaveTextContent("3");
+		expect(button).toHaveAccessibleDescription("3 of 3 layers on");
+		expect(screen.getByTestId("layers-badge")).toHaveClass("absolute", "-top-1", "-right-1");
 
 		fireEvent.click(switchByName("App sessions"));
 		expect(screen.getByTestId("layers-badge")).toHaveTextContent("2");
-		expect(button).toHaveAccessibleDescription("2 of 3 layers on");
-		expect(screen.getByTestId("layers-badge")).toHaveClass("absolute", "-top-1", "-right-1");
-
 		fireEvent.click(switchByName("Active facilities"));
 		expect(screen.getByTestId("layers-badge")).toHaveTextContent("1");
-		fireEvent.click(switchByName("App sessions"));
-		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("Inactive facilities"));
 		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
+		expect(button).not.toHaveAttribute("aria-describedby");
 	});
 });
