@@ -102,3 +102,5 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-10-01 | Codex | ENG-5783 | Ordered skill options by progression and removed age shortcuts; local only. |
 
 | 2026-10-01 | Codex | ENG-5783 | Renamed the default-off rollout flag to player-demographic-filters; staging admins enable it through Feature flags. Local only. |
+
+| 2026-10-01 | Codex | ENG-5783 | Capitalized gender display labels and summaries while retaining exact warehouse filter values. |

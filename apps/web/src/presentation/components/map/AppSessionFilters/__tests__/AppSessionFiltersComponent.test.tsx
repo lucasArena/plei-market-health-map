@@ -297,3 +297,20 @@ it("preserves additional warehouse skill values after known levels", async () =>
 	fireEvent.keyDown(screen.getByLabelText("Minimum age"), { key: "Escape" });
 	expect(screen.queryByLabelText("Minimum age")).not.toBeInTheDocument();
 });
+
+it("capitalizes gender labels while submitting stored warehouse values", async () => {
+	const { client } = setup();
+	client.setQueryData(["app-session-filter-options"], {
+		genders: ["female", "male", "other", "prefer not to say"],
+		skills: [],
+		ages: [],
+	});
+	await add("Gender", "Prefer not to say");
+	fireEvent.click(screen.getByRole("button", { name: "Gender" }));
+	expect(
+		screen.getAllByRole("option").map((option) => option.textContent?.replace("✓", "").trim()),
+	).toEqual(["All genders", "Female", "Male", "Other", "Prefer not to say"]);
+	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+	expect(screen.getByTestId("filters")).toHaveTextContent('"gender":["prefer not to say"]');
+	expect(screen.getByText("Applied: Prefer not to say")).toBeInTheDocument();
+});

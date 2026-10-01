@@ -733,7 +733,9 @@ export function useFacilitiesMapScreenRules() {
 					? `${filters.ageMin}+`
 					: `${filters.ageMin}–${filters.ageMax}`;
 	const sessionFilterSummary = [
-		Array.isArray(filters?.gender) ? filters.gender.join(", ") : filters?.gender,
+		(Array.isArray(filters?.gender) ? filters.gender : filters?.gender ? [filters.gender] : [])
+			.map((value) => value.charAt(0).toUpperCase() + value.slice(1))
+			.join(", "),
 		Array.isArray(filters?.skill) ? filters.skill.join(", ") : filters?.skill,
 		ageLabel,
 	]

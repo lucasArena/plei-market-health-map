@@ -58,7 +58,7 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		return undefined;
 	}
 	const summary = [
-		profileValues(applied.gender).join(", "),
+		profileValues(applied.gender).map(genderLabel).join(", "),
 		profileValues(applied.skill).join(", "),
 		ageLabel(applied),
 	]
@@ -74,6 +74,9 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		setDraft((current) => ({ ...current, [field]: value === "" ? undefined : Number(value) }));
 	}
 	const hasFilters = Boolean(summary);
+	function genderLabel(value: string) {
+		return value.charAt(0).toUpperCase() + value.slice(1);
+	}
 	function profileValues(value: string | string[] | undefined): string[] {
 		return value === undefined ? [] : Array.isArray(value) ? value : [value];
 	}
@@ -116,7 +119,7 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		age: "",
 	};
 	const fieldValues = {
-		gender: profileValues(draft.gender).join(", "),
+		gender: profileValues(draft.gender).map(genderLabel).join(", "),
 		skill: profileValues(draft.skill).join(", "),
 		age: ageLabel(draft),
 	};
@@ -124,7 +127,7 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		add: availableFields.map((field) => ({ value: field, label: fieldLabels[field] })),
 		gender: [
 			{ value: "", label: copy.allGenders },
-			...(options.data?.genders ?? []).map((value) => ({ value, label: value })),
+			...(options.data?.genders ?? []).map((value) => ({ value, label: genderLabel(value) })),
 		],
 		skill: [
 			{ value: "", label: copy.allSkills },
