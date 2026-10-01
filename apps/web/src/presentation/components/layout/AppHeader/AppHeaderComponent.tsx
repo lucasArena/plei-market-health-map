@@ -1,9 +1,9 @@
 "use client";
 
-import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import type { AppHeaderProps } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.types";
 import { MapBrand } from "@/presentation/components/layout/MapBrand/MapBrandComponent";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
+import { UserMenu } from "@/presentation/components/layout/UserMenu/UserMenuComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 
 export function AppHeader({ user }: Readonly<AppHeaderProps>) {
@@ -19,7 +19,7 @@ export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 			<div className="flex items-center justify-end gap-2">
 				<MarketSummaryToggle />
 			</div>
-			<Feedback user={user} />
+			<UserMenu {...user} />
 		</header>
 	);
 }
