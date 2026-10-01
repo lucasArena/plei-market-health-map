@@ -2,7 +2,6 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { createPortal } from "react-dom";
-import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
@@ -130,7 +129,6 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
-			<Feedback facilityId={selectedFacilityId} />
 			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"

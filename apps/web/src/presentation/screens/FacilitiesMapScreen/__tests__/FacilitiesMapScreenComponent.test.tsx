@@ -195,7 +195,7 @@ describe("FacilitiesMapScreen", () => {
 
 		render(<FacilitiesMapScreen />);
 
-		expect(screen.getByTestId("feedback-widget")).toHaveAttribute("data-facility", "f1");
+		expect(screen.queryByTestId("feedback-widget")).not.toBeInTheDocument();
 		const legend = screen.getByTestId("session-heatmap-legend");
 		expect(legend).toHaveClass("bottom-8", "left-16", "glass-panel", "session-legend-in");
 		expect(legend).not.toHaveClass("left-3");

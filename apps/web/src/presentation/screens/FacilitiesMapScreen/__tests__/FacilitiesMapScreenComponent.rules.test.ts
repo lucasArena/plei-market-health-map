@@ -895,7 +895,11 @@ describe("useFacilitiesMapScreenRules", () => {
 			() => {
 				const rules = useFacilitiesMapScreenRules();
 				rules.containerRef.current ??= container;
-				return { rules, scope: useMapScope().scope };
+				return {
+					rules,
+					scope: useMapScope().scope,
+					feedbackFacilityId: useMapScope().selectedFacilityId,
+				};
 			},
 			{
 				wrapper: ({ children }: { children: ReactNode }) =>
@@ -907,6 +911,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.scope).toEqual({ kind: "all" });
 
 		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		expect(result.current.feedbackFacilityId).toBe("f1");
 		expect(result.current.scope).toEqual({
 			kind: "facility",
 			id: "f1",
@@ -925,6 +930,8 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		act(() => result.current.rules.clearSearchScope());
 		expect(result.current.scope).toEqual({ kind: "all" });
+		act(() => result.current.rules.handlePanelClosed());
+		expect(result.current.feedbackFacilityId).toBeNull();
 	});
 
 	it("zooms to search selections", async () => {
