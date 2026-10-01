@@ -32,7 +32,7 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 
 - Repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 - Linear releases: in Linear, go to **Settings → Releases** and create a **continuous** pipeline named `Market Health Map` for the Product team. Generate its access key (a personal API key does not work) and save it as the repository secret `LINEAR_ACCESS_KEY`. Turn on auto-generated release notes in the pipeline settings if you also want Linear's own summary.
-- Linear ticket sync: save the Market Health Map Linear app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` as repository secrets too. `linear-sync.yml` moves a PR's ticket to Feedback on a changes-requested review and to Done when it merges into `staging`, and `cd.production.yml` moves every released ticket to Released. Without them the jobs only warn.
+- Linear ticket sync: save the Market Health Map Linear app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` as repository secrets too. `linear-sync.yml` moves a PR's ticket to Code Review when it opens against `staging`, to Feedback on a changes-requested review and to Done when it merges into `staging`, and `cd.production.yml` moves every released ticket to Released. Without them the jobs only warn.
 - Environment `staging`: secret `DATABASE_URL_UNPOOLED` (the staging Neon branch). Optionally add a variable `STAGING_DOMAIN`, for example `market-health-map-staging.vercel.app`.
 - Environment `production`: secret `DATABASE_URL_UNPOOLED` (the production Neon branch), plus **Required reviewers**.
 - Optional, for the integration job: repository secrets `NEON_TEST_DATABASE_URL` and `NEON_TEST_DATABASE_URL_UNPOOLED`.
