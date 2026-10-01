@@ -9,6 +9,7 @@ export class ActivitySummaryPrompt {
 	private static readonly LANGUAGE_BY_LOCALE: Record<string, string> = {
 		en: "English",
 		"pt-BR": "Brazilian Portuguese",
+		es: "Spanish",
 	};
 
 	private static readonly EXAMPLE_FACTS = [
@@ -25,6 +26,7 @@ export class ActivitySummaryPrompt {
 		en: DEFAULT_EXAMPLE_SUMMARY,
 		"pt-BR":
 			"- A ativação de novos jogadores caiu 29% em relação aos 28 dias anteriores, enquanto os jogos caíram 10%.\n- A ativação está enfraquecendo mais rapidamente; investigue essa diferença.",
+		es: "- La activación de nuevos jugadores cayó 29% frente a los 28 días anteriores, mientras que los partidos cayeron 10%.\n- La activación se está debilitando más rápido que la actividad de partidos; investiguen esa diferencia.",
 	};
 
 	build(subject: ActivitySummarySubject, locale: string): LlmMessage[] {

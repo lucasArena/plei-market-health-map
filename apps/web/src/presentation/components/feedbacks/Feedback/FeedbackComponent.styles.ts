@@ -20,11 +20,13 @@ export const FEEDBACK_STACK_CLASS =
 
 export const FEEDBACK_LEGEND_SLOT_CLASS = "relative z-0 empty:hidden";
 
+export const FEEDBACK_LEGEND_SLOT_VISIBILITY_CLASS = { open: "invisible", closed: "" };
+
 export const FEEDBACK_TRIGGER_CLASS =
 	"map-icon-button map-glass pointer-events-auto relative z-10 flex size-[var(--map-profile-size)] cursor-pointer items-center justify-center rounded-full border border-border/70 text-base font-semibold text-map-icon shadow-[var(--map-shadow)] transition-[box-shadow,border-color] focus-visible:ring-2 focus-visible:ring-pleiful-pitch-green-80 focus-visible:outline-none";
 
 export const FEEDBACK_PANEL_CLASS =
-	"pointer-events-auto absolute bottom-full left-0 z-50 mb-[var(--map-profile-legend-gap)] flex max-h-[calc(100dvh-var(--map-profile-bottom)-var(--map-profile-size)-var(--map-profile-legend-gap)-var(--map-frame))] w-[min(22rem,calc(100vw-2*var(--map-frame)))] origin-bottom-left flex-col overflow-y-auto map-glass rounded-[var(--map-radius)] border shadow-[var(--map-shadow)]";
+	"pointer-events-auto absolute bottom-[calc(var(--map-profile-size)+var(--map-profile-legend-gap))] left-0 z-50 flex max-h-[calc(100dvh-var(--map-profile-bottom)-var(--map-profile-size)-var(--map-profile-legend-gap)-var(--map-frame))] w-[min(22rem,calc(100vw-2*var(--map-frame)))] origin-bottom-left flex-col overflow-y-auto map-glass rounded-[var(--map-radius)] border shadow-[var(--map-shadow)]";
 
 export const FEEDBACK_PANEL_ANIMATION_CLASS = {
 	open: "feedback-pop-in",
