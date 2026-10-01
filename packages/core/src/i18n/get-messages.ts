@@ -1,11 +1,12 @@
 import { DEFAULT_LOCALE, isLocale } from "@core/i18n/locales";
 import type { Locale } from "@core/i18n/locales.types";
 import { en } from "@core/i18n/messages/en";
+import { es } from "@core/i18n/messages/es";
 import type { Messages } from "@core/i18n/messages/messages.types";
 import { ptBR } from "@core/i18n/messages/pt-BR";
 
-const CATALOGS: Record<Locale, Messages> = { en, "pt-BR": ptBR };
-const CATALOG_BY_LANGUAGE: Record<string, Locale> = { en: "en", pt: "pt-BR" };
+const CATALOGS: Record<Locale, Messages> = { en, "pt-BR": ptBR, es };
+const CATALOG_BY_LANGUAGE: Record<string, Locale> = { en: "en", pt: "pt-BR", es: "es" };
 
 export function getMessages(locale: Locale): Messages {
 	return CATALOGS[locale];

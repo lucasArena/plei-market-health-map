@@ -25,7 +25,7 @@ packages/
   core/                   pure TypeScript, no framework
     src/domain/             entities, value rules (guard), DomainError, EntityId
     src/application/        services/, repositories/ and providers/ (interfaces), Zod DTOs, mappers, errors; fakes in testing/
-    src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
+    src/i18n/               typed en, pt-BR and es catalogs, getMessages, parseAcceptLanguage
   config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
 

@@ -190,7 +190,7 @@ Put user-facing work behind a feature flag when it should reach `staging` or `ma
 **Adding a flag**
 
 1. Add a kebab-case key to `FEATURE_FLAG_KEYS` in `packages/core/src/application/dtos/feature-flags-dto.ts`. Flags only exist in code; the control panel can switch them but never create them.
-2. Describe it in `featureFlags.descriptions` in both `packages/core/src/i18n/messages/en.ts` and `pt-BR.ts`. `packages/core/src/__tests__/feature-flag-descriptions.test.ts` fails if a key has no description or a description has no key.
+2. Describe it in `featureFlags.descriptions` in `packages/core/src/i18n/messages/en.ts`, `pt-BR.ts` and `es.ts`. `packages/core/src/__tests__/feature-flag-descriptions.test.ts` fails if a key has no description or a description has no key.
 3. Read it in the component's `.rules.ts` hook with `useFeatureFlag("<key>")` from `presentation/hooks/use-feature-flags/use-feature-flags.ts`, and render the new behavior only when it is `true`. Keep the current behavior working when it is `false`, which is also the answer while the flags load. Server code can call `listEnabledFeatureFlags()` from the container.
 4. Test both states by mocking `useFeatureFlag`.
 5. A new flag starts **off**. Say in the PR which flag to turn on, and leave turning it on to an admin.
@@ -200,7 +200,7 @@ Switches reach users within about a minute: the server caches the flags for 30 s
 **Removing a flag** (once it is on for everyone and staying on)
 
 1. Delete every `useFeatureFlag("<key>")` check and the old behavior, keeping only the "on" path.
-2. Remove the key from `FEATURE_FLAG_KEYS` and its descriptions from both catalogs.
+2. Remove the key from `FEATURE_FLAG_KEYS` and its descriptions from every catalog.
 3. Leave the database row. Rows for keys that are no longer in code are ignored and disappear from the control panel.
 4. Name the removed flag in the PR title or description.
 
