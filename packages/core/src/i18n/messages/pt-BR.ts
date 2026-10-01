@@ -35,6 +35,7 @@ export const ptBR: Messages = {
 		sessionHeatmapContext: "A escala é atualizada para a visualização atual do mapa",
 		sessionHeatmapNoActivity: "Nenhuma sessão na visualização atual do mapa",
 		sessionHeatmapLowValue: "{count} sessões em uma área sombreada",
+		sessionHeatmapMidValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",
 		layersBrand: "Plei Market",
 		layersHeading: "Camadas",

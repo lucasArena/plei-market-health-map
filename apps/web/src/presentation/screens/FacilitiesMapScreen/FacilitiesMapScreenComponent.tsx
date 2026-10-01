@@ -7,8 +7,12 @@ import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetai
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
+import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
-import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
+import {
+	SESSION_HEATMAP_BUCKET_COLORS,
+	SESSION_HEATMAP_LEGEND_CLASS,
+} from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 export function FacilitiesMapScreen() {
 	const {
@@ -28,12 +32,24 @@ export function FacilitiesMapScreen() {
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { searchSlot } = useHeaderSlot();
+	const {
+		finishReveal: finishLegendMotion,
+		isShown: isLegendShown,
+		motion: legendMotion,
+	} = useRevealMotion(hasSessionHeatmap, PANEL_SLIDE_MS);
+	const legendMotionClass = {
+		hidden: "",
+		enter: "session-legend-in",
+		shown: "",
+		exit: "session-legend-out",
+	}[legendMotion];
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
 	const numberFormatter = new Intl.NumberFormat(undefined, {
 		notation: "compact",
 		maximumFractionDigits: 1,
 	});
 	const lowValue = numberFormatter.format(sessionScale.low);
+	const midValue = numberFormatter.format(Math.round((sessionScale.low + sessionScale.high) / 2));
 	const highValue = numberFormatter.format(sessionScale.high);
 
 	return (
@@ -61,15 +77,16 @@ export function FacilitiesMapScreen() {
 				</p>
 			)}
 			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
-			{hasSessionHeatmap && (
+			{isLegendShown && (
 				<div
 					data-testid="session-heatmap-legend"
-					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
+					onAnimationEnd={finishLegendMotion}
+					className={`${SESSION_HEATMAP_LEGEND_CLASS} ${legendMotionClass}`}
 				>
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
 						{messages.sessionHeatmapLegend}
 					</p>
-					<p className="mt-0.5 text-[9px] text-muted-foreground">
+					<p className="mt-0.5 text-[10px] text-muted-foreground">
 						{messages.sessionHeatmapContext}
 					</p>
 					{sessionScale.high === 0 ? (
@@ -77,32 +94,40 @@ export function FacilitiesMapScreen() {
 							{messages.sessionHeatmapNoActivity}
 						</p>
 					) : (
-						<div className="mt-2 flex items-center justify-between gap-3">
-							<span
-								aria-hidden="true"
-								className="min-w-7 text-[10px] tabular-nums text-muted-foreground"
-							>
-								{lowValue}
-							</span>
-							<span className="sr-only">
-								{messages.sessionHeatmapLowValue.replace("{count}", lowValue)}
-							</span>
+						<div className="mt-2 flex flex-col gap-1">
 							<div
 								data-testid="session-heatmap-gradient"
-								className="h-2.5 flex-1 rounded-full"
+								className="h-2.5 w-full rounded-full"
 								style={{
 									backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
 								}}
 							/>
-							<span
-								aria-hidden="true"
-								className="min-w-7 text-right text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
-							>
-								{highValue}+
-							</span>
-							<span className="sr-only">
-								{messages.sessionHeatmapHighValue.replace("{count}", highValue)}
-							</span>
+							<div className="relative flex items-center justify-between">
+								<span aria-hidden="true" className="text-[10px] tabular-nums text-muted-foreground">
+									{lowValue}
+								</span>
+								<span className="sr-only">
+									{messages.sessionHeatmapLowValue.replace("{count}", lowValue)}
+								</span>
+								<span
+									aria-hidden="true"
+									className="absolute left-1/2 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
+								>
+									{midValue}
+								</span>
+								<span className="sr-only">
+									{messages.sessionHeatmapMidValue.replace("{count}", midValue)}
+								</span>
+								<span
+									aria-hidden="true"
+									className="text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
+								>
+									{highValue}+
+								</span>
+								<span className="sr-only">
+									{messages.sessionHeatmapHighValue.replace("{count}", highValue)}
+								</span>
+							</div>
 						</div>
 					)}
 				</div>

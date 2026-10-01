@@ -118,10 +118,13 @@ export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 	"text-opacity": 0,
 };
 
+export const SESSION_HEATMAP_LEGEND_CLASS = [
+	"glass-panel absolute bottom-8 left-16 min-w-56 rounded-xl px-3 py-2.5",
+].join(" ");
+
 export const SESSION_HEATMAP_BUCKET_COLORS = [
-	PLEIFUL_COLORS.sky[10],
 	PLEIFUL_COLORS.sky[30],
-	PLEIFUL_COLORS.sky[50],
+	"#0080FF",
 	PLEIFUL_COLORS.moonlight[60],
 ] as const;
 
@@ -138,7 +141,7 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 		["linear"],
 		["heatmap-density"],
 		0,
-		"rgba(224, 242, 254, 0)",
+		"rgba(125, 211, 252, 0)",
 		0.25,
 		SESSION_HEATMAP_BUCKET_COLORS[0],
 		0.55,
@@ -146,9 +149,9 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 		0.82,
 		SESSION_HEATMAP_BUCKET_COLORS[2],
 		0.98,
-		SESSION_HEATMAP_BUCKET_COLORS[3],
+		SESSION_HEATMAP_BUCKET_COLORS[2],
 		1,
-		SESSION_HEATMAP_BUCKET_COLORS[3],
+		SESSION_HEATMAP_BUCKET_COLORS[2],
 	],
 };
 

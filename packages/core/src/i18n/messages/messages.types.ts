@@ -31,6 +31,7 @@ export interface Messages {
 		sessionHeatmapContext: string;
 		sessionHeatmapNoActivity: string;
 		sessionHeatmapLowValue: string;
+		sessionHeatmapMidValue: string;
 		sessionHeatmapHighValue: string;
 		layersBrand: string;
 		layersHeading: string;
