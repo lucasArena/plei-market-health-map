@@ -45,3 +45,44 @@ describe("WarehouseAppSessionHeatmapRepository", () => {
 		expect(cells).toEqual([{ lat: 29.746, lng: -95.352, sessionWeight: 1134 }]);
 	});
 });
+
+it("binds filters as parameters and uses EXISTS to avoid multiplying sessions", async () => {
+	const query = vi.fn().mockResolvedValue({ rows: [row()] });
+	await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days({
+		gender: "Female' OR 1=1 --",
+		skill: "Advanced",
+		ageMin: 0,
+		ageMax: 17,
+	});
+	const [sql, values] = query.mock.calls[0] ?? [];
+	expect(values).toEqual(["Female' OR 1=1 --", "Advanced", 0, 17]);
+	expect(sql).not.toContain("OR 1=1");
+	expect(sql).toContain("AND EXISTS");
+	expect(sql).toContain("p.player_id = players_behaviour.player_id");
+	expect(sql).toContain("p.age_integer >= $3");
+	expect(sql).toContain("p.age_integer <= $4");
+	expect(sql).toContain("SUM(q_sessions)");
+});
+it("uses only present predicates for open age bounds", async () => {
+	const query = vi.fn().mockResolvedValue({ rows: [] });
+	await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days({ ageMin: 45 });
+	expect(query.mock.calls[0]?.[1]).toEqual([45]);
+	expect(query.mock.calls[0]?.[0]).not.toContain("p.gender");
+	expect(query.mock.calls[0]?.[0]).not.toContain("p.age_integer <=");
+});
+it("returns distinct stored profile choices without inventing demographic values", async () => {
+	const query = vi.fn().mockResolvedValue({
+		rows: [
+			{ gender: "Female", skill: "Advanced" },
+			{ gender: "Male", skill: "Beginner" },
+			{ gender: "Female", skill: "Advanced" },
+			{ gender: null, skill: null },
+		],
+	});
+	expect(await new WarehouseAppSessionHeatmapRepository({ query }).listFilterOptions()).toEqual({
+		genders: ["Female", "Male"],
+		skills: ["Advanced", "Beginner"],
+	});
+	expect(query.mock.calls[0]?.[0]).toContain("skill_description");
+	expect(query.mock.calls[0]?.[0]).not.toContain("skill_level");
+});

@@ -1,8 +1,12 @@
 import type {
+	AppSessionFilters,
 	AppSessionHeatmapCellView,
 	AppSessionHeatmapRepository,
 } from "@market-health-map/core/application";
-import type { WarehouseAppSessionHeatmapRow } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository.types";
+import type {
+	WarehouseAppSessionFilterRow,
+	WarehouseAppSessionHeatmapRow,
+} from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository.types";
 import type { WarehouseQueryable } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository.types";
 
 export const APP_SESSION_HEATMAP_LAST_28D_SQL = `
@@ -35,10 +39,41 @@ export function toAppSessionHeatmapCell(
 export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
 	constructor(private readonly warehouse: WarehouseQueryable) {}
 
-	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {
-		const { rows } = await this.warehouse.query<WarehouseAppSessionHeatmapRow>(
-			APP_SESSION_HEATMAP_LAST_28D_SQL,
-		);
+	async listFilterOptions() {
+		const { rows } = await this.warehouse.query<WarehouseAppSessionFilterRow>(`
+SELECT DISTINCT NULLIF(TRIM(gender), '') AS gender, NULLIF(TRIM(skill_description), '') AS skill
+FROM plei_gold.dim_player
+WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)`);
+		return {
+			genders: [...new Set(rows.flatMap((row) => (row.gender ? [row.gender] : [])))].sort(),
+			skills: [...new Set(rows.flatMap((row) => (row.skill ? [row.skill] : [])))].sort(),
+		};
+	}
+
+	async listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
+		const predicates: string[] = [];
+		const values: unknown[] = [];
+		for (const [column, value, operator] of [
+			["NULLIF(TRIM(p.gender), '')", filters.gender, "="],
+			["NULLIF(TRIM(p.skill_description), '')", filters.skill, "="],
+			["p.age_integer", filters.ageMin, ">="],
+			["p.age_integer", filters.ageMax, "<="],
+		] as const) {
+			if (value === undefined) continue;
+			values.push(value);
+			predicates.push(`${column} ${operator} $${values.length}`);
+		}
+		let sql = APP_SESSION_HEATMAP_LAST_28D_SQL;
+		if (predicates.length) {
+			sql = sql.replace(
+				"GROUP BY 1, 2",
+				`AND EXISTS (SELECT 1 FROM plei_gold.dim_player p WHERE p.player_id = players_behaviour.player_id AND ${predicates.join(" AND ")})\nGROUP BY 1, 2`,
+			);
+		}
+		const result = values.length
+			? await this.warehouse.query<WarehouseAppSessionHeatmapRow>(sql, values)
+			: await this.warehouse.query<WarehouseAppSessionHeatmapRow>(sql);
+		const { rows } = result;
 		return rows.flatMap((row) => {
 			const cell = toAppSessionHeatmapCell(row);
 			return cell ? [cell] : [];

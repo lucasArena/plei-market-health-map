@@ -702,7 +702,11 @@ export function useFacilitiesMapScreenRules() {
 	const { setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
-	const heatmapQuery = useAppSessionHeatmap();
+	const mapLayers = useMapLayers();
+	const heatmapQuery = useAppSessionHeatmap(
+		mapLayers?.sessionFilters,
+		mapLayers?.showSessions ?? true,
+	);
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
@@ -715,11 +719,26 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
-	const mapLayers = useMapLayers();
 	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
 	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? true;
+	const filters = mapLayers?.sessionFilters;
+	const ageSuffix = filters?.ageMin !== undefined && filters.ageMax === undefined ? "+" : "";
+	const ageLabel =
+		filters?.ageMin === 0 && filters?.ageMax === 17
+			? messages.map.sessionFilters.under18
+			: [filters?.ageMin, filters?.ageMax].filter((value) => value !== undefined).join("–") +
+				ageSuffix;
+	const sessionFilterSummary = [filters?.gender, filters?.skill, ageLabel]
+		.filter(Boolean)
+		.join(" · ");
+	const sessionQueryStatus =
+		{
+			[`${heatmapQuery.isError}`]: messages.map.sessionFilters.sessionsError,
+			[`${heatmapQuery.isPending}`]: messages.map.sessionFilters.updating,
+		}.true ?? "";
+
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
 	const facilitiesWereShownRef = useRef(showFacilities);
@@ -1011,6 +1030,9 @@ export function useFacilitiesMapScreenRules() {
 		if (!isMapReady || !map) return;
 		if (heatmapQuery.isError || !heatmapQuery.data) {
 			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
+			setSessionScale((current) =>
+				current.high === 0 && current.low === 0 ? current : { low: 0, high: 0 },
+			);
 			return;
 		}
 		refreshHeatmap();
@@ -1188,6 +1210,8 @@ export function useFacilitiesMapScreenRules() {
 	}[legendMotion];
 
 	return {
+		sessionFilterSummary,
+		sessionQueryStatus,
 		clearSearchScope,
 		closePanel,
 		containerRef,

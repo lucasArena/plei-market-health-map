@@ -29,6 +29,8 @@ export function FacilitiesMapScreen() {
 		selectSearchFacility,
 		selectSearchMarket,
 		sessionScale,
+		sessionFilterSummary,
+		sessionQueryStatus,
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { legendSlot, searchSlot } = useHeaderSlot();
@@ -79,10 +81,15 @@ export function FacilitiesMapScreen() {
 						</p>
 						<p className="mt-0.5 text-[10px] text-muted-foreground">
 							{messages.sessionHeatmapContext}
+							{sessionFilterSummary && (
+								<span className="mt-1 block font-medium text-foreground">
+									{messages.sessionFilters.applied.replace("{filters}", sessionFilterSummary)}
+								</span>
+							)}
 						</p>
 						{sessionScale.high === 0 ? (
 							<p className="mt-2 text-[10px] font-medium text-muted-foreground">
-								{messages.sessionHeatmapNoActivity}
+								{sessionQueryStatus || messages.sessionHeatmapNoActivity}
 							</p>
 						) : (
 							<div className="mt-2 flex flex-col gap-1">

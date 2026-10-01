@@ -12,5 +12,5 @@ export interface WarehouseLocationRow {
 }
 
 export interface WarehouseQueryable {
-	query<Row>(sql: string): Promise<{ rows: Row[] }>;
+	query<Row>(sql: string, values?: unknown[]): Promise<{ rows: Row[] }>;
 }

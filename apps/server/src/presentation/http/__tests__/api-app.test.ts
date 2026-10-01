@@ -14,6 +14,9 @@ function setup(access: AccessDecision = ALLOWED) {
 		getMarketGameInsights: vi.fn().mockResolvedValue([]),
 		getMarketSummary: vi.fn().mockResolvedValue({ scope: { facilityCount: 42 } }),
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
+		listAppSessionFilterOptions: vi
+			.fn()
+			.mockResolvedValue({ genders: ["Female"], skills: ["Advanced"] }),
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
 		listRecentLogins: vi.fn().mockResolvedValue([{ id: "l1" }]),
 		submitFeedback: vi.fn().mockResolvedValue({ identifier: "REQ-1", url: "https://linear.app/x" }),
@@ -165,5 +168,35 @@ describe("market insights route", () => {
 		});
 		expect(services.getMarketGameInsights).toHaveBeenCalledWith({ market: "houston" });
 		expect(services.getMarketSummary).not.toHaveBeenCalled();
+	});
+});
+
+describe("session demographics API", () => {
+	it("passes validated combined filters and serves options", async () => {
+		const { get, services } = setup();
+		expect(
+			(await get("/app-session-heatmap?gender=Female&skill=Advanced&ageMin=25&ageMax=34")).status,
+		).toBe(200);
+		expect(services.listAppSessionHeatmap).toHaveBeenCalledWith({
+			gender: "Female",
+			skill: "Advanced",
+			ageMin: 25,
+			ageMax: 34,
+		});
+		expect((await get("/app-session-heatmap/filters")).body).toEqual({
+			data: { genders: ["Female"], skills: ["Advanced"] },
+		});
+	});
+	it.each([
+		"ageMin=abc",
+		"ageMin=-1",
+		"ageMin=35&ageMax=18",
+		"ageMax=121",
+		"skill=",
+		"unexpected=true",
+	])("rejects invalid filters %s", async (query) => {
+		const { get, services } = setup();
+		expect((await get(`/app-session-heatmap?${query}`)).status).toBe(422);
+		expect(services.listAppSessionHeatmap).not.toHaveBeenCalled();
 	});
 });

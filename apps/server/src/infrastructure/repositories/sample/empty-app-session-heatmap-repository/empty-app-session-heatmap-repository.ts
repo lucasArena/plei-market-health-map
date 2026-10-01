@@ -4,6 +4,10 @@ import type {
 } from "@market-health-map/core/application";
 
 export class EmptyAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
+	async listFilterOptions() {
+		return { genders: [], skills: [] };
+	}
+
 	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {
 		return [];
 	}

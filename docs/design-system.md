@@ -43,3 +43,5 @@ MapLibre's zoom control is styled through its own classes (`.maplibregl-ctrl-gro
 so MapLibre still wires the buttons.
 
 The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. All switches start enabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities.
+
+When `app-session-demographics` is enabled, the layers menu is 280px wide and scrolls within the available viewport. A bordered Player filters section under Demand contains labeled native selects for Gender, Player skill level and Player age, with All defaults. Apply submits the draft together; Reset restores All immediately. An applied-cohort summary also appears in the map legend. Pending edits, loading, failures with Retry, and empty results have separate messages. Supply switches remain below the Demand controls.

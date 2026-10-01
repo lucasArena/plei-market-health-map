@@ -5,11 +5,17 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "re
 import { layersPanelPreference } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
+	const showDemographics = useFeatureFlag("app-session-demographics");
+	const setSessionFilters = layers?.setSessionFilters;
+	useEffect(() => {
+		if (!showDemographics) setSessionFilters?.({});
+	}, [showDemographics, setSessionFilters]);
 	const isOnMap = usePathname() === "/";
 	const [isExpanded, setIsExpanded] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isExpanded);
@@ -28,7 +34,7 @@ export function useMapLayersPanelRules() {
 	}, []);
 	const toggleExpanded = useCallback(() => expand(!isExpanded), [expand, isExpanded]);
 	const closeOnEscape = useCallback(
-		(event: KeyboardEvent<HTMLButtonElement>) => {
+		(event: KeyboardEvent<HTMLElement>) => {
 			if (event.key === "Escape") expand(false);
 		},
 		[expand],
@@ -69,6 +75,7 @@ export function useMapLayersPanelRules() {
 	}, [expand]);
 
 	return {
+		showDemographics,
 		cardMotion: motion,
 		closeOnEscape,
 		finishCardMotion: finishReveal,
