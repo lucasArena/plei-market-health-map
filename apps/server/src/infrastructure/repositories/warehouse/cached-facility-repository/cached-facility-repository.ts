@@ -1,24 +1,28 @@
 import type { Clock, FacilityRepository } from "@market-health-map/core/application";
 import type { Facility } from "@market-health-map/core/domain";
-import { TtlCache } from "@server/infrastructure/repositories/warehouse/ttl-cache/ttl-cache";
+import {
+	isExpired,
+	remember,
+} from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry";
+import type { CacheEntry } from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry.types";
 
 export const FACILITY_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class CachedFacilityRepository implements FacilityRepository {
-	private readonly cache: TtlCache<Facility[]>;
+	private readonly cache = new Map<string, CacheEntry<Facility[]>>();
 
 	constructor(
 		private readonly inner: FacilityRepository,
-		clock: Clock,
-		ttlMs: number = FACILITY_CACHE_TTL_MS,
-	) {
-		this.cache = new TtlCache({
-			now: () => clock.now().getTime(),
-			ttlMs,
-		});
-	}
+		private readonly clock: Clock,
+		private readonly ttlMs: number = FACILITY_CACHE_TTL_MS,
+	) {}
 
 	listAll(): Promise<Facility[]> {
-		return this.cache.get("all", () => this.inner.listAll());
+		const now = this.clock.now().getTime();
+		const cached = this.cache.get("all");
+		if (!cached || isExpired(cached, now)) {
+			return remember(this.cache, "all", this.inner.listAll(), now + this.ttlMs);
+		}
+		return cached.value;
 	}
 }
