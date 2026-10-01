@@ -41,3 +41,5 @@ with the regular border and no blur.
 
 MapLibre's zoom control is styled through its own classes (`.maplibregl-ctrl-group`) in `globals.css`,
 so MapLibre still wires the buttons.
+
+The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. All switches start enabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities.
