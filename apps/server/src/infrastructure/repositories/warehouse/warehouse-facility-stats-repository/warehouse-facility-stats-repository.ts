@@ -174,7 +174,7 @@ select
   ) as activated_players_previous_28_days
 from bounds b
 left join facility_players f on true
-group by b.this_week`;
+group by b.today`;
 
 export function toReservationStats(
 	row: WarehouseFacilityReservationStatsRow,
