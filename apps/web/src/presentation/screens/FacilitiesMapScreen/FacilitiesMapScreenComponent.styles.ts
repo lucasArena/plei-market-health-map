@@ -22,7 +22,14 @@ export const CLUSTER_LAYER_ID = "facilities-clusters";
 export const CLUSTER_COUNT_LAYER_ID = "facilities-cluster-count";
 export const CLUSTER_RADIUS = 40;
 export const CLUSTER_MAX_ZOOM = 11;
+export const FACILITY_DOT_ZOOM = CLUSTER_MAX_ZOOM + 1;
 export const CLUSTER_PREVIEW_LIMIT = 8;
+export const CLUSTER_MARKER_CLASS = "cluster-marker";
+export const CLUSTER_MARKER_HOVER_SCALE = 1.06;
+export const CLUSTER_MARKER_MOTION_MS = 200;
+export const CLUSTER_MARKER_MOTION_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+export const CLUSTER_HOVER_GAP = 8;
+export const CLUSTER_HOVER_DISMISS_MS = 100;
 
 export const FACILITY_GLASS_DIAMETER = 29;
 export const FACILITY_GLASS_CORE_SIZE = 17;

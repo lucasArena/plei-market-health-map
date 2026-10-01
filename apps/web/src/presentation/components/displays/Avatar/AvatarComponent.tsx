@@ -2,6 +2,7 @@ import Image from "next/image";
 import {
 	getInitials,
 	pickAvatarColor,
+	pickMutedAvatarColor,
 } from "@/presentation/components/displays/Avatar/AvatarComponent.rules";
 import {
 	AVATAR_APPEARANCE_CLASS,
@@ -20,8 +21,14 @@ export function Avatar({
 	const sizedClass = {
 		color: `${className} ${appearanceClass}`,
 		account: appearanceClass,
+		muted: appearanceClass,
 	}[appearance];
-	const imagePixels = { color: pixels, account: 32 }[appearance];
+	const imagePixels = { color: pixels, account: 32, muted: 20 }[appearance];
+	const backgroundColor = {
+		color: pickAvatarColor(name),
+		account: undefined,
+		muted: pickMutedAvatarColor(name),
+	}[appearance];
 	if (avatarUrl) {
 		return (
 			<Image
@@ -41,7 +48,7 @@ export function Avatar({
 			data-size={size}
 			data-appearance={appearance}
 			className={`${sizedClass} flex shrink-0 items-center justify-center rounded-full`}
-			style={appearance === "color" ? { backgroundColor: pickAvatarColor(name) } : undefined}
+			style={backgroundColor ? { backgroundColor } : undefined}
 		>
 			{getInitials(name)}
 		</span>
