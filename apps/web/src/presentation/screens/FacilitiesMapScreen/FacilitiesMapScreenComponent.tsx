@@ -44,7 +44,7 @@ export function FacilitiesMapScreen() {
 	return (
 		<section aria-label={messages.title} className="absolute inset-0">
 			<div className="absolute inset-0">
-				<div ref={containerRef} data-testid="facilities-map" className="h-full w-full" />
+				<div ref={containerRef} data-testid="facilities-map" className="map-frame h-full w-full" />
 			</div>
 			{searchSlot &&
 				createPortal(
@@ -129,7 +129,7 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
-			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
+			<p className="absolute bottom-[var(--map-frame)] left-[var(--map-frame)] text-[10px] leading-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"
 					target="_blank"

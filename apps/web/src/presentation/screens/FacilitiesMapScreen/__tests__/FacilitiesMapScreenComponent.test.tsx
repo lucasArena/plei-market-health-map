@@ -90,7 +90,10 @@ describe("FacilitiesMapScreen", () => {
 		render(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
-		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
+		expect(screen.getByTestId("facilities-map")).toHaveClass("map-frame");
+		expect(
+			screen.getByRole("link", { name: "OpenStreetMap contributors" }).parentElement,
+		).toHaveClass("bottom-[var(--map-frame)]", "left-[var(--map-frame)]");
 		expect(screen.queryByRole("status")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("detail-panel")).not.toBeInTheDocument();
@@ -182,7 +185,7 @@ describe("FacilitiesMapScreen", () => {
 		expect(screen.getByTestId("detail-panel")).toHaveAttribute("data-closing", "true");
 	});
 
-	it("places the feedback button bottom left and moves the legend beside it", () => {
+	it("places the session scale 8px above the account control", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
@@ -197,8 +200,15 @@ describe("FacilitiesMapScreen", () => {
 
 		expect(screen.queryByTestId("feedback-widget")).not.toBeInTheDocument();
 		const legend = screen.getByTestId("session-heatmap-legend");
-		expect(legend).toHaveClass("bottom-8", "left-16", "glass-panel", "session-legend-in");
-		expect(legend).not.toHaveClass("left-3");
+		expect(legend).toHaveClass(
+			"map-glass",
+			"rounded-[var(--map-radius)]",
+			"shadow-[var(--map-shadow)]",
+			"session-legend-in",
+			"left-[var(--map-frame)]",
+			"bottom-[calc(var(--map-profile-bottom)+var(--map-profile-size)+var(--map-profile-legend-gap))]",
+		);
+		expect(legend).not.toHaveClass("left-16", "bottom-8", "glass-panel");
 	});
 
 	it("slides the session legend out before removing it", () => {

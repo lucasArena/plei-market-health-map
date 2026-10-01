@@ -7,6 +7,7 @@ import type {
 	MapSearchProps,
 	MarketSearchResult,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
+import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 
 const RESULT_LIMIT = 8;
 
@@ -37,6 +38,7 @@ export function useMapSearchRules({
 }: MapSearchProps) {
 	const [query, setQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
+	const { finishReveal, isShown, motion } = useRevealMotion(isOpen);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const markets = useMemo(() => buildMarketSearchResults(facilities), [facilities]);
 	const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -88,10 +90,13 @@ export function useMapSearchRules({
 
 	return {
 		clear,
+		finishResultsMotion: finishReveal,
 		handleChange,
 		handleKeyDown,
 		isOpen,
+		isResultsShown: isShown,
 		query,
+		resultsMotion: motion,
 		rootRef,
 		selectFacility,
 		selectMarket,
