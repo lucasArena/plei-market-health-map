@@ -311,6 +311,14 @@ button.map-icon-button[aria-expanded="true"],
   color: var(--foreground);
 }
 
+button.map-icon-button.map-icon-button-on,
+button.map-icon-button.map-icon-button-on:hover,
+button.map-icon-button.map-icon-button-on[aria-expanded="true"] {
+  border-color: var(--pleiful-pitch-green-80);
+  background-color: var(--pleiful-pitch-green-80);
+  color: #ffffff;
+}
+
 .map-frame .maplibregl-ctrl.maplibregl-ctrl-group {
   box-sizing: border-box;
   display: flex;

@@ -1,18 +1,11 @@
 "use client";
 
-import { formatMessage } from "@market-health-map/core/i18n";
 import { usePathname } from "next/navigation";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { layersPanelPreference } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
-
-export const MAP_LAYER_COUNT = 3;
-
-export function layersBadge(layersOn: number): string | null {
-	return layersOn > 0 ? String(layersOn) : null;
-}
 
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
@@ -27,9 +20,7 @@ export function useMapLayersPanelRules() {
 	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
-	const layersOn = [showActiveFacilities, showInactiveFacilities, showSessions].filter(
-		Boolean,
-	).length;
+	const hasLayersOn = showActiveFacilities || showInactiveFacilities || showSessions;
 
 	const expand = useCallback((next: boolean) => {
 		layersPanelPreference.remember(next);
@@ -84,11 +75,7 @@ export function useMapLayersPanelRules() {
 		isCardShown: isShown,
 		isExpanded,
 		isOnMap,
-		layersBadge: layersBadge(layersOn),
-		layersOnLabel: formatMessage(messages.map.layersOn, {
-			count: String(layersOn),
-			total: String(MAP_LAYER_COUNT),
-		}),
+		hasLayersOn,
 		messages: messages.map,
 		rootRef,
 		showActiveFacilities,

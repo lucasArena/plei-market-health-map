@@ -160,10 +160,7 @@ describe("MapLayersPanel", () => {
 
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
 		expect(toggle).toHaveClass("size-[32px]", "rounded-full", "map-glass", "map-icon-button");
-		expect(toggle.querySelector("img")).toHaveAttribute(
-			"src",
-			expect.stringContaining("settings-2.svg"),
-		);
+		expect(toggle.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
 		expect(toggle).not.toHaveTextContent("Layers");
 
 		vi.useFakeTimers();
@@ -178,10 +175,7 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("switch", { name: "Active facilities" })).not.toBeInTheDocument();
 		const expand = screen.getByRole("button", { name: "Show layers" });
 		expect(expand).toHaveClass("map-glass", "map-icon-button", "rounded-full");
-		expect(expand.querySelector("img")).toHaveAttribute(
-			"src",
-			expect.stringContaining("settings-2.svg"),
-		);
+		expect(expand.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
 		expect(expand.parentElement).not.toHaveClass("border-b");
 
 		fireEvent.click(expand);
@@ -234,7 +228,10 @@ describe("MapLayersPanel", () => {
 			"false",
 		);
 		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
-		expect(screen.getByTestId("layers-badge")).toHaveTextContent("3");
+		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
+			"data-active",
+			"true",
+		);
 	});
 
 	it("remembers whether the panel was left open or closed", () => {
@@ -247,23 +244,23 @@ describe("MapLayersPanel", () => {
 		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
 	});
 
-	it("badges the button with how many layers are on, and hides the badge at zero", () => {
+	it("shows the button as active while any layer is on", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
 			</MapLayersProvider>,
 		);
 		const button = screen.getByRole("button", { name: "Hide layers" });
-		expect(screen.getByTestId("layers-badge")).toHaveTextContent("3");
-		expect(button).toHaveAccessibleDescription("3 of 3 layers on");
-		expect(screen.getByTestId("layers-badge")).toHaveClass("absolute", "-top-1", "-right-1");
+		expect(button).toHaveAttribute("data-active", "true");
+		expect(button).toHaveClass("map-icon-button-on");
 
 		fireEvent.click(switchByName("App sessions"));
-		expect(screen.getByTestId("layers-badge")).toHaveTextContent("2");
 		fireEvent.click(switchByName("Active facilities"));
-		expect(screen.getByTestId("layers-badge")).toHaveTextContent("1");
+		expect(button).toHaveAttribute("data-active", "true");
 		fireEvent.click(switchByName("Inactive facilities"));
-		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
-		expect(button).not.toHaveAttribute("aria-describedby");
+		expect(button).toHaveAttribute("data-active", "false");
+		expect(button).not.toHaveClass("map-icon-button-on");
+		fireEvent.click(switchByName("App sessions"));
+		expect(button).toHaveAttribute("data-active", "true");
 	});
 });

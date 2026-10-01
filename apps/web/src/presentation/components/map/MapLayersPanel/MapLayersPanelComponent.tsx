@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 import { MAP_MENU_SURFACE_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
@@ -31,6 +30,8 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	);
 }
 
+const LAYERS_BUTTON_STATE_CLASS = { on: "map-icon-button-on", off: "" };
+
 export function MapLayersPanel() {
 	const {
 		cardMotion,
@@ -39,8 +40,7 @@ export function MapLayersPanel() {
 		isCardShown,
 		isExpanded,
 		isOnMap,
-		layersBadge,
-		layersOnLabel,
+		hasLayersOn,
 		messages,
 		rootRef,
 		showActiveFacilities,
@@ -76,25 +76,24 @@ export function MapLayersPanel() {
 				aria-label={collapseLabel}
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
-				aria-describedby={layersBadge ? "layers-on-status" : undefined}
-				className="map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none"
+				data-active={hasLayersOn}
+				className={`map-icon-button map-glass pointer-events-auto flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none ${LAYERS_BUTTON_STATE_CLASS[hasLayersOn ? "on" : "off"]}`}
 			>
-				<Image src="/images/map-layers/settings-2.svg" alt="" width={16} height={16} />
-				{layersBadge && (
-					<span
-						data-testid="layers-badge"
-						aria-hidden="true"
-						className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-pleiful-pitch-green-80 text-[10px] leading-none font-semibold text-white shadow-sm"
-					>
-						{layersBadge}
-					</span>
-				)}
+				<svg
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.33"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					aria-hidden="true"
+					className="size-4"
+				>
+					<path d="M13.333 4.667h-6M9.333 11.333h-6" />
+					<circle cx="11.333" cy="11.333" r="2" />
+					<circle cx="4.667" cy="4.667" r="2" />
+				</svg>
 			</button>
-			{layersBadge && (
-				<span id="layers-on-status" className="sr-only">
-					{layersOnLabel}
-				</span>
-			)}
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
