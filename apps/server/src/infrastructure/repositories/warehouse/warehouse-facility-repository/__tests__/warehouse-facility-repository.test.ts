@@ -83,8 +83,8 @@ describe("WarehouseFacilityRepository", () => {
 
 		expect(query).toHaveBeenCalledWith(ACTIVE_LOCATIONS_SQL);
 		expect(ACTIVE_LOCATIONS_SQL).toContain("deleted_at is null");
-		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date >= b.this_week - 28");
-		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date < b.this_week");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date >= b.today - 28");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date < b.today");
 		expect(facilities.map((facility) => facility.id)).toEqual(["1042"]);
 	});
 
@@ -166,6 +166,8 @@ function ignoredRepository() {
 }
 
 const COUNTS = {
+	periodStart: "2026-09-03",
+	periodEnd: "2026-09-30",
 	weekStart: "2026-09-21",
 	playedLastWeek: 0,
 	playedPreviousWeek: 0,

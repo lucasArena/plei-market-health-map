@@ -23,6 +23,9 @@ describe("ActivitySummaryPrompt", () => {
 			"Activated players comparison: 20 to 24; change: 20%",
 		);
 		expect(messages.at(-1)?.content).toContain("Games comparison: 200 to 212");
+		expect(messages.at(-1)?.content).toContain(
+			"Pickup games played in the last 28 days (Sep 3 to Sep 30, 2026)",
+		);
 		expect(messages.at(-1)?.content).toContain("Weekly games (oldest first)");
 	});
 	it("handles missing comparisons", () => {

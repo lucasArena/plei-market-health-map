@@ -1,7 +1,6 @@
 import type { LlmMessage } from "@/infrastructure/ai/browser-llm/browser-llm.types";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
 
-const DAY_MS = 86_400_000;
 const DEFAULT_LANGUAGE = "English";
 const DEFAULT_EXAMPLE_SUMMARY =
 	"- New player activation fell 29% versus the previous 28 days, while games fell 10%.\n- Activation is weakening faster than game activity; investigate the gap.";
@@ -62,8 +61,8 @@ export class ActivitySummaryPrompt {
 
 	private factsFor(subject: ActivitySummarySubject, locale: string): string[] {
 		const { stats } = subject;
-		const start = this.formatDay(stats.weekStart, -21, locale, false);
-		const end = this.formatDay(stats.weekStart, 6, locale, true);
+		const start = this.formatDay(stats.periodStart, locale, false);
+		const end = this.formatDay(stats.periodEnd, locale, true);
 		const confirmationRate =
 			stats.confirmationRate === null ? "unavailable" : `${stats.confirmationRate}%`;
 		const periodChange =
@@ -103,8 +102,8 @@ export class ActivitySummaryPrompt {
 		return ActivitySummaryPrompt.EXAMPLE_SUMMARY_BY_LOCALE[locale] ?? DEFAULT_EXAMPLE_SUMMARY;
 	}
 
-	private formatDay(isoDate: string, days: number, locale: string, withYear: boolean): string {
-		const date = new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * DAY_MS);
+	private formatDay(isoDate: string, locale: string, withYear: boolean): string {
+		const date = new Date(`${isoDate}T00:00:00Z`);
 		return new Intl.DateTimeFormat(locale, {
 			month: "short",
 			day: "numeric",

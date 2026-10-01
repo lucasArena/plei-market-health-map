@@ -12,6 +12,8 @@ export interface FacilityPopularTime {
 }
 
 export interface FacilityReservationStats {
+	periodStart: string;
+	periodEnd: string;
 	weekStart: string;
 	playedLastWeek: number;
 	playedPreviousWeek: number;
