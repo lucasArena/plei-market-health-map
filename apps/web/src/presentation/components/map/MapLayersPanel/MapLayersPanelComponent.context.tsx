@@ -9,11 +9,19 @@ import type {
 const MapLayersContext = createContext<MapLayersValue | null>(null);
 
 export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>) {
-	const [showFacilities, setShowFacilities] = useState(true);
+	const [showActiveFacilities, setShowActiveFacilities] = useState(true);
+	const [showInactiveFacilities, setShowInactiveFacilities] = useState(true);
 	const [showSessions, setShowSessions] = useState(true);
 	const value = useMemo(
-		() => ({ showFacilities, setShowFacilities, showSessions, setShowSessions }),
-		[showFacilities, showSessions],
+		() => ({
+			showActiveFacilities,
+			setShowActiveFacilities,
+			showInactiveFacilities,
+			setShowInactiveFacilities,
+			showSessions,
+			setShowSessions,
+		}),
+		[showActiveFacilities, showInactiveFacilities, showSessions],
 	);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }

@@ -716,7 +716,9 @@ export function useFacilitiesMapScreenRules() {
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
 	const mapLayers = useMapLayers();
-	const showFacilities = mapLayers?.showFacilities ?? true;
+	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
+	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
+	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? true;
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
@@ -725,8 +727,13 @@ export function useFacilitiesMapScreenRules() {
 	selectedFacilityIdRef.current = isPanelClosing ? null : selectedFacilityId;
 	const hoveredClusterIdRef = useRef<number | null>(null);
 	const featureCollection = useMemo(
-		() => toFacilityFeatureCollection(query.data ?? []),
-		[query.data],
+		() =>
+			toFacilityFeatureCollection(
+				(query.data ?? []).filter((facility) =>
+					facility.isActive ? showActiveFacilities : showInactiveFacilities,
+				),
+			),
+		[query.data, showActiveFacilities, showInactiveFacilities],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -995,8 +1002,9 @@ export function useFacilitiesMapScreenRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
+		handleHoverEnd();
 		map.getSource<GeoJSONSource>(FACILITIES_SOURCE_ID)?.setData(featureCollection);
-	}, [featureCollection, isMapReady]);
+	}, [featureCollection, handleHoverEnd, isMapReady]);
 
 	useEffect(() => {
 		const map = mapRef.current;

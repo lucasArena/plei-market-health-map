@@ -18,9 +18,11 @@ export function useMapLayersPanelRules() {
 	const isOnMap = usePathname() === "/";
 	const [isExpanded, setIsExpanded] = useState(true);
 	const [cardMotion, setCardMotion] = useState<LayersCardMotion>("resting");
-	const [localShowFacilities, setLocalShowFacilities] = useState(true);
+	const [localShowActiveFacilities, setLocalShowActiveFacilities] = useState(true);
+	const [localShowInactiveFacilities, setLocalShowInactiveFacilities] = useState(true);
 	const [localShowSessions, setLocalShowSessions] = useState(true);
-	const showFacilities = layers?.showFacilities ?? localShowFacilities;
+	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
+	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
 
 	const toggleExpanded = useCallback(() => {
@@ -45,12 +47,19 @@ export function useMapLayersPanelRules() {
 		);
 		return () => window.clearTimeout(timer);
 	}, [cardMotion]);
-	const toggleFacilities = useCallback(() => {
+	const toggleActiveFacilities = useCallback(() => {
 		if (layers) {
-			layers.setShowFacilities(!layers.showFacilities);
+			layers.setShowActiveFacilities(!layers.showActiveFacilities);
 			return;
 		}
-		setLocalShowFacilities((current) => !current);
+		setLocalShowActiveFacilities((current) => !current);
+	}, [layers]);
+	const toggleInactiveFacilities = useCallback(() => {
+		if (layers) {
+			layers.setShowInactiveFacilities(!layers.showInactiveFacilities);
+			return;
+		}
+		setLocalShowInactiveFacilities((current) => !current);
 	}, [layers]);
 	const toggleSessions = useCallback(() => {
 		if (layers) {
@@ -68,10 +77,12 @@ export function useMapLayersPanelRules() {
 		isCardShown,
 		isExpanded,
 		messages: messages.map,
-		showFacilities,
+		showActiveFacilities,
+		showInactiveFacilities,
 		showSessions,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 		toggleSessions,
 	};
 }
