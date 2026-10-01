@@ -39,10 +39,12 @@ export function MapLayersPanel() {
 		isExpanded,
 		isOnMap,
 		messages,
-		showFacilities,
+		showActiveFacilities,
+		showInactiveFacilities,
 		showSessions,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
@@ -90,16 +92,9 @@ export function MapLayersPanel() {
 					<p className="py-1.5 text-[10px] leading-4 font-medium text-muted-foreground">
 						{messages.layersHeading}
 					</p>
-					<div className="flex w-full items-center justify-between gap-3">
-						<p className="text-[12px] leading-none font-medium text-foreground">
-							{messages.layersFacilities}
-						</p>
-						<LayerSwitch
-							checked={showFacilities}
-							label={messages.layersFacilities}
-							onToggle={toggleFacilities}
-						/>
-					</div>
+					<h2 className="pt-2 pb-1 text-[10px] leading-4 font-medium text-muted-foreground">
+						{messages.layersDemand}
+					</h2>
 					<div className="flex w-full items-center justify-between gap-3">
 						<p className="text-[12px] leading-none font-medium text-foreground">
 							{messages.layersSessions}
@@ -108,6 +103,29 @@ export function MapLayersPanel() {
 							checked={showSessions}
 							label={messages.layersSessions}
 							onToggle={toggleSessions}
+						/>
+					</div>
+					<h2 className="pt-2 pb-1 text-[10px] leading-4 font-medium text-muted-foreground">
+						{messages.layersSupply}
+					</h2>
+					<div className="flex w-full items-center justify-between gap-3">
+						<p className="text-[12px] leading-none font-medium text-foreground">
+							{messages.layersActiveFacilities}
+						</p>
+						<LayerSwitch
+							checked={showActiveFacilities}
+							label={messages.layersActiveFacilities}
+							onToggle={toggleActiveFacilities}
+						/>
+					</div>
+					<div className="flex w-full items-center justify-between gap-3">
+						<p className="text-[12px] leading-none font-medium text-foreground">
+							{messages.layersInactiveFacilities}
+						</p>
+						<LayerSwitch
+							checked={showInactiveFacilities}
+							label={messages.layersInactiveFacilities}
+							onToggle={toggleInactiveFacilities}
 						/>
 					</div>
 				</div>
