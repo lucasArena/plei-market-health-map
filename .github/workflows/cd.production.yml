@@ -41,6 +41,8 @@ jobs:
     env:
       TAG: ${{ needs.release.outputs.tag }}
       LINEAR_ACCESS_KEY: ${{ secrets.LINEAR_ACCESS_KEY }}
+      LINEAR_CLIENT_ID: ${{ secrets.LINEAR_CLIENT_ID }}
+      LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +57,7 @@ jobs:
           summary=$(node .github/scripts/release/release-notes.mjs "$TAG" release-notes.md)
           echo "$summary"
           echo "previous-tag=$(echo "$summary" | jq -r '.previousTag // empty')" >> "$GITHUB_OUTPUT"
+          echo "issues=$(echo "$summary" | jq -r '.issues | join(" ")')" >> "$GITHUB_OUTPUT"
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
       - name: Warn when Linear is not configured
         if: env.LINEAR_ACCESS_KEY == ''
@@ -74,3 +77,8 @@ jobs:
       - name: Link the Linear release
         if: steps.linear.outputs.release-url != ''
         run: echo "Linear release ${{ steps.linear.outputs.release-url }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Move the released tickets to Released
+        if: steps.notes.outputs.issues != ''
+        env:
+          ISSUES: ${{ steps.notes.outputs.issues }}
+        run: node .github/scripts/linear/move-issues.mjs Released "$ISSUES"
