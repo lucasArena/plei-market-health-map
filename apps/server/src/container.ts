@@ -8,6 +8,7 @@ import type {
 	ListRecentLoginsInput,
 	RecordDailyActivityInput,
 	RecordLoginInput,
+	SetFeatureFlagInput,
 	SubmitFeedbackInput,
 } from "@market-health-map/core/application";
 import {
@@ -20,10 +21,13 @@ import {
 	makeGetMarketSummary,
 	makeListAppMetricsPeople,
 	makeListAppSessionHeatmap,
+	makeListEnabledFeatureFlags,
 	makeListFacilities,
+	makeListFeatureFlags,
 	makeListRecentLogins,
 	makeRecordDailyActivity,
 	makeRecordLogin,
+	makeSetFeatureFlag,
 	makeSubmitFeedback,
 } from "@market-health-map/core/application";
 import {
@@ -42,11 +46,14 @@ import { LinearIssueTracker } from "@server/infrastructure/providers/linear/line
 import { SystemClock } from "@server/infrastructure/providers/system/system-clock/system-clock";
 import { UuidGenerator } from "@server/infrastructure/providers/system/uuid-generator/uuid-generator";
 import { CachedDailyActivityRepository } from "@server/infrastructure/repositories/database/cached-daily-activity-repository/cached-daily-activity-repository";
+import { CachedFeatureFlagRepository } from "@server/infrastructure/repositories/database/cached-feature-flag-repository/cached-feature-flag-repository";
 import { getPrismaClient } from "@server/infrastructure/repositories/database/prisma-client/prisma-client";
 import { PrismaDailyActivityRepository } from "@server/infrastructure/repositories/database/prisma-daily-activity-repository/prisma-daily-activity-repository";
+import { PrismaFeatureFlagRepository } from "@server/infrastructure/repositories/database/prisma-feature-flag-repository/prisma-feature-flag-repository";
 import { PrismaLoginEventRepository } from "@server/infrastructure/repositories/database/prisma-login-event-repository/prisma-login-event-repository";
 import { FixtureAppSessionHeatmapRepository } from "@server/infrastructure/repositories/sample/fixture-app-session-heatmap-repository/fixture-app-session-heatmap-repository";
 import { MemoryDailyActivityRepository } from "@server/infrastructure/repositories/sample/memory-daily-activity-repository/memory-daily-activity-repository";
+import { MemoryFeatureFlagRepository } from "@server/infrastructure/repositories/sample/memory-feature-flag-repository/memory-feature-flag-repository";
 import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
 import { SampleFacilityStatsRepository } from "@server/infrastructure/repositories/sample/sample-facility-stats-repository/sample-facility-stats-repository";
 import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
@@ -65,6 +72,22 @@ function buildDailyActivityRepository() {
 		new PrismaDailyActivityRepository(getPrismaClient(databaseUrl)),
 		clock,
 	);
+}
+
+function buildFeatureFlags() {
+	const databaseUrl = getServerEnv().DATABASE_URL;
+	const clock = new SystemClock();
+	const featureFlags = databaseUrl
+		? new CachedFeatureFlagRepository(
+				new PrismaFeatureFlagRepository(getPrismaClient(databaseUrl)),
+				clock,
+			)
+		: new MemoryFeatureFlagRepository();
+	return {
+		listEnabledFeatureFlags: makeListEnabledFeatureFlags({ featureFlags }),
+		listFeatureFlags: makeListFeatureFlags({ featureFlags }),
+		setFeatureFlag: makeSetFeatureFlag({ featureFlags, clock }),
+	};
 }
 
 function buildAppMetrics() {
@@ -183,6 +206,7 @@ let facilities: ReturnType<typeof buildFacilities> | undefined;
 let appSessionHeatmap: ReturnType<typeof buildAppSessionHeatmap> | undefined;
 let feedback: ReturnType<typeof buildFeedback> | undefined;
 let appMetrics: ReturnType<typeof buildAppMetrics> | undefined;
+let featureFlags: ReturnType<typeof buildFeatureFlags> | undefined;
 
 function loginModule() {
 	logins ??= buildLogins();
@@ -202,6 +226,11 @@ function appSessionHeatmapModule() {
 function appMetricsModule() {
 	appMetrics ??= buildAppMetrics();
 	return appMetrics;
+}
+
+function featureFlagModule() {
+	featureFlags ??= buildFeatureFlags();
+	return featureFlags;
 }
 
 function feedbackModule() {
@@ -230,6 +259,9 @@ const container = {
 	getAppMetrics: () => appMetricsModule().getAppMetrics(),
 	listAppMetricsPeople: (input?: ListAppMetricsPeopleInput) =>
 		appMetricsModule().listAppMetricsPeople(input),
+	listEnabledFeatureFlags: () => featureFlagModule().listEnabledFeatureFlags(),
+	listFeatureFlags: () => featureFlagModule().listFeatureFlags(),
+	setFeatureFlag: (input: SetFeatureFlagInput) => featureFlagModule().setFeatureFlag(input),
 };
 
 export function getContainer() {

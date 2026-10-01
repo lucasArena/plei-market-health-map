@@ -1,11 +1,11 @@
 import {
-	canViewAppMetrics,
 	getAllowedEmailDomain,
 	getFeedbackMode,
 	getLinearCredentials,
 	getServerEnv,
 	getTargetUserEmails,
 	hasPartialLinearAppCredentials,
+	isAdmin,
 	isLoginTrackingConfigured,
 	resetServerEnvCache,
 } from "@server/env";
@@ -122,13 +122,13 @@ describe("server env", () => {
 	});
 
 	it("lets only the listed people view App metrics", () => {
-		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "Lucas@plei.com, stefano@plei.com");
-		expect(canViewAppMetrics("lucas@plei.com")).toBe(true);
-		expect(canViewAppMetrics("STEFANO@plei.com")).toBe(true);
-		expect(canViewAppMetrics("alan@plei.com")).toBe(false);
+		vi.stubEnv("ADMIN_EMAILS", "Lucas@plei.com, stefano@plei.com");
+		expect(isAdmin("lucas@plei.com")).toBe(true);
+		expect(isAdmin("STEFANO@plei.com")).toBe(true);
+		expect(isAdmin("alan@plei.com")).toBe(false);
 		resetServerEnvCache();
-		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "");
-		expect(canViewAppMetrics("lucas@plei.com")).toBe(false);
+		vi.stubEnv("ADMIN_EMAILS", "");
+		expect(isAdmin("lucas@plei.com")).toBe(false);
 	});
 
 	it("has no target users when the list is not set", () => {

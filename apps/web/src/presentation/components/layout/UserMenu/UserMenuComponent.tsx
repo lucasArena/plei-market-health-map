@@ -6,7 +6,7 @@ import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponen
 import { useUserMenuRules } from "@/presentation/components/layout/UserMenu/UserMenuComponent.rules";
 import type { UserMenuProps } from "@/presentation/components/layout/UserMenu/UserMenuComponent.types";
 
-export function UserMenu({ name, email, image, canViewAppMetrics }: Readonly<UserMenuProps>) {
+export function UserMenu({ name, email, image, isAdmin }: Readonly<UserMenuProps>) {
 	const { containerRef, isOpen, messages, toggle, versionLabel } = useUserMenuRules();
 	const displayName = name ?? email;
 
@@ -28,7 +28,7 @@ export function UserMenu({ name, email, image, canViewAppMetrics }: Readonly<Use
 				>
 					<p className="truncate text-sm font-medium">{displayName}</p>
 					<p className="truncate text-xs text-muted-foreground">{email}</p>
-					{canViewAppMetrics && (
+					{isAdmin && (
 						<Link
 							href="/metrics"
 							role="menuitem"

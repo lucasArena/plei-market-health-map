@@ -17,7 +17,7 @@ export const serverEnvSchema = z.object({
 	LINEAR_API_KEY: z.preprocess(emptyAsUndefined, z.string().trim().min(1).optional()),
 	FEEDBACK_DRY_RUN: z.preprocess(emptyAsUndefined, z.stringbool().default(false)),
 	TARGET_USER_EMAILS: z.preprocess(emptyAsUndefined, z.string().optional()),
-	APP_METRICS_VIEWER_EMAILS: z.preprocess(emptyAsUndefined, z.string().optional()),
+	ADMIN_EMAILS: z.preprocess(emptyAsUndefined, z.string().optional()),
 });
 
 let cached: z.infer<typeof serverEnvSchema> | undefined;
@@ -50,8 +50,8 @@ export function getTargetUserEmails(): string[] {
 	return parseEmailList(getServerEnv().TARGET_USER_EMAILS);
 }
 
-export function canViewAppMetrics(email: string): boolean {
-	return parseEmailList(getServerEnv().APP_METRICS_VIEWER_EMAILS).includes(email.toLowerCase());
+export function isAdmin(email: string): boolean {
+	return parseEmailList(getServerEnv().ADMIN_EMAILS).includes(email.toLowerCase());
 }
 
 export function getLinearCredentials(): LinearCredentials | null {

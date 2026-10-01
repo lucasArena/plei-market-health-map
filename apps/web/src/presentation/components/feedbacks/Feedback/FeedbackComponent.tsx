@@ -206,13 +206,22 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 									</span>
 								</button>
 							))}
-							{props.user?.canViewAppMetrics && (
+							{props.user?.isAdmin && (
 								<Link
 									href={{ pathname: "/metrics" }}
 									onClick={close}
 									className="rounded-xl border p-3 text-sm font-semibold transition-colors hover:bg-muted"
 								>
 									{accountMessages.appMetrics}
+								</Link>
+							)}
+							{props.user?.isAdmin && (
+								<Link
+									href={{ pathname: "/feature-flags" }}
+									onClick={close}
+									className="rounded-xl border p-3 text-sm font-semibold transition-colors hover:bg-muted"
+								>
+									{accountMessages.featureFlags}
 								</Link>
 							)}
 							{props.user && (

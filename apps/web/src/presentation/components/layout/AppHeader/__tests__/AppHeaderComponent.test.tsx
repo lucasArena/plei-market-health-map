@@ -16,7 +16,7 @@ describe("AppHeader", () => {
 						name: "Lucas Arena",
 						email: "lucas@plei.com",
 						image: null,
-						canViewAppMetrics: false,
+						isAdmin: false,
 					}}
 				/>
 			</Wrapper>,
@@ -39,7 +39,7 @@ describe("AppHeader", () => {
 						name: "Lucas Arena",
 						email: "lucas@plei.com",
 						image: null,
-						canViewAppMetrics: false,
+						isAdmin: false,
 					}}
 				/>
 			</Wrapper>,

@@ -146,9 +146,23 @@ The panel-toggle button beside the avatar opens the same kind of floating panel 
 
 The panel follows the map search. `MapScopeProvider` (in `AppProviders`) holds the current scope: picking a market in `MapSearch` sets a market scope, picking a facility sets a facility scope, and clearing the search (the × button or an empty box) goes back to all markets. The panel title names the scope ("All markets", the market name, or the facility name) and changes while the panel is open. A market scope calls both endpoints with `?market=<marketId>`; the use cases aggregate only that market's visible facilities and answer 404 for a market with no visible facility and 400 for a blank value. The panel then drops the "Active markets" tile and the top markets list. A facility scope reuses the facility detail endpoints (`/facilities/:id/reservations` and `/players`, shared with the detail panel's cache) and hides the scope tiles and both rankings. Each scope has its own React Query entry, so switching back is instant, and nothing is fetched while the panel is closed.
 
+## Feature flags
+
+Flags turn a feature on or off for everyone without a deploy. The keys live in code (`FEATURE_FLAG_KEYS` in core), and the `feature_flags` table (Neon) only stores each key's state, who switched it and when. A key with no row is off, and rows for keys that are no longer in code are ignored.
+
+```
+web useFeatureFlag(key)  ->  GET /api/v1/feature-flags             -> { enabled: [...] }   (any signed-in user)
+/feature-flags screen    ->  GET /api/v1/feature-flags/all         -> every flag in code    (admins only)
+                         ->  PUT /api/v1/feature-flags/:key        { enabled }              (admins only)
+  -> feature-flags-controller -> listEnabledFeatureFlags / listFeatureFlags / setFeatureFlag (core)
+  -> CachedFeatureFlagRepository (30 s, cleared on every switch) -> PrismaFeatureFlagRepository
+```
+
+Admins are the people in `ADMIN_EMAILS`. The `/feature-flags` page and `/metrics` share the `AdminTabs` bar and answer 404 for anyone else, and their APIs answer 403 (`require-admin.ts`). Each server instance caches the flags for 30 seconds and each browser refetches them after 30 seconds, so a switch reaches everyone within about a minute. How agents add and remove flags is in `AGENTS.md` → *Feature flags*.
+
 ## App metrics (project success tracking)
 
-The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/metrics`, from the avatar menu) measures it. Only the people in `APP_METRICS_VIEWER_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
+The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/metrics`, from the avatar menu) measures it. Only the people in `ADMIN_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
 
 ```
 ActivityTracker (web, every signed-in page)  ->  POST /api/v1/activity   (activity-controller)
