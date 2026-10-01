@@ -1,50 +1,118 @@
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
-import { clusterLabels } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
-import type { FacilityHoverCardProps } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
+import { useFacilityHoverCardRules } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
 import {
-	HOVER_CARD_WIDTH,
-	TOOLTIP_OFFSET,
-} from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
+	CLUSTER_HOVER_DIVIDER_CLASS,
+	CLUSTER_HOVER_FOOTER_CLASS,
+	CLUSTER_HOVER_HEADING_CLASS,
+	CLUSTER_HOVER_ITEM_CLASS,
+	CLUSTER_HOVER_LIST_CLASS,
+	CLUSTER_HOVER_NAME_CLASS,
+} from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.styles";
+import type { FacilityHoverCardProps } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
+import { HOVER_CARD_WIDTH } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
-export function FacilityHoverCard({ hover, messages }: Readonly<FacilityHoverCardProps>) {
-	const position = {
-		left: hover.flipX ? hover.x - TOOLTIP_OFFSET : hover.x + TOOLTIP_OFFSET,
-		top: hover.flipY ? hover.y - TOOLTIP_OFFSET : hover.y + TOOLTIP_OFFSET,
-		transform: `translate(${hover.flipX ? "-100%" : "0"}, ${hover.flipY ? "-100%" : "0"})`,
-	};
+export function FacilityHoverCard({
+	hover,
+	messages,
+	onClusterPointerEnter,
+	onClusterPointerLeave,
+	onFacilitySelect,
+}: Readonly<FacilityHoverCardProps>) {
+	const {
+		card,
+		clusterCard,
+		facilities,
+		facilityCard,
+		finishReveal,
+		labels,
+		listFadeClass,
+		listMaxHeight,
+		listRef,
+		motionClass,
+		placement,
+		selectListedFacility,
+		surfaceClass,
+		syncClusterListFade,
+	} = useFacilityHoverCardRules(hover, messages, onFacilitySelect);
 
-	if (hover.kind === "facility") {
-		return (
-			<div
-				role="tooltip"
-				className="map-glass pointer-events-none absolute z-10 flex items-center gap-2 rounded-[var(--map-radius)] border py-1.5 pr-3 pl-1.5 shadow-[var(--map-shadow)]"
-				style={position}
-			>
-				<Avatar name={hover.facility.name} avatarUrl={hover.facility.avatarUrl} />
-				<span className="text-sm font-medium whitespace-nowrap">{hover.facility.name}</span>
-			</div>
-		);
-	}
+	if (!card || !placement) return null;
 
-	const { title, more } = clusterLabels(hover, messages);
 	return (
 		<div
 			role="tooltip"
-			className="pointer-events-none absolute z-10 map-glass rounded-[var(--map-radius)] border shadow-[var(--map-shadow)]"
-			style={{ ...position, width: HOVER_CARD_WIDTH }}
+			className="pointer-events-auto absolute z-10"
+			onPointerEnter={onClusterPointerEnter}
+			onPointerLeave={onClusterPointerLeave}
+			style={{
+				left: placement.left,
+				top: placement.top,
+				width: HOVER_CARD_WIDTH,
+				transform: placement.transform,
+			}}
 		>
-			<p className="border-b px-3 py-2 text-xs font-semibold text-muted-foreground">{title}</p>
-			{hover.facilities.length > 0 && (
-				<ul className="py-1">
-					{hover.facilities.map((facility) => (
-						<li key={facility.id} className="flex items-center gap-2 px-2 py-1">
-							<Avatar name={facility.name} avatarUrl={facility.avatarUrl} />
-							<span className="truncate text-sm">{facility.name}</span>
-						</li>
-					))}
-				</ul>
-			)}
-			{more && <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">{more}</p>}
+			<div
+				onAnimationEnd={finishReveal}
+				data-testid="cluster-hover-surface"
+				className={`${surfaceClass} ${motionClass}`}
+			>
+				{
+					{
+						cluster: clusterCard && labels && (
+							<>
+								<p className={CLUSTER_HOVER_HEADING_CLASS}>{labels.title}</p>
+								{facilities.length > 0 && (
+									<>
+										<div
+											aria-hidden
+											data-testid="cluster-hover-divider"
+											className={CLUSTER_HOVER_DIVIDER_CLASS}
+										/>
+										<ul
+											ref={listRef}
+											data-testid="cluster-hover-list"
+											onScroll={syncClusterListFade}
+											className={`${CLUSTER_HOVER_LIST_CLASS} ${listFadeClass}`}
+											style={{ maxHeight: listMaxHeight }}
+										>
+											{facilities.map((facility) => (
+												<li key={facility.id}>
+													<button
+														type="button"
+														className={CLUSTER_HOVER_ITEM_CLASS}
+														onClick={() => selectListedFacility(facility)}
+													>
+														<Avatar
+															name={facility.name}
+															avatarUrl={facility.avatarUrl}
+															appearance="muted"
+														/>
+														<span className={CLUSTER_HOVER_NAME_CLASS}>{facility.name}</span>
+													</button>
+												</li>
+											))}
+										</ul>
+									</>
+								)}
+								{labels.more && <p className={CLUSTER_HOVER_FOOTER_CLASS}>{labels.more}</p>}
+							</>
+						),
+						facility: facilityCard && (
+							<button
+								type="button"
+								className={CLUSTER_HOVER_ITEM_CLASS}
+								onClick={() => selectListedFacility(facilityCard.facility)}
+							>
+								<Avatar
+									name={facilityCard.facility.name}
+									avatarUrl={facilityCard.facility.avatarUrl}
+									appearance="muted"
+								/>
+								<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>
+							</button>
+						),
+					}[card.kind]
+				}
+			</div>
 		</div>
 	);
 }

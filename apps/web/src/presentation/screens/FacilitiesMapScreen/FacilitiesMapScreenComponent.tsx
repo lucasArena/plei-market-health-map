@@ -20,12 +20,15 @@ export function FacilitiesMapScreen() {
 		facilities,
 		finishLegendMotion,
 		handlePanelClosed,
+		holdClusterHover,
 		hovered,
 		isLegendShown,
 		legendMotionClass,
 		isPanelClosing,
 		messages,
+		releaseClusterHover,
 		selectedFacilityId,
+		selectFacility,
 		selectSearchFacility,
 		selectSearchMarket,
 		sessionScale,
@@ -65,7 +68,13 @@ export function FacilitiesMapScreen() {
 					{overlayMessage}
 				</p>
 			)}
-			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
+			<FacilityHoverCard
+				hover={hovered}
+				messages={messages}
+				onClusterPointerEnter={holdClusterHover}
+				onClusterPointerLeave={releaseClusterHover}
+				onFacilitySelect={selectFacility}
+			/>
 			{isLegendShown &&
 				legendSlot &&
 				createPortal(
