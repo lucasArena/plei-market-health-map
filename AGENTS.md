@@ -183,6 +183,27 @@ Open a PR from `main` into `staging` and merge it with **Create a merge commit**
 
 Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Only branch from `main` in an emergency where staging holds work that must not ship. In that case, open the PR straight into `main` and back-merge `main` into `staging` right after.
 
+## Feature flags
+
+Put user-facing work behind a feature flag when it should reach `staging` or `main` before everyone gets it, or when it might need to be switched off quickly. A flag is on or off for everyone, and admins switch it at `/feature-flags` (account hub → Feature flags) without a deploy.
+
+**Adding a flag**
+
+1. Add a kebab-case key to `FEATURE_FLAG_KEYS` in `packages/core/src/application/dtos/feature-flags-dto.ts`. Flags only exist in code; the control panel can switch them but never create them.
+2. Describe it in `featureFlags.descriptions` in both `packages/core/src/i18n/messages/en.ts` and `pt-BR.ts`. `packages/core/src/__tests__/feature-flag-descriptions.test.ts` fails if a key has no description or a description has no key.
+3. Read it in the component's `.rules.ts` hook with `useFeatureFlag("<key>")` from `presentation/hooks/use-feature-flags/use-feature-flags.ts`, and render the new behavior only when it is `true`. Keep the current behavior working when it is `false`, which is also the answer while the flags load. Server code can call `listEnabledFeatureFlags()` from the container.
+4. Test both states by mocking `useFeatureFlag`.
+5. A new flag starts **off**. Say in the PR which flag to turn on, and leave turning it on to an admin.
+
+Switches reach users within about a minute: the server caches the flags for 30 seconds and each browser refetches them after 30 seconds.
+
+**Removing a flag** (once it is on for everyone and staying on)
+
+1. Delete every `useFeatureFlag("<key>")` check and the old behavior, keeping only the "on" path.
+2. Remove the key from `FEATURE_FLAG_KEYS` and its descriptions from both catalogs.
+3. Leave the database row. Rows for keys that are no longer in code are ignored and disappear from the control panel.
+4. Name the removed flag in the PR title or description.
+
 ## Linear tracking (mandatory)
 
 Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.

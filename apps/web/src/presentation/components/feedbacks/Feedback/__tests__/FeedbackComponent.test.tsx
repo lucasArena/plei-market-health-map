@@ -44,12 +44,10 @@ function finishClosing() {
 
 describe("Feedback", () => {
 	it.each([true, false])(
-		"keeps the metrics viewer rule and places sign-out last (%s)",
-		(canViewAppMetrics) => {
+		"shows the admin links only to admins and places sign-out last (%s)",
+		(isAdmin) => {
 			renderWidget(
-				<Feedback
-					user={{ name: "Stefano", email: "stefano@plei.com", image: null, canViewAppMetrics }}
-				/>,
+				<Feedback user={{ name: "Stefano", email: "stefano@plei.com", image: null, isAdmin }} />,
 			);
 			fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 			const signOut = screen.getByRole("button", { name: "Sign out" });
@@ -57,8 +55,14 @@ describe("Feedback", () => {
 				signOut.closest("form")?.parentElement?.lastElementChild,
 			);
 			const metrics = screen.queryByRole("link", { name: "App metrics" });
-			if (canViewAppMetrics) expect(metrics).toHaveAttribute("href", "/metrics");
-			else expect(metrics).not.toBeInTheDocument();
+			const flags = screen.queryByRole("link", { name: "Feature flags" });
+			if (isAdmin) {
+				expect(metrics).toHaveAttribute("href", "/metrics");
+				expect(flags).toHaveAttribute("href", "/feature-flags");
+			} else {
+				expect(metrics).not.toBeInTheDocument();
+				expect(flags).not.toBeInTheDocument();
+			}
 		},
 	);
 
@@ -69,7 +73,7 @@ describe("Feedback", () => {
 					name: "Lucas Arena",
 					email: "lucas@plei.com",
 					image: null,
-					canViewAppMetrics: false,
+					isAdmin: false,
 				}}
 			/>,
 		);
@@ -87,11 +91,14 @@ describe("Feedback", () => {
 			"fixed",
 			"bottom-[var(--map-profile-bottom)]",
 			"left-[var(--map-frame)]",
+			"flex-col",
+			"gap-[var(--map-profile-legend-gap)]",
 		);
+		expect(screen.getByTestId("profile-legend-slot").nextElementSibling).toBe(trigger);
 		expect(screen.getByText("LA")).toHaveClass("size-[32px]", "bg-[#d1d5db]", "text-[#111827]");
 
 		fireEvent.click(trigger);
-		const dialog = screen.getByRole("dialog", { name: "Help us improve" });
+		const dialog = screen.getByRole("dialog", { name: "Account menu" });
 		expect(dialog).toHaveClass(
 			"map-glass",
 			"shadow-[var(--map-shadow)]",
@@ -119,8 +126,12 @@ describe("Feedback", () => {
 
 		const trigger = screen.getByRole("button", { name: "Send feedback" });
 		expect(trigger).toHaveTextContent("?");
-		expect(trigger.className).toContain("bottom-8");
-		expect(trigger.className).toContain("left-3");
+		expect(trigger).toHaveClass("map-glass", "size-[var(--map-profile-size)]", "rounded-full");
+		expect(trigger.parentElement).toHaveClass(
+			"bottom-[var(--map-profile-bottom)]",
+			"left-[var(--map-frame)]",
+		);
+		expect(trigger).not.toHaveClass("bottom-8", "left-3", "bg-pleiful-pitch-green-80");
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
 		fireEvent.click(trigger);

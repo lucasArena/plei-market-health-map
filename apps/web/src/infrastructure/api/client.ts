@@ -27,4 +27,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const apiClient = {
 	get: <T>(path: string) => request<T>(path),
+	put: <T>(path: string, body: unknown) =>
+		request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
 };

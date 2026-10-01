@@ -9,7 +9,12 @@ const mockRules = vi.fn();
 vi.mock(
 	"@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent",
 	() => ({
-		useHeaderSlot: vi.fn(() => ({ searchSlot: null, setSearchSlot: vi.fn() })),
+		useHeaderSlot: vi.fn(() => ({
+			searchSlot: null,
+			setSearchSlot: vi.fn(),
+			legendSlot: null,
+			setLegendSlot: vi.fn(),
+		})),
 	}),
 );
 
@@ -41,6 +46,18 @@ const FACILITY = {
 	isActive: true,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
+
+function mountLegendSlot() {
+	const slot = document.createElement("div");
+	document.body.append(slot);
+	vi.mocked(useHeaderSlot).mockReturnValue({
+		searchSlot: null,
+		setSearchSlot: vi.fn(),
+		legendSlot: slot,
+		setLegendSlot: vi.fn(),
+	});
+	return slot;
+}
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
@@ -74,36 +91,41 @@ describe("FacilitiesMapScreen", () => {
 
 		const slot = document.createElement("div");
 		document.body.append(slot);
-		vi.mocked(useHeaderSlot).mockReturnValue({ searchSlot: slot, setSearchSlot: vi.fn() });
+		vi.mocked(useHeaderSlot).mockReturnValue({
+			searchSlot: slot,
+			setSearchSlot: vi.fn(),
+			legendSlot: null,
+			setLegendSlot: vi.fn(),
+		});
 		render(<FacilitiesMapScreen />);
 
 		expect(slot).toContainElement(
 			screen.getByRole("combobox", { name: "Search markets or facilities" }),
 		);
-		vi.mocked(useHeaderSlot).mockReturnValue({ searchSlot: null, setSearchSlot: vi.fn() });
+		vi.mocked(useHeaderSlot).mockReturnValue({
+			searchSlot: null,
+			setSearchSlot: vi.fn(),
+			legendSlot: null,
+			setLegendSlot: vi.fn(),
+		});
 		slot.remove();
 	});
 
-	it("renders only the map and its attribution", () => {
+	it("renders only the map, without an attribution line", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 
 		render(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
 		expect(screen.getByTestId("facilities-map")).toHaveClass("map-frame");
-		expect(
-			screen.getByRole("link", { name: "OpenStreetMap contributors" }).parentElement,
-		).toHaveClass("bottom-[var(--map-frame)]", "left-[var(--map-frame)]");
 		expect(screen.queryByRole("status")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("detail-panel")).not.toBeInTheDocument();
-		expect(screen.getByRole("link", { name: "OpenStreetMap contributors" })).toHaveAttribute(
-			"href",
-			"https://www.openstreetmap.org/copyright",
-		);
+		expect(screen.queryByRole("link")).not.toBeInTheDocument();
 	});
 
 	it("shows the session heatmap legend when heatmap data is present", () => {
+		const slot = mountLegendSlot();
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
@@ -116,6 +138,7 @@ describe("FacilitiesMapScreen", () => {
 		render(<FacilitiesMapScreen />);
 
 		const legend = screen.getByTestId("session-heatmap-legend");
+		expect(slot).toContainElement(legend);
 		expect(legend).toHaveTextContent("Sessions per shaded area · last 28 days");
 		expect(legend).toHaveTextContent("Scale updates for the current map view");
 		expect(screen.getByText("Scale updates for the current map view")).toHaveClass("text-[10px]");
@@ -186,6 +209,7 @@ describe("FacilitiesMapScreen", () => {
 	});
 
 	it("places the session scale 8px above the account control", () => {
+		const slot = mountLegendSlot();
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
@@ -200,18 +224,22 @@ describe("FacilitiesMapScreen", () => {
 
 		expect(screen.queryByTestId("feedback-widget")).not.toBeInTheDocument();
 		const legend = screen.getByTestId("session-heatmap-legend");
+		expect(slot).toContainElement(legend);
 		expect(legend).toHaveClass(
 			"map-glass",
 			"rounded-[var(--map-radius)]",
 			"shadow-[var(--map-shadow)]",
 			"session-legend-in",
+		);
+		expect(legend).not.toHaveClass(
+			"absolute",
 			"left-[var(--map-frame)]",
 			"bottom-[calc(var(--map-profile-bottom)+var(--map-profile-size)+var(--map-profile-legend-gap))]",
 		);
-		expect(legend).not.toHaveClass("left-16", "bottom-8", "glass-panel");
 	});
 
 	it("slides the session legend out before removing it", () => {
+		mountLegendSlot();
 		let exiting = false;
 		let shown = true;
 		mockRules.mockImplementation(() =>

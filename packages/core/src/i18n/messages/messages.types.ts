@@ -14,6 +14,7 @@ export interface Messages {
 		version: string;
 		signOut: string;
 		appMetrics: string;
+		featureFlags: string;
 	};
 	map: {
 		title: string;
@@ -179,6 +180,28 @@ export interface Messages {
 		featureSearches: string;
 		featureAiSummaries: string;
 		featureFeedbackSent: string;
+	};
+	admin: {
+		tabsLabel: string;
+		metricsTab: string;
+		featureFlagsTab: string;
+	};
+	featureFlags: {
+		title: string;
+		subtitle: string;
+		failed: string;
+		empty: string;
+		columnFlag: string;
+		columnStatus: string;
+		columnLastChange: string;
+		on: string;
+		off: string;
+		turnOn: string;
+		turnOff: string;
+		neverChanged: string;
+		lastChange: string;
+		saveFailed: string;
+		descriptions: Record<string, string>;
 	};
 	offline: {
 		title: string;

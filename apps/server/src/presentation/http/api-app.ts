@@ -6,6 +6,7 @@ import { requireUser } from "@server/presentation/http/authenticate";
 import { activityController } from "@server/presentation/http/controllers/activity-controller";
 import { appSessionHeatmapController } from "@server/presentation/http/controllers/app-session-heatmap-controller";
 import { facilityController } from "@server/presentation/http/controllers/facility-controller";
+import { featureFlagsController } from "@server/presentation/http/controllers/feature-flags-controller";
 import { feedbackController } from "@server/presentation/http/controllers/feedback-controller";
 import { loginController } from "@server/presentation/http/controllers/login-controller";
 import { marketSummaryController } from "@server/presentation/http/controllers/market-summary-controller";
@@ -29,6 +30,7 @@ export function createApiApp({ resolveAccess, services = getContainer }: CreateA
 		.route("/feedback", feedbackController(services))
 		.route("/activity", activityController(services))
 		.route("/metrics", metricsController(services))
+		.route("/feature-flags", featureFlagsController(services))
 		.notFound(() => {
 			throw new NotFoundError("Route");
 		})

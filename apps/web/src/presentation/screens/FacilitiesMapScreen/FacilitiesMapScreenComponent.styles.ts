@@ -119,8 +119,8 @@ export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 };
 
 export const SESSION_HEATMAP_LEGEND_CLASS = [
-	"map-glass absolute left-[var(--map-frame)] min-w-56 rounded-[var(--map-radius)] px-3 py-2.5 shadow-[var(--map-shadow)]",
-	"bottom-[calc(var(--map-profile-bottom)+var(--map-profile-size)+var(--map-profile-legend-gap))]",
+	"map-glass min-w-56 rounded-[var(--map-radius)]",
+	"border border-border/60 px-3 py-2.5 shadow-[var(--map-shadow)]",
 ].join(" ");
 
 export const SESSION_HEATMAP_BUCKET_COLORS = [

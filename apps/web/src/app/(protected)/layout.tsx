@@ -23,7 +23,7 @@ export default async function ProtectedLayout({
 						name: access.name,
 						email: access.email,
 						image: access.image,
-						canViewAppMetrics: access.canViewAppMetrics,
+						isAdmin: access.isAdmin,
 					}}
 				/>
 				<MapLayersPanel />

@@ -38,3 +38,12 @@ model DailyActivity {
   @@index([day])
   @@map("daily_activity")
 }
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
+
+  @@map("feature_flags")
+}
