@@ -42,10 +42,17 @@ export interface Messages {
 		layersActiveFacilities: string;
 		layersInactiveFacilities: string;
 		sessionFilters: {
+			add: string;
+			remove: string;
+			close: string;
 			heading: string;
 			gender: string;
 			skill: string;
 			age: string;
+			minimumAge: string;
+			maximumAge: string;
+			ageRangeHelp: string;
+			invalidAge: string;
 			allGenders: string;
 			allSkills: string;
 			allAges: string;

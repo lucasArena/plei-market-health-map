@@ -47,10 +47,17 @@ export const es: Messages = {
 		layersActiveFacilities: "Sedes activas",
 		layersInactiveFacilities: "Sedes inactivas",
 		sessionFilters: {
+			add: "Agregar filtro",
+			remove: "Quitar filtro de {filter}",
+			close: "Cerrar opciones del filtro",
 			heading: "Filtros de jugadores",
 			gender: "Género",
 			skill: "Nivel de habilidad",
 			age: "Edad del jugador",
+			minimumAge: "Edad mínima",
+			maximumAge: "Edad máxima",
+			ageRangeHelp: "Deja un campo vacío para no limitarlo. Edades inclusivas.",
+			invalidAge: "Introduce edades enteras de 0 a 120, con mínimo no mayor que máximo.",
 			allGenders: "Todos los géneros",
 			allSkills: "Todos los niveles",
 			allAges: "Todas las edades",
@@ -243,7 +250,9 @@ export const es: Messages = {
 		neverChanged: "Nunca cambiada",
 		lastChange: "{who} · {date}",
 		saveFailed: "No pudimos cambiar {flag}. Inténtalo de nuevo.",
-		descriptions: { "app-session-demographics": "Filtrar sesiones por g\u00e9nero, nivel y edad." },
+		descriptions: {
+			"player-demographic-filters": "Filtrar sesiones por g\u00e9nero, nivel y edad.",
+		},
 	},
 	offline: {
 		title: "Estás sin conexión",

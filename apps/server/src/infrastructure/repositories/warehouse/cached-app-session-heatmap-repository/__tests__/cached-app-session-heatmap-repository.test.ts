@@ -6,7 +6,10 @@ function setup() {
 	let now = 0;
 	const listLast28Days = vi.fn().mockResolvedValue([CELL]);
 	const repository = new CachedAppSessionHeatmapRepository(
-		{ listLast28Days, listFilterOptions: vi.fn().mockResolvedValue({ genders: [], skills: [] }) },
+		{
+			listLast28Days,
+			listFilterOptions: vi.fn().mockResolvedValue({ genders: [], skills: [], ages: [] }),
+		},
 		{ now: () => new Date(now) },
 		1000,
 	);
@@ -39,7 +42,10 @@ describe("CachedAppSessionHeatmapRepository", () => {
 	it("uses a five-minute cache by default", async () => {
 		const listLast28Days = vi.fn().mockResolvedValue([]);
 		const repository = new CachedAppSessionHeatmapRepository(
-			{ listLast28Days, listFilterOptions: vi.fn().mockResolvedValue({ genders: [], skills: [] }) },
+			{
+				listLast28Days,
+				listFilterOptions: vi.fn().mockResolvedValue({ genders: [], skills: [], ages: [] }),
+			},
 			{ now: () => new Date(0) },
 		);
 		await repository.listLast28Days();
@@ -71,7 +77,7 @@ it("caches filter options and retries failures", async () => {
 	const listFilterOptions = vi
 		.fn()
 		.mockRejectedValueOnce(new Error("down"))
-		.mockResolvedValue({ genders: ["Female"], skills: [] });
+		.mockResolvedValue({ genders: ["Female"], skills: [], ages: [] });
 	const repository = new CachedAppSessionHeatmapRepository(
 		{ listFilterOptions, listLast28Days: vi.fn() },
 		{ now: () => new Date(now) },
@@ -81,6 +87,7 @@ it("caches filter options and retries failures", async () => {
 	await expect(repository.listFilterOptions()).resolves.toEqual({
 		genders: ["Female"],
 		skills: [],
+		ages: [],
 	});
 	await repository.listFilterOptions();
 	expect(listFilterOptions).toHaveBeenCalledTimes(2);

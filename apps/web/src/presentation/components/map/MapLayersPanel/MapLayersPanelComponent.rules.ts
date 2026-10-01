@@ -11,7 +11,7 @@ import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion"
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
-	const showDemographics = useFeatureFlag("app-session-demographics");
+	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const setSessionFilters = layers?.setSessionFilters;
 	useEffect(() => {
 		if (!showDemographics) setSessionFilters?.({});

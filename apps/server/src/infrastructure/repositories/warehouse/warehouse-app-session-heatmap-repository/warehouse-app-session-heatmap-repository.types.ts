@@ -5,6 +5,7 @@ export interface WarehouseAppSessionHeatmapRow {
 }
 
 export interface WarehouseAppSessionFilterRow {
+	age: number | string | null;
 	gender: string | null;
 	skill: string | null;
 }

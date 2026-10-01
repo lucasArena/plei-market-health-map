@@ -8,7 +8,17 @@ export function appSessionHeatmapController(services: () => ApiServices) {
 		.get("/filters", async () => ok(await services().listAppSessionFilterOptions()))
 		.get("/", async (context) =>
 			ok(
-				await services().listAppSessionHeatmap(appSessionFiltersSchema.parse(context.req.query())),
+				await services().listAppSessionHeatmap(
+					appSessionFiltersSchema.parse({
+						...context.req.query(),
+						...Object.fromEntries(
+							["gender", "skill"].flatMap((key) => {
+								const values = context.req.queries(key);
+								return values && values.length > 1 ? [[key, values]] : [];
+							}),
+						),
+					}),
+				),
 			),
 		);
 }

@@ -724,13 +724,19 @@ export function useFacilitiesMapScreenRules() {
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? true;
 	const filters = mapLayers?.sessionFilters;
-	const ageSuffix = filters?.ageMin !== undefined && filters.ageMax === undefined ? "+" : "";
 	const ageLabel =
-		filters?.ageMin === 0 && filters?.ageMax === 17
-			? messages.map.sessionFilters.under18
-			: [filters?.ageMin, filters?.ageMax].filter((value) => value !== undefined).join("–") +
-				ageSuffix;
-	const sessionFilterSummary = [filters?.gender, filters?.skill, ageLabel]
+		filters?.ageMin === filters?.ageMax
+			? String(filters?.ageMin ?? "")
+			: filters?.ageMin === undefined
+				? `≤ ${filters?.ageMax}`
+				: filters?.ageMax === undefined
+					? `${filters.ageMin}+`
+					: `${filters.ageMin}–${filters.ageMax}`;
+	const sessionFilterSummary = [
+		Array.isArray(filters?.gender) ? filters.gender.join(", ") : filters?.gender,
+		Array.isArray(filters?.skill) ? filters.skill.join(", ") : filters?.skill,
+		ageLabel,
+	]
 		.filter(Boolean)
 		.join(" · ");
 	const sessionQueryStatus =

@@ -45,10 +45,17 @@ export const en: Messages = {
 		layersActiveFacilities: "Active facilities",
 		layersInactiveFacilities: "Inactive facilities",
 		sessionFilters: {
+			add: "Add filter",
+			remove: "Remove {filter} filter",
+			close: "Close filter options",
 			heading: "Player filters",
 			gender: "Gender",
 			skill: "Player skill level",
 			age: "Player age",
+			minimumAge: "Minimum age",
+			maximumAge: "Maximum age",
+			ageRangeHelp: "Leave either blank for no limit. Ages are inclusive.",
+			invalidAge: "Enter whole ages from 0 to 120, with minimum no greater than maximum.",
 			allGenders: "All genders",
 			allSkills: "All skill levels",
 			allAges: "All ages",
@@ -240,7 +247,8 @@ export const en: Messages = {
 		lastChange: "{who} · {date}",
 		saveFailed: "We couldn't switch {flag}. Please try again.",
 		descriptions: {
-			"app-session-demographics": "Filter App sessions by player gender, skill level and age.",
+			"player-demographic-filters":
+				"Player demographic filters: filter App sessions by gender, skill level and age.",
 		},
 	},
 	offline: {

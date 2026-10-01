@@ -5,7 +5,7 @@ export class InMemoryAppSessionHeatmapRepository implements AppSessionHeatmapRep
 	constructor(private readonly cells: AppSessionHeatmapCellView[] = []) {}
 
 	async listFilterOptions() {
-		return { genders: [], skills: [] };
+		return { genders: [], skills: [], ages: [] };
 	}
 
 	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {

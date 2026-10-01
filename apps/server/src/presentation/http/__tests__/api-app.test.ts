@@ -16,7 +16,7 @@ function setup(access: AccessDecision = ALLOWED) {
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
 		listAppSessionFilterOptions: vi
 			.fn()
-			.mockResolvedValue({ genders: ["Female"], skills: ["Advanced"] }),
+			.mockResolvedValue({ genders: ["Female"], skills: ["Advanced"], ages: [25] }),
 		listAppSessionHeatmap: vi.fn().mockResolvedValue([{ h3: "x", sessions: 3 }]),
 		listRecentLogins: vi.fn().mockResolvedValue([{ id: "l1" }]),
 		submitFeedback: vi.fn().mockResolvedValue({ identifier: "REQ-1", url: "https://linear.app/x" }),
@@ -184,7 +184,7 @@ describe("session demographics API", () => {
 			ageMax: 34,
 		});
 		expect((await get("/app-session-heatmap/filters")).body).toEqual({
-			data: { genders: ["Female"], skills: ["Advanced"] },
+			data: { genders: ["Female"], skills: ["Advanced"], ages: [25] },
 		});
 	});
 	it.each([

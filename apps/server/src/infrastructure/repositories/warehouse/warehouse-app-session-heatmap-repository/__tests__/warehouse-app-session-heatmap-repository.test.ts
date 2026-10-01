@@ -73,16 +73,37 @@ it("uses only present predicates for open age bounds", async () => {
 it("returns distinct stored profile choices without inventing demographic values", async () => {
 	const query = vi.fn().mockResolvedValue({
 		rows: [
-			{ gender: "Female", skill: "Advanced" },
-			{ gender: "Male", skill: "Beginner" },
-			{ gender: "Female", skill: "Advanced" },
-			{ gender: null, skill: null },
+			{ gender: "Female", skill: "Advanced", age: 25 },
+			{ gender: "Male", skill: "Beginner", age: "17" },
+			{ gender: "Female", skill: "Advanced", age: 25 },
+			{ gender: null, skill: null, age: null },
+			{ gender: null, skill: null, age: -1 },
+			{ gender: null, skill: null, age: 121 },
+			{ gender: null, skill: null, age: "invalid" },
+			{ gender: null, skill: null, age: 17.5 },
 		],
 	});
 	expect(await new WarehouseAppSessionHeatmapRepository({ query }).listFilterOptions()).toEqual({
 		genders: ["Female", "Male"],
 		skills: ["Advanced", "Beginner"],
+		ages: [17, 25],
 	});
 	expect(query.mock.calls[0]?.[0]).toContain("skill_description");
 	expect(query.mock.calls[0]?.[0]).not.toContain("skill_level");
+});
+
+it("matches any selected value per field while combining fields", async () => {
+	const query = vi.fn().mockResolvedValue({ rows: [] });
+	await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days({
+		gender: ["male", "female"],
+		skill: ["Beginner", "Expert"],
+	});
+	const [sql, values] = query.mock.calls[0] ?? [];
+	expect(values).toEqual([
+		["male", "female"],
+		["Beginner", "Expert"],
+	]);
+	expect(sql).toContain(
+		"NULLIF(TRIM(p.gender::text), '') = ANY($1::text[]) AND NULLIF(TRIM(p.skill_description::text), '') = ANY($2::text[])",
+	);
 });

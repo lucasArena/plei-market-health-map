@@ -92,3 +92,13 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-10-01 | Claude Code (Opus 5.5) | Brought the app version back as the account hub footer, under Sign out (ENG-5806) | `pnpm check` passes; checked the footer in Chrome on local dev |
 | 2026-10-01 | Claude Code (Opus 5.5) | Added Spanish (ENG-5809): a full `es` catalog (neutral Latin American Spanish), picked for any `es-*` browser language, plus Spanish for the in-browser AI summary prompt and its worked example | `pnpm check` passes; checked the facilities map in Spanish in Chrome on local dev |
 | 2026-10-01 | Codex | Added App sessions demographic filters (ENG-5783): staged gender, stored skill and inclusive age-band selections; current-profile semantics; validated warehouse predicates, bounded cohort caching, visible scope and separate loading/error/empty states; flag off by default | `pnpm check` passes; local browser interaction preview verified with illustrative data; live warehouse latency unverified |
+| 2026-10-01 | Codex | Refined ENG-5783 locally after design feedback: Add filter menu, removable chips and custom glass option lists replace always-visible native selects; added keyboard navigation and lazy profile-option requests. No new PR or push | `pnpm check` passes; local browser preview verified |
+| 2026-10-01 | Codex | Refined ENG-5783 locally from browser comments: aligned SVG chevron; all demographic options, including exact ages, come from warehouse profile values. Loaded distinct aggregate values into the local preview without player identifiers; session results remain simulated there | Read-only warehouse options query succeeds; `pnpm check` passes; local browser verification |
+
+| 2026-10-01 | Codex | ENG-5783 | Verified all four warehouse gender values; added custom open-ended age ranges and preset shortcuts, local only. |
+
+| 2026-10-01 | Codex | ENG-5783 | Added multi-select gender and skill options with bound array warehouse predicates; local only. |
+
+| 2026-10-01 | Codex | ENG-5783 | Ordered skill options by progression and removed age shortcuts; local only. |
+
+| 2026-10-01 | Codex | ENG-5783 | Renamed the default-off rollout flag to player-demographic-filters; staging admins enable it through Feature flags. Local only. |

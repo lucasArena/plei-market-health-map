@@ -25,7 +25,9 @@ export function useAppSessionFilterOptions(enabled: boolean) {
 export function useAppSessionHeatmap(filters: AppSessionFilters = {}, enabled = true) {
 	const params = new URLSearchParams();
 	for (const [key, value] of Object.entries(filters)) {
-		if (value !== undefined) params.set(key, String(value));
+		if (Array.isArray(value)) {
+			for (const entry of [...value].sort()) params.append(key, entry);
+		} else if (value !== undefined) params.set(key, String(value));
 	}
 	const suffix = params.size ? `?${params}` : "";
 	return useQuery({

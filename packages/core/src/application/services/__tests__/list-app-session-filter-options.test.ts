@@ -6,5 +6,5 @@ it("lists profile options independently of the heatmap", async () => {
 		makeListAppSessionFilterOptions({
 			appSessionHeatmap: new InMemoryAppSessionHeatmapRepository(),
 		})(),
-	).resolves.toEqual({ genders: [], skills: [] });
+	).resolves.toEqual({ genders: [], skills: [], ages: [] });
 });

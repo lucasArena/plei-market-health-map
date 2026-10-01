@@ -43,7 +43,7 @@ export class FixtureAppSessionHeatmapRepository implements AppSessionHeatmapRepo
 	constructor(private readonly fixturePath: string = DEFAULT_APP_SESSION_HEATMAP_FIXTURE_PATH) {}
 
 	async listFilterOptions() {
-		return { genders: [], skills: [] };
+		return { genders: [], skills: [], ages: [] };
 	}
 
 	async listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {

@@ -33,7 +33,12 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 
 	listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
 		const now = this.clock.now().getTime();
-		const key = JSON.stringify([filters.gender, filters.skill, filters.ageMin, filters.ageMax]);
+		const key = JSON.stringify([
+			Array.isArray(filters.gender) ? [...filters.gender].sort() : filters.gender,
+			Array.isArray(filters.skill) ? [...filters.skill].sort() : filters.skill,
+			filters.ageMin,
+			filters.ageMax,
+		]);
 		const cached = this.cache.get(key);
 		if (!cached || isExpired(cached, now)) {
 			for (const [entryKey, entry] of this.cache) {

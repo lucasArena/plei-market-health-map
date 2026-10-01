@@ -1,6 +1,15 @@
 import { z } from "zod";
 
-const profileValue = z.string().trim().min(1).max(100).optional();
+const profileValue = z
+	.union([
+		z.string().trim().min(1).max(100),
+		z
+			.array(z.string().trim().min(1).max(100))
+			.min(1)
+			.max(20)
+			.transform((values) => [...new Set(values)].sort()),
+	])
+	.optional();
 const age = z
 	.union([z.number(), z.string().regex(/^\d+$/)])
 	.transform(Number)

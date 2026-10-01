@@ -5,7 +5,7 @@ import type {
 
 export class EmptyAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
 	async listFilterOptions() {
-		return { genders: [], skills: [] };
+		return { genders: [], skills: [], ages: [] };
 	}
 
 	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {

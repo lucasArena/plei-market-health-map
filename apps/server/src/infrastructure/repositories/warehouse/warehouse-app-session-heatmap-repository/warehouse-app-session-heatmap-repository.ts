@@ -9,6 +9,12 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository.types";
 import type { WarehouseQueryable } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository.types";
 
+export const APP_SESSION_FILTER_OPTIONS_SQL = `
+SELECT DISTINCT NULLIF(TRIM(gender::text), '') AS gender,
+  NULLIF(TRIM(skill_description::text), '') AS skill, age_integer AS age
+FROM plei_gold.dim_player
+WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)`;
+
 export const APP_SESSION_HEATMAP_LAST_28D_SQL = `
 SELECT
   ROUND(lat::numeric, 3) AS lat,
@@ -40,11 +46,18 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 	constructor(private readonly warehouse: WarehouseQueryable) {}
 
 	async listFilterOptions() {
-		const { rows } = await this.warehouse.query<WarehouseAppSessionFilterRow>(`
-SELECT DISTINCT NULLIF(TRIM(gender), '') AS gender, NULLIF(TRIM(skill_description), '') AS skill
-FROM plei_gold.dim_player
-WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)`);
+		const { rows } = await this.warehouse.query<WarehouseAppSessionFilterRow>(
+			APP_SESSION_FILTER_OPTIONS_SQL,
+		);
 		return {
+			ages: [
+				...new Set(
+					rows.flatMap((row) => {
+						const age = row.age === null ? NaN : Number(row.age);
+						return Number.isInteger(age) && age >= 0 && age <= 120 ? [age] : [];
+					}),
+				),
+			].sort((a, b) => a - b),
 			genders: [...new Set(rows.flatMap((row) => (row.gender ? [row.gender] : [])))].sort(),
 			skills: [...new Set(rows.flatMap((row) => (row.skill ? [row.skill] : [])))].sort(),
 		};
@@ -54,14 +67,18 @@ WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = di
 		const predicates: string[] = [];
 		const values: unknown[] = [];
 		for (const [column, value, operator] of [
-			["NULLIF(TRIM(p.gender), '')", filters.gender, "="],
-			["NULLIF(TRIM(p.skill_description), '')", filters.skill, "="],
+			["NULLIF(TRIM(p.gender::text), '')", filters.gender, "="],
+			["NULLIF(TRIM(p.skill_description::text), '')", filters.skill, "="],
 			["p.age_integer", filters.ageMin, ">="],
 			["p.age_integer", filters.ageMax, "<="],
 		] as const) {
 			if (value === undefined) continue;
 			values.push(value);
-			predicates.push(`${column} ${operator} $${values.length}`);
+			predicates.push(
+				Array.isArray(value)
+					? `${column} = ANY($${values.length}::text[])`
+					: `${column} ${operator} $${values.length}`,
+			);
 		}
 		let sql = APP_SESSION_HEATMAP_LAST_28D_SQL;
 		if (predicates.length) {
