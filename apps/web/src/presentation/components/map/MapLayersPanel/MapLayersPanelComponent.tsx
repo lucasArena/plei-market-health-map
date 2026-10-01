@@ -39,6 +39,8 @@ export function MapLayersPanel() {
 		isCardShown,
 		isExpanded,
 		isOnMap,
+		layersBadge,
+		layersOnLabel,
 		messages,
 		rootRef,
 		showActiveFacilities,
@@ -74,10 +76,25 @@ export function MapLayersPanel() {
 				aria-label={collapseLabel}
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
-				className="map-icon-button map-glass pointer-events-auto flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none"
+				aria-describedby={layersBadge ? "layers-on-status" : undefined}
+				className="map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none"
 			>
 				<Image src="/images/map-layers/layers.svg" alt="" width={16} height={16} />
+				{layersBadge && (
+					<span
+						data-testid="layers-badge"
+						aria-hidden="true"
+						className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-pleiful-pitch-green-80 text-[10px] leading-none font-semibold text-white shadow-sm"
+					>
+						{layersBadge}
+					</span>
+				)}
 			</button>
+			{layersBadge && (
+				<span id="layers-on-status" className="sr-only">
+					{layersOnLabel}
+				</span>
+			)}
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}

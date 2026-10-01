@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { renderWithMessages } from "@/application/test/render-with-messages";
+import { LAYERS_PANEL_OPEN_KEY } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { MapLayersPanel } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent";
 import {
 	MapLayersProvider,
@@ -11,8 +12,13 @@ const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({ usePathname: () => mockPathname() }));
 
+beforeEach(() => {
+	localStorage.setItem(LAYERS_PANEL_OPEN_KEY, "true");
+});
+
 afterEach(() => {
 	vi.useRealTimers();
+	localStorage.clear();
 });
 
 function switchByName(name: string) {
@@ -217,5 +223,49 @@ describe("MapLayersPanel", () => {
 		expect(screen.getByText("Layers")).toBeInTheDocument();
 		fireEvent.pointerDown(document.body);
 		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+	});
+
+	it("starts collapsed when the person never left it open", () => {
+		localStorage.clear();
+		renderWithMessages(<MapLayersPanel />);
+
+		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
+			"aria-expanded",
+			"false",
+		);
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
+	});
+
+	it("remembers whether the panel was left open or closed", () => {
+		localStorage.clear();
+		renderWithMessages(<MapLayersPanel />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
+		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("true");
+		fireEvent.click(screen.getByRole("button", { name: "Hide layers" }));
+		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
+	});
+
+	it("badges the button with the layers that are on only when some are off", () => {
+		renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+			</MapLayersProvider>,
+		);
+		const button = screen.getByRole("button", { name: "Hide layers" });
+		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
+		expect(button).not.toHaveAttribute("aria-describedby");
+
+		fireEvent.click(switchByName("App sessions"));
+		expect(screen.getByTestId("layers-badge")).toHaveTextContent("2");
+		expect(button).toHaveAccessibleDescription("2 of 3 layers on");
+		expect(screen.getByTestId("layers-badge")).toHaveClass("absolute", "-top-1", "-right-1");
+
+		fireEvent.click(switchByName("Active facilities"));
+		expect(screen.getByTestId("layers-badge")).toHaveTextContent("1");
+		fireEvent.click(switchByName("App sessions"));
+		fireEvent.click(switchByName("Active facilities"));
+		expect(screen.queryByTestId("layers-badge")).not.toBeInTheDocument();
 	});
 });

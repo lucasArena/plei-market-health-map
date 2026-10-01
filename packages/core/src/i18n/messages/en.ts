@@ -47,6 +47,7 @@ export const en: Messages = {
 		layersSessions: "App sessions",
 		layersCollapse: "Hide layers",
 		layersExpand: "Show layers",
+		layersOn: "{count} of {total} layers on",
 	},
 	facilityAi: {
 		generate: "Find key insights",

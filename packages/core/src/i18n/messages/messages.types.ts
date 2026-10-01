@@ -44,6 +44,7 @@ export interface Messages {
 		layersSessions: string;
 		layersCollapse: string;
 		layersExpand: string;
+		layersOn: string;
 	};
 	facilityAi: {
 		generate: string;
