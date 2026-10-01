@@ -45,7 +45,7 @@ describe("MapLayersPanel", () => {
 			"z-50",
 			"w-[32px]",
 		);
-		const layersCard = screen.getByText("Layers").parentElement;
+		const layersCard = screen.getByRole("heading", { name: "Demand" }).parentElement;
 		expect(layersCard).toHaveClass(
 			"map-glass",
 			"right-0",
@@ -78,9 +78,30 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("button", { name: "All" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
-		expect(screen.getByText("Layers")).toHaveClass("px-2", "py-1.5", "text-xs", "uppercase");
-		expect(screen.getByText("Demand")).toBeInTheDocument();
-		expect(screen.getByText("Supply")).toBeInTheDocument();
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.getByText("Demand")).toHaveClass(
+			"px-2",
+			"pt-1.5",
+			"pb-1",
+			"text-[10px]",
+			"font-semibold",
+			"tracking-wider",
+			"text-muted-foreground",
+			"uppercase",
+		);
+		expect(screen.getByText("Demand")).not.toHaveClass("font-medium", "text-sm");
+		expect(screen.getByText("Supply")).toHaveClass(
+			"text-[10px]",
+			"font-semibold",
+			"tracking-wider",
+			"text-muted-foreground",
+			"uppercase",
+		);
+		expect(screen.getByText("App sessions")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Active facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Inactive facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("App sessions").parentElement).toHaveClass("px-2", "py-1.5", "gap-2");
+		expect(screen.getByText("App sessions").parentElement).not.toHaveClass("text-sm");
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 		expect(screen.getByText("Active facilities").previousElementSibling).toBeNull();
 		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
@@ -174,12 +195,12 @@ describe("MapLayersPanel", () => {
 		vi.useFakeTimers();
 		fireEvent.click(toggle);
 
-		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-out")).toBeInTheDocument();
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
 
-		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 		expect(screen.queryByRole("switch", { name: "Active facilities" })).not.toBeInTheDocument();
 		const expand = screen.getByRole("button", { name: "Show layers" });
 		expect(expand).toHaveClass("map-glass", "map-icon-button", "rounded-full");
@@ -188,8 +209,8 @@ describe("MapLayersPanel", () => {
 
 		fireEvent.click(expand);
 
-		expect(screen.getByText("Layers").closest(".search-results-in")).toBeInTheDocument();
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-in")).toBeInTheDocument();
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
@@ -210,21 +231,22 @@ describe("MapLayersPanel", () => {
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
 
 		fireEvent.keyDown(toggle, { key: "ArrowDown" });
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
 		fireEvent.pointerDown(toggle);
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
 
 		fireEvent.keyDown(toggle, { key: "Escape" });
-		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-out")).toBeInTheDocument();
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
-		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
 		fireEvent.pointerDown(document.body);
-		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-out")).toBeInTheDocument();
 	});
 
 	it("starts collapsed when the person never left it open", () => {
@@ -235,7 +257,7 @@ describe("MapLayersPanel", () => {
 			"aria-expanded",
 			"false",
 		);
-		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
 			"data-active",
 			"true",

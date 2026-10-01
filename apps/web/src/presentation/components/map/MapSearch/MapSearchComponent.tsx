@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useMapSearchRules } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 import {
+	MAP_MENU_GROUP_LABEL_CLASS,
+	MAP_MENU_ROW_LABEL_CLASS,
 	MAP_SEARCH_FIELD_CLASS,
 	MAP_SEARCH_OPTION_HOVER_CLASS,
 	MAP_SEARCH_RESULTS_CLASS,
@@ -84,7 +86,7 @@ export function MapSearch(props: MapSearchProps) {
 						<section aria-labelledby="map-search-markets">
 							<p
 								id="map-search-markets"
-								className="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+								className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
 							>
 								{messages.markets}
 							</p>
@@ -97,7 +99,7 @@ export function MapSearch(props: MapSearchProps) {
 									className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 									onClick={() => selectMarket(market)}
 								>
-									<span className="truncate text-sm font-medium">{market.name}</span>
+									<span className={`truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{market.name}</span>
 									<span className="ml-3 shrink-0 text-xs text-muted-foreground">
 										{messages.facilityCount.replace("{count}", String(market.facilities.length))}
 									</span>
@@ -112,7 +114,7 @@ export function MapSearch(props: MapSearchProps) {
 						>
 							<p
 								id="map-search-facilities"
-								className="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+								className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
 							>
 								{messages.facilities}
 							</p>
@@ -125,7 +127,9 @@ export function MapSearch(props: MapSearchProps) {
 									className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 									onClick={() => selectFacility(facility)}
 								>
-									<span className="block truncate text-sm font-medium">{facility.name}</span>
+									<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>
+										{facility.name}
+									</span>
 									<span className="block truncate text-xs text-muted-foreground">
 										{facility.marketName}
 									</span>
