@@ -51,7 +51,14 @@ describe("AppHeader", () => {
 		expect(row?.firstElementChild).toBe(slot);
 		expect(row?.contains(screen.getByRole("button", { name: "Market summary" }))).toBe(true);
 		expect(screen.getByRole("button", { name: "Market summary" })).toHaveClass("glass");
-		expect(row?.contains(screen.getByRole("button", { name: "Account menu" }))).toBe(false);
-		expect(screen.getByRole("button", { name: "Account menu" })).toHaveClass("bottom-8", "left-3");
+		const account = screen.getByRole("button", { name: "Account menu" });
+		expect(row?.contains(account)).toBe(false);
+		expect(account.parentElement).toHaveClass(
+			"fixed",
+			"bottom-[var(--map-profile-bottom)]",
+			"left-[var(--map-frame)]",
+		);
+		expect(account).toHaveClass("map-glass", "size-[var(--map-profile-size)]", "rounded-full");
+		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
 	});
 });

@@ -9,6 +9,9 @@ import {
 	useFeedbackRules,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.rules";
 import {
+	ACCOUNT_PANEL_CLASS,
+	ACCOUNT_STACK_CLASS,
+	ACCOUNT_TRIGGER_CLASS,
 	FEEDBACK_DROPZONE_CLASS,
 	FEEDBACK_PANEL_ANIMATION_CLASS,
 	FEEDBACK_PANEL_CLASS,
@@ -95,19 +98,27 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 	const option = FEEDBACK_TYPE_OPTIONS.find((candidate) => candidate.type === type);
 	const animationClass = FEEDBACK_PANEL_ANIMATION_CLASS[isClosing ? "closing" : "open"];
 	const dropzoneClass = FEEDBACK_DROPZONE_CLASS[isDragging ? "dragging" : "idle"];
+	const shell = props.user ? "account" : "help";
+	const stackClass = { help: undefined, account: ACCOUNT_STACK_CLASS }[shell];
+	const triggerClass = { help: FEEDBACK_TRIGGER_CLASS, account: ACCOUNT_TRIGGER_CLASS }[shell];
+	const panelClass = { help: FEEDBACK_PANEL_CLASS, account: ACCOUNT_PANEL_CLASS }[shell];
 
 	return (
-		<div ref={containerRef} data-testid="feedback-widget">
+		<div ref={containerRef} data-testid="feedback-widget" className={stackClass}>
 			<button
 				type="button"
 				onClick={toggle}
 				aria-label={props.user ? accountMessages.accountMenu : messages.open}
 				aria-expanded={isOpen && !isClosing}
 				aria-haspopup="dialog"
-				className={FEEDBACK_TRIGGER_CLASS}
+				className={triggerClass}
 			>
 				{props.user ? (
-					<Avatar name={props.user.name ?? props.user.email} avatarUrl={props.user.image} />
+					<Avatar
+						name={props.user.name ?? props.user.email}
+						avatarUrl={props.user.image}
+						appearance="account"
+					/>
 				) : (
 					<span aria-hidden="true">?</span>
 				)}
@@ -118,7 +129,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 					aria-label={messages.title}
 					data-state={isClosing ? "closing" : "open"}
 					onAnimationEnd={handleAnimationEnd}
-					className={`${FEEDBACK_PANEL_CLASS} ${animationClass}`}
+					className={`${panelClass} ${animationClass}`}
 				>
 					<header className="flex items-start justify-between gap-3 bg-pleiful-pitch-green-80 px-4 pt-4 pb-3.5 text-white">
 						<div>
