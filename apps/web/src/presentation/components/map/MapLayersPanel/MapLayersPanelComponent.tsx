@@ -41,10 +41,12 @@ export function MapLayersPanel() {
 		isOnMap,
 		messages,
 		rootRef,
-		showFacilities,
+		showActiveFacilities,
+		showInactiveFacilities,
 		showSessions,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
@@ -84,20 +86,34 @@ export function MapLayersPanel() {
 					<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase">
 						{messages.layersHeading}
 					</p>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersFacilities}</p>
-						<LayerSwitch
-							checked={showFacilities}
-							label={messages.layersFacilities}
-							onToggle={toggleFacilities}
-						/>
-					</div>
+					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+						{messages.layersDemand}
+					</h2>
 					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
 						<p>{messages.layersSessions}</p>
 						<LayerSwitch
 							checked={showSessions}
 							label={messages.layersSessions}
 							onToggle={toggleSessions}
+						/>
+					</div>
+					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+						{messages.layersSupply}
+					</h2>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersActiveFacilities}</p>
+						<LayerSwitch
+							checked={showActiveFacilities}
+							label={messages.layersActiveFacilities}
+							onToggle={toggleActiveFacilities}
+						/>
+					</div>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersInactiveFacilities}</p>
+						<LayerSwitch
+							checked={showInactiveFacilities}
+							label={messages.layersInactiveFacilities}
+							onToggle={toggleInactiveFacilities}
 						/>
 					</div>
 				</div>

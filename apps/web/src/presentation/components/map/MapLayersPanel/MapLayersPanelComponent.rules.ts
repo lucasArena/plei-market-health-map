@@ -13,9 +13,11 @@ export function useMapLayersPanelRules() {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const { finishReveal, isShown, motion } = useRevealMotion(isExpanded);
 	const rootRef = useRef<HTMLElement>(null);
-	const [localShowFacilities, setLocalShowFacilities] = useState(true);
+	const [localShowActiveFacilities, setLocalShowActiveFacilities] = useState(true);
+	const [localShowInactiveFacilities, setLocalShowInactiveFacilities] = useState(true);
 	const [localShowSessions, setLocalShowSessions] = useState(true);
-	const showFacilities = layers?.showFacilities ?? localShowFacilities;
+	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
+	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
 
 	useEffect(() => {
@@ -33,12 +35,19 @@ export function useMapLayersPanelRules() {
 	const closeOnEscape = useCallback((event: KeyboardEvent<HTMLButtonElement>) => {
 		if (event.key === "Escape") setIsExpanded(false);
 	}, []);
-	const toggleFacilities = useCallback(() => {
+	const toggleActiveFacilities = useCallback(() => {
 		if (layers) {
-			layers.setShowFacilities(!layers.showFacilities);
+			layers.setShowActiveFacilities(!layers.showActiveFacilities);
 			return;
 		}
-		setLocalShowFacilities((current) => !current);
+		setLocalShowActiveFacilities((current) => !current);
+	}, [layers]);
+	const toggleInactiveFacilities = useCallback(() => {
+		if (layers) {
+			layers.setShowInactiveFacilities(!layers.showInactiveFacilities);
+			return;
+		}
+		setLocalShowInactiveFacilities((current) => !current);
 	}, [layers]);
 	const toggleSessions = useCallback(() => {
 		if (layers) {
@@ -57,10 +66,12 @@ export function useMapLayersPanelRules() {
 		isOnMap,
 		messages: messages.map,
 		rootRef,
-		showFacilities,
+		showActiveFacilities,
+		showInactiveFacilities,
 		showSessions,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 		toggleSessions,
 	};
 }

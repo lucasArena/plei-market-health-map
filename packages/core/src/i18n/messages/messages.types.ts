@@ -36,6 +36,10 @@ export interface Messages {
 		layersBrand: string;
 		layersHeading: string;
 		layersFacilities: string;
+		layersDemand: string;
+		layersSupply: string;
+		layersActiveFacilities: string;
+		layersInactiveFacilities: string;
 		layersSessions: string;
 		layersCollapse: string;
 		layersExpand: string;
