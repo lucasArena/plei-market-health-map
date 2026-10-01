@@ -89,16 +89,16 @@ describe("CachedFacilityStatsRepository", () => {
 });
 
 describe("game comparison cache", () => {
-	it("shares pending batches, expires results, and retries failed requests", async () => {
+	it("shares batches, serves the last result while refreshing, and retries failed refreshes", async () => {
 		const { repository, getGameComparisons, advance } = setup();
 		await repository.getGameComparisons(["1" as never, "2" as never]);
 		await repository.getGameComparisons(["2" as never, "1" as never]);
 		expect(getGameComparisons).toHaveBeenCalledTimes(1);
 		advance(1000);
 		getGameComparisons.mockRejectedValueOnce(new Error("unavailable"));
-		await expect(repository.getGameComparisons(["1" as never, "2" as never])).rejects.toThrow(
-			"unavailable",
-		);
+		await expect(repository.getGameComparisons(["1" as never, "2" as never])).resolves.toEqual([]);
+		await Promise.resolve();
+		await Promise.resolve();
 		await expect(repository.getGameComparisons(["1" as never, "2" as never])).resolves.toEqual([]);
 		expect(getGameComparisons).toHaveBeenCalledTimes(3);
 	});

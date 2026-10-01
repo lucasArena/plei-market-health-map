@@ -7,64 +7,45 @@ import type {
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
-import type { CachedFacilityStatsValue } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository.types";
+import {
+	DEFAULT_MAX_STALE_MS,
+	StaleWhileRevalidateCache,
+} from "@server/infrastructure/repositories/warehouse/stale-while-revalidate-cache/stale-while-revalidate-cache";
 
 export const FACILITY_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class CachedFacilityStatsRepository implements FacilityStatsRepository {
-	private readonly reservationCache = new Map<
-		string,
-		CachedFacilityStatsValue<FacilityReservationStats>
-	>();
-	private readonly comparisonCache = new Map<
-		string,
-		CachedFacilityStatsValue<FacilityGameComparison[]>
-	>();
-	private readonly playerCache = new Map<string, CachedFacilityStatsValue<FacilityPlayerStats>>();
+	private readonly reservationCache: StaleWhileRevalidateCache<FacilityReservationStats>;
+	private readonly comparisonCache: StaleWhileRevalidateCache<FacilityGameComparison[]>;
+	private readonly playerCache: StaleWhileRevalidateCache<FacilityPlayerStats>;
 
 	constructor(
 		private readonly inner: FacilityStatsRepository & FacilityGameComparisonRepository,
-		private readonly clock: Clock,
-		private readonly ttlMs: number = FACILITY_STATS_CACHE_TTL_MS,
-	) {}
+		clock: Clock,
+		ttlMs: number = FACILITY_STATS_CACHE_TTL_MS,
+	) {
+		const options = { now: () => clock.now().getTime(), ttlMs, maxStaleMs: DEFAULT_MAX_STALE_MS };
+		this.reservationCache = new StaleWhileRevalidateCache(options);
+		this.comparisonCache = new StaleWhileRevalidateCache(options);
+		this.playerCache = new StaleWhileRevalidateCache(options);
+	}
 
 	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
-		const key = this.keyFor(facilityIds);
-		const cached = this.reservationCache.get(key);
-		const now = this.clock.now().getTime();
-		if (cached && cached.expiresAt > now) return cached.value;
-		const value = this.inner.getReservationStats(facilityIds);
-		this.reservationCache.set(key, { expiresAt: now + this.ttlMs, value });
-		value.catch(() => {
-			this.reservationCache.delete(key);
-		});
-		return value;
+		return this.reservationCache.get(this.keyFor(facilityIds), () =>
+			this.inner.getReservationStats(facilityIds),
+		);
 	}
 
 	getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
-		const key = this.keyFor(facilityIds);
-		const cached = this.comparisonCache.get(key);
-		const now = this.clock.now().getTime();
-		if (cached && cached.expiresAt > now) return cached.value;
-		const value = this.inner.getGameComparisons(facilityIds);
-		this.comparisonCache.set(key, { expiresAt: now + this.ttlMs, value });
-		value.catch(() => {
-			this.comparisonCache.delete(key);
-		});
-		return value;
+		return this.comparisonCache.get(this.keyFor(facilityIds), () =>
+			this.inner.getGameComparisons(facilityIds),
+		);
 	}
 
 	getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
-		const key = this.keyFor(facilityIds);
-		const cached = this.playerCache.get(key);
-		const now = this.clock.now().getTime();
-		if (cached && cached.expiresAt > now) return cached.value;
-		const value = this.inner.getPlayerStats(facilityIds);
-		this.playerCache.set(key, { expiresAt: now + this.ttlMs, value });
-		value.catch(() => {
-			this.playerCache.delete(key);
-		});
-		return value;
+		return this.playerCache.get(this.keyFor(facilityIds), () =>
+			this.inner.getPlayerStats(facilityIds),
+		);
 	}
 
 	private keyFor(facilityIds: EntityId[]): string {

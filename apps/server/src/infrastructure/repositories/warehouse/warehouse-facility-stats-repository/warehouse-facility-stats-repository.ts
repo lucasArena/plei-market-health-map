@@ -44,14 +44,22 @@ games as (
     )
 ),
 last_played as (
-  select max(r.date_with_time::date)::text as game_date
-  from plei_gold.dim_reservation r
-  cross join bounds b
-  where r.location_id = any($1::int[])
-    and r.reservation_type = 'OpenReservation'
-    and r.confirmed
-    and r.status <> 'cancelled'
-    and r.date_with_time::date < b.today
+  select coalesce(
+    (
+      select max(g.game_date)
+      from games g
+      where g.confirmed and g.status <> 'cancelled' and g.game_date < current_date
+    ),
+    (
+      select max(r.date_with_time::date)
+      from plei_gold.dim_reservation r
+      where r.location_id = any($1::int[])
+        and r.reservation_type = 'OpenReservation'
+        and r.confirmed
+        and r.status <> 'cancelled'
+        and r.date_with_time::date < current_date
+    )
+  )::text as game_date
 ),
 week_series as (
   select generate_series(b.this_week - 28, b.this_week - 7, interval '7 days')::date as week_start
@@ -142,20 +150,20 @@ export const FACILITY_PLAYER_STATS_SQL = `
 with bounds as (
   select date_trunc('week', current_date)::date as this_week
 ),
-eligible_players as (
-  select distinct p.player_id
-  from plei_gold.dim_player p
-  where p.confirmed_at is not null and p.players_type = 'pleiapp_player'
-),
 facility_players as (
   select f.player_id, f.player_lifecycle, f.date_played
   from plei_gold.fct_games_opened f
-  join eligible_players p on p.player_id = f.player_id
-  cross join bounds b
   where f.location_id = any($1::int[])
-    and f.date_played >= b.this_week - 56 and f.date_played < b.this_week
+    and f.date_played >= date_trunc('week', current_date)::date - 56
+    and f.date_played < date_trunc('week', current_date)::date
     and f.valid_player = 1 and f.confirmed_game = 1 and f.open_reservation_games = 1
     and f.dropping_date_local is null and f.players_type = 'pleiapp_player'
+    and exists (
+      select 1
+      from plei_gold.dim_player p
+      where p.player_id = f.player_id
+        and p.confirmed_at is not null and p.players_type = 'pleiapp_player'
+    )
 )
 select
   count(distinct player_id) filter (
