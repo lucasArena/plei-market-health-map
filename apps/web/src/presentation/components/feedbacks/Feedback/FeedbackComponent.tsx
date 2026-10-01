@@ -133,6 +133,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 		triggerRef,
 		type,
 		user,
+		versionLabel,
 	} = useFeedbackRules(props);
 	const { setLegendSlot } = useHeaderSlot();
 	const option = FEEDBACK_TYPE_OPTIONS.find((candidate) => candidate.type === type);
@@ -268,6 +269,13 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 											{accountMessages.signOut}
 										</button>
 									</form>
+									<div className={FEEDBACK_MENU_SEPARATOR_CLASS} />
+									<p
+										data-testid="app-version"
+										className="px-2 py-1.5 text-[11px] text-muted-foreground tabular-nums"
+									>
+										{versionLabel}
+									</p>
 								</>
 							)}
 						</div>

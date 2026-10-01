@@ -44,15 +44,17 @@ function finishClosing() {
 
 describe("Feedback", () => {
 	it.each([true, false])(
-		"shows the admin links only to admins and places sign-out last (%s)",
+		"shows the admin links only to admins and ends with sign-out and the version (%s)",
 		(isAdmin) => {
 			renderWidget(
 				<Feedback user={{ name: "Stefano", email: "stefano@plei.com", image: null, isAdmin }} />,
 			);
 			fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
 			const signOut = screen.getByRole("button", { name: "Sign out" });
-			expect(signOut.closest("form")).toBe(
-				signOut.closest("form")?.parentElement?.lastElementChild,
+			const footer = signOut.closest("form")?.parentElement;
+			expect(footer?.lastElementChild).toBe(screen.getByTestId("app-version"));
+			expect(footer?.lastElementChild?.previousElementSibling?.previousElementSibling).toBe(
+				signOut.closest("form"),
 			);
 			const metrics = screen.queryByRole("link", { name: "App metrics" });
 			const flags = screen.queryByRole("link", { name: "Feature flags" });

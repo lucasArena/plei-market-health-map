@@ -77,7 +77,7 @@ describe("UserMenu", () => {
 			"/feature-flags",
 		);
 		expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
-		expect(screen.queryByText(/Version/)).not.toBeInTheDocument();
+		expect(screen.getByTestId("app-version")).toHaveTextContent(/^Version /);
 		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
 	});
 
@@ -113,5 +113,16 @@ describe("UserMenu", () => {
 		fireEvent.mouseDown(document.body);
 		finishClosing();
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+	});
+
+	it("shows the app version as the last line of the menu", () => {
+		vi.stubEnv("NEXT_PUBLIC_APP_VERSION", "0.21.3");
+		renderMenu();
+		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+
+		const version = screen.getByTestId("app-version");
+		expect(version).toHaveTextContent("Version 0.21.3");
+		expect(version.parentElement?.lastElementChild).toBe(version);
+		vi.unstubAllEnvs();
 	});
 });
