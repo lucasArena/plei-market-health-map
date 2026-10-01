@@ -61,7 +61,8 @@ describe("MarketSummaryToggle", () => {
 
 		fireEvent.click(button);
 		expect(button).toHaveAttribute("aria-expanded", "true");
-		expect(button.className).toContain("bg-pleiful-pitch-green-80");
+		expect(button).toHaveClass("map-icon-button", "map-glass");
+		expect(button).not.toHaveClass("bg-pleiful-pitch-green-80");
 		expect(lastPanelProps().isClosing).toBe(false);
 
 		fireEvent.click(button);

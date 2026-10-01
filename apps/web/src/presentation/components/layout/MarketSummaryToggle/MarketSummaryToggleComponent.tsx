@@ -1,10 +1,7 @@
 "use client";
 
 import { useMarketSummaryToggleRules } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.rules";
-import {
-	MARKET_SUMMARY_TOGGLE_BASE_CLASS,
-	MARKET_SUMMARY_TOGGLE_CLASS,
-} from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.styles";
+import { MARKET_SUMMARY_TOGGLE_BASE_CLASS } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.styles";
 import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent";
 
 export function MarketSummaryToggle() {
@@ -22,7 +19,7 @@ export function MarketSummaryToggle() {
 				title={messages.open}
 				aria-expanded={isActive}
 				aria-pressed={isActive}
-				className={`${MARKET_SUMMARY_TOGGLE_BASE_CLASS} ${MARKET_SUMMARY_TOGGLE_CLASS[isActive ? "active" : "idle"]}`}
+				className={MARKET_SUMMARY_TOGGLE_BASE_CLASS}
 			>
 				<svg
 					viewBox="0 0 24 24"
@@ -32,7 +29,7 @@ export function MarketSummaryToggle() {
 					strokeLinecap="round"
 					strokeLinejoin="round"
 					aria-hidden="true"
-					className="size-5"
+					className="size-4"
 				>
 					<rect width="18" height="18" x="3" y="3" rx="2" />
 					<path d="M15 3v18" />
