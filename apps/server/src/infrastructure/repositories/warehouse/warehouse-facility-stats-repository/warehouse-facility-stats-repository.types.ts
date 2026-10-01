@@ -1,4 +1,6 @@
 export interface WarehouseFacilityReservationStatsRow {
+	period_start: string;
+	period_end: string;
 	week_start: string;
 	played_last_week: string | number;
 	played_previous_week: string | number;
