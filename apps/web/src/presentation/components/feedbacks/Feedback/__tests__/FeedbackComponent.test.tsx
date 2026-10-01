@@ -61,6 +61,48 @@ describe("Feedback", () => {
 			else expect(metrics).not.toBeInTheDocument();
 		},
 	);
+
+	it("draws a 40px glass account control and opens the menu above it", () => {
+		renderWidget(
+			<Feedback
+				user={{
+					name: "Lucas Arena",
+					email: "lucas@plei.com",
+					image: null,
+					canViewAppMetrics: false,
+				}}
+			/>,
+		);
+
+		const trigger = screen.getByRole("button", { name: "Account menu" });
+		expect(trigger).not.toHaveTextContent("?");
+		expect(trigger).toHaveClass(
+			"map-icon-button",
+			"map-glass",
+			"size-[var(--map-profile-size)]",
+			"rounded-full",
+			"shadow-[var(--map-shadow)]",
+		);
+		expect(trigger.parentElement).toHaveClass(
+			"fixed",
+			"bottom-[var(--map-profile-bottom)]",
+			"left-[var(--map-frame)]",
+		);
+		expect(screen.getByText("LA")).toHaveClass("size-[32px]", "bg-[#d1d5db]", "text-[#111827]");
+
+		fireEvent.click(trigger);
+		const dialog = screen.getByRole("dialog", { name: "Help us improve" });
+		expect(dialog).toHaveClass(
+			"map-glass",
+			"shadow-[var(--map-shadow)]",
+			"bottom-full",
+			"mb-[var(--map-profile-legend-gap)]",
+		);
+		expect(dialog).toHaveTextContent("Lucas Arena");
+		expect(dialog).toHaveTextContent("Suggest an improvement");
+		expect(dialog).toHaveTextContent("Sign out");
+		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
+	});
 	beforeEach(() => {
 		Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
 		Object.defineProperty(URL, "revokeObjectURL", { value: revokeObjectURL, configurable: true });
