@@ -1,5 +1,6 @@
 import type { FacilityRepository } from "@market-health-map/core/application";
 import { asEntityId, Facility } from "@market-health-map/core/domain";
+import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse/is-ignored-facility/is-ignored-facility";
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
 import { isWithinServiceArea } from "@server/infrastructure/repositories/warehouse/service-area/service-area";
@@ -10,7 +11,7 @@ import type {
 
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
-  select date_trunc('week', current_date)::date as this_week
+  select current_date as today
 ),
 facility_activity as (
   select r.location_id, count(distinct r.reservation_id) as played_last_28_days
@@ -19,8 +20,8 @@ facility_activity as (
   where r.reservation_type = 'OpenReservation'
     and r.confirmed
     and r.status <> 'cancelled'
-    and r.date_with_time::date >= b.this_week - 28
-    and r.date_with_time::date < b.this_week
+    and r.date_with_time::date >= b.today - 28
+    and r.date_with_time::date < b.today
   group by r.location_id
 )
 select l.location_id, l.location_name, l.address, l.city, l.state,
@@ -47,7 +48,13 @@ function formatAddress(row: WarehouseLocationRow): string {
 }
 
 export function toFacility(row: WarehouseLocationRow): Facility | null {
-	if (!row.location_name?.trim() || isTestFacility(row.location_name, row.region_name)) return null;
+	if (
+		!row.location_name?.trim() ||
+		isTestFacility(row.location_name, row.region_name) ||
+		isIgnoredFacility(row.location_name)
+	) {
+		return null;
+	}
 	const latitude = Number(row.location_latitude);
 	const longitude = Number(row.location_longitude);
 	if (!isWithinServiceArea(latitude, longitude)) return null;

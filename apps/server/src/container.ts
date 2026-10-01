@@ -22,6 +22,7 @@ import {
 	makeListAppSessionHeatmap,
 	makeListFacilities,
 	makeListRecentLogins,
+	makeListRegistrationHeatmap,
 	makeRecordDailyActivity,
 	makeRecordLogin,
 	makeSubmitFeedback,
@@ -46,16 +47,19 @@ import { getPrismaClient } from "@server/infrastructure/repositories/database/pr
 import { PrismaDailyActivityRepository } from "@server/infrastructure/repositories/database/prisma-daily-activity-repository/prisma-daily-activity-repository";
 import { PrismaLoginEventRepository } from "@server/infrastructure/repositories/database/prisma-login-event-repository/prisma-login-event-repository";
 import { FixtureAppSessionHeatmapRepository } from "@server/infrastructure/repositories/sample/fixture-app-session-heatmap-repository/fixture-app-session-heatmap-repository";
+import { FixtureRegistrationHeatmapRepository } from "@server/infrastructure/repositories/sample/fixture-registration-heatmap-repository/fixture-registration-heatmap-repository";
 import { MemoryDailyActivityRepository } from "@server/infrastructure/repositories/sample/memory-daily-activity-repository/memory-daily-activity-repository";
 import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
 import { SampleFacilityStatsRepository } from "@server/infrastructure/repositories/sample/sample-facility-stats-repository/sample-facility-stats-repository";
 import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
 import { CachedFacilityRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-repository/cached-facility-repository";
 import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
+import { CachedRegistrationHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-registration-heatmap-repository/cached-registration-heatmap-repository";
 import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository";
 import { WarehouseFacilityRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
 import { WarehouseFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
 import { getWarehousePool } from "@server/infrastructure/repositories/warehouse/warehouse-pool/warehouse-pool";
+import { WarehouseRegistrationHeatmapRepository } from "@server/infrastructure/repositories/warehouse/warehouse-registration-heatmap-repository/warehouse-registration-heatmap-repository";
 
 function buildDailyActivityRepository() {
 	const databaseUrl = getServerEnv().DATABASE_URL;
@@ -150,6 +154,34 @@ function buildAppSessionHeatmap() {
 	};
 }
 
+function buildRegistrationHeatmapRepository() {
+	const warehouseUrl = getServerEnv().DATA_WAREHOUSE_URL;
+	if (!warehouseUrl) return new FixtureRegistrationHeatmapRepository();
+	return new CachedRegistrationHeatmapRepository(
+		new WarehouseRegistrationHeatmapRepository(getWarehousePool(warehouseUrl)),
+		new SystemClock(),
+	);
+}
+
+function buildRegistrationHeatmap() {
+	const listRegistrationHeatmap = makeListRegistrationHeatmap({
+		registrationHeatmap: buildRegistrationHeatmapRepository(),
+	});
+	return {
+		listRegistrationHeatmap: async () => {
+			try {
+				return await listRegistrationHeatmap();
+			} catch (error) {
+				console.error(
+					"[registration-heatmap]",
+					error instanceof Error ? error.stack : String(error),
+				);
+				return [];
+			}
+		},
+	};
+}
+
 function buildIssueTracker(): IssueTracker | null {
 	if (getFeedbackMode() === "dry-run") {
 		console.warn("[feedback] FEEDBACK_DRY_RUN is on: feedback is logged, not sent to Linear.");
@@ -181,6 +213,7 @@ function buildFeedback() {
 let logins: ReturnType<typeof buildLogins> | undefined;
 let facilities: ReturnType<typeof buildFacilities> | undefined;
 let appSessionHeatmap: ReturnType<typeof buildAppSessionHeatmap> | undefined;
+let registrationHeatmap: ReturnType<typeof buildRegistrationHeatmap> | undefined;
 let feedback: ReturnType<typeof buildFeedback> | undefined;
 let appMetrics: ReturnType<typeof buildAppMetrics> | undefined;
 
@@ -199,6 +232,11 @@ function appSessionHeatmapModule() {
 	return appSessionHeatmap;
 }
 
+function registrationHeatmapModule() {
+	registrationHeatmap ??= buildRegistrationHeatmap();
+	return registrationHeatmap;
+}
+
 function appMetricsModule() {
 	appMetrics ??= buildAppMetrics();
 	return appMetrics;
@@ -214,6 +252,7 @@ const container = {
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
 	listFacilities: () => facilityModule().listFacilities(),
 	listAppSessionHeatmap: () => appSessionHeatmapModule().listAppSessionHeatmap(),
+	listRegistrationHeatmap: () => registrationHeatmapModule().listRegistrationHeatmap(),
 	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
 	getFacilityReservationStats: (input: GetFacilityReservationStatsInput) =>
 		facilityModule().getFacilityReservationStats(input),

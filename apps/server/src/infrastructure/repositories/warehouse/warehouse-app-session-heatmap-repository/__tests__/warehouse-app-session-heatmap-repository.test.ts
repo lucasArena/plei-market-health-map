@@ -42,6 +42,8 @@ describe("WarehouseAppSessionHeatmapRepository", () => {
 		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("CURRENT_DATE - 28");
 		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("date < CURRENT_DATE");
 		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("SUM(q_sessions)");
+		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("plei_region");
+		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("PERCENTILE_CONT(0.5)");
 		expect(cells).toEqual([{ lat: 29.746, lng: -95.352, sessionWeight: 1134 }]);
 	});
 });

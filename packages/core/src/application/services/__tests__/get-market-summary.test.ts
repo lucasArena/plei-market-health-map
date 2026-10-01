@@ -22,6 +22,8 @@ function facility(id: string, marketId: string, gamesLast28Days: number, memberI
 }
 
 const COUNTS = {
+	periodStart: "2026-09-03",
+	periodEnd: "2026-09-30",
 	weekStart: "2026-09-21",
 	playedLastWeek: 55,
 	playedPreviousWeek: 50,

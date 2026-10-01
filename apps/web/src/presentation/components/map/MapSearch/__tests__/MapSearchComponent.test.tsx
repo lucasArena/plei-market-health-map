@@ -142,4 +142,21 @@ describe("MapSearch", () => {
 		expect(root).not.toHaveClass("absolute");
 		expect(screen.getByRole("listbox")).toHaveClass("absolute", "top-full");
 	});
+
+	it("draws the field and the results on the shared glass surface", () => {
+		render(
+			<MapSearch
+				facilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
+			/>,
+		);
+		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		fireEvent.focus(input);
+
+		expect(input.parentElement).toHaveClass("glass-strong", "rounded-xl");
+		expect(screen.getByRole("listbox")).toHaveClass("glass-strong", "rounded-xl");
+	});
 });

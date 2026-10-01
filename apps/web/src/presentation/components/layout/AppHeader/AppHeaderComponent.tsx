@@ -16,7 +16,7 @@ export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 					className="flex min-w-0 flex-1 justify-end"
 				/>
 				<MarketSummaryToggle />
-				<div className="pointer-events-auto flex size-11 items-center justify-center rounded-full border bg-background/95 shadow-md backdrop-blur">
+				<div className="glass pointer-events-auto flex size-11 items-center justify-center rounded-full">
 					<UserMenu {...user} />
 				</div>
 			</div>

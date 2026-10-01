@@ -1,6 +1,8 @@
 import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
 
 const RESERVATION_STATS = {
+	periodStart: "2026-09-03",
+	periodEnd: "2026-09-30",
 	weekStart: "2026-09-21",
 	playedLastWeek: 55,
 	playedPreviousWeek: 51,

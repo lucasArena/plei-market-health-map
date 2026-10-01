@@ -44,5 +44,10 @@ describe("AppHeader", () => {
 		expect(row?.firstElementChild).toBe(slot);
 		expect(row?.contains(screen.getByRole("button", { name: "Market summary" }))).toBe(true);
 		expect(row?.contains(screen.getByRole("button", { name: "Account menu" }))).toBe(true);
+		expect(screen.getByRole("button", { name: "Account menu" }).closest(".glass")).toHaveClass(
+			"rounded-full",
+			"size-11",
+		);
+		expect(screen.getByRole("button", { name: "Market summary" })).toHaveClass("glass");
 	});
 });

@@ -107,20 +107,27 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 	useFacilityListAll: () => mockUseFacilities(),
 }));
 
-const layersState = vi.hoisted(() => ({ showFacilities: true, showSessions: true }));
+const layersState = vi.hoisted(() => ({
+	showFacilities: true,
+	demandMetric: "app-sessions" as "app-sessions" | "registrations",
+}));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
 	useMapLayers: () => ({
 		showFacilities: layersState.showFacilities,
 		setShowFacilities: vi.fn(),
-		showSessions: layersState.showSessions,
-		setShowSessions: vi.fn(),
+		demandMetric: layersState.demandMetric,
+		setDemandMetric: vi.fn(),
 	}),
 }));
 
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
+}));
+const mockUseRegistrationHeatmap = vi.fn();
+vi.mock("@/presentation/hooks/use-app/use-registration-heatmap", () => ({
+	useRegistrationHeatmap: () => mockUseRegistrationHeatmap(),
 }));
 
 const FACILITY = {
@@ -687,12 +694,17 @@ describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		layersState.showFacilities = true;
-		layersState.showSessions = true;
+		layersState.demandMetric = "app-sessions";
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
 		mockUseAppSessionHeatmap.mockReturnValue({
 			data: [{ lat: 29.75, lng: -95.35, sessionWeight: 10 }],
+			isPending: false,
+			isError: false,
+		});
+		mockUseRegistrationHeatmap.mockReturnValue({
+			data: [{ lat: 30.27, lng: -97.74, registrationWeight: 5 }],
 			isPending: false,
 			isError: false,
 		});
@@ -764,7 +776,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		);
 		expect(result.current.status).toBe("ready");
 		expect(result.current.messages).toBe(EN_MESSAGES.map);
-		expect(result.current.sessionScale).toEqual({ low: 10, high: 10 });
+		expect(result.current.heatmapScale).toEqual({ low: 10, high: 10 });
 		mapState.setData.mockClear();
 		act(() => mapState.handlers.get("moveend")?.());
 		expect(mapState.setData).toHaveBeenCalledWith(
@@ -1065,34 +1077,29 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 	});
 
-	it("hides the session heatmap and its legend when app sessions are off", async () => {
+	it("updates the heatmap and legend copy when the demand metric changes", async () => {
 		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		const map = mapState.instances[0];
-		if (!map) throw new Error("map was not created");
-		map.getLayer = vi.fn(() => ({ id: APP_SESSION_HEATMAP_LAYER_ID }));
-		map.setLayoutProperty = vi.fn();
 		act(() => mapState.handlers.get("load")?.());
 
-		expect(result.current.hasSessionHeatmap).toBe(true);
-
-		layersState.showSessions = false;
+		expect(result.current.hasDemandHeatmap).toBe(true);
+		expect(result.current.heatmapCopy.legend).toContain("Sessions");
+		mapState.setData.mockClear();
+		layersState.demandMetric = "registrations";
 		rerender();
-		expect(map.setLayoutProperty).toHaveBeenCalledWith(
-			APP_SESSION_HEATMAP_LAYER_ID,
-			"visibility",
-			"none",
+		await waitFor(() =>
+			expect(mapState.setData).toHaveBeenCalledWith(
+				expect.objectContaining({
+					features: [
+						expect.objectContaining({
+							properties: expect.objectContaining({ sessionWeight: 5 }),
+						}),
+					],
+				}),
+			),
 		);
-		expect(result.current.hasSessionHeatmap).toBe(false);
-
-		layersState.showSessions = true;
-		rerender();
-		expect(map.setLayoutProperty).toHaveBeenCalledWith(
-			APP_SESSION_HEATMAP_LAYER_ID,
-			"visibility",
-			"visible",
-		);
-		expect(result.current.hasSessionHeatmap).toBe(true);
+		expect(result.current.hasDemandHeatmap).toBe(true);
+		expect(result.current.heatmapCopy.legend).toContain("Registrations");
 	});
 
 	it("fades facility markers in and out with the facilities switch", async () => {

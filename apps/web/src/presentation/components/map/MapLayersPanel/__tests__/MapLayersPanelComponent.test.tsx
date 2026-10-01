@@ -31,6 +31,7 @@ describe("MapLayersPanel", () => {
 			"z-50",
 			"gap-[4px]",
 			"items-stretch",
+			"w-[220px]",
 		);
 		const layersCard = screen.getByText("Layers").parentElement;
 		expect(layersCard).toHaveClass("w-full");
@@ -62,7 +63,10 @@ describe("MapLayersPanel", () => {
 		expect(screen.getByText("Layers")).toHaveClass("text-[10px]");
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 		expect(screen.getByText("Facilities").previousElementSibling).toBeNull();
-		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		expect(screen.getByRole("radiogroup", { name: "Demand" })).toBeInTheDocument();
+		expect(screen.getByRole("radio", { name: "Registrations" })).not.toBeChecked();
+		expect(screen.getByRole("radio", { name: "App sessions" })).toBeChecked();
+		expect(screen.getByText("Supply")).toBeInTheDocument();
 	});
 
 	it("toggles the facilities layer", () => {
@@ -94,26 +98,25 @@ describe("MapLayersPanel", () => {
 		expect(screen.getByText("true")).toBeInTheDocument();
 	});
 
-	it("tells the map to hide app sessions when the switch is turned off", () => {
-		function SessionsState() {
+	it("selects the demand heatmap metric", () => {
+		function DemandState() {
 			const layers = useMapLayers();
-			return <span>{`sessions:${String(layers?.showSessions)}`}</span>;
+			return <span>{`demand:${layers?.demandMetric}`}</span>;
 		}
 
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
-				<SessionsState />
+				<DemandState />
 			</MapLayersProvider>,
 		);
 
-		expect(screen.getByText("sessions:true")).toBeInTheDocument();
-		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
-		fireEvent.click(switchByName("App sessions"));
-		expect(screen.getByText("sessions:false")).toBeInTheDocument();
-		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "false");
-		fireEvent.click(switchByName("App sessions"));
-		expect(screen.getByText("sessions:true")).toBeInTheDocument();
+		expect(screen.getByText("demand:app-sessions")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("radio", { name: "Registrations" }));
+		expect(screen.getByText("demand:registrations")).toBeInTheDocument();
+		expect(screen.getByRole("radio", { name: "Registrations" })).toBeChecked();
+		fireEvent.click(screen.getByRole("radio", { name: "App sessions" }));
+		expect(screen.getByText("demand:app-sessions")).toBeInTheDocument();
 	});
 
 	it("hides the layer list until it is expanded again", () => {

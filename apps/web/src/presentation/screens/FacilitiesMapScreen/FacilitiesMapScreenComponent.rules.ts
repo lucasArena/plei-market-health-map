@@ -17,6 +17,7 @@ import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
+import { useRegistrationHeatmap } from "@/presentation/hooks/use-app/use-registration-heatmap";
 import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
@@ -701,10 +702,11 @@ export function useFacilitiesMapScreenRules() {
 	const { setScope } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
-	const heatmapQuery = useAppSessionHeatmap();
+	const appSessionHeatmapQuery = useAppSessionHeatmap();
+	const registrationHeatmapQuery = useRegistrationHeatmap();
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
-	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
+	const [heatmapScale, setHeatmapScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 	const [isPanelClosing, setIsPanelClosing] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -712,7 +714,7 @@ export function useFacilitiesMapScreenRules() {
 	const selectedFacilityIdRef = useRef<string | null>(null);
 	const mapLayers = useMapLayers();
 	const showFacilities = mapLayers?.showFacilities ?? true;
-	const showSessions = mapLayers?.showSessions ?? true;
+	const demandMetric = mapLayers?.demandMetric ?? "app-sessions";
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
 	const facilitiesWereShownRef = useRef(showFacilities);
@@ -723,12 +725,29 @@ export function useFacilitiesMapScreenRules() {
 		() => toFacilityFeatureCollection(query.data ?? []),
 		[query.data],
 	);
+	const registrationHeatmapData = useMemo(
+		() =>
+			registrationHeatmapQuery.data?.map((cell) => ({
+				lat: cell.lat,
+				lng: cell.lng,
+				sessionWeight: cell.registrationWeight,
+			})),
+		[registrationHeatmapQuery.data],
+	);
+	const heatmapData = {
+		"app-sessions": appSessionHeatmapQuery.data,
+		registrations: registrationHeatmapData,
+	}[demandMetric];
+	const heatmapError = {
+		"app-sessions": appSessionHeatmapQuery.isError,
+		registrations: registrationHeatmapQuery.isError,
+	}[demandMetric];
 	const heatmapFeatureCollection = useMemo(
 		() =>
-			heatmapQuery.isError || !heatmapQuery.data
+			heatmapError || !heatmapData
 				? EMPTY_HEATMAP
-				: toAppSessionHeatmapFeatureCollection(heatmapQuery.data),
-		[heatmapQuery.data, heatmapQuery.isError],
+				: toAppSessionHeatmapFeatureCollection(heatmapData),
+		[heatmapData, heatmapError],
 	);
 	const facilitiesById = useMemo(
 		() => new Map((query.data ?? []).map((facility) => [facility.id, facility])),
@@ -895,16 +914,16 @@ export function useFacilitiesMapScreenRules() {
 
 	const refreshHeatmap = useCallback(() => {
 		const map = mapRef.current;
-		if (!map || heatmapQuery.isError || !heatmapQuery.data) return;
+		if (!map || heatmapError || !heatmapData) return;
 		const bounds = map.getBounds();
 		map
 			.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)
-			?.setData(toAppSessionHeatmapFeatureCollection(heatmapQuery.data, bounds));
-		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds);
-		setSessionScale((current) =>
+			?.setData(toAppSessionHeatmapFeatureCollection(heatmapData, bounds));
+		const nextScale = appSessionHeatmapScale(heatmapData, bounds);
+		setHeatmapScale((current) =>
 			current.low === nextScale.low && current.high === nextScale.high ? current : nextScale,
 		);
-	}, [heatmapQuery.data, heatmapQuery.isError]);
+	}, [heatmapData, heatmapError]);
 
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
 	useExclusiveSidePanel(
@@ -996,12 +1015,12 @@ export function useFacilitiesMapScreenRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
-		if (heatmapQuery.isError || !heatmapQuery.data) {
+		if (heatmapError || !heatmapData) {
 			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
 			return;
 		}
 		refreshHeatmap();
-	}, [heatmapQuery.data, heatmapQuery.isError, isMapReady, refreshHeatmap]);
+	}, [heatmapData, heatmapError, isMapReady, refreshHeatmap]);
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -1041,13 +1060,23 @@ export function useFacilitiesMapScreenRules() {
 		refreshHeatmap,
 	]);
 
-	const hasSessionHeatmap = showSessions && heatmapFeatureCollection.features.length > 0;
-
-	useEffect(() => {
-		const map = mapRef.current;
-		if (!isMapReady || !map) return;
-		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showSessions);
-	}, [isMapReady, showSessions]);
+	const hasDemandHeatmap = heatmapFeatureCollection.features.length > 0;
+	const heatmapCopy = {
+		"app-sessions": {
+			legend: messages.map.sessionHeatmapLegend,
+			context: messages.map.sessionHeatmapContext,
+			noActivity: messages.map.sessionHeatmapNoActivity,
+			lowValue: messages.map.sessionHeatmapLowValue,
+			highValue: messages.map.sessionHeatmapHighValue,
+		},
+		registrations: {
+			legend: messages.map.registrationHeatmapLegend,
+			context: messages.map.registrationHeatmapContext,
+			noActivity: messages.map.registrationHeatmapNoActivity,
+			lowValue: messages.map.registrationHeatmapLowValue,
+			highValue: messages.map.registrationHeatmapHighValue,
+		},
+	}[demandMetric];
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -1166,12 +1195,13 @@ export function useFacilitiesMapScreenRules() {
 		closePanel,
 		containerRef,
 		facilities: query.data ?? [],
-		hasSessionHeatmap,
+		hasDemandHeatmap,
 		handlePanelClosed,
 		hovered,
 		isPanelClosing,
 		messages: messages.map,
-		sessionScale,
+		heatmapCopy,
+		heatmapScale,
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,

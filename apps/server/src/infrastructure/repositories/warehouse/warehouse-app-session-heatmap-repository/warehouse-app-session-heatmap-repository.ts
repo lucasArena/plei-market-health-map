@@ -6,17 +6,34 @@ import type { WarehouseAppSessionHeatmapRow } from "@server/infrastructure/repos
 import type { WarehouseQueryable } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository.types";
 
 export const APP_SESSION_HEATMAP_LAST_28D_SQL = `
+WITH session_counts AS (
+  SELECT
+    plei_region,
+    SUM(q_sessions)::bigint AS session_weight
+  FROM plei_gold.players_behaviour
+  WHERE date >= CURRENT_DATE - 28
+    AND date < CURRENT_DATE
+  GROUP BY plei_region
+),
+region_centers AS (
+  SELECT
+    r.region_name,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY l.location_latitude) AS lat,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY l.location_longitude) AS lng
+  FROM plei_gold.dim_region r
+  INNER JOIN plei_gold.dim_location l USING (region_id)
+  WHERE l.deleted_at IS NULL
+    AND l.location_latitude IS NOT NULL
+    AND l.location_longitude IS NOT NULL
+    AND NOT (ABS(l.location_latitude) < 0.01 AND ABS(l.location_longitude) < 0.01)
+  GROUP BY r.region_name
+)
 SELECT
-  ROUND(lat::numeric, 3) AS lat,
-  ROUND(lng::numeric, 3) AS lng,
-  SUM(q_sessions)::bigint AS session_weight
-FROM plei_gold.players_behaviour
-WHERE date >= CURRENT_DATE - 28
-  AND date < CURRENT_DATE
-  AND lat IS NOT NULL
-  AND lng IS NOT NULL
-  AND NOT (ABS(lat) < 0.01 AND ABS(lng) < 0.01)
-GROUP BY 1, 2`;
+  ROUND(c.lat::numeric, 3) AS lat,
+  ROUND(c.lng::numeric, 3) AS lng,
+  s.session_weight
+FROM session_counts s
+INNER JOIN region_centers c ON c.region_name = s.plei_region`;
 
 export function toAppSessionHeatmapCell(
 	row: WarehouseAppSessionHeatmapRow,

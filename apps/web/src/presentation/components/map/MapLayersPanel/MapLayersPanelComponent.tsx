@@ -39,11 +39,11 @@ export function MapLayersPanel() {
 		isExpanded,
 		isOnMap,
 		messages,
+		demandMetric,
+		selectDemandMetric,
 		showFacilities,
-		showSessions,
 		toggleExpanded,
 		toggleFacilities,
-		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
 		[`${!isExpanded}`]: messages.layersExpand,
@@ -58,10 +58,14 @@ export function MapLayersPanel() {
 		enter: "layers-card-in",
 		exit: "layers-card-out",
 	}[cardMotion];
+	const demandOptions = [
+		{ metric: "registrations", label: messages.layersRegistrations },
+		{ metric: "app-sessions", label: messages.layersSessions },
+	] as const;
 	return (
 		<aside
 			aria-label={messages.layersBrand}
-			className="fixed top-[20px] left-[20px] z-50 flex w-max flex-col items-stretch gap-[4px]"
+			className="fixed top-[20px] left-[20px] z-50 flex w-[220px] flex-col items-stretch gap-[4px]"
 		>
 			<div className="flex items-stretch overflow-hidden rounded-[8px] border border-border bg-card py-[2px] shadow-md">
 				<Link href="/" className="flex items-center gap-[4px] px-[8px] py-[4px] hover:bg-accent">
@@ -90,25 +94,54 @@ export function MapLayersPanel() {
 					<p className="py-1.5 text-[10px] leading-4 font-medium text-muted-foreground">
 						{messages.layersHeading}
 					</p>
-					<div className="flex w-full items-center justify-between gap-3">
-						<p className="text-[12px] leading-none font-medium text-foreground">
-							{messages.layersFacilities}
+					<div className="flex flex-col gap-1.5">
+						<p className="text-[11px] leading-4 font-semibold text-foreground">
+							{messages.layersDemand}
 						</p>
-						<LayerSwitch
-							checked={showFacilities}
-							label={messages.layersFacilities}
-							onToggle={toggleFacilities}
-						/>
+						<div
+							role="radiogroup"
+							aria-label={messages.layersDemand}
+							className="grid grid-cols-2 rounded-md border border-border bg-muted/60 p-0.5"
+						>
+							{demandOptions.map((option) => {
+								const selected = demandMetric === option.metric;
+								const optionClass = {
+									[`${!selected}`]: "text-muted-foreground hover:bg-background/60",
+									[`${selected}`]: "bg-pleiful-pitch-green-80 text-white shadow-sm",
+								}.true as string;
+								return (
+									<label
+										key={option.metric}
+										className={`cursor-pointer rounded-[5px] px-2 py-1.5 text-center text-[10px] leading-none font-medium transition-colors ${optionClass}`}
+									>
+										<input
+											type="radio"
+											name="demand-heatmap"
+											aria-label={option.label}
+											checked={selected}
+											onChange={() => selectDemandMetric(option.metric)}
+											className="sr-only"
+										/>
+										{option.label}
+									</label>
+								);
+							})}
+						</div>
 					</div>
-					<div className="flex w-full items-center justify-between gap-3">
-						<p className="text-[12px] leading-none font-medium text-foreground">
-							{messages.layersSessions}
+					<div className="mt-1 flex flex-col gap-1.5 border-t border-border pt-2">
+						<p className="text-[11px] leading-4 font-semibold text-foreground">
+							{messages.layersSupply}
 						</p>
-						<LayerSwitch
-							checked={showSessions}
-							label={messages.layersSessions}
-							onToggle={toggleSessions}
-						/>
+						<div className="flex w-full items-center justify-between gap-3">
+							<p className="text-[12px] leading-none font-medium text-foreground">
+								{messages.layersFacilities}
+							</p>
+							<LayerSwitch
+								checked={showFacilities}
+								label={messages.layersFacilities}
+								onToggle={toggleFacilities}
+							/>
+						</div>
 					</div>
 				</div>
 			)}

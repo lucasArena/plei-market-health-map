@@ -17,14 +17,15 @@ export function FacilitiesMapScreen() {
 		containerRef,
 		facilities,
 		handlePanelClosed,
-		hasSessionHeatmap,
+		hasDemandHeatmap,
+		heatmapCopy,
+		heatmapScale,
 		hovered,
 		isPanelClosing,
 		messages,
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
-		sessionScale,
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { searchSlot } = useHeaderSlot();
@@ -33,8 +34,8 @@ export function FacilitiesMapScreen() {
 		notation: "compact",
 		maximumFractionDigits: 1,
 	});
-	const lowValue = numberFormatter.format(sessionScale.low);
-	const highValue = numberFormatter.format(sessionScale.high);
+	const lowValue = numberFormatter.format(heatmapScale.low);
+	const highValue = numberFormatter.format(heatmapScale.high);
 
 	return (
 		<section aria-label={messages.title} className="absolute inset-0">
@@ -61,20 +62,18 @@ export function FacilitiesMapScreen() {
 				</p>
 			)}
 			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
-			{hasSessionHeatmap && (
+			{hasDemandHeatmap && (
 				<div
-					data-testid="session-heatmap-legend"
+					data-testid="demand-heatmap-legend"
 					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
 				>
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
-						{messages.sessionHeatmapLegend}
+						{heatmapCopy.legend}
 					</p>
-					<p className="mt-0.5 text-[9px] text-muted-foreground">
-						{messages.sessionHeatmapContext}
-					</p>
-					{sessionScale.high === 0 ? (
+					<p className="mt-0.5 text-[9px] text-muted-foreground">{heatmapCopy.context}</p>
+					{heatmapScale.high === 0 ? (
 						<p className="mt-2 text-[10px] font-medium text-muted-foreground">
-							{messages.sessionHeatmapNoActivity}
+							{heatmapCopy.noActivity}
 						</p>
 					) : (
 						<div className="mt-2 flex items-center justify-between gap-3">
@@ -84,9 +83,7 @@ export function FacilitiesMapScreen() {
 							>
 								{lowValue}
 							</span>
-							<span className="sr-only">
-								{messages.sessionHeatmapLowValue.replace("{count}", lowValue)}
-							</span>
+							<span className="sr-only">{heatmapCopy.lowValue.replace("{count}", lowValue)}</span>
 							<div
 								data-testid="session-heatmap-gradient"
 								className="h-2.5 flex-1 rounded-full"
@@ -100,9 +97,7 @@ export function FacilitiesMapScreen() {
 							>
 								{highValue}+
 							</span>
-							<span className="sr-only">
-								{messages.sessionHeatmapHighValue.replace("{count}", highValue)}
-							</span>
+							<span className="sr-only">{heatmapCopy.highValue.replace("{count}", highValue)}</span>
 						</div>
 					)}
 				</div>

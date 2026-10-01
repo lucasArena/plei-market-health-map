@@ -48,7 +48,15 @@ function rulesWith(status: string, overrides: object = {}) {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],
-		hasSessionHeatmap: false,
+		hasDemandHeatmap: false,
+		heatmapCopy: {
+			legend: EN_MESSAGES.map.sessionHeatmapLegend,
+			context: EN_MESSAGES.map.sessionHeatmapContext,
+			noActivity: EN_MESSAGES.map.sessionHeatmapNoActivity,
+			lowValue: EN_MESSAGES.map.sessionHeatmapLowValue,
+			highValue: EN_MESSAGES.map.sessionHeatmapHighValue,
+		},
+		heatmapScale: { low: 0, high: 0 },
 		handlePanelClosed: vi.fn(),
 		hovered: null,
 		isPanelClosing: false,
@@ -56,7 +64,6 @@ function rulesWith(status: string, overrides: object = {}) {
 		selectSearchFacility: vi.fn(),
 		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
-		sessionScale: { low: 0, high: 0 },
 		status,
 		...overrides,
 	};
@@ -89,7 +96,7 @@ describe("FacilitiesMapScreen", () => {
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
 		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
 		expect(screen.queryByRole("status")).not.toBeInTheDocument();
-		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("demand-heatmap-legend")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("detail-panel")).not.toBeInTheDocument();
 		expect(screen.getByRole("link", { name: "OpenStreetMap contributors" })).toHaveAttribute(
 			"href",
@@ -100,14 +107,14 @@ describe("FacilitiesMapScreen", () => {
 	it("shows the session heatmap legend when heatmap data is present", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
-				hasSessionHeatmap: true,
-				sessionScale: { low: 12, high: 480 },
+				hasDemandHeatmap: true,
+				heatmapScale: { low: 12, high: 480 },
 			}),
 		);
 
 		render(<FacilitiesMapScreen />);
 
-		const legend = screen.getByTestId("session-heatmap-legend");
+		const legend = screen.getByTestId("demand-heatmap-legend");
 		expect(legend).toHaveTextContent("Sessions per shaded area · last 28 days");
 		expect(legend).toHaveTextContent("Scale updates for the current map view");
 		expect(legend).toHaveTextContent("12");
@@ -121,7 +128,7 @@ describe("FacilitiesMapScreen", () => {
 	});
 
 	it("explains when the current map view has no sessions", () => {
-		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true }));
+		mockRules.mockReturnValue(rulesWith("ready", { hasDemandHeatmap: true }));
 
 		render(<FacilitiesMapScreen />);
 
@@ -173,16 +180,16 @@ describe("FacilitiesMapScreen", () => {
 	it("places the feedback button bottom left and moves the legend beside it", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
-				hasSessionHeatmap: true,
+				hasDemandHeatmap: true,
 				selectedFacilityId: "f1",
-				sessionScale: { low: 1, high: 10 },
+				heatmapScale: { low: 1, high: 10 },
 			}),
 		);
 
 		render(<FacilitiesMapScreen />);
 
 		expect(screen.getByTestId("feedback-widget")).toHaveAttribute("data-facility", "f1");
-		const legend = screen.getByTestId("session-heatmap-legend");
+		const legend = screen.getByTestId("demand-heatmap-legend");
 		expect(legend).toHaveClass("bottom-8", "left-16");
 		expect(legend).not.toHaveClass("left-3");
 	});

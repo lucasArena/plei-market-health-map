@@ -13,8 +13,8 @@ function browserStorage(): Storage | null {
 export class AiSummaryCache {
 	constructor(private readonly resolveStorage: ResolveStorage = browserStorage) {}
 
-	keyFor(subject: string, weekStart: string, locale: string): string {
-		return `v5:${subject.replaceAll(":", "-")}:${weekStart}:${locale}`;
+	keyFor(subject: string, periodEnd: string, locale: string): string {
+		return `v5:${subject.replaceAll(":", "-")}:${periodEnd}:${locale}`;
 	}
 
 	read(key: string): string | null {
@@ -29,7 +29,7 @@ export class AiSummaryCache {
 		try {
 			const storage = this.resolveStorage();
 			if (!storage) return;
-			this.removeOtherWeeks(storage, key);
+			this.removeOtherPeriods(storage, key);
 			storage.setItem(this.storageKey(key), summary);
 		} catch {
 			return;
@@ -46,7 +46,7 @@ export class AiSummaryCache {
 		}
 	}
 
-	private removeOtherWeeks(storage: Storage, key: string): void {
+	private removeOtherPeriods(storage: Storage, key: string): void {
 		const [, subject, , locale] = key.split(":");
 		const current = this.storageKey(key);
 		for (const storageKey of this.ownKeys(storage)) {

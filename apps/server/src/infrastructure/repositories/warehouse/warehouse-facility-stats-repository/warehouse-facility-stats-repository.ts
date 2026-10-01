@@ -13,17 +13,17 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository.types";
 
 export const FACILITY_GAME_COMPARISONS_SQL = `
-with bounds as (select date_trunc('week', current_date)::date as this_week)
+with bounds as (select current_date as today)
 select r.location_id,
- count(distinct r.reservation_id) filter (where r.date_with_time::date >= b.this_week - 28) as played_last_28_days,
- count(distinct r.reservation_id) filter (where r.date_with_time::date < b.this_week - 28) as played_previous_28_days
+ count(distinct r.reservation_id) filter (where r.date_with_time::date >= b.today - 28) as played_last_28_days,
+ count(distinct r.reservation_id) filter (where r.date_with_time::date < b.today - 28) as played_previous_28_days
 from plei_gold.dim_reservation r
 cross join bounds b
 where r.location_id = any($1::int[])
  and r.reservation_type = 'OpenReservation'
  and r.confirmed and r.status <> 'cancelled'
- and r.date_with_time::date >= b.this_week - 56
- and r.date_with_time::date < b.this_week
+ and r.date_with_time::date >= b.today - 56
+ and r.date_with_time::date < b.today
 group by r.location_id`;
 
 export const FACILITY_RESERVATION_STATS_SQL = `
@@ -36,7 +36,7 @@ games as (
   from plei_gold.dim_reservation r
   where r.location_id = any($1::int[])
     and r.reservation_type = 'OpenReservation'
-    and r.date_with_time::date >= (select this_week - 56 from bounds)
+    and r.date_with_time::date >= (select today - 56 from bounds)
     and r.date_with_time::date <= (select today + 7 from bounds)
     and not (
       r.status = 'cancelled'
@@ -86,11 +86,13 @@ popular_times as (
       when extract(hour from g.game_time) < 21 then 2
       else 3
     end = t.time_period
-    and g.game_date >= (select this_week - 28 from bounds)
-    and g.game_date < (select this_week from bounds)
+    and g.game_date >= (select today - 28 from bounds)
+    and g.game_date < (select today from bounds)
   group by t.day_of_week, t.time_period
 )
 select
+  (b.today - 28)::text as period_start,
+  (b.today - 1)::text as period_end,
   (b.this_week - 7)::text as week_start,
   count(distinct g.reservation_id) filter (
     where g.confirmed and g.status <> 'cancelled'
@@ -102,17 +104,17 @@ select
   ) as played_previous_week,
   count(distinct g.reservation_id) filter (
     where g.confirmed and g.status <> 'cancelled'
-      and g.game_date >= b.this_week - 28 and g.game_date < b.this_week
+      and g.game_date >= b.today - 28 and g.game_date < b.today
   ) as played_last_28_days,
   count(distinct g.reservation_id) filter (
-    where g.game_date >= b.this_week - 28 and g.game_date < b.this_week
+    where g.game_date >= b.today - 28 and g.game_date < b.today
   ) as scheduled_last_28_days,
   count(distinct g.reservation_id) filter (
     where g.confirmed and g.status <> 'cancelled'
-      and g.game_date >= b.this_week - 56 and g.game_date < b.this_week - 28
+      and g.game_date >= b.today - 56 and g.game_date < b.today - 28
   ) as played_previous_28_days,
   count(distinct g.reservation_id) filter (
-    where g.game_date >= b.this_week - 56 and g.game_date < b.this_week - 28
+    where g.game_date >= b.today - 56 and g.game_date < b.today - 28
   ) as scheduled_previous_28_days,
   count(distinct g.reservation_id) filter (
     where g.game_date >= b.this_week - 7 and g.game_date < b.this_week
@@ -140,7 +142,7 @@ group by b.this_week, b.today`;
 
 export const FACILITY_PLAYER_STATS_SQL = `
 with bounds as (
-  select date_trunc('week', current_date)::date as this_week
+  select current_date as today
 ),
 eligible_players as (
   select distinct p.player_id
@@ -153,22 +155,22 @@ facility_players as (
   join eligible_players p on p.player_id = f.player_id
   cross join bounds b
   where f.location_id = any($1::int[])
-    and f.date_played >= b.this_week - 56 and f.date_played < b.this_week
+    and f.date_played >= b.today - 56 and f.date_played < b.today
     and f.valid_player = 1 and f.confirmed_game = 1 and f.open_reservation_games = 1
     and f.dropping_date_local is null and f.players_type = 'pleiapp_player'
 )
 select
   count(distinct player_id) filter (
-    where date_played >= b.this_week - 28
+    where date_played >= b.today - 28
   ) as unique_players_last_28_days,
   count(distinct player_id) filter (
-    where date_played < b.this_week - 28
+    where date_played < b.today - 28
   ) as unique_players_previous_28_days,
   count(distinct player_id) filter (
-    where player_lifecycle = 'Activated' and date_played >= b.this_week - 28
+    where player_lifecycle = 'Activated' and date_played >= b.today - 28
   ) as activated_players_last_28_days,
   count(distinct player_id) filter (
-    where player_lifecycle = 'Activated' and date_played < b.this_week - 28
+    where player_lifecycle = 'Activated' and date_played < b.today - 28
   ) as activated_players_previous_28_days
 from bounds b
 left join facility_players f on true
@@ -178,6 +180,8 @@ export function toReservationStats(
 	row: WarehouseFacilityReservationStatsRow,
 ): FacilityReservationStats {
 	return {
+		periodStart: row.period_start,
+		periodEnd: row.period_end,
 		weekStart: row.week_start,
 		playedLastWeek: Number(row.played_last_week),
 		playedPreviousWeek: Number(row.played_previous_week),
