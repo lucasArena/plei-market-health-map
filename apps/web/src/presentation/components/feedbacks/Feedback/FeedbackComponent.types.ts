@@ -7,7 +7,7 @@ export interface FeedbackProps {
 	user?: UserMenuProps;
 }
 
-export type FeedbackStep = "type" | "form";
+export type FeedbackStep = "home" | "form";
 
 export type FeedbackMessages = Messages["feedback"];
 

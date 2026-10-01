@@ -91,11 +91,14 @@ describe("Feedback", () => {
 			"fixed",
 			"bottom-[var(--map-profile-bottom)]",
 			"left-[var(--map-frame)]",
+			"flex-col",
+			"gap-[var(--map-profile-legend-gap)]",
 		);
+		expect(screen.getByTestId("profile-legend-slot").nextElementSibling).toBe(trigger);
 		expect(screen.getByText("LA")).toHaveClass("size-[32px]", "bg-[#d1d5db]", "text-[#111827]");
 
 		fireEvent.click(trigger);
-		const dialog = screen.getByRole("dialog", { name: "Help us improve" });
+		const dialog = screen.getByRole("dialog", { name: "Account menu" });
 		expect(dialog).toHaveClass(
 			"map-glass",
 			"shadow-[var(--map-shadow)]",
@@ -123,8 +126,12 @@ describe("Feedback", () => {
 
 		const trigger = screen.getByRole("button", { name: "Send feedback" });
 		expect(trigger).toHaveTextContent("?");
-		expect(trigger.className).toContain("bottom-8");
-		expect(trigger.className).toContain("left-3");
+		expect(trigger).toHaveClass("map-glass", "size-[var(--map-profile-size)]", "rounded-full");
+		expect(trigger.parentElement).toHaveClass(
+			"bottom-[var(--map-profile-bottom)]",
+			"left-[var(--map-frame)]",
+		);
+		expect(trigger).not.toHaveClass("bottom-8", "left-3", "bg-pleiful-pitch-green-80");
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
 		fireEvent.click(trigger);
