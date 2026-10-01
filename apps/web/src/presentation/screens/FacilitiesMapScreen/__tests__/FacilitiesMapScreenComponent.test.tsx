@@ -84,23 +84,17 @@ describe("FacilitiesMapScreen", () => {
 		slot.remove();
 	});
 
-	it("renders only the map and its attribution", () => {
+	it("renders only the map, without an attribution line", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 
 		render(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
 		expect(screen.getByTestId("facilities-map")).toHaveClass("map-frame");
-		expect(
-			screen.getByRole("link", { name: "OpenStreetMap contributors" }).parentElement,
-		).toHaveClass("bottom-[var(--map-frame)]", "left-[var(--map-frame)]");
 		expect(screen.queryByRole("status")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("detail-panel")).not.toBeInTheDocument();
-		expect(screen.getByRole("link", { name: "OpenStreetMap contributors" })).toHaveAttribute(
-			"href",
-			"https://www.openstreetmap.org/copyright",
-		);
+		expect(screen.queryByRole("link")).not.toBeInTheDocument();
 	});
 
 	it("shows the session heatmap legend when heatmap data is present", () => {

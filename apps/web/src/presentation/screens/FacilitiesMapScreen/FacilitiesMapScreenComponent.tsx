@@ -129,34 +129,6 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
-			<p className="absolute bottom-[var(--map-frame)] left-[var(--map-frame)] text-[10px] leading-[10px] text-muted-foreground">
-				<a
-					href="https://openfreemap.org"
-					target="_blank"
-					rel="noreferrer"
-					className="hover:underline"
-				>
-					OpenFreeMap
-				</a>{" "}
-				©{" "}
-				<a
-					href="https://www.openmaptiles.org/"
-					target="_blank"
-					rel="noreferrer"
-					className="hover:underline"
-				>
-					OpenMapTiles
-				</a>{" "}
-				· ©{" "}
-				<a
-					href="https://www.openstreetmap.org/copyright"
-					target="_blank"
-					rel="noreferrer"
-					className="hover:underline"
-				>
-					OpenStreetMap contributors
-				</a>
-			</p>
 		</section>
 	);
 }
