@@ -1,11 +1,15 @@
 import type { Clock, FacilityRepository } from "@market-health-map/core/application";
 import type { Facility } from "@market-health-map/core/domain";
-import type { CachedFacilities } from "@server/infrastructure/repositories/warehouse/cached-facility-repository/cached-facility-repository.types";
+import {
+	isExpired,
+	remember,
+} from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry";
+import type { CacheEntry } from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry.types";
 
 export const FACILITY_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class CachedFacilityRepository implements FacilityRepository {
-	private cached: CachedFacilities | null = null;
+	private readonly cache = new Map<string, CacheEntry<Facility[]>>();
 
 	constructor(
 		private readonly inner: FacilityRepository,
@@ -15,12 +19,10 @@ export class CachedFacilityRepository implements FacilityRepository {
 
 	listAll(): Promise<Facility[]> {
 		const now = this.clock.now().getTime();
-		if (this.cached && this.cached.expiresAt > now) return this.cached.value;
-		const value = this.inner.listAll();
-		this.cached = { expiresAt: now + this.ttlMs, value };
-		value.catch(() => {
-			this.cached = null;
-		});
-		return value;
+		const cached = this.cache.get("all");
+		if (!cached || isExpired(cached, now)) {
+			return remember(this.cache, "all", this.inner.listAll(), now + this.ttlMs);
+		}
+		return cached.value;
 	}
 }

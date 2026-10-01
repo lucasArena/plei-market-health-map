@@ -91,7 +91,7 @@ describe("CachedFacilityStatsRepository", () => {
 });
 
 describe("game comparison cache", () => {
-	it("shares pending batches, expires results, and retries failed requests", async () => {
+	it("shares batches, expires results after the time to live, and retries failed requests", async () => {
 		const { repository, getGameComparisons, advance } = setup();
 		await repository.getGameComparisons(["1" as never, "2" as never]);
 		await repository.getGameComparisons(["2" as never, "1" as never]);
