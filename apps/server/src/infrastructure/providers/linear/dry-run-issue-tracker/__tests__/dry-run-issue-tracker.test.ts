@@ -13,13 +13,13 @@ describe("DryRunIssueTracker", () => {
 		const first = await tracker.createIssue({
 			type: "bug",
 			title: "[MHM bug] a",
-			description: "b",
+			requestBody: "b",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
 		const second = await tracker.createIssue({
 			type: "improvement",
 			title: "[MHM feedback] c",
-			description: "d",
+			requestBody: "d",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
 
@@ -37,6 +37,8 @@ describe("DryRunIssueTracker", () => {
 			title: "[MHM bug] a",
 		});
 		expect(payload).not.toHaveProperty("createAsUser");
+		const requestPayload = JSON.parse(log.mock.calls[2]?.[1] as string);
+		expect(requestPayload).toEqual({ issueId: "DRY-1", body: "b" });
 	});
 
 	it("logs to the console by default", async () => {
@@ -45,11 +47,15 @@ describe("DryRunIssueTracker", () => {
 		await new DryRunIssueTracker().createIssue({
 			type: "bug",
 			title: "t",
-			description: "d",
+			requestBody: "d",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
 
 		expect(spy).toHaveBeenCalledWith("[feedback:dry-run] would create issue", expect.any(String));
+		expect(spy).toHaveBeenCalledWith(
+			"[feedback:dry-run] would create customer request",
+			expect.any(String),
+		);
 		spy.mockRestore();
 	});
 });

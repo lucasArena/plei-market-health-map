@@ -75,8 +75,8 @@ describe("POST /api/v1/feedback", () => {
 		const draft = issues.issues[0];
 		expect(draft?.type).toBe("bug");
 		expect(draft?.title).toBe("Bug Report from Stefano Sanchez");
-		expect(draft?.description).toContain("Stefano Sanchez (stefano@plei.com)");
-		expect(draft?.description).toContain("![](https://uploads.test/2/two.png)");
+		expect(draft?.requestBody).toContain("Stefano Sanchez (stefano@plei.com)");
+		expect(draft?.requestBody).toContain("![](https://uploads.test/2/two.png)");
 		expect(draft?.submitter).toEqual({
 			displayName: "Stefano Sanchez",
 			avatarUrl: "https://lh3.googleusercontent.com/a/stefano",

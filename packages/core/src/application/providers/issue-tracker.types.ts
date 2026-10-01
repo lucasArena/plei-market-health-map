@@ -14,7 +14,7 @@ export interface FeedbackIssueSubmitter {
 export interface FeedbackIssueDraft {
 	type: FeedbackType;
 	title: string;
-	description: string;
+	requestBody: string;
 	submitter: FeedbackIssueSubmitter;
 }
 

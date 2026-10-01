@@ -28,6 +28,14 @@ export const issueCreateResponseSchema = z.object({
 	}),
 });
 
+export const customerNeedCreateResponseSchema = z.object({
+	data: z.object({
+		customerNeedCreate: z.object({
+			success: z.boolean(),
+		}),
+	}),
+});
+
 export const oauthTokenResponseSchema = z.object({
 	access_token: z.string().min(1),
 	expires_in: z.number().positive(),
