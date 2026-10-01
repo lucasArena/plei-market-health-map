@@ -189,8 +189,8 @@ Every piece of agent work is tracked in a Linear ticket, including work that sta
 
 1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Engineering** team (`ENG`), in that project, assigned to the person you are working for.
 2. **Set it to In Progress** while you work.
-3. **Move it to Code Review when the PR opens**, and attach the PR link to the ticket so the diff shows up there. Put the ticket ID in the branch slug (`feature/eng-5796-<slug>`) and at the end of the PR title (see *Release workflow*).
-4. After that, GitHub moves it for you (`linear-sync.yml` and `cd.production.yml`, through `.github/scripts/linear/move-issues.mjs`): **Feedback** when a reviewer requests changes, **Done** when the PR merges into `staging`, and **Released** when a tagged production deploy ships it. Only `ENG` and `PROD` tickets found in the PR title, branch or release commits move; `REQ` tickets never do.
+3. **Open the PR and attach its link to the ticket** so the diff shows up there. Put the ticket ID in the branch slug (`feature/eng-5796-<slug>`) and at the end of the PR title (see *Release workflow*).
+4. After that, GitHub moves it for you (`linear-sync.yml` and `cd.production.yml`, through `.github/scripts/linear/move-issues.mjs`): **PO Review** when a PR into `staging` opens (drafts wait until ready for review), **Feedback** when a reviewer requests changes, **Done** when the PR merges into `staging`, and **Released** when a tagged production deploy ships it. Only `ENG` and `PROD` tickets found in the PR title, branch or release commits move; `REQ` tickets never do.
 
 Reach Linear through the Linear MCP server in your agent client, or the GraphQL API (`https://api.linear.app/graphql`) with your own API key from your environment. Never commit keys or paste them into tickets, PRs or logs. The app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` are for in-app feedback and the GitHub workflows above, not for agent logging. If you can't reach Linear, tell the person you are working for.
 
