@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { buildMarketSearchResults } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
@@ -97,12 +97,23 @@ describe("MapSearch", () => {
 		fireEvent.change(input, { target: { value: "Mi" } });
 		fireEvent.change(input, { target: { value: " " } });
 		expect(onClear).toHaveBeenCalledTimes(2);
+		vi.useFakeTimers();
 		fireEvent.keyDown(input, { key: "Escape" });
+		expect(screen.getByRole("listbox")).toHaveClass("search-results-out");
+		act(() => {
+			vi.advanceTimersByTime(160);
+		});
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 
 		fireEvent.focus(input);
+		expect(screen.getByRole("listbox")).toHaveClass("search-results-in");
 		fireEvent.pointerDown(document.body);
+		expect(screen.getByRole("listbox")).toHaveClass("search-results-out");
+		act(() => {
+			vi.advanceTimersByTime(160);
+		});
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+		vi.useRealTimers();
 	});
 
 	it("stays open for other keys and for pointer events inside the search", () => {
@@ -141,5 +152,37 @@ describe("MapSearch", () => {
 		expect(root).toHaveClass("relative", "w-full", "max-w-96", "min-w-0");
 		expect(root).not.toHaveClass("absolute");
 		expect(screen.getByRole("listbox")).toHaveClass("absolute", "top-full");
+	});
+
+	it("draws the field and the results on the shared glass surface", () => {
+		render(
+			<MapSearch
+				facilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
+			/>,
+		);
+		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		fireEvent.focus(input);
+
+		expect(input.parentElement).toHaveClass(
+			"h-[32px]",
+			"rounded-full",
+			"map-glass",
+			"shadow-[var(--map-shadow)]",
+		);
+		expect(input).toHaveClass("text-map-icon", "placeholder:text-map-icon");
+		expect(input.parentElement?.querySelector("img")).toHaveAttribute(
+			"src",
+			expect.stringContaining("search.svg"),
+		);
+		expect(screen.getByRole("listbox")).toHaveClass(
+			"map-glass",
+			"shadow-[var(--map-shadow)]",
+			"search-results-in",
+			"overflow-y-auto",
+		);
 	});
 });

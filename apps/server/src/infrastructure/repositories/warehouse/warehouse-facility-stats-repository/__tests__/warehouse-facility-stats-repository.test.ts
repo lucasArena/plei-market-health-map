@@ -7,6 +7,8 @@ import {
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
 
 const RESERVATION_ROW = {
+	period_start: "2026-09-03",
+	period_end: "2026-09-30",
 	week_start: "2026-09-21",
 	played_last_week: "55",
 	played_previous_week: "51",
@@ -66,15 +68,30 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("player_lifecycle = 'Activated'");
-		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.this_week - 56");
-		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.this_week - 28");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= current_date - 56");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played < current_date");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.today - 28");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("group by b.today");
+		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("b.this_week");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("exists (");
 		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("dim_reservation");
+	});
+
+	it("uses rolling completed-day windows outside the weekly chart", () => {
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"g.game_date >= b.today - 28 and g.game_date < b.today",
+		);
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"g.game_date >= b.today - 56 and g.game_date < b.today - 28",
+		);
 	});
 });
 
 describe("warehouse facility stats mappers", () => {
 	it("converts warehouse strings to numbers", () => {
 		expect(toReservationStats(RESERVATION_ROW)).toEqual({
+			periodStart: "2026-09-03",
+			periodEnd: "2026-09-30",
 			weekStart: "2026-09-21",
 			playedLastWeek: 55,
 			playedPreviousWeek: 51,
@@ -148,6 +165,6 @@ describe("facility game comparison batch", () => {
 		expect(result).toEqual([{ facilityId: "889", playedLast28Days: 30, playedPrevious28Days: 50 }]);
 		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [[889]]);
 		expect(query.mock.calls[0]?.[0]).toContain("r.confirmed and r.status <> 'cancelled'");
-		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.this_week");
+		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.today");
 	});
 });

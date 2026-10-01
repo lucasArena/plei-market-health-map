@@ -4,6 +4,11 @@ import { AppMetricsScreen } from "@/presentation/screens/AppMetricsScreen/AppMet
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/layout/AdminTabs/AdminTabsComponent", () => ({
+	AdminTabs: ({ active }: { active: string }) => (
+		<nav data-testid="admin-tabs" data-active={active} />
+	),
+}));
 vi.mock("@/presentation/screens/AppMetricsScreen/AppMetricsScreenComponent.rules", () => ({
 	useAppMetricsScreenRules: () => mockRules(),
 }));
@@ -87,6 +92,7 @@ describe("AppMetricsScreen", () => {
 		render(<AppMetricsScreen />);
 
 		expect(screen.getByRole("heading", { name: "App metrics" })).toBeInTheDocument();
+		expect(screen.getByTestId("admin-tabs")).toHaveAttribute("data-active", "metrics");
 		expect(screen.getByText("81.8%")).toBeInTheDocument();
 		expect(screen.getByText("9 of 11 target users · goal 75%")).toHaveClass("text-emerald-700");
 		expect(screen.getByRole("heading", { name: "Weekly usage" })).toBeInTheDocument();

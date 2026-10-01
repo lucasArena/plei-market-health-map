@@ -7,6 +7,11 @@ const MAJOR_PATTERN = /^\w+(\([^)]*\))?!:|BREAKING CHANGE/;
 const MINOR_PATTERN = /^(feat|feature)(\([^)]*\))?:/;
 const PATCH_PATTERN = /^(fix|hotfix)(\([^)]*\))?:/;
 export const STABLE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)$/;
+export const PROMOTION_PATTERN = /^chore\(release\): promote staging to production/;
+
+const SQUASHED_COMMIT_PATTERN = /^\* (.+)$/;
+const FIELD_SEPARATOR = "\u001f";
+const RECORD_SEPARATOR = "\u001e";
 
 export function classifyCommit(subject) {
 	if (subject.startsWith(BUMP_COMMIT_PREFIX)) return "none";
@@ -56,13 +61,35 @@ export function lines(output) {
 	return output.split("\n").filter(Boolean);
 }
 
+export function releaseSubjects(commits) {
+	return commits.flatMap(({ subject, body }) => {
+		if (!PROMOTION_PATTERN.test(subject)) return [subject];
+		const squashed = lines(body ?? "")
+			.map((line) => SQUASHED_COMMIT_PATTERN.exec(line.trim())?.[1])
+			.filter(Boolean);
+		return squashed.length > 0 ? squashed : [subject];
+	});
+}
+
+export function parseSubjectsAndBodies(output) {
+	return output
+		.split(RECORD_SEPARATOR)
+		.map((record) => record.trim())
+		.filter(Boolean)
+		.map((record) => {
+			const [subject = "", body = ""] = record.split(FIELD_SEPARATOR);
+			return { subject: subject.trim(), body };
+		});
+}
+
 export function readGitState() {
 	const stable = lines(git("tag", "--list", "v*"))
 		.filter((tag) => STABLE_TAG_PATTERN.test(tag))
 		.sort((a, b) => compareVersions(parseVersion(a), parseVersion(b)));
 	const lastStableTag = stable.at(-1) ?? null;
 	const range = lastStableTag ? `${lastStableTag}..HEAD` : "HEAD";
-	return { lastStableTag, subjects: lines(git("log", range, "--no-merges", "--format=%s")) };
+	const log = git("log", range, "--no-merges", `--format=%s${FIELD_SEPARATOR}%b${RECORD_SEPARATOR}`);
+	return { lastStableTag, subjects: releaseSubjects(parseSubjectsAndBodies(log)) };
 }
 
 const isCli = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;

@@ -1,11 +1,13 @@
 import type { FeedbackType } from "@market-health-map/core/application";
 import type { Messages } from "@market-health-map/core/i18n";
+import type { UserMenuProps } from "@/presentation/components/layout/UserMenu/UserMenuComponent.types";
 
 export interface FeedbackProps {
 	facilityId?: string | null;
+	user?: UserMenuProps;
 }
 
-export type FeedbackStep = "type" | "form";
+export type FeedbackStep = "home" | "form";
 
 export type FeedbackMessages = Messages["feedback"];
 
@@ -32,4 +34,8 @@ export interface FeedbackErrorView {
 	canRetry: boolean;
 	isNotConfigured: boolean;
 	blocksSubmit: boolean;
+}
+
+export interface FeedbackTypeIconProps {
+	type: string;
 }

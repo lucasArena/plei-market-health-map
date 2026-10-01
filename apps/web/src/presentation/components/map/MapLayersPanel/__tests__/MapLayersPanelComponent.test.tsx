@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { renderWithMessages } from "@/application/test/render-with-messages";
+import { LAYERS_PANEL_OPEN_KEY } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { MapLayersPanel } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent";
 import {
 	MapLayersProvider,
@@ -11,8 +12,13 @@ const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({ usePathname: () => mockPathname() }));
 
+beforeEach(() => {
+	localStorage.setItem(LAYERS_PANEL_OPEN_KEY, "true");
+});
+
 afterEach(() => {
 	vi.useRealTimers();
+	localStorage.clear();
 });
 
 function switchByName(name: string) {
@@ -20,36 +26,41 @@ function switchByName(name: string) {
 }
 
 describe("MapLayersPanel", () => {
-	it("opens at the top left with facilities on", () => {
+	it("sits beside the centered search with Demand and Supply on glass", () => {
 		renderWithMessages(<MapLayersPanel />);
 
-		const panel = screen.getByRole("complementary", { name: "Plei Market" });
+		const panel = screen.getByRole("complementary", { name: "Layers" });
 		expect(panel).toHaveClass(
 			"fixed",
-			"top-[20px]",
-			"left-[20px]",
+			"top-[var(--map-frame)]",
+			"left-[calc(50%+min(12rem,50%-12rem)+4px)]",
 			"z-50",
-			"gap-[4px]",
-			"items-stretch",
+			"w-[32px]",
 		);
 		const layersCard = screen.getByText("Layers").parentElement;
-		expect(layersCard).toHaveClass("w-full");
-		expect(layersCard).not.toHaveClass("w-max");
-		expect(panel).not.toHaveClass("border");
-		expect(screen.getByText("Plei Market")).toHaveClass("text-[12px]");
-		expect(screen.getByText("Plei Market").parentElement).toHaveClass(
-			"gap-[4px]",
-			"px-[8px]",
-			"py-[4px]",
+		expect(layersCard).toHaveClass(
+			"map-glass",
+			"right-0",
+			"w-max",
+			"shadow-[var(--map-shadow)]",
+			"search-results-in",
 		);
-		expect(screen.getByText("Plei Market").parentElement?.parentElement).toHaveClass("py-[2px]");
-		expect(switchByName("Facilities")).toHaveClass(
+		expect(layersCard).not.toHaveClass("left-0", "inset-x-0");
+		expect(panel).not.toHaveClass("border");
+		expect(screen.queryByRole("link", { name: "Market Health Map" })).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Hide layers" })).toHaveClass(
+			"size-[32px]",
+			"map-glass",
+			"map-icon-button",
+			"text-map-icon",
+		);
+		expect(switchByName("Active facilities")).toHaveClass(
 			"bg-pleiful-pitch-green-80",
 			"h-[13px]",
 			"w-[22px]",
 			"p-[1px]",
 		);
-		expect(switchByName("Facilities").firstElementChild).toHaveClass(
+		expect(switchByName("Active facilities").firstElementChild).toHaveClass(
 			"size-[9px]",
 			"translate-x-[9px]",
 			"transition-transform",
@@ -59,25 +70,53 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("button", { name: "All" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
-		expect(screen.getByText("Layers")).toHaveClass("text-[10px]");
-		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
-		expect(screen.getByText("Facilities").previousElementSibling).toBeNull();
+		expect(screen.getByText("Layers")).toHaveClass("px-2", "py-1.5", "text-xs", "uppercase");
+		expect(screen.getByText("Demand")).toBeInTheDocument();
+		expect(screen.getByText("Supply")).toBeInTheDocument();
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(screen.getByText("Active facilities").previousElementSibling).toBeNull();
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+	});
+
+	it("toggles inactive facilities independently", () => {
+		renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+			</MapLayersProvider>,
+		);
+		fireEvent.click(switchByName("Inactive facilities"));
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		fireEvent.click(switchByName("Active facilities"));
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("Inactive facilities"));
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+	});
+
+	it("toggles inactive facilities without a provider", () => {
+		renderWithMessages(<MapLayersPanel />);
+		fireEvent.click(switchByName("Inactive facilities"));
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
 	});
 
 	it("toggles the facilities layer", () => {
 		renderWithMessages(<MapLayersPanel />);
 
-		fireEvent.click(switchByName("Facilities"));
-		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
-		expect(switchByName("Facilities")).toHaveClass("bg-[#e5e5e5]");
-		expect(switchByName("Facilities").firstElementChild).toHaveClass("translate-x-0");
+		fireEvent.click(switchByName("Active facilities"));
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Active facilities")).toHaveClass("bg-[#e5e5e5]");
+		expect(switchByName("Active facilities").firstElementChild).toHaveClass("translate-x-0");
+		fireEvent.click(switchByName("App sessions"));
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("App sessions"));
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("tells the map to hide and show facilities with the switch", () => {
 		function FacilitiesState() {
 			const layers = useMapLayers();
-			return <span>{String(layers?.showFacilities)}</span>;
+			return <span>{String(layers?.showActiveFacilities)}</span>;
 		}
 
 		renderWithMessages(
@@ -88,9 +127,9 @@ describe("MapLayersPanel", () => {
 		);
 
 		expect(screen.getByText("true")).toBeInTheDocument();
-		fireEvent.click(switchByName("Facilities"));
+		fireEvent.click(switchByName("Active facilities"));
 		expect(screen.getByText("false")).toBeInTheDocument();
-		fireEvent.click(switchByName("Facilities"));
+		fireEvent.click(switchByName("Active facilities"));
 		expect(screen.getByText("true")).toBeInTheDocument();
 	});
 
@@ -120,51 +159,114 @@ describe("MapLayersPanel", () => {
 		renderWithMessages(<MapLayersPanel />);
 
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
-		expect(toggle).toHaveClass(
-			"w-[32px]",
-			"-my-[2px]",
-			"bg-accent",
-			"hover:bg-accent",
-			"active:bg-accent",
-		);
-		expect(toggle.querySelector("img")).toHaveAttribute(
-			"src",
-			expect.stringContaining("settings-2.svg"),
-		);
-		expect(toggle.parentElement).not.toHaveTextContent("Layers");
+		expect(toggle).toHaveClass("size-[32px]", "rounded-full", "map-glass", "map-icon-button");
+		expect(toggle.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+		expect(toggle).not.toHaveTextContent("Layers");
 
 		vi.useFakeTimers();
 		fireEvent.click(toggle);
 
-		expect(screen.getByText("Layers").closest(".layers-card-out")).toBeInTheDocument();
+		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
 
 		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
-		expect(screen.queryByRole("switch", { name: "Facilities" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("switch", { name: "Active facilities" })).not.toBeInTheDocument();
 		const expand = screen.getByRole("button", { name: "Show layers" });
-		expect(expand).toHaveClass("bg-card", "hover:bg-accent");
-		expect(expand.querySelector("img")).toHaveAttribute(
-			"src",
-			expect.stringContaining("settings-2.svg"),
-		);
+		expect(expand).toHaveClass("map-glass", "map-icon-button", "rounded-full");
+		expect(expand.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
 		expect(expand.parentElement).not.toHaveClass("border-b");
 
 		fireEvent.click(expand);
 
-		expect(screen.getByText("Layers").closest(".layers-card-in")).toBeInTheDocument();
+		expect(screen.getByText("Layers").closest(".search-results-in")).toBeInTheDocument();
 		expect(screen.getByText("Layers")).toBeInTheDocument();
-		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
-	it("links the brand to the map and hides the layers away from it", () => {
+	it("hides the layers control away from the map", () => {
 		mockPathname.mockReturnValue("/metrics");
 		renderWithMessages(<MapLayersPanel />);
 
-		expect(screen.getByRole("link", { name: "Plei Market" })).toHaveAttribute("href", "/");
 		expect(screen.queryByRole("switch")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+		fireEvent.pointerDown(document.body);
 		mockPathname.mockReturnValue("/");
+	});
+
+	it("closes from Escape and an outside pointer the way search does", () => {
+		vi.useFakeTimers();
+		renderWithMessages(<MapLayersPanel />);
+		const toggle = screen.getByRole("button", { name: "Hide layers" });
+
+		fireEvent.keyDown(toggle, { key: "ArrowDown" });
+		expect(screen.getByText("Layers")).toBeInTheDocument();
+		fireEvent.pointerDown(toggle);
+		expect(screen.getByText("Layers")).toBeInTheDocument();
+
+		fireEvent.keyDown(toggle, { key: "Escape" });
+		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		act(() => {
+			vi.advanceTimersByTime(160);
+		});
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
+		expect(screen.getByText("Layers")).toBeInTheDocument();
+		fireEvent.pointerDown(document.body);
+		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+	});
+
+	it("starts collapsed when the person never left it open", () => {
+		localStorage.clear();
+		renderWithMessages(<MapLayersPanel />);
+
+		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
+			"aria-expanded",
+			"false",
+		);
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
+			"data-active",
+			"true",
+		);
+	});
+
+	it("remembers whether the panel was left open or closed", () => {
+		localStorage.clear();
+		renderWithMessages(<MapLayersPanel />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
+		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("true");
+		fireEvent.click(screen.getByRole("button", { name: "Hide layers" }));
+		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
+	});
+
+	it("shows a dot on the button while any layer is on", () => {
+		renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+			</MapLayersProvider>,
+		);
+		const button = screen.getByRole("button", { name: "Hide layers" });
+		expect(button).toHaveAttribute("data-active", "true");
+		expect(screen.getByTestId("layers-indicator")).toHaveClass(
+			"absolute",
+			"top-0",
+			"right-0",
+			"rounded-full",
+			"bg-pleiful-pitch-green-50",
+		);
+
+		fireEvent.click(switchByName("App sessions"));
+		fireEvent.click(switchByName("Active facilities"));
+		expect(button).toHaveAttribute("data-active", "true");
+		fireEvent.click(switchByName("Inactive facilities"));
+		expect(button).toHaveAttribute("data-active", "false");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		fireEvent.click(switchByName("App sessions"));
+		expect(button).toHaveAttribute("data-active", "true");
 	});
 });

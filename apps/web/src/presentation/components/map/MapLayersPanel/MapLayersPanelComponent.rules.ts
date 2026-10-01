@@ -1,56 +1,51 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { type AnimationEvent, useCallback, useEffect, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { layersPanelPreference } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
-import type { LayersCardMotion } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
-
-const LAYERS_CARD_MOTION_MS = {
-	resting: 0,
-	enter: 200,
-	exit: 160,
-} as const;
+import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
 	const isOnMap = usePathname() === "/";
-	const [isExpanded, setIsExpanded] = useState(true);
-	const [cardMotion, setCardMotion] = useState<LayersCardMotion>("resting");
-	const [localShowFacilities, setLocalShowFacilities] = useState(true);
+	const [isExpanded, setIsExpanded] = useState(false);
+	const { finishReveal, isShown, motion } = useRevealMotion(isExpanded);
+	const rootRef = useRef<HTMLElement>(null);
+	const [localShowActiveFacilities, setLocalShowActiveFacilities] = useState(true);
+	const [localShowInactiveFacilities, setLocalShowInactiveFacilities] = useState(true);
 	const [localShowSessions, setLocalShowSessions] = useState(true);
-	const showFacilities = layers?.showFacilities ?? localShowFacilities;
+	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
+	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
+	const hasLayersOn = showActiveFacilities || showInactiveFacilities || showSessions;
 
-	const toggleExpanded = useCallback(() => {
-		setCardMotion(isExpanded ? "exit" : "enter");
-		setIsExpanded((current) => !current);
-	}, [isExpanded]);
-	const finishCardMotion = useCallback((event: AnimationEvent<HTMLDivElement>) => {
-		const target = event.target;
-		if (!(target instanceof Element)) return;
-		const finished = {
-			[`${target.classList.contains("layers-card-out")}`]: true,
-			[`${target.classList.contains("layers-card-in")}`]: true,
-		}.true;
-		if (!finished) return;
-		setCardMotion("resting");
+	const expand = useCallback((next: boolean) => {
+		layersPanelPreference.remember(next);
+		setIsExpanded(next);
 	}, []);
-	useEffect(() => {
-		if (cardMotion === "resting") return;
-		const timer = window.setTimeout(
-			() => setCardMotion("resting"),
-			LAYERS_CARD_MOTION_MS[cardMotion],
-		);
-		return () => window.clearTimeout(timer);
-	}, [cardMotion]);
-	const toggleFacilities = useCallback(() => {
+	const toggleExpanded = useCallback(() => expand(!isExpanded), [expand, isExpanded]);
+	const closeOnEscape = useCallback(
+		(event: KeyboardEvent<HTMLButtonElement>) => {
+			if (event.key === "Escape") expand(false);
+		},
+		[expand],
+	);
+	const toggleActiveFacilities = useCallback(() => {
 		if (layers) {
-			layers.setShowFacilities(!layers.showFacilities);
+			layers.setShowActiveFacilities(!layers.showActiveFacilities);
 			return;
 		}
-		setLocalShowFacilities((current) => !current);
+		setLocalShowActiveFacilities((current) => !current);
+	}, [layers]);
+	const toggleInactiveFacilities = useCallback(() => {
+		if (layers) {
+			layers.setShowInactiveFacilities(!layers.showInactiveFacilities);
+			return;
+		}
+		setLocalShowInactiveFacilities((current) => !current);
 	}, [layers]);
 	const toggleSessions = useCallback(() => {
 		if (layers) {
@@ -59,19 +54,36 @@ export function useMapLayersPanelRules() {
 		}
 		setLocalShowSessions((current) => !current);
 	}, [layers]);
-	const isCardShown = isExpanded || cardMotion === "exit";
+
+	useEffect(() => {
+		if (layersPanelPreference.isOpen()) setIsExpanded(true);
+	}, []);
+
+	useEffect(() => {
+		const closeWhenOutside = (event: PointerEvent) => {
+			if (!rootRef.current) return;
+			if (!rootRef.current.contains(event.target as Node)) expand(false);
+		};
+		document.addEventListener("pointerdown", closeWhenOutside);
+		return () => document.removeEventListener("pointerdown", closeWhenOutside);
+	}, [expand]);
 
 	return {
-		isOnMap,
-		cardMotion,
-		finishCardMotion,
-		isCardShown,
+		cardMotion: motion,
+		closeOnEscape,
+		finishCardMotion: finishReveal,
+		isCardShown: isShown,
 		isExpanded,
+		isOnMap,
+		hasLayersOn,
 		messages: messages.map,
-		showFacilities,
+		rootRef,
+		showActiveFacilities,
+		showInactiveFacilities,
 		showSessions,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 		toggleSessions,
 	};
 }

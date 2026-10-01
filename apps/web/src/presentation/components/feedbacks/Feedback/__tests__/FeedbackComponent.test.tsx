@@ -4,6 +4,8 @@ import { createQueryWrapper } from "@/application/test/query-wrapper";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 
+vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
+
 const createObjectURL = vi.fn((file: File) => `blob:${file.name}`);
 const revokeObjectURL = vi.fn();
 
@@ -41,6 +43,73 @@ function finishClosing() {
 }
 
 describe("Feedback", () => {
+	it.each([true, false])(
+		"shows the admin links only to admins and places sign-out last (%s)",
+		(isAdmin) => {
+			renderWidget(
+				<Feedback user={{ name: "Stefano", email: "stefano@plei.com", image: null, isAdmin }} />,
+			);
+			fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+			const signOut = screen.getByRole("button", { name: "Sign out" });
+			expect(signOut.closest("form")).toBe(
+				signOut.closest("form")?.parentElement?.lastElementChild,
+			);
+			const metrics = screen.queryByRole("link", { name: "App metrics" });
+			const flags = screen.queryByRole("link", { name: "Feature flags" });
+			if (isAdmin) {
+				expect(metrics).toHaveAttribute("href", "/metrics");
+				expect(flags).toHaveAttribute("href", "/feature-flags");
+			} else {
+				expect(metrics).not.toBeInTheDocument();
+				expect(flags).not.toBeInTheDocument();
+			}
+		},
+	);
+
+	it("draws a 40px glass account control and opens the menu above it", () => {
+		renderWidget(
+			<Feedback
+				user={{
+					name: "Lucas Arena",
+					email: "lucas@plei.com",
+					image: null,
+					isAdmin: false,
+				}}
+			/>,
+		);
+
+		const trigger = screen.getByRole("button", { name: "Account menu" });
+		expect(trigger).not.toHaveTextContent("?");
+		expect(trigger).toHaveClass(
+			"map-icon-button",
+			"map-glass",
+			"size-[var(--map-profile-size)]",
+			"rounded-full",
+			"shadow-[var(--map-shadow)]",
+		);
+		expect(trigger.parentElement).toHaveClass(
+			"fixed",
+			"bottom-[var(--map-profile-bottom)]",
+			"left-[var(--map-frame)]",
+			"flex-col",
+			"gap-[var(--map-profile-legend-gap)]",
+		);
+		expect(screen.getByTestId("profile-legend-slot").nextElementSibling).toBe(trigger);
+		expect(screen.getByText("LA")).toHaveClass("size-[32px]", "bg-[#d1d5db]", "text-[#111827]");
+
+		fireEvent.click(trigger);
+		const dialog = screen.getByRole("dialog", { name: "Account menu" });
+		expect(dialog).toHaveClass(
+			"map-glass",
+			"shadow-[var(--map-shadow)]",
+			"bottom-full",
+			"mb-[var(--map-profile-legend-gap)]",
+		);
+		expect(dialog).toHaveTextContent("Lucas Arena");
+		expect(dialog).toHaveTextContent("Suggest an improvement");
+		expect(dialog).toHaveTextContent("Sign out");
+		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
+	});
 	beforeEach(() => {
 		Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
 		Object.defineProperty(URL, "revokeObjectURL", { value: revokeObjectURL, configurable: true });
@@ -57,8 +126,12 @@ describe("Feedback", () => {
 
 		const trigger = screen.getByRole("button", { name: "Send feedback" });
 		expect(trigger).toHaveTextContent("?");
-		expect(trigger.className).toContain("bottom-8");
-		expect(trigger.className).toContain("left-3");
+		expect(trigger).toHaveClass("map-glass", "size-[var(--map-profile-size)]", "rounded-full");
+		expect(trigger.parentElement).toHaveClass(
+			"bottom-[var(--map-profile-bottom)]",
+			"left-[var(--map-frame)]",
+		);
+		expect(trigger).not.toHaveClass("bottom-8", "left-3", "bg-pleiful-pitch-green-80");
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
 		fireEvent.click(trigger);

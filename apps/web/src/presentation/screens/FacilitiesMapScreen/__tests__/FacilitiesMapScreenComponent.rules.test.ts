@@ -107,15 +107,25 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 	useFacilityListAll: () => mockUseFacilities(),
 }));
 
-const layersState = vi.hoisted(() => ({ showFacilities: true, showSessions: true }));
+const layersState = vi.hoisted(() => ({
+	showActiveFacilities: true,
+	showInactiveFacilities: true,
+	showSessions: true,
+	hasProvider: true,
+}));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
-	useMapLayers: () => ({
-		showFacilities: layersState.showFacilities,
-		setShowFacilities: vi.fn(),
-		showSessions: layersState.showSessions,
-		setShowSessions: vi.fn(),
-	}),
+	useMapLayers: () =>
+		layersState.hasProvider
+			? {
+					showActiveFacilities: layersState.showActiveFacilities,
+					showInactiveFacilities: layersState.showInactiveFacilities,
+					setShowActiveFacilities: vi.fn(),
+					setShowInactiveFacilities: vi.fn(),
+					showSessions: layersState.showSessions,
+					setShowSessions: vi.fn(),
+				}
+			: null,
 }));
 
 const mockUseAppSessionHeatmap = vi.fn();
@@ -686,8 +696,10 @@ describe("resolveMapStatus", () => {
 describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		layersState.showFacilities = true;
+		layersState.showActiveFacilities = true;
+		layersState.showInactiveFacilities = true;
 		layersState.showSessions = true;
+		layersState.hasProvider = true;
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -697,6 +709,50 @@ describe("useFacilitiesMapScreenRules", () => {
 			isError: false,
 		});
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
+	});
+
+	it("shows both facility statuses when there is no layers provider", async () => {
+		layersState.hasProvider = false;
+		const inactive = { ...FACILITY, id: "inactive", isActive: false };
+		mockUseFacilities.mockReturnValue({
+			data: [FACILITY, inactive],
+			isPending: false,
+			isError: false,
+		});
+		renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(mapState.setData).toHaveBeenCalledWith(
+			toFacilityFeatureCollection([FACILITY, inactive]),
+		);
+	});
+
+	it("filters facilities before clustering for each supply selection", async () => {
+		const inactive = { ...FACILITY, id: "inactive", isActive: false };
+		mockUseFacilities.mockReturnValue({
+			data: [FACILITY, inactive],
+			isPending: false,
+			isError: false,
+		});
+		const { rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		layersState.showInactiveFacilities = false;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([FACILITY]));
+		layersState.showActiveFacilities = false;
+		layersState.showInactiveFacilities = true;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([inactive]));
+		layersState.showInactiveFacilities = false;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([]));
+		layersState.showActiveFacilities = true;
+		layersState.showInactiveFacilities = true;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(
+			toFacilityFeatureCollection([FACILITY, inactive]),
+		);
 	});
 
 	it("creates the map, adds the dot layer on load and pushes the facilities", async () => {
@@ -895,7 +951,11 @@ describe("useFacilitiesMapScreenRules", () => {
 			() => {
 				const rules = useFacilitiesMapScreenRules();
 				rules.containerRef.current ??= container;
-				return { rules, scope: useMapScope().scope };
+				return {
+					rules,
+					scope: useMapScope().scope,
+					feedbackFacilityId: useMapScope().selectedFacilityId,
+				};
 			},
 			{
 				wrapper: ({ children }: { children: ReactNode }) =>
@@ -907,6 +967,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.scope).toEqual({ kind: "all" });
 
 		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		expect(result.current.feedbackFacilityId).toBe("f1");
 		expect(result.current.scope).toEqual({
 			kind: "facility",
 			id: "f1",
@@ -925,6 +986,8 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		act(() => result.current.rules.clearSearchScope());
 		expect(result.current.scope).toEqual({ kind: "all" });
+		act(() => result.current.rules.handlePanelClosed());
+		expect(result.current.feedbackFacilityId).toBeNull();
 	});
 
 	it("zooms to search selections", async () => {
@@ -1075,6 +1138,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		act(() => mapState.handlers.get("load")?.());
 
 		expect(result.current.hasSessionHeatmap).toBe(true);
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-in");
 
 		layersState.showSessions = false;
 		rerender();
@@ -1084,6 +1149,8 @@ describe("useFacilitiesMapScreenRules", () => {
 			"none",
 		);
 		expect(result.current.hasSessionHeatmap).toBe(false);
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-out");
 
 		layersState.showSessions = true;
 		rerender();
@@ -1113,7 +1180,8 @@ describe("useFacilitiesMapScreenRules", () => {
 			throw new Error("facility glass hosts were not mounted");
 		}
 
-		layersState.showFacilities = false;
+		layersState.showActiveFacilities = false;
+		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(cluster.classList.contains("facility-layer-out")).toBe(true);
 		await act(async () => {
@@ -1122,7 +1190,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(map?.triggerRepaint).toHaveBeenCalled();
 		expect(cluster.style.opacity).toBe("0");
 
-		layersState.showFacilities = true;
+		layersState.showActiveFacilities = true;
+		layersState.showInactiveFacilities = true;
 		rerender();
 		expect(cluster.classList.contains("facility-layer-in")).toBe(true);
 		expect(facility.classList.contains("facility-layer-in")).toBe(true);
@@ -1148,7 +1217,8 @@ describe("useFacilitiesMapScreenRules", () => {
 			await new Promise((resolve) => setTimeout(resolve, FACILITY_LAYER_ENTER_MS + 30));
 		});
 
-		layersState.showFacilities = false;
+		layersState.showActiveFacilities = false;
+		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(cluster.classList.contains("facility-layer-out")).toBe(true);
 		act(() => {

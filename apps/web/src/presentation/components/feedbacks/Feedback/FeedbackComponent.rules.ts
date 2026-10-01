@@ -28,6 +28,7 @@ import type {
 	FeedbackProps,
 	FeedbackStep,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFeedbackSubmit } from "@/presentation/hooks/use-feedback/use-feedback-submit";
 
@@ -94,19 +95,22 @@ export function feedbackView(facilityId: string | null | undefined): string {
 	return facilityId ? `${FEEDBACK_VIEW} (facility ${facilityId})` : FEEDBACK_VIEW;
 }
 
-export function useFeedbackRules({ facilityId }: FeedbackProps) {
+export function useFeedbackRules({ facilityId: suppliedFacilityId, user }: FeedbackProps) {
+	const { selectedFacilityId } = useMapScope();
+	const facilityId = suppliedFacilityId ?? selectedFacilityId;
 	const { messages } = useMessages();
 	const feedbackMessages = messages.feedback;
 	const submission = useFeedbackSubmit();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isClosing, setIsClosing] = useState(false);
-	const [step, setStep] = useState<FeedbackStep>("type");
+	const [step, setStep] = useState<FeedbackStep>("home");
 	const [type, setType] = useState<FeedbackType>("improvement");
 	const [message, setMessage] = useState("");
 	const [attachments, setAttachments] = useState<FeedbackAttachment[]>([]);
 	const [notice, setNotice] = useState<string | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const triggerRef = useRef<HTMLButtonElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const nextAttachmentId = useRef(0);
@@ -121,6 +125,7 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 			return;
 		}
 		setIsClosing(false);
+		setStep("home");
 		setIsOpen(true);
 	}, [isClosing, isOpen]);
 
@@ -129,7 +134,7 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 		setAttachments([]);
 		setMessage("");
 		setNotice(null);
-		setStep("type");
+		setStep("home");
 		submission.reset();
 	}, [submission]);
 
@@ -149,7 +154,9 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 			if (event.key === "Escape") setIsClosing(true);
 		};
 		const closeOnOutsideClick = (event: MouseEvent) => {
-			if (!containerRef.current?.contains(event.target as Node)) setIsClosing(true);
+			const target = event.target as Node;
+			if (containerRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+			setIsClosing(true);
 		};
 		window.addEventListener("keydown", closeOnEscape);
 		window.addEventListener("mousedown", closeOnOutsideClick);
@@ -175,7 +182,7 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 		setStep("form");
 	}, []);
 
-	const goBack = useCallback(() => setStep("type"), []);
+	const goBack = useCallback(() => setStep("home"), []);
 
 	const addFiles = useCallback(
 		(files: readonly File[]) => {
@@ -278,6 +285,7 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 	);
 
 	return {
+		accountMessages: messages.auth,
 		addFiles,
 		attachHint: formatMessage(feedbackMessages.attachHint, { max: MAX_FEEDBACK_IMAGES }),
 		attachments,
@@ -290,6 +298,7 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 		chooseType,
 		close,
 		containerRef,
+		triggerRef,
 		created: submission.data ?? null,
 		error,
 		fileInputRef,
@@ -318,5 +327,6 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 		textareaRef,
 		toggle,
 		type,
+		user,
 	};
 }

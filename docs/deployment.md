@@ -32,6 +32,7 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 
 - Repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 - Linear releases: in Linear, go to **Settings → Releases** and create a **continuous** pipeline named `Market Health Map` for the Product team. Generate its access key (a personal API key does not work) and save it as the repository secret `LINEAR_ACCESS_KEY`. Turn on auto-generated release notes in the pipeline settings if you also want Linear's own summary.
+- Linear ticket sync: save the Market Health Map Linear app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` as repository secrets too. `linear-sync.yml` moves a PR's ticket to Code Review when it opens against `staging` or gets new commits, to Feedback on a changes-requested review and to Done when it merges into `staging`, and `cd.production.yml` moves every released ticket to Released. Without them the jobs only warn.
 - Environment `staging`: secret `DATABASE_URL_UNPOOLED` (the staging Neon branch). Optionally add a variable `STAGING_DOMAIN`, for example `market-health-map-staging.vercel.app`.
 - Environment `production`: secret `DATABASE_URL_UNPOOLED` (the production Neon branch), plus **Required reviewers**.
 - Optional, for the integration job: repository secrets `NEON_TEST_DATABASE_URL` and `NEON_TEST_DATABASE_URL_UNPOOLED`.
@@ -48,7 +49,7 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 | `LINEAR_CLIENT_ID` / `LINEAR_CLIENT_SECRET` | Server-only credentials of the "Market Health Map" Linear OAuth app, with the client credentials grant enabled. The in-app feedback form (`POST /api/v1/feedback`) files issues as the app, showing the submitter's name and avatar. Preferred over `LINEAR_API_KEY` when both are set |
 | `LINEAR_API_KEY` | Fallback: a personal Linear API key. Issues are then created as that person. Without app credentials or a key, feedback answers 503 |
 | `TARGET_USER_EMAILS` | Comma-separated @plei.com emails of the people whose weekly use measures the project goal (App metrics). Everyone is still recorded; only these count toward the 75% goal. Set in Vercel Production and Preview |
-| `APP_METRICS_VIEWER_EMAILS` | Comma-separated emails of the people who can open App metrics (the avatar menu link, the `/metrics` page and its API). Anyone else gets a 404 page and a 403 from the API; unset means nobody. Set in Vercel Production and Preview |
+| `ADMIN_EMAILS` | Comma-separated emails of the admins: the people who can open App metrics and Feature flags (the account hub links, the `/metrics` and `/feature-flags` pages and their APIs). Anyone else gets a 404 page and a 403 from the API; unset means nobody. Set in Vercel Production and Preview |
 | `FEEDBACK_DRY_RUN` | `true` logs feedback instead of creating Linear issues and returns a fake `DRY-n` ticket, even when credentials are set. Leave unset or `false` in staging and production |
 
 `DATABASE_URL_UNPOOLED` is only needed in GitHub Actions, for migrations.

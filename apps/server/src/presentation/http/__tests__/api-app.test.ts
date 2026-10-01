@@ -20,6 +20,9 @@ function setup(access: AccessDecision = ALLOWED) {
 		recordDailyActivity: vi.fn().mockResolvedValue(undefined),
 		getAppMetrics: vi.fn().mockResolvedValue({ targetPercent: 82 }),
 		listAppMetricsPeople: vi.fn().mockResolvedValue({ rows: [], page: 2 }),
+		listEnabledFeatureFlags: vi.fn().mockResolvedValue({ enabled: [] }),
+		listFeatureFlags: vi.fn().mockResolvedValue([]),
+		setFeatureFlag: vi.fn(),
 	};
 	const resolveAccess = vi.fn().mockResolvedValue(access);
 	const app = createApiApp({ resolveAccess, services: () => services });

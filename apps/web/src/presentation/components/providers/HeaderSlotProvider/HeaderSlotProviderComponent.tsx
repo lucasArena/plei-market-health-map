@@ -9,13 +9,17 @@ import type {
 const HeaderSlotContext = createContext<HeaderSlotContextValue>({
 	searchSlot: null,
 	setSearchSlot: () => undefined,
+	legendSlot: null,
+	setLegendSlot: () => undefined,
 });
 
-// Lets a screen render its search into the header row (through a portal), so the
-// search, the summary toggle and the avatar share one flex row with one gap.
 export function HeaderSlotProvider({ children }: Readonly<HeaderSlotProviderProps>) {
 	const [searchSlot, setSearchSlot] = useState<HTMLElement | null>(null);
-	const value = useMemo(() => ({ searchSlot, setSearchSlot }), [searchSlot]);
+	const [legendSlot, setLegendSlot] = useState<HTMLElement | null>(null);
+	const value = useMemo(
+		() => ({ searchSlot, setSearchSlot, legendSlot, setLegendSlot }),
+		[legendSlot, searchSlot],
+	);
 	return <HeaderSlotContext.Provider value={value}>{children}</HeaderSlotContext.Provider>;
 }
 

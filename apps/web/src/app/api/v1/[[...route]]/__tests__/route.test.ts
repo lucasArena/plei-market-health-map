@@ -33,6 +33,19 @@ describe("GET /api/v1/*", () => {
 		expect(response.status).toBe(201);
 	});
 
+	it("hands PUT requests, like switching a feature flag, to the server's API app", async () => {
+		const { PUT } = await import("@/app/api/v1/[[...route]]/route");
+		const request = new Request("http://localhost/api/v1/feature-flags/new-panel", {
+			method: "PUT",
+		});
+		mockFetch.mockReturnValue(new Response("{}", { status: 200 }));
+
+		const response = await PUT(request);
+
+		expect(mockFetch).toHaveBeenCalledWith(request);
+		expect(response.status).toBe(200);
+	});
+
 	it("checks access with the Auth.js session", async () => {
 		await import("@/app/api/v1/[[...route]]/route");
 		mockAccess.mockResolvedValue({ status: "anonymous" });

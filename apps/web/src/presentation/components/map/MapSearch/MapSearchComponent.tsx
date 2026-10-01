@@ -1,7 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useMapSearchRules } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 import {
+	MAP_SEARCH_FIELD_CLASS,
+	MAP_SEARCH_OPTION_HOVER_CLASS,
 	MAP_SEARCH_RESULTS_CLASS,
 	MAP_SEARCH_ROOT_CLASS,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
@@ -11,10 +14,13 @@ export function MapSearch(props: MapSearchProps) {
 	const { messages } = props;
 	const {
 		clear,
+		finishResultsMotion,
 		handleChange,
 		handleKeyDown,
 		isOpen,
+		isResultsShown,
 		query,
+		resultsMotion,
 		rootRef,
 		selectFacility,
 		selectMarket,
@@ -22,28 +28,24 @@ export function MapSearch(props: MapSearchProps) {
 		visibleFacilities,
 		visibleMarkets,
 	} = useMapSearchRules(props);
+	const resultsMotionClass = {
+		hidden: "",
+		enter: "search-results-in",
+		shown: "",
+		exit: "search-results-out",
+	}[resultsMotion];
 	const hasResults = visibleMarkets.length > 0 || visibleFacilities.length > 0;
 
 	return (
 		<div ref={rootRef} className={MAP_SEARCH_ROOT_CLASS}>
-			<div className="flex h-11 items-center gap-2 rounded-xl border border-border/70 bg-background/95 px-3 shadow-lg backdrop-blur-md">
-				<svg
-					aria-hidden="true"
-					viewBox="0 0 24 24"
-					className="size-4 shrink-0 text-muted-foreground"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="2"
-				>
-					<circle cx="11" cy="11" r="7" />
-					<path d="m20 20-4-4" />
-				</svg>
+			<div className={MAP_SEARCH_FIELD_CLASS}>
+				<Image src="/images/map-layers/search.svg" alt="" width={16} height={16} />
 				<input
 					aria-label={messages.searchPlaceholder}
 					aria-autocomplete="list"
 					aria-controls="map-search-results"
 					aria-expanded={isOpen}
-					className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+					className="min-w-0 flex-1 bg-transparent text-[12px] text-map-icon outline-none placeholder:text-map-icon"
 					placeholder={messages.searchPlaceholder}
 					role="combobox"
 					value={query}
@@ -71,8 +73,13 @@ export function MapSearch(props: MapSearchProps) {
 					</button>
 				)}
 			</div>
-			{isOpen && (
-				<div id="map-search-results" role="listbox" className={MAP_SEARCH_RESULTS_CLASS}>
+			{isResultsShown && (
+				<div
+					id="map-search-results"
+					role="listbox"
+					onAnimationEnd={finishResultsMotion}
+					className={`${MAP_SEARCH_RESULTS_CLASS} ${resultsMotionClass}`}
+				>
 					{visibleMarkets.length > 0 && (
 						<section aria-labelledby="map-search-markets">
 							<p
@@ -87,7 +94,7 @@ export function MapSearch(props: MapSearchProps) {
 									type="button"
 									role="option"
 									aria-selected="false"
-									className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
+									className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 									onClick={() => selectMarket(market)}
 								>
 									<span className="truncate text-sm font-medium">{market.name}</span>
@@ -101,7 +108,7 @@ export function MapSearch(props: MapSearchProps) {
 					{visibleFacilities.length > 0 && (
 						<section
 							aria-labelledby="map-search-facilities"
-							className={visibleMarkets.length > 0 ? "mt-1 border-t border-border/60 pt-1" : ""}
+							className={visibleMarkets.length > 0 ? "mt-1 border-t border-foreground/10 pt-1" : ""}
 						>
 							<p
 								id="map-search-facilities"
@@ -115,7 +122,7 @@ export function MapSearch(props: MapSearchProps) {
 									type="button"
 									role="option"
 									aria-selected="false"
-									className="block w-full rounded-lg px-2.5 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
+									className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 									onClick={() => selectFacility(facility)}
 								>
 									<span className="block truncate text-sm font-medium">{facility.name}</span>

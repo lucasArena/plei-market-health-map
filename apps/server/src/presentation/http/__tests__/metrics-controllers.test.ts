@@ -68,7 +68,7 @@ describe("metrics controller", () => {
 	});
 
 	it("returns the weekly metrics and a page of people", async () => {
-		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "stefano@plei.com");
+		vi.stubEnv("ADMIN_EMAILS", "stefano@plei.com");
 		const { app, services } = setup();
 
 		const metrics = await app.request("http://localhost/api/v1/metrics");
@@ -80,7 +80,7 @@ describe("metrics controller", () => {
 	});
 
 	it("forbids anyone who is not an App metrics viewer", async () => {
-		vi.stubEnv("APP_METRICS_VIEWER_EMAILS", "lucas@plei.com");
+		vi.stubEnv("ADMIN_EMAILS", "lucas@plei.com");
 		const { app, services } = setup();
 
 		const metrics = await app.request("http://localhost/api/v1/metrics");

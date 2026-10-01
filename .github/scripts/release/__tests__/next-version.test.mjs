@@ -5,8 +5,10 @@ import {
 	bumpVersion,
 	classifyCommit,
 	formatVersion,
+	parseSubjectsAndBodies,
 	parseVersion,
 	planRelease,
+	releaseSubjects,
 } from "../next-version.mjs";
 
 describe("classifyCommit", () => {
@@ -68,5 +70,36 @@ describe("planRelease", () => {
 			version: null,
 			tag: null,
 		});
+	});
+});
+
+describe("releaseSubjects", () => {
+	it("counts the commits listed inside a squashed promotion", () => {
+		const promotion = {
+			subject: "chore(release): promote staging to production (ENG-5785) (#44)",
+			body: "* feat(metrics): add App metrics (#43)\n\n* fix(map): one side panel (#34)\n\nCo-authored-by: someone",
+		};
+		const subjects = releaseSubjects([promotion, { subject: "docs: readme", body: "" }]);
+
+		assert.deepEqual(subjects, ["feat(metrics): add App metrics (#43)", "fix(map): one side panel (#34)", "docs: readme"]);
+		assert.deepEqual(planRelease({ lastStableTag: "v0.6.2", subjects }), {
+			bumped: true,
+			version: "0.7.1",
+			tag: "v0.7.1",
+		});
+	});
+
+	it("keeps a promotion without a commit list as it is", () => {
+		assert.deepEqual(
+			releaseSubjects([{ subject: "chore(release): promote staging to production", body: "" }]),
+			["chore(release): promote staging to production"],
+		);
+	});
+
+	it("parses subjects and bodies from the git log format", () => {
+		assert.deepEqual(parseSubjectsAndBodies("feat: a\u001fbody a\u001e\nfix: b\u001f\u001e\n"), [
+			{ subject: "feat: a", body: "body a" },
+			{ subject: "fix: b", body: "" },
+		]);
 	});
 });

@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
+import { MAP_MENU_SURFACE_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	const track = {
@@ -34,80 +33,108 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 export function MapLayersPanel() {
 	const {
 		cardMotion,
+		closeOnEscape,
 		finishCardMotion,
 		isCardShown,
 		isExpanded,
 		isOnMap,
+		hasLayersOn,
 		messages,
-		showFacilities,
+		rootRef,
+		showActiveFacilities,
+		showInactiveFacilities,
 		showSessions,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
 		[`${!isExpanded}`]: messages.layersExpand,
 		[`${isExpanded}`]: messages.layersCollapse,
 	}.true as string;
-	const toggleSurface = {
-		[`${!isExpanded}`]: "bg-card",
-		[`${isExpanded}`]: "bg-accent",
-	}.true as string;
 	const cardMotionClass = {
-		resting: "",
-		enter: "layers-card-in",
-		exit: "layers-card-out",
+		hidden: "",
+		enter: "search-results-in",
+		shown: "",
+		exit: "search-results-out",
 	}[cardMotion];
+
+	if (!isOnMap) return null;
+
 	return (
 		<aside
-			aria-label={messages.layersBrand}
-			className="fixed top-[20px] left-[20px] z-50 flex w-max flex-col items-stretch gap-[4px]"
+			ref={rootRef}
+			aria-label={messages.layersHeading}
+			className="fixed top-[var(--map-frame)] left-[calc(50%+min(12rem,50%-12rem)+4px)] z-50 w-[32px]"
 		>
-			<div className="flex items-stretch overflow-hidden rounded-[8px] border border-border bg-card py-[2px] shadow-md">
-				<Link href="/" className="flex items-center gap-[4px] px-[8px] py-[4px] hover:bg-accent">
-					<Image src="/images/plei-logo.svg" alt="" width={20} height={20} />
-					<p className="text-[12px] leading-none font-semibold whitespace-nowrap text-card-foreground">
-						{messages.layersBrand}
-					</p>
-				</Link>
-				{isOnMap && (
-					<button
-						type="button"
-						aria-expanded={isExpanded}
-						aria-label={collapseLabel}
-						onClick={toggleExpanded}
-						className={`-my-[2px] flex w-[32px] shrink-0 items-center justify-center self-stretch border-l border-border hover:bg-accent active:bg-accent ${toggleSurface}`}
-					>
-						<Image src="/images/map-layers/settings-2.svg" alt="" width={16} height={16} />
-					</button>
+			<button
+				type="button"
+				aria-expanded={isExpanded}
+				aria-label={collapseLabel}
+				onClick={toggleExpanded}
+				onKeyDown={closeOnEscape}
+				data-active={hasLayersOn}
+				className={`map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none`}
+			>
+				<svg
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.33"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					aria-hidden="true"
+					className="size-4"
+				>
+					<path d="M13.333 4.667h-6M9.333 11.333h-6" />
+					<circle cx="11.333" cy="11.333" r="2" />
+					<circle cx="4.667" cy="4.667" r="2" />
+				</svg>
+				{hasLayersOn && (
+					<span
+						data-testid="layers-indicator"
+						aria-hidden="true"
+						className="absolute top-0 right-0 size-2 rounded-full bg-pleiful-pitch-green-50 ring-2 ring-background"
+					/>
 				)}
-			</div>
-			{isOnMap && isCardShown && (
+			</button>
+			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`flex w-full flex-col gap-1 overflow-hidden rounded-[10px] border border-border bg-card px-3 pt-1 pb-3 shadow-md ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 w-max ${cardMotionClass}`}
 				>
-					<p className="py-1.5 text-[10px] leading-4 font-medium text-muted-foreground">
+					<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase">
 						{messages.layersHeading}
 					</p>
-					<div className="flex w-full items-center justify-between gap-3">
-						<p className="text-[12px] leading-none font-medium text-foreground">
-							{messages.layersFacilities}
-						</p>
-						<LayerSwitch
-							checked={showFacilities}
-							label={messages.layersFacilities}
-							onToggle={toggleFacilities}
-						/>
-					</div>
-					<div className="flex w-full items-center justify-between gap-3">
-						<p className="text-[12px] leading-none font-medium text-foreground">
-							{messages.layersSessions}
-						</p>
+					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+						{messages.layersDemand}
+					</h2>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersSessions}</p>
 						<LayerSwitch
 							checked={showSessions}
 							label={messages.layersSessions}
 							onToggle={toggleSessions}
+						/>
+					</div>
+					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+						{messages.layersSupply}
+					</h2>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersActiveFacilities}</p>
+						<LayerSwitch
+							checked={showActiveFacilities}
+							label={messages.layersActiveFacilities}
+							onToggle={toggleActiveFacilities}
+						/>
+					</div>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersInactiveFacilities}</p>
+						<LayerSwitch
+							checked={showInactiveFacilities}
+							label={messages.layersInactiveFacilities}
+							onToggle={toggleInactiveFacilities}
 						/>
 					</div>
 				</div>

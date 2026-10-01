@@ -113,6 +113,8 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		const start = new Date(`${weekStart}T00:00:00Z`);
 		start.setUTCDate(start.getUTCDate() - 21);
 		return {
+			periodStart: isoDate(new Date(now.getTime() - 28 * DAY_MS)),
+			periodEnd: isoDate(new Date(now.getTime() - DAY_MS)),
 			weekStart,
 			playedLastWeek,
 			playedPreviousWeek,

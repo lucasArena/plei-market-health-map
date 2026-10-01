@@ -1,8 +1,12 @@
-// The search is portaled into the header row (see HeaderSlotProvider), so the
-// row's flex gap keeps it left of the summary toggle and the avatar at every
-// width. It grows up to 24rem and shrinks to fit. z-40 keeps its results above
-// the summary drawer, which shares the header's stacking context.
 export const MAP_SEARCH_ROOT_CLASS = "pointer-events-auto relative z-40 w-full max-w-96 min-w-0";
 
-export const MAP_SEARCH_RESULTS_CLASS =
-	"absolute inset-x-0 top-full mt-2 max-h-[min(28rem,calc(100vh-6rem))] overflow-y-auto rounded-xl border border-border/70 bg-background/98 p-1.5 shadow-xl backdrop-blur-md";
+export const MAP_MENU_SURFACE_CLASS =
+	"map-glass absolute top-full mt-[4px] flex flex-col overflow-hidden rounded-[var(--map-radius)] border p-1 text-popover-foreground shadow-[var(--map-shadow)] outline-none";
+
+export const MAP_SEARCH_RESULTS_CLASS = `${MAP_MENU_SURFACE_CLASS} inset-x-0 max-h-[min(28rem,calc(100vh-6rem))] overflow-y-auto`;
+
+export const MAP_SEARCH_FIELD_CLASS =
+	"map-glass flex h-[32px] items-center gap-[8px] rounded-full border border-border/70 px-[12px] shadow-[var(--map-shadow)]";
+
+export const MAP_SEARCH_OPTION_HOVER_CLASS =
+	"hover:bg-foreground/[0.07] focus:bg-foreground/[0.07] focus:outline-none";

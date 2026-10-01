@@ -1,20 +1,33 @@
 "use client";
 
 import { formatMessage } from "@market-health-map/core/i18n";
+import Link from "next/link";
+import { signOutOfApp } from "@/infrastructure/auth/actions";
+import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import {
 	FEEDBACK_IMAGE_ACCEPT,
 	useFeedbackRules,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.rules";
 import {
+	FEEDBACK_CLOSE_CLASS,
 	FEEDBACK_DROPZONE_CLASS,
+	FEEDBACK_ICON_WELL_CLASS,
+	FEEDBACK_LEGEND_SLOT_CLASS,
+	FEEDBACK_MENU_ITEM_CLASS,
+	FEEDBACK_MENU_SEPARATOR_CLASS,
 	FEEDBACK_PANEL_ANIMATION_CLASS,
 	FEEDBACK_PANEL_CLASS,
+	FEEDBACK_STACK_CLASS,
 	FEEDBACK_TRIGGER_CLASS,
 	FEEDBACK_TYPE_OPTIONS,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
-import type { FeedbackProps } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
+import type {
+	FeedbackProps,
+	FeedbackTypeIconProps,
+} from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
+import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 
-function TypeIcon({ type }: Readonly<{ type: string }>) {
+function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 	if (type === "bug") {
 		return (
 			<svg
@@ -45,8 +58,42 @@ function TypeIcon({ type }: Readonly<{ type: string }>) {
 	);
 }
 
+function FlagIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+			className="size-4"
+		>
+			<path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+		</svg>
+	);
+}
+
+function MetricsIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			aria-hidden="true"
+			className="size-4"
+		>
+			<path d="M4 19V5M4 19h16" />
+			<path d="M8 16v-5M12 16V8M16 16v-3" />
+		</svg>
+	);
+}
+
 export function Feedback(props: Readonly<FeedbackProps>) {
 	const {
+		accountMessages,
 		attachHint,
 		attachments,
 		canAttachMore,
@@ -82,48 +129,161 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 		submit,
 		textareaRef,
 		toggle,
+		triggerRef,
 		type,
+		user,
 	} = useFeedbackRules(props);
+	const { setLegendSlot } = useHeaderSlot();
 	const option = FEEDBACK_TYPE_OPTIONS.find((candidate) => candidate.type === type);
 	const animationClass = FEEDBACK_PANEL_ANIMATION_CLASS[isClosing ? "closing" : "open"];
 	const dropzoneClass = FEEDBACK_DROPZONE_CLASS[isDragging ? "dragging" : "idle"];
+	const panelOpen = isOpen && !isClosing;
+	const triggerLabel = user ? accountMessages.accountMenu : messages.open;
+	const dialogLabel = user && step === "home" ? accountMessages.accountMenu : messages.title;
+	const showHome = !created && step === "home";
+	const showAdminLinks = Boolean(user?.isAdmin);
 
 	return (
-		<div ref={containerRef} data-testid="feedback-widget">
+		<div ref={containerRef} data-testid="feedback-widget" className={FEEDBACK_STACK_CLASS}>
+			<div
+				ref={setLegendSlot}
+				data-testid="profile-legend-slot"
+				className={FEEDBACK_LEGEND_SLOT_CLASS}
+			/>
 			<button
+				ref={triggerRef}
 				type="button"
 				onClick={toggle}
-				aria-label={messages.open}
-				aria-expanded={isOpen && !isClosing}
+				aria-label={triggerLabel}
+				aria-expanded={panelOpen}
 				aria-haspopup="dialog"
+				data-state={panelOpen ? "open" : "closed"}
 				className={FEEDBACK_TRIGGER_CLASS}
 			>
-				<span aria-hidden="true">?</span>
+				{user ? (
+					<Avatar name={user.name ?? user.email} avatarUrl={user.image} appearance="account" />
+				) : (
+					<span aria-hidden="true">?</span>
+				)}
 			</button>
 			{isOpen && (
 				<div
 					role="dialog"
-					aria-label={messages.title}
+					aria-label={dialogLabel}
 					data-state={isClosing ? "closing" : "open"}
 					onAnimationEnd={handleAnimationEnd}
 					className={`${FEEDBACK_PANEL_CLASS} ${animationClass}`}
 				>
-					<header className="flex items-start justify-between gap-3 bg-pleiful-pitch-green-80 px-4 pt-4 pb-3.5 text-white">
-						<div>
-							<h2 className="text-sm font-semibold tracking-tight">{messages.title}</h2>
-							<p className="mt-0.5 text-[11px] text-white/75">{messages.subtitle}</p>
+					{showHome && (
+						<div className="flex flex-col p-1" data-testid="account-home">
+							{user ? (
+								<div className="flex items-center gap-3 px-2 py-2">
+									<Avatar
+										name={user.name ?? user.email}
+										avatarUrl={user.image}
+										appearance="account"
+									/>
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-semibold tracking-tight">
+											{user.name ?? user.email}
+										</p>
+										<p className="truncate text-xs text-muted-foreground">{user.email}</p>
+									</div>
+									<button
+										type="button"
+										onClick={close}
+										aria-label={messages.close}
+										className={FEEDBACK_CLOSE_CLASS}
+									>
+										<span aria-hidden="true">×</span>
+									</button>
+								</div>
+							) : (
+								<div className="flex items-start justify-between gap-3 px-2 py-2">
+									<div>
+										<h2 className="text-sm font-semibold tracking-tight">{messages.title}</h2>
+										<p className="mt-0.5 text-[11px] text-muted-foreground">{messages.subtitle}</p>
+									</div>
+									<button
+										type="button"
+										onClick={close}
+										aria-label={messages.close}
+										className={FEEDBACK_CLOSE_CLASS}
+									>
+										<span aria-hidden="true">×</span>
+									</button>
+								</div>
+							)}
+							{user && <div className={FEEDBACK_MENU_SEPARATOR_CLASS} />}
+							<div>
+								{FEEDBACK_TYPE_OPTIONS.map((candidate) => (
+									<button
+										key={candidate.type}
+										type="button"
+										onClick={() => chooseType(candidate.type)}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} items-start gap-3 py-2`}
+									>
+										<span className={FEEDBACK_ICON_WELL_CLASS}>
+											<TypeIcon type={candidate.type} />
+										</span>
+										<span className="flex min-w-0 flex-col gap-0.5 text-left">
+											<span className="font-medium">{messages[candidate.title]}</span>
+											<span className="text-xs font-normal text-muted-foreground">
+												{messages[candidate.description]}
+											</span>
+										</span>
+									</button>
+								))}
+								{showAdminLinks && (
+									<>
+										<Link
+											href={{ pathname: "/metrics" }}
+											onClick={close}
+											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+										>
+											<span className={FEEDBACK_ICON_WELL_CLASS}>
+												<MetricsIcon />
+											</span>
+											<span className="font-medium">{accountMessages.appMetrics}</span>
+										</Link>
+										<Link
+											href={{ pathname: "/feature-flags" }}
+											onClick={close}
+											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+										>
+											<span className={FEEDBACK_ICON_WELL_CLASS}>
+												<FlagIcon />
+											</span>
+											<span className="font-medium">{accountMessages.featureFlags}</span>
+										</Link>
+									</>
+								)}
+							</div>
+							{user && (
+								<>
+									<div className={FEEDBACK_MENU_SEPARATOR_CLASS} />
+									<form action={signOutOfApp}>
+										<button type="submit" className={`${FEEDBACK_MENU_ITEM_CLASS} font-medium`}>
+											{accountMessages.signOut}
+										</button>
+									</form>
+								</>
+							)}
 						</div>
-						<button
-							type="button"
-							onClick={close}
-							aria-label={messages.close}
-							className="-mt-1 -mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-lg leading-none text-white/80 transition-colors hover:bg-white/15 hover:text-white"
-						>
-							<span aria-hidden="true">×</span>
-						</button>
-					</header>
+					)}
 					{created && (
-						<div role="status" className="flex flex-col items-center gap-2 px-5 py-7 text-center">
+						<div
+							role="status"
+							className="relative flex flex-col items-center gap-2 px-5 py-7 text-center"
+						>
+							<button
+								type="button"
+								onClick={close}
+								aria-label={messages.close}
+								className={`${FEEDBACK_CLOSE_CLASS} absolute top-2 right-2`}
+							>
+								<span aria-hidden="true">×</span>
+							</button>
 							<span className="flex size-10 items-center justify-center rounded-full bg-pleiful-pitch-green-5 text-pleiful-pitch-green-80">
 								<svg
 									viewBox="0 0 24 24"
@@ -157,28 +317,6 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 							</button>
 						</div>
 					)}
-					{!created && step === "type" && (
-						<div className="flex flex-col gap-2 p-3">
-							{FEEDBACK_TYPE_OPTIONS.map((candidate) => (
-								<button
-									key={candidate.type}
-									type="button"
-									onClick={() => chooseType(candidate.type)}
-									className="group flex items-start gap-3 rounded-xl border p-3 text-left transition-colors hover:border-pleiful-pitch-green-30 hover:bg-pleiful-pitch-green-5"
-								>
-									<span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-pleiful-pitch-green-5 text-pleiful-pitch-green-80 transition-colors group-hover:bg-white">
-										<TypeIcon type={candidate.type} />
-									</span>
-									<span>
-										<span className="block text-sm font-semibold">{messages[candidate.title]}</span>
-										<span className="mt-0.5 block text-xs text-muted-foreground">
-											{messages[candidate.description]}
-										</span>
-									</span>
-								</button>
-							))}
-						</div>
-					)}
 					{!created && step === "form" && option && (
 						<form
 							onSubmit={submit}
@@ -189,18 +327,28 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 							data-testid="feedback-form"
 							className="flex flex-col gap-3 p-3"
 						>
-							<div className="flex items-center gap-2">
+							<div className="flex items-center justify-between gap-2">
+								<div className="flex items-center gap-2">
+									<button
+										type="button"
+										onClick={goBack}
+										className="rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+									>
+										← {messages.back}
+									</button>
+									<span className="flex items-center gap-1.5 rounded-full bg-pleiful-pitch-green-5 px-2.5 py-1 text-xs font-medium text-pleiful-pitch-green-80">
+										<TypeIcon type={option.type} />
+										{messages[option.title]}
+									</span>
+								</div>
 								<button
 									type="button"
-									onClick={goBack}
-									className="rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+									onClick={close}
+									aria-label={messages.close}
+									className={FEEDBACK_CLOSE_CLASS}
 								>
-									← {messages.back}
+									<span aria-hidden="true">×</span>
 								</button>
-								<span className="flex items-center gap-1.5 rounded-full bg-pleiful-pitch-green-5 px-2.5 py-1 text-xs font-medium text-pleiful-pitch-green-80">
-									<TypeIcon type={option.type} />
-									{messages[option.title]}
-								</span>
 							</div>
 							<label className="flex flex-col gap-1">
 								<span className="sr-only">{messages.messageLabel}</span>
@@ -212,7 +360,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 									onChange={(event) => setMessage(event.target.value)}
 									placeholder={messages[option.placeholder]}
 									rows={5}
-									className="resize-none rounded-lg border bg-background px-3 py-2 text-sm outline-none transition-shadow placeholder:text-muted-foreground focus:border-pleiful-pitch-green-50 focus:ring-2 focus:ring-pleiful-pitch-green-10"
+									className="resize-none rounded-lg border bg-background/80 px-3 py-2 text-sm outline-none transition-shadow placeholder:text-muted-foreground focus:border-pleiful-pitch-green-50 focus:ring-2 focus:ring-pleiful-pitch-green-10"
 								/>
 								<span className="self-end text-[10px] tabular-nums text-muted-foreground">
 									{characterCount}
