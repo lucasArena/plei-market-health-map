@@ -44,7 +44,10 @@ import {
 	CLUSTER_GLASS_SHADOW,
 	CLUSTER_GLASS_STROKE,
 	CLUSTER_GLASS_STROKE_INSET,
+	CLUSTER_HOVER_DISMISS_MS,
 	CLUSTER_LAYER_ID,
+	CLUSTER_MARKER_CLASS,
+	CLUSTER_MARKER_HOVER_SCALE,
 	CLUSTER_MAX_ZOOM,
 	CLUSTER_OUTER_DIAMETER,
 	CLUSTER_PAINT,
@@ -56,6 +59,7 @@ import {
 	FACILITIES_SOURCE_ID,
 	FACILITY_DOT_LAYOUT,
 	FACILITY_DOT_PAINT,
+	FACILITY_DOT_ZOOM,
 	FACILITY_GLASS_CORE_SIZE,
 	FACILITY_GLASS_DIAMETER,
 	FACILITY_GLASS_FILL,
@@ -238,6 +242,23 @@ export function placeHover(
 		y: point.y,
 		flipX: point.x + HOVER_CARD_WIDTH > size.width,
 		flipY: point.y > size.height / 2,
+	};
+}
+
+export function clusterListZoom(currentZoom: number, unclusterZoom = FACILITY_DOT_ZOOM) {
+	return Math.max(currentZoom, unclusterZoom);
+}
+
+export function clusterHoverPlacement(
+	center: { x: number; y: number },
+	viewport: { width: number; height: number },
+): HoverPlacement & { viewport: { width: number; height: number } } {
+	return {
+		x: center.x,
+		y: center.y,
+		flipX: false,
+		flipY: false,
+		viewport,
 	};
 }
 
@@ -459,8 +480,14 @@ function clusterGlassActive(properties: ClusterGlassFeature["properties"]) {
 	return typeof count === "number" && count > 0;
 }
 
+export function clusterMarkerTransform(x: number, y: number, engaged: boolean) {
+	const scale = { true: CLUSTER_MARKER_HOVER_SCALE, false: 1 }[`${engaged}`];
+	return `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale})`;
+}
+
 export function createClusterGlassNode() {
 	const node = document.createElement("div");
+	node.classList.add(CLUSTER_MARKER_CLASS);
 	applyGlassDisc(node, CLUSTER_OUTER_DIAMETER, CLUSTER_GLASS_SHADOW);
 	const ring = document.createElement("span");
 	const ringDiameter = CLUSTER_OUTER_DIAMETER - CLUSTER_GLASS_STROKE_INSET * 2;
@@ -615,6 +642,7 @@ export function syncClusterGlass(
 	host: HTMLElement,
 	badges: readonly ClusterGlassBadge[],
 	nodes: Map<number, HTMLElement>,
+	engagedClusterId: number | null = null,
 ) {
 	const seen = new Set<number>();
 	for (const badge of badges) {
@@ -627,7 +655,11 @@ export function syncClusterGlass(
 		const label = current.querySelector("[data-testid='cluster-glass-label']");
 		if (label) label.textContent = badge.label;
 		applyClusterGlassActivity(current, badge.active);
-		current.style.transform = `translate(${badge.x}px, ${badge.y}px) translate(-50%, -50%)`;
+		current.style.transform = clusterMarkerTransform(
+			badge.x,
+			badge.y,
+			badge.id === engagedClusterId,
+		);
 	}
 	for (const [id, node] of nodes) {
 		if (seen.has(id)) continue;
@@ -640,6 +672,8 @@ export function bindFacilityGlass(
 	map: MapLibreMap,
 	showFacilitiesRef: { current: boolean },
 	selectedFacilityIdRef: { current: string | null },
+	hoveredClusterIdRef: { current: number | null } = { current: null },
+	refreshClusterMarkersRef: { current: () => void } = { current: () => undefined },
 ) {
 	const container = map.getContainer();
 	if (!(container instanceof HTMLElement)) return;
@@ -680,16 +714,18 @@ export function bindFacilityGlass(
 						}) as ClusterGlassFeature[],
 						project,
 					);
-		syncClusterGlass(host, badges, nodes);
+		syncClusterGlass(host, badges, nodes, hoveredClusterIdRef.current);
 		syncFacilityGlass(facilityHost, facilities, facilityNodes, selectedFacilityIdRef.current);
 	};
 	const schedule = () => {
 		if (frame) return;
 		frame = requestAnimationFrame(sync);
 	};
+	refreshClusterMarkersRef.current = schedule;
 	map.on("render", schedule);
 	schedule();
 	return () => {
+		refreshClusterMarkersRef.current = () => undefined;
 		map.off("render", schedule);
 		if (frame) cancelAnimationFrame(frame);
 		host.remove();
@@ -702,7 +738,11 @@ export function useFacilitiesMapScreenRules() {
 	const { setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
-	const heatmapQuery = useAppSessionHeatmap();
+	const mapLayers = useMapLayers();
+	const heatmapQuery = useAppSessionHeatmap(
+		mapLayers?.sessionFilters,
+		mapLayers?.showSessions ?? true,
+	);
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
@@ -715,17 +755,43 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
-	const mapLayers = useMapLayers();
 	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
 	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? true;
+	const filters = mapLayers?.sessionFilters;
+	const ageLabel =
+		filters?.ageMin === filters?.ageMax
+			? String(filters?.ageMin ?? "")
+			: filters?.ageMin === undefined
+				? `≤ ${filters?.ageMax}`
+				: filters?.ageMax === undefined
+					? `${filters.ageMin}+`
+					: `${filters.ageMin}–${filters.ageMax}`;
+	const sessionFilterSummary = [
+		(Array.isArray(filters?.gender) ? filters.gender : filters?.gender ? [filters.gender] : [])
+			.map((value) => value.charAt(0).toUpperCase() + value.slice(1))
+			.join(", "),
+		Array.isArray(filters?.skill) ? filters.skill.join(", ") : filters?.skill,
+		ageLabel,
+	]
+		.filter(Boolean)
+		.join(" · ");
+	const sessionQueryStatus =
+		{
+			[`${heatmapQuery.isError}`]: messages.map.sessionFilters.sessionsError,
+			[`${heatmapQuery.isPending}`]: messages.map.sessionFilters.updating,
+		}.true ?? "";
+
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
 	const facilitiesWereShownRef = useRef(showFacilities);
 	showFacilitiesRef.current = showFacilities;
 	selectedFacilityIdRef.current = isPanelClosing ? null : selectedFacilityId;
 	const hoveredClusterIdRef = useRef<number | null>(null);
+	const hoveredFacilityIdRef = useRef<string | null>(null);
+	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
+	const hoverDismissTimerRef = useRef<number | null>(null);
 	const featureCollection = useMemo(
 		() =>
 			toFacilityFeatureCollection(
@@ -748,14 +814,6 @@ export function useFacilitiesMapScreenRules() {
 	);
 	const status = resolveMapStatus(query.isPending, query.isError);
 
-	const placementFor = useCallback((point: { x: number; y: number }) => {
-		const container = mapRef.current?.getContainer();
-		return placeHover(point, {
-			width: container?.clientWidth ?? Number.POSITIVE_INFINITY,
-			height: container?.clientHeight ?? Number.POSITIVE_INFINITY,
-		});
-	}, []);
-
 	const facilityFromEvent = useCallback(
 		(event: MapLayerMouseEvent) => {
 			const id = event.features?.[0]?.properties?.id;
@@ -764,31 +822,99 @@ export function useFacilitiesMapScreenRules() {
 		[facilitiesById],
 	);
 
+	const cancelHoverDismiss = useCallback(() => {
+		if (hoverDismissTimerRef.current === null) return;
+		window.clearTimeout(hoverDismissTimerRef.current);
+		hoverDismissTimerRef.current = null;
+	}, []);
+
+	const clearHover = useCallback(() => {
+		hoveredClusterIdRef.current = null;
+		hoveredFacilityIdRef.current = null;
+		refreshClusterMarkersRef.current();
+		setHovered(null);
+	}, []);
+
+	const handleHoverEnd = useCallback(() => {
+		cancelHoverDismiss();
+		clearHover();
+	}, [cancelHoverDismiss, clearHover]);
+
+	const scheduleHoverDismiss = useCallback(() => {
+		cancelHoverDismiss();
+		hoverDismissTimerRef.current = window.setTimeout(() => {
+			hoverDismissTimerRef.current = null;
+			clearHover();
+		}, CLUSTER_HOVER_DISMISS_MS);
+	}, [cancelHoverDismiss, clearHover]);
+
+	const hoverViewport = useCallback(() => {
+		const container = mapRef.current?.getContainer();
+		return {
+			width: container?.clientWidth ?? 0,
+			height: container?.clientHeight ?? 0,
+		};
+	}, []);
+
 	const handleHover = useCallback(
 		(event: MapLayerMouseEvent) => {
 			const facility = facilityFromEvent(event);
+			cancelHoverDismiss();
+			if (!facility) {
+				clearHover();
+				return;
+			}
+			if (hoveredFacilityIdRef.current === facility.id) return;
+			hoveredFacilityIdRef.current = facility.id;
 			hoveredClusterIdRef.current = null;
-			setHovered(facility ? { kind: "facility", facility, ...placementFor(event.point) } : null);
-			if (facility) void prefetchFacilityReservationStats(queryClient, facility.id);
+			refreshClusterMarkersRef.current();
+			const projected = mapRef.current?.project([
+				facility.location.longitude,
+				facility.location.latitude,
+			]);
+			setHovered({
+				kind: "facility",
+				facility,
+				...clusterHoverPlacement(
+					{
+						x: projected?.x ?? event.point.x,
+						y: projected?.y ?? event.point.y,
+					},
+					hoverViewport(),
+				),
+			});
+			void prefetchFacilityReservationStats(queryClient, facility.id);
 		},
-		[facilityFromEvent, placementFor, queryClient],
+		[cancelHoverDismiss, clearHover, facilityFromEvent, hoverViewport, queryClient],
 	);
 
 	const handleClusterHover = useCallback(
 		(event: MapLayerMouseEvent) => {
 			const cluster = clusterFromEvent(event);
 			if (!cluster) return;
-			const { clusterId, total } = cluster;
-			const placement = placementFor(event.point);
+			cancelHoverDismiss();
+			hoveredFacilityIdRef.current = null;
+			const { clusterId, total, center } = cluster;
+			const projected = mapRef.current?.project(center);
+			const placement = clusterHoverPlacement(
+				{
+					x: projected?.x ?? event.point.x,
+					y: projected?.y ?? event.point.y,
+				},
+				hoverViewport(),
+			);
 			if (hoveredClusterIdRef.current === clusterId) {
 				setHovered((current) => (current ? { ...current, ...placement } : current));
 				return;
 			}
 			hoveredClusterIdRef.current = clusterId;
+			refreshClusterMarkersRef.current();
 			setHovered({ kind: "cluster", clusterId, total, facilities: [], ...placement });
 			const source = mapRef.current?.getSource<GeoJSONSource>(FACILITIES_SOURCE_ID);
+			const knownTotal = Number.isFinite(total) && total > 0;
+			const leafLimit = { true: total, false: CLUSTER_PREVIEW_LIMIT }[`${knownTotal}`];
 			source
-				?.getClusterLeaves(clusterId, CLUSTER_PREVIEW_LIMIT, 0)
+				?.getClusterLeaves(clusterId, leafLimit, 0)
 				.then((leaves) => {
 					const facilities = facilitiesForIds(
 						leaves.map((leaf) => leaf.properties?.id),
@@ -802,29 +928,44 @@ export function useFacilitiesMapScreenRules() {
 				})
 				.catch(() => undefined);
 		},
-		[facilitiesById, placementFor],
+		[cancelHoverDismiss, facilitiesById, hoverViewport],
 	);
 
-	const handleHoverEnd = useCallback(() => {
-		hoveredClusterIdRef.current = null;
-		setHovered(null);
-	}, []);
+	const openFacilityPanel = useCallback(
+		(facility: FacilityPointView, zoom?: number) => {
+			handleHoverEnd();
+			setIsPanelClosing(false);
+			setSelectedFacilityId(facility.id);
+			const camera = {
+				center: [facility.location.longitude, facility.location.latitude] as [number, number],
+				padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
+				duration: 600,
+			};
+			const motion = { true: { ...camera, zoom }, false: camera }[`${zoom !== undefined}`];
+			mapRef.current?.easeTo(motion);
+		},
+		[handleHoverEnd],
+	);
+
+	const selectFacility = useCallback(
+		(facility: FacilityPointView) => {
+			activityTracker.count("facilitiesOpened");
+			const currentZoom = mapRef.current?.getZoom() ?? FACILITY_DOT_ZOOM;
+			const dotVisible = currentZoom >= FACILITY_DOT_ZOOM;
+			const zoom = { true: undefined, false: clusterListZoom(currentZoom) }[`${dotVisible}`];
+			openFacilityPanel(facility, zoom);
+		},
+		[openFacilityPanel],
+	);
 
 	const handleFacilityClick = useCallback(
 		(event: MapLayerMouseEvent) => {
 			const facility = facilityFromEvent(event);
 			if (!facility) return;
 			activityTracker.count("facilitiesOpened");
-			handleHoverEnd();
-			setIsPanelClosing(false);
-			setSelectedFacilityId(facility.id);
-			mapRef.current?.easeTo({
-				center: [facility.location.longitude, facility.location.latitude],
-				padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
-				duration: 600,
-			});
+			openFacilityPanel(facility);
 		},
-		[facilityFromEvent, handleHoverEnd],
+		[facilityFromEvent, openFacilityPanel],
 	);
 
 	const selectSearchFacility = useCallback(
@@ -1011,6 +1152,9 @@ export function useFacilitiesMapScreenRules() {
 		if (!isMapReady || !map) return;
 		if (heatmapQuery.isError || !heatmapQuery.data) {
 			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
+			setSessionScale((current) =>
+				current.high === 0 && current.low === 0 ? current : { low: 0, high: 0 },
+			);
 			return;
 		}
 		refreshHeatmap();
@@ -1024,7 +1168,7 @@ export function useFacilitiesMapScreenRules() {
 		};
 		const hidePointer = () => {
 			map.getCanvas().style.cursor = "";
-			handleHoverEnd();
+			scheduleHoverDismiss();
 		};
 		const bindings = [
 			["mouseenter", FACILITIES_LAYER_ID, showPointer],
@@ -1052,6 +1196,7 @@ export function useFacilitiesMapScreenRules() {
 		handleHoverEnd,
 		isMapReady,
 		refreshHeatmap,
+		scheduleHoverDismiss,
 	]);
 
 	const hasSessionHeatmap = showSessions && heatmapFeatureCollection.features.length > 0;
@@ -1168,10 +1313,24 @@ export function useFacilitiesMapScreenRules() {
 		};
 	}, [handleHoverEnd, isMapReady, showFacilities]);
 
+	useEffect(
+		() => () => {
+			if (hoverDismissTimerRef.current === null) return;
+			window.clearTimeout(hoverDismissTimerRef.current);
+		},
+		[],
+	);
+
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
-		return bindFacilityGlass(map, facilitiesGlassLiveRef, selectedFacilityIdRef);
+		return bindFacilityGlass(
+			map,
+			facilitiesGlassLiveRef,
+			selectedFacilityIdRef,
+			hoveredClusterIdRef,
+			refreshClusterMarkersRef,
+		);
 	}, [isMapReady]);
 
 	const {
@@ -1188,6 +1347,8 @@ export function useFacilitiesMapScreenRules() {
 	}[legendMotion];
 
 	return {
+		sessionFilterSummary,
+		sessionQueryStatus,
 		clearSearchScope,
 		closePanel,
 		containerRef,
@@ -1195,11 +1356,14 @@ export function useFacilitiesMapScreenRules() {
 		finishLegendMotion,
 		hasSessionHeatmap,
 		handlePanelClosed,
+		holdClusterHover: cancelHoverDismiss,
 		isLegendShown,
 		legendMotionClass,
 		hovered,
 		isPanelClosing,
 		messages: messages.map,
+		releaseClusterHover: scheduleHoverDismiss,
+		selectFacility,
 		sessionScale,
 		selectedFacilityId,
 		selectSearchFacility,

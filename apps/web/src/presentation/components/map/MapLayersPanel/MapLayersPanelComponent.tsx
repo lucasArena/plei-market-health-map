@@ -1,5 +1,6 @@
 "use client";
 
+import { AppSessionFilters } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 import {
@@ -36,6 +37,7 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 
 export function MapLayersPanel() {
 	const {
+		showDemographics,
 		cardMotion,
 		closeOnEscape,
 		finishCardMotion,
@@ -69,6 +71,7 @@ export function MapLayersPanel() {
 	return (
 		<aside
 			ref={rootRef}
+			onKeyDown={closeOnEscape}
 			aria-label={messages.layersHeading}
 			className="fixed top-[var(--map-frame)] left-[calc(50%+min(12rem,50%-12rem)+4px)] z-50 w-[32px]"
 		>
@@ -106,7 +109,7 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`${MAP_MENU_SURFACE_CLASS} right-0 w-max ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+36px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
 				>
 					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersDemand}
@@ -119,6 +122,7 @@ export function MapLayersPanel() {
 							onToggle={toggleSessions}
 						/>
 					</div>
+					{showDemographics && <AppSessionFilters showSessions={showSessions} />}
 					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersSupply}
 					</h2>

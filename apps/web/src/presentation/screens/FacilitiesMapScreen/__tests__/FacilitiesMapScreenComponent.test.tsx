@@ -173,17 +173,30 @@ describe("FacilitiesMapScreen", () => {
 				hovered: {
 					kind: "facility",
 					facility: FACILITY,
-					x: 100,
-					y: 50,
+					x: 640,
+					y: 420,
 					flipX: false,
 					flipY: false,
+					viewport: { width: 1280, height: 800 },
 				},
 			}),
 		);
 
 		render(<FacilitiesMapScreen />);
 
-		expect(screen.getByRole("tooltip")).toHaveTextContent("Eastside Futsal Arena");
+		const card = screen.getByRole("tooltip");
+		expect(card).toHaveTextContent("Eastside Futsal Arena");
+		expect(card).toHaveStyle({ transform: "translate(-50%, -100%)" });
+		expect(screen.getByTestId("cluster-hover-surface")).toHaveClass("map-glass", "py-1.5");
+	});
+
+	it("keeps the map mounted when nothing is hovered", () => {
+		mockRules.mockReturnValue(rulesWith("ready", { hovered: null }));
+
+		render(<FacilitiesMapScreen />);
+
+		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
+		expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 	});
 
 	it.each([
