@@ -7,7 +7,6 @@ import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetai
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
-import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import {
 	SESSION_HEATMAP_BUCKET_COLORS,
@@ -20,9 +19,11 @@ export function FacilitiesMapScreen() {
 		closePanel,
 		containerRef,
 		facilities,
+		finishLegendMotion,
 		handlePanelClosed,
-		hasSessionHeatmap,
 		hovered,
+		isLegendShown,
+		legendMotionClass,
 		isPanelClosing,
 		messages,
 		selectedFacilityId,
@@ -32,17 +33,6 @@ export function FacilitiesMapScreen() {
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { searchSlot } = useHeaderSlot();
-	const {
-		finishReveal: finishLegendMotion,
-		isShown: isLegendShown,
-		motion: legendMotion,
-	} = useRevealMotion(hasSessionHeatmap, PANEL_SLIDE_MS);
-	const legendMotionClass = {
-		hidden: "",
-		enter: "session-legend-in",
-		shown: "",
-		exit: "session-legend-out",
-	}[legendMotion];
 	const overlayMessage = { loading: messages.loading, error: messages.failed, ready: null }[status];
 	const numberFormatter = new Intl.NumberFormat(undefined, {
 		notation: "compact",

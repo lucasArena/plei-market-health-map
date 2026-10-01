@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
@@ -48,10 +48,13 @@ function rulesWith(status: string, overrides: object = {}) {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],
+		finishLegendMotion: vi.fn(),
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
 		hovered: null,
+		isLegendShown: false,
 		isPanelClosing: false,
+		legendMotionClass: "",
 		selectedFacilityId: null,
 		selectSearchFacility: vi.fn(),
 		selectSearchMarket: vi.fn(),
@@ -101,6 +104,8 @@ describe("FacilitiesMapScreen", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
+				isLegendShown: true,
+				legendMotionClass: "session-legend-in",
 				sessionScale: { low: 12, high: 480 },
 			}),
 		);
@@ -128,7 +133,7 @@ describe("FacilitiesMapScreen", () => {
 	});
 
 	it("explains when the current map view has no sessions", () => {
-		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true }));
+		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true, isLegendShown: true }));
 
 		render(<FacilitiesMapScreen />);
 
@@ -181,6 +186,8 @@ describe("FacilitiesMapScreen", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hasSessionHeatmap: true,
+				isLegendShown: true,
+				legendMotionClass: "session-legend-in",
 				selectedFacilityId: "f1",
 				sessionScale: { low: 1, high: 10 },
 			}),
@@ -195,24 +202,24 @@ describe("FacilitiesMapScreen", () => {
 	});
 
 	it("slides the session legend out before removing it", () => {
-		let showLegend = true;
+		let exiting = false;
+		let shown = true;
 		mockRules.mockImplementation(() =>
 			rulesWith("ready", {
-				hasSessionHeatmap: showLegend,
+				isLegendShown: shown,
+				legendMotionClass: exiting ? "session-legend-out" : "session-legend-in",
 				sessionScale: { low: 1, high: 4 },
 			}),
 		);
 		const { rerender } = render(<FacilitiesMapScreen />);
 		expect(screen.getByTestId("session-heatmap-legend")).toHaveClass("session-legend-in");
 
-		vi.useFakeTimers();
-		showLegend = false;
+		exiting = true;
 		rerender(<FacilitiesMapScreen />);
 		expect(screen.getByTestId("session-heatmap-legend")).toHaveClass("session-legend-out");
-		act(() => {
-			vi.advanceTimersByTime(220);
-		});
+
+		shown = false;
+		rerender(<FacilitiesMapScreen />);
 		expect(screen.queryByTestId("session-heatmap-legend")).not.toBeInTheDocument();
-		vi.useRealTimers();
 	});
 });

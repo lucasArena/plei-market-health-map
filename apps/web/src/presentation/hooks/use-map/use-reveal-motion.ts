@@ -20,12 +20,6 @@ export function useRevealMotion(visible: boolean, duration: RevealDuration = REV
 	const [motion, setMotion] = useState<RevealMotion>(visible ? "enter" : "hidden");
 	const previousVisible = useRef(visible);
 
-	useEffect(() => {
-		if (previousVisible.current === visible) return;
-		previousVisible.current = visible;
-		setMotion(visible ? "enter" : "exit");
-	}, [visible]);
-
 	const finishReveal = useCallback((event: AnimationEvent<HTMLElement>) => {
 		if (event.target !== event.currentTarget) return;
 		setMotion((current) => {
@@ -41,6 +35,12 @@ export function useRevealMotion(visible: boolean, duration: RevealDuration = REV
 		const timer = window.setTimeout(() => setMotion(next[motion]), duration[motion]);
 		return () => window.clearTimeout(timer);
 	}, [duration, motion]);
+
+	useEffect(() => {
+		if (previousVisible.current === visible) return;
+		previousVisible.current = visible;
+		setMotion(visible ? "enter" : "exit");
+	}, [visible]);
 
 	return { finishReveal, isShown: motion !== "hidden", motion };
 }
