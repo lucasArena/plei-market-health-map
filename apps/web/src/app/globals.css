@@ -125,6 +125,7 @@
   --color-pleiful-moonlight-90: var(--pleiful-moonlight-90);
   --color-pleiful-orchid-50: var(--pleiful-orchid-50);
   --color-pleiful-sangria-50: var(--pleiful-sangria-50);
+  --color-map-icon: var(--map-icon);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -133,6 +134,15 @@
 
 :root {
   font-size: 14px;
+  --map-frame: 20px;
+  --map-profile-bottom: calc(var(--map-frame) + 22px);
+  --map-profile-size: 40px;
+  --map-profile-legend-gap: 8px;
+  --map-shadow: 0 4px 14px -1px rgb(0 0 0 / 0.1), 0 2px 12px -2px rgb(0 0 0 / 0.1);
+  --map-glass: color-mix(in oklch, var(--background) 65%, transparent);
+  --map-icon: #353e4b;
+  --map-icon-hover: var(--muted);
+  --map-icon-active: color-mix(in oklch, var(--accent) 60%, transparent);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -463,6 +473,23 @@
 
 .facility-layer-out {
   animation: facility-layer-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.map-glass {
+  background-color: var(--map-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+}
+
+button.map-icon-button:hover {
+  background-color: var(--map-icon-hover);
+  color: var(--foreground);
+}
+
+button.map-icon-button:active,
+button.map-icon-button[aria-expanded="true"] {
+  background-color: var(--map-icon-active);
+  color: var(--foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {
