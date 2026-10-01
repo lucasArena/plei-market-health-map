@@ -104,3 +104,5 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-10-01 | Codex | ENG-5783 | Renamed the default-off rollout flag to player-demographic-filters; staging admins enable it through Feature flags. Local only. |
 
 | 2026-10-01 | Codex | ENG-5783 | Capitalized gender display labels and summaries while retaining exact warehouse filter values. |
+| 2026-10-01 | Cursor Grok 4.7 | Showed a glass hover card 8px from a cluster or a single facility dot, centered above and then below, right, or left when that would clip, listing facilities A–Z in a 270px list with a transparent scrollbar and a 20px bottom fade, muted initials, a 100ms leave delay, and selectFacility zooming to 12 while keeping a closer zoom; cluster discs scale to 1.06 and a null hover leaves the map mounted | Hover card, avatar, and map screen tests pass |
+| 2026-10-01 | Codex | Resolved PR #69 staging conflict (ENG-5783), retaining demographic-filter and facility-hover agent entries | Conflict markers and whitespace checked; affected map/filter tests and required pre-push checks |
