@@ -1,20 +1,29 @@
 "use client";
 
 import { formatMessage } from "@market-health-map/core/i18n";
+import Link from "next/link";
+import { signOutOfApp } from "@/infrastructure/auth/actions";
+import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import {
 	FEEDBACK_IMAGE_ACCEPT,
 	useFeedbackRules,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.rules";
 import {
+	ACCOUNT_PANEL_CLASS,
+	ACCOUNT_STACK_CLASS,
+	ACCOUNT_TRIGGER_CLASS,
 	FEEDBACK_DROPZONE_CLASS,
 	FEEDBACK_PANEL_ANIMATION_CLASS,
 	FEEDBACK_PANEL_CLASS,
 	FEEDBACK_TRIGGER_CLASS,
 	FEEDBACK_TYPE_OPTIONS,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
-import type { FeedbackProps } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
+import type {
+	FeedbackProps,
+	FeedbackTypeIconProps,
+} from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
 
-function TypeIcon({ type }: Readonly<{ type: string }>) {
+function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 	if (type === "bug") {
 		return (
 			<svg
@@ -47,6 +56,8 @@ function TypeIcon({ type }: Readonly<{ type: string }>) {
 
 export function Feedback(props: Readonly<FeedbackProps>) {
 	const {
+		accountMessages,
+		versionLabel,
 		attachHint,
 		attachments,
 		canAttachMore,
@@ -87,18 +98,30 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 	const option = FEEDBACK_TYPE_OPTIONS.find((candidate) => candidate.type === type);
 	const animationClass = FEEDBACK_PANEL_ANIMATION_CLASS[isClosing ? "closing" : "open"];
 	const dropzoneClass = FEEDBACK_DROPZONE_CLASS[isDragging ? "dragging" : "idle"];
+	const shell = props.user ? "account" : "help";
+	const stackClass = { help: undefined, account: ACCOUNT_STACK_CLASS }[shell];
+	const triggerClass = { help: FEEDBACK_TRIGGER_CLASS, account: ACCOUNT_TRIGGER_CLASS }[shell];
+	const panelClass = { help: FEEDBACK_PANEL_CLASS, account: ACCOUNT_PANEL_CLASS }[shell];
 
 	return (
-		<div ref={containerRef} data-testid="feedback-widget">
+		<div ref={containerRef} data-testid="feedback-widget" className={stackClass}>
 			<button
 				type="button"
 				onClick={toggle}
-				aria-label={messages.open}
+				aria-label={props.user ? accountMessages.accountMenu : messages.open}
 				aria-expanded={isOpen && !isClosing}
 				aria-haspopup="dialog"
-				className={FEEDBACK_TRIGGER_CLASS}
+				className={triggerClass}
 			>
-				<span aria-hidden="true">?</span>
+				{props.user ? (
+					<Avatar
+						name={props.user.name ?? props.user.email}
+						avatarUrl={props.user.image}
+						appearance="account"
+					/>
+				) : (
+					<span aria-hidden="true">?</span>
+				)}
 			</button>
 			{isOpen && (
 				<div
@@ -106,12 +129,18 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 					aria-label={messages.title}
 					data-state={isClosing ? "closing" : "open"}
 					onAnimationEnd={handleAnimationEnd}
-					className={`${FEEDBACK_PANEL_CLASS} ${animationClass}`}
+					className={`${panelClass} ${animationClass}`}
 				>
 					<header className="flex items-start justify-between gap-3 bg-pleiful-pitch-green-80 px-4 pt-4 pb-3.5 text-white">
 						<div>
-							<h2 className="text-sm font-semibold tracking-tight">{messages.title}</h2>
-							<p className="mt-0.5 text-[11px] text-white/75">{messages.subtitle}</p>
+							<h2 className="text-sm font-semibold tracking-tight">
+								{props.user && step === "type"
+									? (props.user.name ?? props.user.email)
+									: messages.title}
+							</h2>
+							<p className="mt-0.5 text-[11px] text-white/75">
+								{props.user && step === "type" ? props.user.email : messages.subtitle}
+							</p>
 						</div>
 						<button
 							type="button"
@@ -177,6 +206,29 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 									</span>
 								</button>
 							))}
+							{props.user?.canViewAppMetrics && (
+								<Link
+									href={{ pathname: "/metrics" }}
+									onClick={close}
+									className="rounded-xl border p-3 text-sm font-semibold transition-colors hover:bg-muted"
+								>
+									{accountMessages.appMetrics}
+								</Link>
+							)}
+							{props.user && (
+								<form
+									action={signOutOfApp}
+									className="flex items-center gap-2 rounded-xl border p-3"
+								>
+									<button
+										type="submit"
+										className="flex-1 text-left text-sm font-semibold hover:text-pleiful-pitch-green-80"
+									>
+										{accountMessages.signOut}
+									</button>
+									<span className="text-[11px] text-muted-foreground">{versionLabel}</span>
+								</form>
+							)}
 						</div>
 					)}
 					{!created && step === "form" && option && (

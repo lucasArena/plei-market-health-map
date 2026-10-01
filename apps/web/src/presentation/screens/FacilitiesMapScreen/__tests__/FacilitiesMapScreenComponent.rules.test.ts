@@ -108,23 +108,31 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 }));
 
 const layersState = vi.hoisted(() => ({
-	showFacilities: true,
+	showActiveFacilities: true,
+	showInactiveFacilities: true,
 	demandMetric: "app-sessions" as "app-sessions" | "registrations",
+	hasProvider: true,
 }));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
-	useMapLayers: () => ({
-		showFacilities: layersState.showFacilities,
-		setShowFacilities: vi.fn(),
-		demandMetric: layersState.demandMetric,
-		setDemandMetric: vi.fn(),
-	}),
+	useMapLayers: () =>
+		layersState.hasProvider
+			? {
+					showActiveFacilities: layersState.showActiveFacilities,
+					showInactiveFacilities: layersState.showInactiveFacilities,
+					setShowActiveFacilities: vi.fn(),
+					setShowInactiveFacilities: vi.fn(),
+					demandMetric: layersState.demandMetric,
+					setDemandMetric: vi.fn(),
+				}
+			: null,
 }));
 
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
 }));
+
 const mockUseRegistrationHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-registration-heatmap", () => ({
 	useRegistrationHeatmap: () => mockUseRegistrationHeatmap(),
@@ -693,8 +701,10 @@ describe("resolveMapStatus", () => {
 describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		layersState.showFacilities = true;
+		layersState.showActiveFacilities = true;
+		layersState.showInactiveFacilities = true;
 		layersState.demandMetric = "app-sessions";
+		layersState.hasProvider = true;
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -704,11 +714,55 @@ describe("useFacilitiesMapScreenRules", () => {
 			isError: false,
 		});
 		mockUseRegistrationHeatmap.mockReturnValue({
-			data: [{ lat: 30.27, lng: -97.74, registrationWeight: 5 }],
+			data: [{ lat: 25.76, lng: -80.19, registrationWeight: 6 }],
 			isPending: false,
 			isError: false,
 		});
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
+	});
+
+	it("shows both facility statuses when there is no layers provider", async () => {
+		layersState.hasProvider = false;
+		const inactive = { ...FACILITY, id: "inactive", isActive: false };
+		mockUseFacilities.mockReturnValue({
+			data: [FACILITY, inactive],
+			isPending: false,
+			isError: false,
+		});
+		renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(mapState.setData).toHaveBeenCalledWith(
+			toFacilityFeatureCollection([FACILITY, inactive]),
+		);
+	});
+
+	it("filters facilities before clustering for each supply selection", async () => {
+		const inactive = { ...FACILITY, id: "inactive", isActive: false };
+		mockUseFacilities.mockReturnValue({
+			data: [FACILITY, inactive],
+			isPending: false,
+			isError: false,
+		});
+		const { rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		layersState.showInactiveFacilities = false;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([FACILITY]));
+		layersState.showActiveFacilities = false;
+		layersState.showInactiveFacilities = true;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([inactive]));
+		layersState.showInactiveFacilities = false;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([]));
+		layersState.showActiveFacilities = true;
+		layersState.showInactiveFacilities = true;
+		rerender();
+		expect(mapState.setData).toHaveBeenLastCalledWith(
+			toFacilityFeatureCollection([FACILITY, inactive]),
+		);
 	});
 
 	it("creates the map, adds the dot layer on load and pushes the facilities", async () => {
@@ -907,7 +961,11 @@ describe("useFacilitiesMapScreenRules", () => {
 			() => {
 				const rules = useFacilitiesMapScreenRules();
 				rules.containerRef.current ??= container;
-				return { rules, scope: useMapScope().scope };
+				return {
+					rules,
+					scope: useMapScope().scope,
+					feedbackFacilityId: useMapScope().selectedFacilityId,
+				};
 			},
 			{
 				wrapper: ({ children }: { children: ReactNode }) =>
@@ -919,6 +977,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.scope).toEqual({ kind: "all" });
 
 		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		expect(result.current.feedbackFacilityId).toBe("f1");
 		expect(result.current.scope).toEqual({
 			kind: "facility",
 			id: "f1",
@@ -937,6 +996,8 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		act(() => result.current.rules.clearSearchScope());
 		expect(result.current.scope).toEqual({ kind: "all" });
+		act(() => result.current.rules.handlePanelClosed());
+		expect(result.current.feedbackFacilityId).toBeNull();
 	});
 
 	it("zooms to search selections", async () => {
@@ -1077,29 +1138,21 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 	});
 
-	it("updates the heatmap and legend copy when the demand metric changes", async () => {
+	it("switches the heatmap and legend copy to registrations", async () => {
 		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
 
-		expect(result.current.hasDemandHeatmap).toBe(true);
-		expect(result.current.heatmapCopy.legend).toContain("Sessions");
-		mapState.setData.mockClear();
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-in");
+		expect(result.current.heatmapCopy.legend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
+
 		layersState.demandMetric = "registrations";
 		rerender();
-		await waitFor(() =>
-			expect(mapState.setData).toHaveBeenCalledWith(
-				expect.objectContaining({
-					features: [
-						expect.objectContaining({
-							properties: expect.objectContaining({ sessionWeight: 5 }),
-						}),
-					],
-				}),
-			),
+		expect(mapState.setData).toHaveBeenLastCalledWith(
+			toAppSessionHeatmapFeatureCollection([{ lat: 25.76, lng: -80.19, sessionWeight: 6 }]),
 		);
-		expect(result.current.hasDemandHeatmap).toBe(true);
-		expect(result.current.heatmapCopy.legend).toContain("Registrations");
+		expect(result.current.heatmapCopy.legend).toBe(EN_MESSAGES.map.registrationHeatmapLegend);
 	});
 
 	it("fades facility markers in and out with the facilities switch", async () => {
@@ -1120,7 +1173,8 @@ describe("useFacilitiesMapScreenRules", () => {
 			throw new Error("facility glass hosts were not mounted");
 		}
 
-		layersState.showFacilities = false;
+		layersState.showActiveFacilities = false;
+		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(cluster.classList.contains("facility-layer-out")).toBe(true);
 		await act(async () => {
@@ -1129,7 +1183,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(map?.triggerRepaint).toHaveBeenCalled();
 		expect(cluster.style.opacity).toBe("0");
 
-		layersState.showFacilities = true;
+		layersState.showActiveFacilities = true;
+		layersState.showInactiveFacilities = true;
 		rerender();
 		expect(cluster.classList.contains("facility-layer-in")).toBe(true);
 		expect(facility.classList.contains("facility-layer-in")).toBe(true);
@@ -1155,7 +1210,8 @@ describe("useFacilitiesMapScreenRules", () => {
 			await new Promise((resolve) => setTimeout(resolve, FACILITY_LAYER_ENTER_MS + 30));
 		});
 
-		layersState.showFacilities = false;
+		layersState.showActiveFacilities = false;
+		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(cluster.classList.contains("facility-layer-out")).toBe(true);
 		act(() => {

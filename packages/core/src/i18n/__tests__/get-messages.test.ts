@@ -18,6 +18,11 @@ describe("getMessages", () => {
 	it("keeps every locale in sync with English", () => {
 		expect(keyPaths(ptBR)).toEqual(keyPaths(en));
 	});
+
+	it("labels the layers header Market Health Map in every locale", () => {
+		expect(en.map.layersBrand).toBe("Market Health Map");
+		expect(ptBR.map.layersBrand).toBe("Market Health Map");
+	});
 });
 
 describe("parseAcceptLanguage", () => {

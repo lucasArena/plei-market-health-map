@@ -44,7 +44,7 @@ jobs:
             echo "Linked to ${BASH_REMATCH[0]}."
             exit 0
           fi
-          echo "::warning::Add the Linear issue to the PR title, e.g. 'feat(map): add panel (PROD-451)', so the production release links it in Linear."
+          echo "::warning::Add the Linear issue to the PR title, e.g. 'feat(map): add panel (ENG-5758)', so the production release links it in Linear."
 
   unit-tests:
     runs-on: ubuntu-latest

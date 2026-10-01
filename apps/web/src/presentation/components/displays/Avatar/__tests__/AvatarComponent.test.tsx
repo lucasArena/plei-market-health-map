@@ -23,6 +23,27 @@ describe("Avatar", () => {
 		render(<Avatar name="Eastside Futsal Arena" avatarUrl={null} size="lg" />);
 		expect(screen.getByText("EF")).toHaveClass("size-20");
 	});
+
+	it("draws the account disc as a 32px gray circle with dark initials", () => {
+		render(<Avatar name="Lucas Arena" avatarUrl={null} appearance="account" />);
+		expect(screen.getByText("LA")).toHaveClass(
+			"size-[32px]",
+			"bg-[#d1d5db]",
+			"text-[11px]",
+			"text-[#111827]",
+		);
+		expect(screen.getByText("LA")).not.toHaveAttribute("style");
+	});
+
+	it("keeps an account photo inside the 32px disc", () => {
+		const { container } = render(
+			<Avatar name="Lucas Arena" avatarUrl="https://cdn.plei.app/a.png" appearance="account" />,
+		);
+		const image = container.querySelector("img");
+		expect(image).toHaveAttribute("width", "32");
+		expect(image).toHaveAttribute("height", "32");
+		expect(image).toHaveClass("size-[32px]", "bg-[#d1d5db]");
+	});
 });
 
 describe("avatar rules", () => {

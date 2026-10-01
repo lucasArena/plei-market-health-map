@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
-export type LayersCardMotion = "resting" | "enter" | "exit";
 export type DemandHeatmapMetric = "registrations" | "app-sessions";
 
 export interface MapLayersValue {
-	showFacilities: boolean;
-	setShowFacilities: (showFacilities: boolean) => void;
+	showActiveFacilities: boolean;
+	setShowActiveFacilities: (showActiveFacilities: boolean) => void;
+	showInactiveFacilities: boolean;
+	setShowInactiveFacilities: (showInactiveFacilities: boolean) => void;
 	demandMetric: DemandHeatmapMetric;
 	setDemandMetric: (demandMetric: DemandHeatmapMetric) => void;
 }

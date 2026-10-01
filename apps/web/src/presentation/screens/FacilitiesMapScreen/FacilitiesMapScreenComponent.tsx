@@ -2,13 +2,15 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { createPortal } from "react-dom";
-import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent";
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
-import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
+import {
+	SESSION_HEATMAP_BUCKET_COLORS,
+	SESSION_HEATMAP_LEGEND_CLASS,
+} from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 export function FacilitiesMapScreen() {
 	const {
@@ -16,11 +18,13 @@ export function FacilitiesMapScreen() {
 		closePanel,
 		containerRef,
 		facilities,
+		finishLegendMotion,
 		handlePanelClosed,
-		hasDemandHeatmap,
 		heatmapCopy,
 		heatmapScale,
 		hovered,
+		isLegendShown,
+		legendMotionClass,
 		isPanelClosing,
 		messages,
 		selectedFacilityId,
@@ -35,12 +39,13 @@ export function FacilitiesMapScreen() {
 		maximumFractionDigits: 1,
 	});
 	const lowValue = numberFormatter.format(heatmapScale.low);
+	const midValue = numberFormatter.format(Math.round((heatmapScale.low + heatmapScale.high) / 2));
 	const highValue = numberFormatter.format(heatmapScale.high);
 
 	return (
 		<section aria-label={messages.title} className="absolute inset-0">
 			<div className="absolute inset-0">
-				<div ref={containerRef} data-testid="facilities-map" className="h-full w-full" />
+				<div ref={containerRef} data-testid="facilities-map" className="map-frame h-full w-full" />
 			</div>
 			{searchSlot &&
 				createPortal(
@@ -62,42 +67,51 @@ export function FacilitiesMapScreen() {
 				</p>
 			)}
 			{hovered && <FacilityHoverCard hover={hovered} messages={messages} />}
-			{hasDemandHeatmap && (
+			{isLegendShown && (
 				<div
 					data-testid="demand-heatmap-legend"
-					className="absolute bottom-8 left-16 min-w-56 rounded-xl border border-border/60 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur-md"
+					onAnimationEnd={finishLegendMotion}
+					className={`${SESSION_HEATMAP_LEGEND_CLASS} ${legendMotionClass}`}
 				>
 					<p className="text-[11px] font-semibold tracking-tight text-foreground">
 						{heatmapCopy.legend}
 					</p>
-					<p className="mt-0.5 text-[9px] text-muted-foreground">{heatmapCopy.context}</p>
+					<p className="mt-0.5 text-[10px] text-muted-foreground">{heatmapCopy.context}</p>
 					{heatmapScale.high === 0 ? (
 						<p className="mt-2 text-[10px] font-medium text-muted-foreground">
 							{heatmapCopy.noActivity}
 						</p>
 					) : (
-						<div className="mt-2 flex items-center justify-between gap-3">
-							<span
-								aria-hidden="true"
-								className="min-w-7 text-[10px] tabular-nums text-muted-foreground"
-							>
-								{lowValue}
-							</span>
-							<span className="sr-only">{heatmapCopy.lowValue.replace("{count}", lowValue)}</span>
+						<div className="mt-2 flex flex-col gap-1">
 							<div
 								data-testid="session-heatmap-gradient"
-								className="h-2.5 flex-1 rounded-full"
+								className="h-2.5 w-full rounded-full"
 								style={{
 									backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
 								}}
 							/>
-							<span
-								aria-hidden="true"
-								className="min-w-7 text-right text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
-							>
-								{highValue}+
-							</span>
-							<span className="sr-only">{heatmapCopy.highValue.replace("{count}", highValue)}</span>
+							<div className="relative flex items-center justify-between">
+								<span aria-hidden="true" className="text-[10px] tabular-nums text-muted-foreground">
+									{lowValue}
+								</span>
+								<span className="sr-only">{heatmapCopy.lowValue.replace("{count}", lowValue)}</span>
+								<span
+									aria-hidden="true"
+									className="absolute left-1/2 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
+								>
+									{midValue}
+								</span>
+								<span className="sr-only">{heatmapCopy.midValue.replace("{count}", midValue)}</span>
+								<span
+									aria-hidden="true"
+									className="text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
+								>
+									{highValue}+
+								</span>
+								<span className="sr-only">
+									{heatmapCopy.highValue.replace("{count}", highValue)}
+								</span>
+							</div>
 						</div>
 					)}
 				</div>
@@ -110,8 +124,7 @@ export function FacilitiesMapScreen() {
 					onClosed={handlePanelClosed}
 				/>
 			)}
-			<Feedback facilityId={selectedFacilityId} />
-			<p className="absolute bottom-2 left-3 text-[10px] text-muted-foreground">
+			<p className="absolute bottom-[var(--map-frame)] left-[var(--map-frame)] text-[10px] leading-[10px] text-muted-foreground">
 				<a
 					href="https://openfreemap.org"
 					target="_blank"

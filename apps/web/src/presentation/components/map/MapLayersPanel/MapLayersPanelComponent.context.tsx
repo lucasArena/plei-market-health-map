@@ -10,11 +10,19 @@ import type {
 const MapLayersContext = createContext<MapLayersValue | null>(null);
 
 export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>) {
-	const [showFacilities, setShowFacilities] = useState(true);
+	const [showActiveFacilities, setShowActiveFacilities] = useState(true);
+	const [showInactiveFacilities, setShowInactiveFacilities] = useState(true);
 	const [demandMetric, setDemandMetric] = useState<DemandHeatmapMetric>("app-sessions");
 	const value = useMemo(
-		() => ({ showFacilities, setShowFacilities, demandMetric, setDemandMetric }),
-		[showFacilities, demandMetric],
+		() => ({
+			showActiveFacilities,
+			setShowActiveFacilities,
+			showInactiveFacilities,
+			setShowInactiveFacilities,
+			demandMetric,
+			setDemandMetric,
+		}),
+		[showActiveFacilities, showInactiveFacilities, demandMetric],
 	);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }

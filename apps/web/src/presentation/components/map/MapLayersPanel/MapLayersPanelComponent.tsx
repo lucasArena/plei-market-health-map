@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
+import { MAP_MENU_SURFACE_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	const track = {
@@ -34,114 +34,112 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 export function MapLayersPanel() {
 	const {
 		cardMotion,
+		closeOnEscape,
 		finishCardMotion,
 		isCardShown,
 		isExpanded,
 		isOnMap,
 		messages,
+		rootRef,
 		demandMetric,
 		selectDemandMetric,
-		showFacilities,
+		showActiveFacilities,
+		showInactiveFacilities,
 		toggleExpanded,
-		toggleFacilities,
+		toggleActiveFacilities,
+		toggleInactiveFacilities,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
 		[`${!isExpanded}`]: messages.layersExpand,
 		[`${isExpanded}`]: messages.layersCollapse,
 	}.true as string;
-	const toggleSurface = {
-		[`${!isExpanded}`]: "bg-card",
-		[`${isExpanded}`]: "bg-accent",
-	}.true as string;
 	const cardMotionClass = {
-		resting: "",
-		enter: "layers-card-in",
-		exit: "layers-card-out",
+		hidden: "",
+		enter: "search-results-in",
+		shown: "",
+		exit: "search-results-out",
 	}[cardMotion];
 	const demandOptions = [
 		{ metric: "registrations", label: messages.layersRegistrations },
 		{ metric: "app-sessions", label: messages.layersSessions },
 	] as const;
+
+	if (!isOnMap) return null;
+
 	return (
 		<aside
-			aria-label={messages.layersBrand}
-			className="fixed top-[20px] left-[20px] z-50 flex w-[220px] flex-col items-stretch gap-[4px]"
+			ref={rootRef}
+			aria-label={messages.layersHeading}
+			className="fixed top-[var(--map-frame)] left-[calc(50%+min(12rem,50%-12rem)+4px)] z-50 w-[32px]"
 		>
-			<div className="flex items-stretch overflow-hidden rounded-[8px] border border-border bg-card py-[2px] shadow-md">
-				<Link href="/" className="flex items-center gap-[4px] px-[8px] py-[4px] hover:bg-accent">
-					<Image src="/images/plei-logo.svg" alt="" width={20} height={20} />
-					<p className="text-[12px] leading-none font-semibold whitespace-nowrap text-card-foreground">
-						{messages.layersBrand}
-					</p>
-				</Link>
-				{isOnMap && (
-					<button
-						type="button"
-						aria-expanded={isExpanded}
-						aria-label={collapseLabel}
-						onClick={toggleExpanded}
-						className={`-my-[2px] flex w-[32px] shrink-0 items-center justify-center self-stretch border-l border-border hover:bg-accent active:bg-accent ${toggleSurface}`}
-					>
-						<Image src="/images/map-layers/settings-2.svg" alt="" width={16} height={16} />
-					</button>
-				)}
-			</div>
-			{isOnMap && isCardShown && (
+			<button
+				type="button"
+				aria-expanded={isExpanded}
+				aria-label={collapseLabel}
+				onClick={toggleExpanded}
+				onKeyDown={closeOnEscape}
+				className="map-icon-button map-glass pointer-events-auto flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none"
+			>
+				<Image src="/images/map-layers/layers.svg" alt="" width={16} height={16} />
+			</button>
+			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`flex w-full flex-col gap-1 overflow-hidden rounded-[10px] border border-border bg-card px-3 pt-1 pb-3 shadow-md ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 w-max ${cardMotionClass}`}
 				>
-					<p className="py-1.5 text-[10px] leading-4 font-medium text-muted-foreground">
+					<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase">
 						{messages.layersHeading}
 					</p>
-					<div className="flex flex-col gap-1.5">
-						<p className="text-[11px] leading-4 font-semibold text-foreground">
-							{messages.layersDemand}
-						</p>
-						<div
-							role="radiogroup"
-							aria-label={messages.layersDemand}
-							className="grid grid-cols-2 rounded-md border border-border bg-muted/60 p-0.5"
-						>
-							{demandOptions.map((option) => {
-								const selected = demandMetric === option.metric;
-								const optionClass = {
-									[`${!selected}`]: "text-muted-foreground hover:bg-background/60",
-									[`${selected}`]: "bg-pleiful-pitch-green-80 text-white shadow-sm",
-								}.true as string;
-								return (
-									<label
-										key={option.metric}
-										className={`cursor-pointer rounded-[5px] px-2 py-1.5 text-center text-[10px] leading-none font-medium transition-colors ${optionClass}`}
-									>
-										<input
-											type="radio"
-											name="demand-heatmap"
-											aria-label={option.label}
-											checked={selected}
-											onChange={() => selectDemandMetric(option.metric)}
-											className="sr-only"
-										/>
-										{option.label}
-									</label>
-								);
-							})}
-						</div>
+					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+						{messages.layersDemand}
+					</h2>
+					<div
+						role="radiogroup"
+						aria-label={messages.layersDemand}
+						className="mx-2 mb-1 grid grid-cols-2 rounded-md border border-border bg-muted/60 p-0.5"
+					>
+						{demandOptions.map((option) => {
+							const selected = demandMetric === option.metric;
+							const optionClass = {
+								[`${!selected}`]: "text-muted-foreground hover:bg-background/60",
+								[`${selected}`]: "bg-pleiful-pitch-green-80 text-white shadow-sm",
+							}.true as string;
+							return (
+								<label
+									key={option.metric}
+									className={`cursor-pointer rounded-[5px] px-2 py-1.5 text-center text-[10px] leading-none font-medium transition-colors ${optionClass}`}
+								>
+									<input
+										type="radio"
+										name="demand-heatmap"
+										aria-label={option.label}
+										checked={selected}
+										onChange={() => selectDemandMetric(option.metric)}
+										className="sr-only"
+									/>
+									{option.label}
+								</label>
+							);
+						})}
 					</div>
-					<div className="mt-1 flex flex-col gap-1.5 border-t border-border pt-2">
-						<p className="text-[11px] leading-4 font-semibold text-foreground">
-							{messages.layersSupply}
-						</p>
-						<div className="flex w-full items-center justify-between gap-3">
-							<p className="text-[12px] leading-none font-medium text-foreground">
-								{messages.layersFacilities}
-							</p>
-							<LayerSwitch
-								checked={showFacilities}
-								label={messages.layersFacilities}
-								onToggle={toggleFacilities}
-							/>
-						</div>
+					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+						{messages.layersSupply}
+					</h2>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersActiveFacilities}</p>
+						<LayerSwitch
+							checked={showActiveFacilities}
+							label={messages.layersActiveFacilities}
+							onToggle={toggleActiveFacilities}
+						/>
+					</div>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
+						<p>{messages.layersInactiveFacilities}</p>
+						<LayerSwitch
+							checked={showInactiveFacilities}
+							label={messages.layersInactiveFacilities}
+							onToggle={toggleInactiveFacilities}
+						/>
 					</div>
 				</div>
 			)}

@@ -120,7 +120,7 @@ Merge commits are skipped, so a squashed PR counts once and a merged PR counts i
 
 On a push to `main`, `_release.yml` sets `version` in the root `package.json`, commits it as `ci: bump new version vX.Y.Z [skip ci]`, creates an annotated tag, and pushes both. `_deploy-vercel.yml` then deploys **that tag**. If nothing needs a bump, nothing is tagged and `main`'s head is deployed. `staging` never bumps or tags. Never edit `version` by hand.
 
-After a tagged deploy, the `linear-release` job writes release notes with `.github/scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`). The notes cover the commits since the previous stable tag, grouped into Breaking changes, Features, Fixes and Other changes, plus every Linear issue ID they mention. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, the notes are attached as the release notes and as a `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns.
+After a tagged deploy, the `linear-release` job writes release notes with `.github/scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`). The notes cover the commits since the previous stable tag, grouped into Breaking changes, Features, Fixes and Other changes, plus every Linear issue ID they mention. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, the notes are attached as the release notes and as a `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns. It then moves every `ENG`/`PROD` ticket the notes mention to **Released**. A promotion squash-merged into `main` still bumps the version, because `next-version.mjs` reads the commit list in its body.
 
 ## Release workflow (step by step)
 
@@ -157,7 +157,7 @@ chore(ci): add a deploy timeout
 ### 3. Open a PR into `staging` and **squash and merge**
 
 - The base is `staging`. The PR title becomes the squashed commit, so it must be a valid conventional message; it's what production counts later.
-- End the title with the Linear issue, e.g. `feat(map): add facility panel (PROD-451)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
+- End the title with the Linear issue, e.g. `feat(map): add facility panel (ENG-5758)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
 - `ci.pr.yml` must pass: the branch-name check and the unit tests. The Linear-issue check only warns.
 - Review it in Linear if you like: open `linear.review/lucasArena/plei-market-health-map/pull/<number>` (or the **Reviews** tab). `.gitattributes` groups the diff into implementation, tests, docs, agent guidance, localization, assets and generated files.
 - Merge with **Squash and merge**.
@@ -187,12 +187,12 @@ Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Onl
 
 Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.
 
-1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Product** team (`PROD`), in that project, assigned to the person you are working for.
+1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Engineering** team (`ENG`), in that project, assigned to the person you are working for.
 2. **Set it to In Progress** while you work.
-3. **Move it to Needs Review when the PR opens**, and attach the PR link to the ticket so the diff shows up there. Put the ticket ID in the branch slug (`feature/prod-467-<slug>`) and at the end of the PR title (see *Release workflow*).
-4. **Move it to Done when the PR merges**, unless the GitHub integration already did.
+3. **Open the PR and attach its link to the ticket** so the diff shows up there. Put the ticket ID in the branch slug (`feature/eng-5796-<slug>`) and at the end of the PR title (see *Release workflow*).
+4. After that, GitHub moves it for you (`linear-sync.yml` and `cd.production.yml`, through `.github/scripts/linear/move-issues.mjs`): **Code Review** when a PR into `staging` opens or gets new commits (drafts wait until ready for review; GitHub skips PRs with merge conflicts until they are pushed again), **Feedback** when a reviewer requests changes, **Done** when the PR merges into `staging`, and **Released** when a tagged production deploy ships it. Only `ENG` and `PROD` tickets found in the PR title, branch or release commits move; `REQ` tickets never do.
 
-Reach Linear through the Linear MCP server in your agent client, or the GraphQL API (`https://api.linear.app/graphql`) with your own API key from your environment. Never commit keys or paste them into tickets, PRs or logs. The app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` are only for in-app feedback, not for agent logging. If you can't reach Linear, tell the person you are working for.
+Reach Linear through the Linear MCP server in your agent client, or the GraphQL API (`https://api.linear.app/graphql`) with your own API key from your environment. Never commit keys or paste them into tickets, PRs or logs. The app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` are for in-app feedback and the GitHub workflows above, not for agent logging. If you can't reach Linear, tell the person you are working for.
 
 ## Before you finish a task
 

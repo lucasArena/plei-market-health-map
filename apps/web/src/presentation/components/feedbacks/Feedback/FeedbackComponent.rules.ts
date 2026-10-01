@@ -19,6 +19,7 @@ import {
 	useState,
 } from "react";
 import { ApiError } from "@/infrastructure/api/client";
+import { getAppVersion } from "@/infrastructure/app-version";
 import { FEEDBACK_ERROR_KEY_BY_STATUS } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
 import type {
 	FeedbackAttachment,
@@ -28,6 +29,7 @@ import type {
 	FeedbackProps,
 	FeedbackStep,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFeedbackSubmit } from "@/presentation/hooks/use-feedback/use-feedback-submit";
 
@@ -94,7 +96,9 @@ export function feedbackView(facilityId: string | null | undefined): string {
 	return facilityId ? `${FEEDBACK_VIEW} (facility ${facilityId})` : FEEDBACK_VIEW;
 }
 
-export function useFeedbackRules({ facilityId }: FeedbackProps) {
+export function useFeedbackRules({ facilityId: suppliedFacilityId }: FeedbackProps) {
+	const { selectedFacilityId } = useMapScope();
+	const facilityId = suppliedFacilityId ?? selectedFacilityId;
 	const { messages } = useMessages();
 	const feedbackMessages = messages.feedback;
 	const submission = useFeedbackSubmit();
@@ -278,6 +282,8 @@ export function useFeedbackRules({ facilityId }: FeedbackProps) {
 	);
 
 	return {
+		accountMessages: messages.auth,
+		versionLabel: formatMessage(messages.auth.version, { version: getAppVersion() }),
 		addFiles,
 		attachHint: formatMessage(feedbackMessages.attachHint, { max: MAX_FEEDBACK_IMAGES }),
 		attachments,
