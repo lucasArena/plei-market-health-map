@@ -2,24 +2,24 @@
 
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
 import type { AppHeaderProps } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.types";
+import { MapBrand } from "@/presentation/components/layout/MapBrand/MapBrandComponent";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 
 export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 	const { setSearchSlot } = useHeaderSlot();
 	return (
-		<header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-end p-4">
-			<div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-				<div
-					ref={setSearchSlot}
-					data-testid="header-search-slot"
-					className="flex min-w-0 flex-1 justify-end"
-				/>
+		<header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between p-[var(--map-frame)]">
+			<MapBrand />
+			<div
+				ref={setSearchSlot}
+				data-testid="header-search-slot"
+				className="pointer-events-none absolute top-[var(--map-frame)] left-1/2 w-[min(24rem,calc(100%-24rem))] -translate-x-1/2"
+			/>
+			<div className="flex items-center justify-end gap-2">
 				<MarketSummaryToggle />
 			</div>
-			<div className="pointer-events-auto">
-				<Feedback user={user} />
-			</div>
+			<Feedback user={user} />
 		</header>
 	);
 }

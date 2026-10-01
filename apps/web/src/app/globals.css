@@ -135,6 +135,7 @@
 :root {
   font-size: 14px;
   --map-frame: 20px;
+  --map-radius: 8px;
   --map-profile-bottom: calc(var(--map-frame) + 22px);
   --map-profile-size: 40px;
   --map-profile-legend-gap: 8px;
@@ -287,35 +288,85 @@
   }
 }
 
-/*
- * MapLibre's NavigationControl (the zoom buttons, bottom right) gets the glass
- * surface through overrides of its own classes, so the map keeps wiring the
- * buttons. The icons are MapLibre's dark SVGs, inverted in the dark theme.
- */
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group:not(:empty) {
-  @apply glass;
+.map-frame .maplibregl-ctrl-bottom-right > .maplibregl-ctrl {
+  margin: 0 var(--map-frame) var(--map-frame) 0;
+}
+
+.map-glass {
+  background-color: var(--map-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+}
+
+button.map-icon-button:hover,
+.map-frame .maplibregl-ctrl-group button:hover {
+  background-color: var(--map-icon-hover);
+  color: var(--foreground);
+}
+
+button.map-icon-button:active,
+button.map-icon-button[aria-expanded="true"],
+.map-frame .maplibregl-ctrl-group button:active {
+  background-color: var(--map-icon-active);
+  color: var(--foreground);
+}
+
+.map-frame .maplibregl-ctrl.maplibregl-ctrl-group {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 32px;
+  height: 64px;
   overflow: hidden;
-  border-radius: 0.75rem;
+  border: 0;
+  border-radius: 9999px;
+  background-color: var(--map-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow: var(--map-shadow), inset 0 0 0 1px var(--border);
 }
 
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button + button {
-  border-top-color: var(--glass-divider);
+.map-frame .maplibregl-ctrl-group button {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
 }
 
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button:not(:disabled):hover {
-  background-color: rgb(255 255 255 / 0.35);
+.map-frame .maplibregl-ctrl-group button + button {
+  margin-top: 0;
+  border-top: 0;
+  box-shadow: inset 0 1px 0 var(--border);
 }
 
-.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button:not(:disabled):hover {
-  background-color: rgb(255 255 255 / 0.08);
+.map-frame .maplibregl-ctrl-group button:focus,
+.map-frame .maplibregl-ctrl-group button:focus-visible {
+  outline: none;
 }
 
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group button:focus:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--pleiful-pitch-green-80);
+.map-frame .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
 }
 
-.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-icon {
-  filter: invert(1);
+.map-frame .maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon {
+  background-image: url("/images/map-layers/plus.svg");
+}
+
+.map-frame .maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon {
+  background-image: url("/images/map-layers/minus.svg");
 }
 
 @keyframes panel-slide-in {
@@ -445,6 +496,42 @@
   pointer-events: none;
 }
 
+@keyframes search-results-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes search-results-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+.search-results-in,
+.search-results-out {
+  transform-origin: top center;
+}
+
+.search-results-in {
+  animation: search-results-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.search-results-out {
+  animation: search-results-out 160ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
 @keyframes facility-layer-in {
   from {
     opacity: 0;
@@ -475,23 +562,6 @@
   animation: facility-layer-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-.map-glass {
-  background-color: var(--map-glass);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  backdrop-filter: blur(18px) saturate(1.5);
-}
-
-button.map-icon-button:hover {
-  background-color: var(--map-icon-hover);
-  color: var(--foreground);
-}
-
-button.map-icon-button:active,
-button.map-icon-button[aria-expanded="true"] {
-  background-color: var(--map-icon-active);
-  color: var(--foreground);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .feedback-pop-in,
   .feedback-pop-out,
@@ -501,6 +571,8 @@ button.map-icon-button[aria-expanded="true"] {
   .session-legend-out,
   .layers-card-in,
   .layers-card-out,
+  .search-results-in,
+  .search-results-out,
   .facility-layer-in,
   .facility-layer-out {
     animation-duration: 1ms;

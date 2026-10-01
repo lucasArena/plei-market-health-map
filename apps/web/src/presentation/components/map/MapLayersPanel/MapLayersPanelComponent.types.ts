@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-export type LayersCardMotion = "resting" | "enter" | "exit";
-
 export interface MapLayersValue {
 	showActiveFacilities: boolean;
 	setShowActiveFacilities: (showActiveFacilities: boolean) => void;

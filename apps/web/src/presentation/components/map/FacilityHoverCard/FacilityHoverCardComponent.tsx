@@ -17,7 +17,7 @@ export function FacilityHoverCard({ hover, messages }: Readonly<FacilityHoverCar
 		return (
 			<div
 				role="tooltip"
-				className="pointer-events-none absolute z-10 flex items-center gap-2 rounded-lg border bg-background/95 py-1.5 pr-3 pl-1.5 shadow-lg backdrop-blur"
+				className="map-glass pointer-events-none absolute z-10 flex items-center gap-2 rounded-[var(--map-radius)] border py-1.5 pr-3 pl-1.5 shadow-[var(--map-shadow)]"
 				style={position}
 			>
 				<Avatar name={hover.facility.name} avatarUrl={hover.facility.avatarUrl} />
@@ -30,7 +30,7 @@ export function FacilityHoverCard({ hover, messages }: Readonly<FacilityHoverCar
 	return (
 		<div
 			role="tooltip"
-			className="pointer-events-none absolute z-10 rounded-lg border bg-background/95 shadow-lg backdrop-blur"
+			className="pointer-events-none absolute z-10 map-glass rounded-[var(--map-radius)] border shadow-[var(--map-shadow)]"
 			style={{ ...position, width: HOVER_CARD_WIDTH }}
 		>
 			<p className="border-b px-3 py-2 text-xs font-semibold text-muted-foreground">{title}</p>

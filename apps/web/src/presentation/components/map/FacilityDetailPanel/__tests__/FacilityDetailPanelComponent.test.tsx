@@ -141,7 +141,12 @@ describe("FacilityDetailPanel", () => {
 		const panel = screen.getByRole("complementary");
 		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
 
-		expect(panel).toHaveClass("panel-slide-out", "glass-panel", "rounded-2xl");
+		expect(panel).toHaveClass(
+			"panel-slide-out",
+			"map-glass",
+			"right-[var(--map-frame)]",
+			"shadow-[var(--map-shadow)]",
+		);
 		expect(rules.onClose).toHaveBeenCalled();
 		expect(rules.handleAnimationEnd).toHaveBeenCalled();
 	});

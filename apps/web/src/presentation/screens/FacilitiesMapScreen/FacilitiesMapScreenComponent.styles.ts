@@ -119,7 +119,7 @@ export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 };
 
 export const SESSION_HEATMAP_LEGEND_CLASS = [
-	"glass-panel absolute left-[var(--map-frame)] min-w-56 rounded-xl px-3 py-2.5",
+	"map-glass absolute left-[var(--map-frame)] min-w-56 rounded-[var(--map-radius)] px-3 py-2.5 shadow-[var(--map-shadow)]",
 	"bottom-[calc(var(--map-profile-bottom)+var(--map-profile-size)+var(--map-profile-legend-gap))]",
 ].join(" ");
 

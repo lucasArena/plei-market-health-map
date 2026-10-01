@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMapSearchRules } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 import {
 	MAP_SEARCH_FIELD_CLASS,
@@ -13,10 +14,13 @@ export function MapSearch(props: MapSearchProps) {
 	const { messages } = props;
 	const {
 		clear,
+		finishResultsMotion,
 		handleChange,
 		handleKeyDown,
 		isOpen,
+		isResultsShown,
 		query,
+		resultsMotion,
 		rootRef,
 		selectFacility,
 		selectMarket,
@@ -24,28 +28,24 @@ export function MapSearch(props: MapSearchProps) {
 		visibleFacilities,
 		visibleMarkets,
 	} = useMapSearchRules(props);
+	const resultsMotionClass = {
+		hidden: "",
+		enter: "search-results-in",
+		shown: "",
+		exit: "search-results-out",
+	}[resultsMotion];
 	const hasResults = visibleMarkets.length > 0 || visibleFacilities.length > 0;
 
 	return (
 		<div ref={rootRef} className={MAP_SEARCH_ROOT_CLASS}>
 			<div className={MAP_SEARCH_FIELD_CLASS}>
-				<svg
-					aria-hidden="true"
-					viewBox="0 0 24 24"
-					className="size-4 shrink-0 text-muted-foreground"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="2"
-				>
-					<circle cx="11" cy="11" r="7" />
-					<path d="m20 20-4-4" />
-				</svg>
+				<Image src="/images/map-layers/search.svg" alt="" width={16} height={16} />
 				<input
 					aria-label={messages.searchPlaceholder}
 					aria-autocomplete="list"
 					aria-controls="map-search-results"
 					aria-expanded={isOpen}
-					className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+					className="min-w-0 flex-1 bg-transparent text-[12px] text-map-icon outline-none placeholder:text-map-icon"
 					placeholder={messages.searchPlaceholder}
 					role="combobox"
 					value={query}
@@ -73,8 +73,13 @@ export function MapSearch(props: MapSearchProps) {
 					</button>
 				)}
 			</div>
-			{isOpen && (
-				<div id="map-search-results" role="listbox" className={MAP_SEARCH_RESULTS_CLASS}>
+			{isResultsShown && (
+				<div
+					id="map-search-results"
+					role="listbox"
+					onAnimationEnd={finishResultsMotion}
+					className={`${MAP_SEARCH_RESULTS_CLASS} ${resultsMotionClass}`}
+				>
 					{visibleMarkets.length > 0 && (
 						<section aria-labelledby="map-search-markets">
 							<p
