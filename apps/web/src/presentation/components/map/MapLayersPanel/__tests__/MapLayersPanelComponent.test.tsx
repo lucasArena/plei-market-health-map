@@ -23,7 +23,7 @@ describe("MapLayersPanel", () => {
 	it("opens at the top left with facilities on", () => {
 		renderWithMessages(<MapLayersPanel />);
 
-		const panel = screen.getByRole("complementary", { name: "Plei Market" });
+		const panel = screen.getByRole("complementary", { name: "Market Health Map" });
 		expect(panel).toHaveClass(
 			"fixed",
 			"top-[20px]",
@@ -36,13 +36,15 @@ describe("MapLayersPanel", () => {
 		expect(layersCard).toHaveClass("w-full");
 		expect(layersCard).not.toHaveClass("w-max");
 		expect(panel).not.toHaveClass("border");
-		expect(screen.getByText("Plei Market")).toHaveClass("text-[12px]");
-		expect(screen.getByText("Plei Market").parentElement).toHaveClass(
+		expect(screen.getByText("Market Health Map")).toHaveClass("text-[12px]");
+		expect(screen.getByText("Market Health Map").parentElement).toHaveClass(
 			"gap-[4px]",
 			"px-[8px]",
 			"py-[4px]",
 		);
-		expect(screen.getByText("Plei Market").parentElement?.parentElement).toHaveClass("py-[2px]");
+		expect(screen.getByText("Market Health Map").parentElement?.parentElement).toHaveClass(
+			"py-[2px]",
+		);
 		expect(switchByName("Facilities")).toHaveClass(
 			"bg-pleiful-pitch-green-80",
 			"h-[13px]",
@@ -162,7 +164,7 @@ describe("MapLayersPanel", () => {
 		mockPathname.mockReturnValue("/metrics");
 		renderWithMessages(<MapLayersPanel />);
 
-		expect(screen.getByRole("link", { name: "Plei Market" })).toHaveAttribute("href", "/");
+		expect(screen.getByRole("link", { name: "Market Health Map" })).toHaveAttribute("href", "/");
 		expect(screen.queryByRole("switch")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 		mockPathname.mockReturnValue("/");

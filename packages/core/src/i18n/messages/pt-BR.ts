@@ -37,7 +37,7 @@ export const ptBR: Messages = {
 		sessionHeatmapLowValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapMidValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",
-		layersBrand: "Plei Market",
+		layersBrand: "Market Health Map",
 		layersHeading: "Camadas",
 		layersFacilities: "Instalações",
 		layersSessions: "Sessões do app",

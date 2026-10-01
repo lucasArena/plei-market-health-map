@@ -36,7 +36,7 @@ export const en: Messages = {
 		sessionHeatmapLowValue: "{count} sessions in a shaded area",
 		sessionHeatmapMidValue: "{count} sessions in a shaded area",
 		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
-		layersBrand: "Plei Market",
+		layersBrand: "Market Health Map",
 		layersHeading: "Layers",
 		layersFacilities: "Facilities",
 		layersSessions: "App sessions",
