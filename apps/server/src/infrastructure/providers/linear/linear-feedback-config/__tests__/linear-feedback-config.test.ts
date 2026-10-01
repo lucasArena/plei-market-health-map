@@ -1,9 +1,10 @@
 import {
 	DEFAULT_LINEAR_FEEDBACK_CONFIG,
+	toLinearCustomerNeedInput,
 	toLinearIssueInput,
 } from "@server/infrastructure/providers/linear/linear-feedback-config/linear-feedback-config";
 
-const BUG = { type: "bug" as const, title: "[MHM bug] a", description: "b" };
+const BUG = { type: "bug" as const, title: "[MHM bug] a", requestBody: "b" };
 
 describe("toLinearIssueInput", () => {
 	it("sends improvements to Requests triage in the Market health map project", () => {
@@ -12,7 +13,7 @@ describe("toLinearIssueInput", () => {
 				{
 					type: "improvement",
 					title: "[MHM feedback] a",
-					description: "b",
+					requestBody: "b",
 					submitter: { displayName: "Stefano Sanchez" },
 				},
 				DEFAULT_LINEAR_FEEDBACK_CONFIG,
@@ -23,7 +24,6 @@ describe("toLinearIssueInput", () => {
 			projectId: "98a63408-5cac-4a0e-85a9-1b73d17ea096",
 			labelIds: [],
 			title: "[MHM feedback] a",
-			description: "b",
 		});
 	});
 
@@ -64,5 +64,40 @@ describe("toLinearIssueInput", () => {
 
 		expect(input.createAsUser).toBe("a@plei.com");
 		expect(input).not.toHaveProperty("displayIconUrl");
+	});
+});
+
+describe("toLinearCustomerNeedInput", () => {
+	it("links the full request body to the created issue", () => {
+		expect(
+			toLinearCustomerNeedInput(
+				{ ...BUG, submitter: { displayName: "Stefano Sanchez" } },
+				"ENG-42",
+			),
+		).toEqual({
+			issueId: "ENG-42",
+			body: "b",
+		});
+	});
+
+	it("attributes app-created requests to the submitter", () => {
+		expect(
+			toLinearCustomerNeedInput(
+				{
+					...BUG,
+					submitter: {
+						displayName: "Stefano Sanchez",
+						avatarUrl: "https://img/s.png",
+					},
+				},
+				"ENG-42",
+				{ asApp: true },
+			),
+		).toEqual({
+			issueId: "ENG-42",
+			body: "b",
+			createAsUser: "Stefano Sanchez",
+			displayIconUrl: "https://img/s.png",
+		});
 	});
 });

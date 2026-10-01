@@ -100,7 +100,7 @@ export {
 } from "@core/application/mappers/facility-stats-mapper";
 export {
 	FEEDBACK_TITLES,
-	toFeedbackIssueDescription,
+	toFeedbackCustomerRequestBody,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
 	toFeedbackIssueTitle,

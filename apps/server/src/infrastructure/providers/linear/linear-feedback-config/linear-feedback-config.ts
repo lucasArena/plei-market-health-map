@@ -1,5 +1,6 @@
 import type { FeedbackIssueDraft } from "@market-health-map/core/application";
 import type {
+	LinearCustomerNeedCreateInput,
 	LinearFeedbackConfig,
 	LinearIssueCreateInput,
 	LinearIssueInputOptions,
@@ -37,7 +38,22 @@ export function toLinearIssueInput(
 		projectId: config.projectId,
 		labelIds: route.labelIds,
 		title: draft.title,
-		description: draft.description,
+		...actor,
+	};
+}
+
+export function toLinearCustomerNeedInput(
+	draft: FeedbackIssueDraft,
+	issueId: string,
+	{ asApp = false }: LinearIssueInputOptions = {},
+): LinearCustomerNeedCreateInput {
+	const { displayName, avatarUrl } = draft.submitter;
+	const actor = asApp
+		? { createAsUser: displayName, ...(avatarUrl ? { displayIconUrl: avatarUrl } : {}) }
+		: {};
+	return {
+		issueId,
+		body: draft.requestBody,
 		...actor,
 	};
 }

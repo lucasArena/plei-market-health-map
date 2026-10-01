@@ -18,7 +18,7 @@ export function toFeedbackIssueTitle(
 	return reporter ? `${FEEDBACK_TITLES[type]} from ${reporter}` : FEEDBACK_TITLES[type];
 }
 
-export function toFeedbackIssueDescription(
+export function toFeedbackCustomerRequestBody(
 	feedback: Feedback,
 	assetUrls: string[],
 	submittedAt: Date,
@@ -49,7 +49,7 @@ export function toFeedbackIssueDraft(
 	return {
 		type: feedback.type,
 		title: toFeedbackIssueTitle(feedback.type, feedback.submitter),
-		description: toFeedbackIssueDescription(feedback, assetUrls, submittedAt),
+		requestBody: toFeedbackCustomerRequestBody(feedback, assetUrls, submittedAt),
 		submitter: toFeedbackIssueSubmitter(feedback),
 	};
 }
