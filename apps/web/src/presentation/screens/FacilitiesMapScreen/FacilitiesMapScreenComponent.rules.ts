@@ -738,7 +738,11 @@ export function useFacilitiesMapScreenRules() {
 	const { setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
-	const heatmapQuery = useAppSessionHeatmap();
+	const mapLayers = useMapLayers();
+	const heatmapQuery = useAppSessionHeatmap(
+		mapLayers?.sessionFilters,
+		mapLayers?.showSessions ?? true,
+	);
 	const [isMapReady, setIsMapReady] = useState(false);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
@@ -751,11 +755,34 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
-	const mapLayers = useMapLayers();
 	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
 	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? true;
+	const filters = mapLayers?.sessionFilters;
+	const ageLabel =
+		filters?.ageMin === filters?.ageMax
+			? String(filters?.ageMin ?? "")
+			: filters?.ageMin === undefined
+				? `≤ ${filters?.ageMax}`
+				: filters?.ageMax === undefined
+					? `${filters.ageMin}+`
+					: `${filters.ageMin}–${filters.ageMax}`;
+	const sessionFilterSummary = [
+		(Array.isArray(filters?.gender) ? filters.gender : filters?.gender ? [filters.gender] : [])
+			.map((value) => value.charAt(0).toUpperCase() + value.slice(1))
+			.join(", "),
+		Array.isArray(filters?.skill) ? filters.skill.join(", ") : filters?.skill,
+		ageLabel,
+	]
+		.filter(Boolean)
+		.join(" · ");
+	const sessionQueryStatus =
+		{
+			[`${heatmapQuery.isError}`]: messages.map.sessionFilters.sessionsError,
+			[`${heatmapQuery.isPending}`]: messages.map.sessionFilters.updating,
+		}.true ?? "";
+
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
 	const facilitiesWereShownRef = useRef(showFacilities);
@@ -1125,6 +1152,9 @@ export function useFacilitiesMapScreenRules() {
 		if (!isMapReady || !map) return;
 		if (heatmapQuery.isError || !heatmapQuery.data) {
 			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
+			setSessionScale((current) =>
+				current.high === 0 && current.low === 0 ? current : { low: 0, high: 0 },
+			);
 			return;
 		}
 		refreshHeatmap();
@@ -1317,6 +1347,8 @@ export function useFacilitiesMapScreenRules() {
 	}[legendMotion];
 
 	return {
+		sessionFilterSummary,
+		sessionQueryStatus,
 		clearSearchScope,
 		closePanel,
 		containerRef,

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import type { AppSessionFilters } from "@market-health-map/core/application";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
@@ -125,6 +126,7 @@ const layersState = vi.hoisted(() => ({
 	showInactiveFacilities: true,
 	showSessions: true,
 	hasProvider: true,
+	sessionFilters: {} as AppSessionFilters,
 }));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
@@ -136,6 +138,7 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					setShowActiveFacilities: vi.fn(),
 					setShowInactiveFacilities: vi.fn(),
 					showSessions: layersState.showSessions,
+					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
 			: null,
@@ -743,6 +746,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.showInactiveFacilities = true;
 		layersState.showSessions = true;
 		layersState.hasProvider = true;
+		layersState.sessionFilters = {};
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -1493,5 +1497,29 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("skips the map when there is no container", () => {
 		renderHook(() => useFacilitiesMapScreenRules(), { wrapper });
 		expect(mapState.instances).toHaveLength(0);
+	});
+	it.each([
+		[
+			{ gender: ["male", "female"], skill: ["Beginner", "Expert"], ageMin: 18, ageMax: 35 },
+			"Male, Female · Beginner, Expert · 18–35",
+		],
+		[{ gender: "other", skill: "Advanced", ageMin: 21 }, "Other · Advanced · 21+"],
+		[{ ageMax: 17 }, "≤ 17"],
+		[{ ageMin: 25, ageMax: 25 }, "25"],
+	] satisfies [AppSessionFilters, string][])(
+		"names the applied demographic cohort %j",
+		(filters, summary) => {
+			layersState.sessionFilters = filters;
+			const { result } = renderRules();
+			expect(result.current.sessionFilterSummary).toBe(summary);
+		},
+	);
+	it.each([
+		[true, false, "Couldn’t load sessions. Try again."],
+		[false, true, "Updating sessions…"],
+	])("reports session query state", (isError, isPending, status) => {
+		mockUseAppSessionHeatmap.mockReturnValue({ data: [], isError, isPending });
+		const { result } = renderRules();
+		expect(result.current.sessionQueryStatus).toBe(status);
 	});
 });

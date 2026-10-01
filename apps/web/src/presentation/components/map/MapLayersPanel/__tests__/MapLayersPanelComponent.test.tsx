@@ -8,6 +8,14 @@ import {
 	useMapLayers,
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 
+const mockFeatureFlag = vi.fn(() => false);
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockFeatureFlag(),
+}));
+vi.mock("@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent", () => ({
+	AppSessionFilters: () => <div>Player filters</div>,
+}));
+
 const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({ usePathname: () => mockPathname() }));
@@ -269,4 +277,46 @@ describe("MapLayersPanel", () => {
 		fireEvent.click(switchByName("App sessions"));
 		expect(button).toHaveAttribute("data-active", "true");
 	});
+});
+
+it("shows demographic controls only when the flag is on", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	const { unmount } = renderWithMessages(<MapLayersPanel />);
+	expect(screen.getByText("Player filters")).toBeInTheDocument();
+	unmount();
+	mockFeatureFlag.mockReturnValue(false);
+	renderWithMessages(<MapLayersPanel />);
+	expect(screen.queryByText("Player filters")).not.toBeInTheDocument();
+});
+
+it("clears the applied cohort when its feature flag is disabled", () => {
+	function State() {
+		const layers = useMapLayers();
+		return (
+			<>
+				<output data-testid="cohort">{JSON.stringify(layers?.sessionFilters)}</output>
+				<button type="button" onClick={() => layers?.setSessionFilters({ gender: "Female" })}>
+					Set cohort
+				</button>
+			</>
+		);
+	}
+	mockFeatureFlag.mockReturnValue(true);
+	const tree = (
+		<MapLayersProvider>
+			<MapLayersPanel />
+			<State />
+		</MapLayersProvider>
+	);
+	const { rerender } = renderWithMessages(tree);
+	fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+	expect(screen.getByTestId("cohort")).toHaveTextContent("Female");
+	mockFeatureFlag.mockReturnValue(false);
+	rerender(
+		<MapLayersProvider>
+			<MapLayersPanel />
+			<State />
+		</MapLayersProvider>,
+	);
+	expect(screen.getByTestId("cohort")).toHaveTextContent("{}");
 });

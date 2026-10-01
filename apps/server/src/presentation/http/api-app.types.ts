@@ -14,6 +14,7 @@ export type ApiServices = Pick<
 	| "getMarketGameInsights"
 	| "getMarketPlayerStats"
 	| "listAppSessionHeatmap"
+	| "listAppSessionFilterOptions"
 	| "listRecentLogins"
 	| "submitFeedback"
 	| "recordDailyActivity"
