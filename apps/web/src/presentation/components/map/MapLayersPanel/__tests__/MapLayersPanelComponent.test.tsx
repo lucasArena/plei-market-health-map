@@ -162,7 +162,7 @@ describe("MapLayersPanel", () => {
 		expect(toggle).toHaveClass("size-[32px]", "rounded-full", "map-glass", "map-icon-button");
 		expect(toggle.querySelector("img")).toHaveAttribute(
 			"src",
-			expect.stringContaining("layers.svg"),
+			expect.stringContaining("settings-2.svg"),
 		);
 		expect(toggle).not.toHaveTextContent("Layers");
 
@@ -180,7 +180,7 @@ describe("MapLayersPanel", () => {
 		expect(expand).toHaveClass("map-glass", "map-icon-button", "rounded-full");
 		expect(expand.querySelector("img")).toHaveAttribute(
 			"src",
-			expect.stringContaining("layers.svg"),
+			expect.stringContaining("settings-2.svg"),
 		);
 		expect(expand.parentElement).not.toHaveClass("border-b");
 

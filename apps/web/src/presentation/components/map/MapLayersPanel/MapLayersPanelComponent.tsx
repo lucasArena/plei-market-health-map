@@ -79,7 +79,7 @@ export function MapLayersPanel() {
 				aria-describedby={layersBadge ? "layers-on-status" : undefined}
 				className="map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none"
 			>
-				<Image src="/images/map-layers/layers.svg" alt="" width={16} height={16} />
+				<Image src="/images/map-layers/settings-2.svg" alt="" width={16} height={16} />
 				{layersBadge && (
 					<span
 						data-testid="layers-badge"
