@@ -1,7 +1,12 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { CURSOR_AGENT_ID, DISABLED_AGENT, delegateReview } from "./delegate-review.mjs";
-import { createLinearClient, issueIdsIn, requestAppToken } from "./move-issues.mjs";
+import {
+	agentLinearClient,
+	CURSOR_AGENT_ID,
+	DISABLED_AGENT,
+	delegateReview,
+} from "./delegate-review.mjs";
+import { issueIdsIn } from "./move-issues.mjs";
 
 export const CONFLICTS_LABEL = "conflicts";
 export const MERGEABILITY_ATTEMPTS = 6;
@@ -97,14 +102,8 @@ if (isCli) {
 	const github = createGitHubClient({ token: env.GITHUB_TOKEN, repo: env.GITHUB_REPOSITORY });
 	try {
 		let delegate = async (ids) => console.log(`${ids.join(", ")}: not delegated (agent is off)`);
-		if (agentId !== DISABLED_AGENT && env.LINEAR_CLIENT_ID && env.LINEAR_CLIENT_SECRET) {
-			const token = await requestAppToken({
-				clientId: env.LINEAR_CLIENT_ID,
-				clientSecret: env.LINEAR_CLIENT_SECRET,
-			});
-			const request = createLinearClient({ token });
-			delegate = (ids, comment) => delegateReview({ ids, agentId, comment, request });
-		}
+		const request = agentId === DISABLED_AGENT ? null : await agentLinearClient(env);
+		if (request) delegate = (ids, comment) => delegateReview({ ids, agentId, comment, request });
 		await ensureConflictsLabel(github);
 		await handleConflicts({ github, delegate });
 	} catch (error) {

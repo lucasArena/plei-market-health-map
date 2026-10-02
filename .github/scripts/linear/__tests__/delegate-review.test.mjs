@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+	agentLinearClient,
 	buildReviewComment,
 	CURSOR_AGENT_ID,
 	delegateReview,
@@ -118,5 +119,39 @@ describe("delegateReview", () => {
 			"ENG-3: skipped (not found)",
 			"::warning::ENG-9: not delegated (Entity not found)",
 		]);
+	});
+});
+
+describe("agentLinearClient", () => {
+	function recordingFetch(sent) {
+		return async (url, init) => {
+			sent.push({ url, init });
+			if (url.endsWith("/oauth/token")) {
+				return { ok: true, json: async () => ({ access_token: "app-token" }) };
+			}
+			return { ok: true, json: async () => ({ data: {} }) };
+		};
+	}
+
+	it("acts as the person behind LINEAR_AGENT_API_KEY when it is set", async () => {
+		const sent = [];
+		const request = await agentLinearClient(
+			{ LINEAR_AGENT_API_KEY: "lin_api_person", LINEAR_CLIENT_ID: "id", LINEAR_CLIENT_SECRET: "s" },
+			{ fetch: recordingFetch(sent) },
+		);
+		await request("query { viewer { id } }", {});
+		assert.equal(sent.length, 1);
+		assert.equal(sent[0].init.headers.Authorization, "lin_api_person");
+	});
+
+	it("falls back to the app, and to nothing without credentials", async () => {
+		const sent = [];
+		const request = await agentLinearClient(
+			{ LINEAR_CLIENT_ID: "id", LINEAR_CLIENT_SECRET: "s" },
+			{ fetch: recordingFetch(sent) },
+		);
+		await request("query { viewer { id } }", {});
+		assert.equal(sent[1].init.headers.Authorization, "Bearer app-token");
+		assert.equal(await agentLinearClient({}), null);
 	});
 });

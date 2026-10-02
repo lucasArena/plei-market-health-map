@@ -22,6 +22,7 @@ jobs:
       LINEAR_CLIENT_ID: ${{ secrets.LINEAR_CLIENT_ID }}
       LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
       LINEAR_FIX_AGENT_ID: ${{ vars.LINEAR_FIX_AGENT_ID }}
+      LINEAR_AGENT_API_KEY: ${{ secrets.LINEAR_AGENT_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

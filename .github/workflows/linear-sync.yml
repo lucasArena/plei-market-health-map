@@ -62,6 +62,7 @@ jobs:
         if: github.event.review.user.type != 'Bot'
         env:
           LINEAR_FIX_AGENT_ID: ${{ vars.LINEAR_FIX_AGENT_ID }}
+          LINEAR_AGENT_API_KEY: ${{ secrets.LINEAR_AGENT_API_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           REVIEWER: ${{ github.event.review.user.login }}

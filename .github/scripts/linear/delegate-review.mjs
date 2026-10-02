@@ -4,6 +4,17 @@ import { createLinearClient, issueIdsIn, requestAppToken } from "./move-issues.m
 export const CURSOR_AGENT_ID = "7d53c5e9-5cfb-4e7f-aa63-50bc73cb713e";
 export const DISABLED_AGENT = "off";
 
+export async function agentLinearClient(env, { fetch = globalThis.fetch } = {}) {
+	if (env.LINEAR_AGENT_API_KEY) return createLinearClient({ apiKey: env.LINEAR_AGENT_API_KEY, fetch });
+	if (!env.LINEAR_CLIENT_ID || !env.LINEAR_CLIENT_SECRET) return null;
+	const token = await requestAppToken({
+		clientId: env.LINEAR_CLIENT_ID,
+		clientSecret: env.LINEAR_CLIENT_SECRET,
+		fetch,
+	});
+	return createLinearClient({ token, fetch });
+}
+
 const ISSUE_QUERY = `query Issue($id: String!) {
 	issue(id: $id) { id identifier delegate { id } }
 }`;
@@ -82,8 +93,6 @@ if (isCli) {
 		console.log("The review agent is off (LINEAR_FIX_AGENT_ID=off).");
 	} else if (ids.length === 0) {
 		console.log("No Linear issue found.");
-	} else if (!env.LINEAR_CLIENT_ID || !env.LINEAR_CLIENT_SECRET) {
-		console.log(`::warning::LINEAR_CLIENT_ID or LINEAR_CLIENT_SECRET is not set, so ${ids.join(", ")} was not delegated.`);
 	} else {
 		const comment = buildReviewComment({
 			prNumber: env.PR_NUMBER,
@@ -94,11 +103,9 @@ if (isCli) {
 			comments: parseInlineComments(env.REVIEW_COMMENTS),
 		});
 		try {
-			const token = await requestAppToken({
-				clientId: env.LINEAR_CLIENT_ID,
-				clientSecret: env.LINEAR_CLIENT_SECRET,
-			});
-			await delegateReview({ ids, agentId, comment, request: createLinearClient({ token }) });
+			const request = await agentLinearClient(env);
+			if (request) await delegateReview({ ids, agentId, comment, request });
+			else console.log(`::warning::No Linear credentials are set, so ${ids.join(", ")} was not delegated.`);
 		} catch (error) {
 			console.log(`::warning::Could not delegate ${ids.join(", ")} (${error.message}).`);
 		}

@@ -55,11 +55,12 @@ export async function requestAppToken({ clientId, clientSecret, fetch = globalTh
 	return accessToken;
 }
 
-export function createLinearClient({ token, fetch = globalThis.fetch }) {
+export function createLinearClient({ token, apiKey, fetch = globalThis.fetch }) {
+	const authorization = apiKey ?? `Bearer ${token}`;
 	return async (query, variables) => {
 		const response = await fetch(LINEAR_API_URL, {
 			method: "POST",
-			headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+			headers: { "Content-Type": "application/json", Authorization: authorization },
 			body: JSON.stringify({ query, variables }),
 		});
 		const payload = await response.json();
