@@ -75,9 +75,11 @@ jobs:
           release_notes: release-notes.md
           documents: Changelog ${{ env.TAG }}=release-notes.md
           links: ${{ github.server_url }}/${{ github.repository }}/tree/${{ env.TAG }}
-      - name: Remove feature-flagged tickets from the Linear release
+      - name: Link the released tickets and drop feature-flagged ones
         if: steps.linear.outputs.release-id != ''
-        run: node .github/scripts/linear/flagged-issues.mjs unlink "${{ steps.linear.outputs.release-id }}"
+        env:
+          ISSUES: ${{ steps.notes.outputs.issues }}
+        run: node .github/scripts/linear/flagged-issues.mjs sync "${{ steps.linear.outputs.release-id }}" "$ISSUES"
       - name: Link the Linear release
         if: steps.linear.outputs.release-url != ''
         env:
