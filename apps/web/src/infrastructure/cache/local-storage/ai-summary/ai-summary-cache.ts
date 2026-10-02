@@ -14,7 +14,7 @@ export class AiSummaryCache {
 	constructor(private readonly resolveStorage: ResolveStorage = browserStorage) {}
 
 	keyFor(subject: string, periodEnd: string, locale: string): string {
-		return `v7:${subject.replaceAll(":", "-")}:${periodEnd}:${locale}`;
+		return `v9:${subject.replaceAll(":", "-")}:${periodEnd}:${locale}`;
 	}
 
 	read(key: string): string | null {

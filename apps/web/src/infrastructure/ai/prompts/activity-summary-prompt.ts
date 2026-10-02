@@ -97,7 +97,7 @@ export class ActivitySummaryPrompt {
 			...this.scopeFacts(subject),
 			...(subject.insightFacts
 				? [
-						`Verified key insights (preserve named contributors and counts): ${subject.insightFacts}`,
+						`Largest contributors to the games change (preserve their names and counts): ${subject.insightFacts}`,
 					]
 				: []),
 			`Period: the last 28 days (${start} to ${end}), compared with the previous 28 days.`,

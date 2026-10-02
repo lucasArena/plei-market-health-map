@@ -10,8 +10,8 @@ describe("AiSummaryCache", () => {
 	it("keys summaries by subject, week and locale and keeps them in localStorage", () => {
 		const cache = new AiSummaryCache();
 		const key = cache.keyFor("facility-889", "2026-09-21", "en");
-		expect(key).toBe("v7:facility-889:2026-09-21:en");
-		expect(cache.keyFor("market:2", "2026-09-21", "pt-BR")).toBe("v7:market-2:2026-09-21:pt-BR");
+		expect(key).toBe("v9:facility-889:2026-09-21:en");
+		expect(cache.keyFor("market:2", "2026-09-21", "pt-BR")).toBe("v9:market-2:2026-09-21:pt-BR");
 		expect(cache.read(key)).toBeNull();
 
 		cache.write(key, "Busy week.");

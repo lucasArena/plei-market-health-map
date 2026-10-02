@@ -148,7 +148,7 @@ it("grounds AI wording in the independently computed contributors", () => {
 		"en",
 	);
 	expect(content.at(-1)?.content).toContain(
-		"Verified key insights (preserve named contributors and counts): Houston",
+		"Largest contributors to the games change (preserve their names and counts): Houston",
 	);
 	expect(content[0]?.content).toContain("All markets names markets only");
 	expect(content[0]?.content).toContain("plain overall-change opening paragraph");
