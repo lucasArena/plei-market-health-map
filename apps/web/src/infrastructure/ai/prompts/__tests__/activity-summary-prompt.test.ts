@@ -19,13 +19,17 @@ describe("ActivitySummaryPrompt", () => {
 		expect(messages[0]?.content).toContain("cannot establish historical normality");
 		expect(messages[0]?.content).toContain("Small counts are weak evidence");
 		expect(messages[2]?.content).toContain("Activation is weakening faster");
-		expect(messages.at(-1)?.content).toContain(
-			"Activated players comparison: 20 to 24; change: 20%",
+		const facts = messages.at(-1)?.content ?? "";
+		expect(facts).toContain(
+			"Period: the last 28 days (Sep 3 to Sep 30, 2026), compared with the previous 28 days.",
 		);
-		expect(messages.at(-1)?.content).toContain("Games comparison: 200 to 212");
-		expect(messages.at(-1)?.content).toContain(
-			"Pickup games played in the last 28 days (Sep 3 to Sep 30, 2026)",
+		expect(facts).toContain("Pickup games played: 200 → 212, up 6% from the previous 28 days.");
+		expect(facts).toContain("Unique players: 120 → 126, up 5% from the previous 28 days.");
+		expect(facts).toContain("Newly activated players: 20 → 24, up 20% from the previous 28 days.");
+		expect(facts).toMatch(
+			/Confirmation rate: [\d.]+%, up 1\.5 percentage points from the previous 28 days\./,
 		);
+		expect(facts).not.toContain("Change versus the previous 28 days:");
 		expect(messages.at(-1)?.content).toContain("Weekly games (oldest first)");
 	});
 	it("handles missing comparisons", () => {
@@ -45,8 +49,35 @@ describe("ActivitySummaryPrompt", () => {
 				"en",
 			)
 			.at(-1)?.content;
-		expect(content).toContain("Confirmation rate: unavailable");
-		expect(content).toContain("Change versus the previous 28 days: unavailable");
+		expect(content).toContain("Confirmation rate: unavailable.");
+		expect(content).toContain(
+			"Pickup games played: 200 → 212, no previous baseline, so no percentage.",
+		);
+		expect(content).toContain("Unique players: 120 → 126, no previous baseline, so no percentage.");
+	});
+
+	it("puts every metric's own change on its line, with its direction in words", () => {
+		const content = prompt
+			.build(
+				facilitySubject({
+					...FACILITY_DETAIL,
+					stats: {
+						...FACILITY_DETAIL.stats,
+						playedPeriodChangePercent: 14,
+						uniquePlayersPeriodChangePercent: 11.5,
+						activatedPlayersPeriodChangePercent: -34.5,
+						confirmationRateChangePoints: 0,
+					},
+				}),
+				"en",
+			)
+			.at(-1)?.content;
+		expect(content).toContain("Pickup games played: 200 → 212, up 14% from the previous 28 days.");
+		expect(content).toContain("Unique players: 120 → 126, up 11.5% from the previous 28 days.");
+		expect(content).toContain(
+			"Newly activated players: 20 → 24, down 34.5% from the previous 28 days.",
+		);
+		expect(content).toContain("Confirmation rate: 84.8%, unchanged from the previous 28 days.");
 	});
 	it("uses the viewer language with English fallback", () => {
 		expect(prompt.build(facilitySubject(FACILITY_DETAIL), "pt-BR")[2]?.content).toContain(

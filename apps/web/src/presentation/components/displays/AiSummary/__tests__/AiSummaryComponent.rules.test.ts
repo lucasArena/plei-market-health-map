@@ -172,8 +172,8 @@ describe("useAiSummaryRules", () => {
 			"en",
 		);
 
-		expect(facility.cacheKey).toBe("v5:facility-889:2026-09-30:en");
-		expect(market.cacheKey).toBe("v5:market-2:2026-09-30:en");
+		expect(facility.cacheKey).toBe("v7:facility-889:2026-09-30:en");
+		expect(market.cacheKey).toBe("v7:market-2:2026-09-30:en");
 		expect(market.prompt.at(-1)?.content).toContain("Market: Houston.");
 	});
 

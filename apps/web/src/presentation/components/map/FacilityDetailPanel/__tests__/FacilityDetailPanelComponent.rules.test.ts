@@ -333,7 +333,7 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.name).toBe("Pegaso HTX");
 		expect(result.current.aiContext?.cacheKey).toBe(
-			`v5:facility-${DETAIL.facility.id}:${DETAIL.stats.periodEnd}:en`,
+			`v7:facility-${DETAIL.facility.id}:${DETAIL.stats.periodEnd}:en`,
 		);
 		expect(result.current.aiContext?.prompt.at(-1)?.content).toContain(DETAIL.facility.name);
 		expect(result.current.messages).toBe(messages);
