@@ -157,7 +157,7 @@ chore(ci): add a deploy timeout
 ### 3. Open a PR into `staging` and **squash and merge**
 
 - The base is `staging`. The PR title becomes the squashed commit, so it must be a valid conventional message; it's what production counts later.
-- End the title with the Linear issue, e.g. `feat(map): add facility panel (ENG-5758)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
+- End the title with the Linear issue, e.g. `feat(map): add facility panel (ENG-5758)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none. PRs are squash-merged, so only the title survives: when a PR covers more than one ticket, name every one of them in the title, e.g. `(ENG-5805, ENG-5806)`, or the others won't be in the release.
 - `ci.pr.yml` must pass: the branch-name check and the unit tests. The Linear-issue check only warns.
 - Review it in Linear if you like: open `linear.review/lucasArena/plei-market-health-map/pull/<number>` (or the **Reviews** tab). `.gitattributes` groups the diff into implementation, tests, docs, agent guidance, localization, assets and generated files.
 - Merge with **Squash and merge**.
