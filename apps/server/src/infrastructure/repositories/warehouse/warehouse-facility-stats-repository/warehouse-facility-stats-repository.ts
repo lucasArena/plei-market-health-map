@@ -158,8 +158,8 @@ facility_players as (
   where f.location_id = any($1::int[])
     and f.date_played >= current_date - 56
     and f.date_played < current_date
-    and f.valid_player = 1 and f.confirmed_game = 1 and f.open_reservation_games = 1
-    and f.dropping_date_local is null and f.players_type = 'pleiapp_player'
+    and f.valid_player + 0 = 1 and f.confirmed_game + 0 = 1 and f.open_reservation_games + 0 = 1
+    and f.dropping_date_local is null and f.players_type || '' = 'pleiapp_player'
     and exists (
       select 1
       from plei_gold.dim_player p
