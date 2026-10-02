@@ -113,8 +113,8 @@ describe("delegateReview", () => {
 			["Delegate", { id: "u2", delegateId: CURSOR_AGENT_ID }],
 		]);
 		assert.deepEqual(logs, [
-			"ENG-1: review posted and delegated to the agent",
-			"ENG-2: review posted and delegated to the agent",
+			"ENG-1: comment posted and delegated to the agent",
+			"ENG-2: comment posted and delegated to the agent",
 			"ENG-3: skipped (not found)",
 			"::warning::ENG-9: not delegated (Entity not found)",
 		]);
