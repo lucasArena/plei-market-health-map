@@ -44,7 +44,7 @@ packages/
 .github/
   workflows/                      CI/CD workflows only (GitHub reads every YAML here)
   scripts/release/                scripts the workflows run (next-version, release-notes)
-docs/                             repo-wide docs (architecture, conventions, deployment, design system, agent usage)
+docs/                             repo-wide docs (architecture, conventions, deployment, design system)
 ```
 
 Rules:
@@ -206,12 +206,12 @@ Switches reach users within about a minute: the server caches the flags for 30 s
 
 ## Linear tracking (mandatory)
 
-Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.
+Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did. The ticket and the PR description are also the project's record of how agents were used (a project must-have), so say in the PR which agent did the work and how you verified it. There is no separate log file.
 
 1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Engineering** team (`ENG`), in that project, assigned to the person you are working for.
 2. **Set it to In Progress** while you work.
 3. **Open the PR and attach its link to the ticket** so the diff shows up there. Put the ticket ID in the branch slug (`feature/eng-5796-<slug>`) and at the end of the PR title (see *Release workflow*).
-4. After that, GitHub moves it for you (`linear-sync.yml` and `cd.production.yml`, through `.github/scripts/linear/move-issues.mjs`): **Code Review** when a PR into `staging` opens or gets new commits (drafts wait until ready for review; GitHub skips PRs with merge conflicts until they are pushed again), **Feedback** when a reviewer requests changes, **Done** when the PR merges into `staging`, and **Released** when a tagged production deploy ships it. Only `ENG` and `PROD` tickets found in the PR title, branch or release commits move; `REQ` tickets never do.
+4. After that, GitHub moves it for you (`linear-sync.yml` and `cd.production.yml`, through `.github/scripts/linear/move-issues.mjs`): **Code Review** when a PR into `staging` opens or gets new commits (drafts wait until ready for review; GitHub skips PRs with merge conflicts until they are pushed again), **Feedback** when a reviewer requests changes (and the review is posted on the ticket, which is delegated to the Cursor agent to fix on the same branch: see *Review agent* in `docs/deployment.md`), **Done** when the PR merges into `staging`, and **Released** when a tagged production deploy ships it. Only `ENG` and `PROD` tickets found in the PR title, branch or release commits move; `REQ` tickets never do.
 
 Reach Linear through the Linear MCP server in your agent client, or the GraphQL API (`https://api.linear.app/graphql`) with your own API key from your environment. Never commit keys or paste them into tickets, PRs or logs. The app's `LINEAR_CLIENT_ID` and `LINEAR_CLIENT_SECRET` are for in-app feedback and the GitHub workflows above, not for agent logging. If you can't reach Linear, tell the person you are working for.
 
@@ -219,7 +219,6 @@ Reach Linear through the Linear MCP server in your agent client, or the GraphQL 
 
 - `pnpm check` passes.
 - New files follow the folder structure above, and docs in `CLAUDE.md` and `docs/` match what changed.
-- A row is added to `docs/agent-usage.md` for meaningful agent-assisted work (a project must-have).
 - The Linear ticket is linked to the PR and has the right status.
 
 <!-- BEGIN:turborepo-agent-rules -->

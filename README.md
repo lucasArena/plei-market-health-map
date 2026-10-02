@@ -48,4 +48,3 @@ Branch from `staging` as `feature/…`, `hotfix/…`, `refactor/…` or `chore/�
 - [docs/architecture.md](docs/architecture.md): the layers, ports and adapters, and how login tracking works
 - [docs/conventions.md](docs/conventions.md): code, testing, and git conventions
 - [docs/deployment.md](docs/deployment.md): hosting, environment variables, and Google SSO setup
-- [docs/agent-usage.md](docs/agent-usage.md): how agents were used on this project (a project must-have)
