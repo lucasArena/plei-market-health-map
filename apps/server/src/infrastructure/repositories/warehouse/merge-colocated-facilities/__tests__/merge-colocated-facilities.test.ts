@@ -53,7 +53,40 @@ describe("distanceInMeters", () => {
 	});
 });
 
+function withLogo(item: Facility, avatarUrl: string): Facility {
+	return Facility.create({ ...item.toJSON(), avatarUrl });
+}
+
 describe("mergeColocatedFacilities", () => {
+	it("keeps the base facility's logo, falling back to a member's", () => {
+		const avatar = (facilities: Facility[]) => facilities.map((item) => item.toJSON().avatarUrl);
+
+		expect(
+			avatar(
+				mergeColocatedFacilities([
+					withLogo(facility("698", "Phield House | Morby"), "https://cdn/morby.png"),
+					withLogo(facility("292", "Phield House"), "https://cdn/phield.png"),
+				]),
+			),
+		).toEqual(["https://cdn/phield.png"]);
+		expect(
+			avatar(
+				mergeColocatedFacilities([
+					withLogo(facility("698", "Phield House | Morby"), "https://cdn/morby.png"),
+					facility("292", "Phield House"),
+				]),
+			),
+		).toEqual(["https://cdn/morby.png"]);
+		expect(
+			avatar(
+				mergeColocatedFacilities([
+					facility("698", "Phield House | Morby"),
+					facility("292", "Phield House"),
+				]),
+			),
+		).toEqual([null]);
+	});
+
 	it("merges a suffixed twin into the base facility and sums its metrics", () => {
 		const merged = mergeColocatedFacilities([
 			facility("698", "Phield House | Morby", 0),
