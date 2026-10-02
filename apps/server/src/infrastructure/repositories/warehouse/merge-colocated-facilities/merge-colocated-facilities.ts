@@ -65,6 +65,8 @@ function mergeCluster(cluster: Facility[]): Facility {
 	return Facility.create({
 		...props,
 		name: baseFacilityName(props.name),
+		avatarUrl:
+			members.map((facility) => facility.toJSON().avatarUrl).find((avatarUrl) => avatarUrl) ?? null,
 		memberIds: members
 			.flatMap((facility) => facility.memberIds)
 			.sort((a, b) => Number(a) - Number(b)),
