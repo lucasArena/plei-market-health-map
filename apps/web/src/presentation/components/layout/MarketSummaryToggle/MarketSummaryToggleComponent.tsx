@@ -5,8 +5,17 @@ import { MARKET_SUMMARY_TOGGLE_BASE_CLASS } from "@/presentation/components/layo
 import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent";
 
 export function MarketSummaryToggle() {
-	const { close, handleClosed, isActive, isClosing, isMounted, isOnMap, messages, toggle } =
-		useMarketSummaryToggleRules();
+	const {
+		close,
+		handleClosed,
+		isActive,
+		isClosing,
+		isMounted,
+		isOnMap,
+		messages,
+		prefetchScope,
+		toggle,
+	} = useMarketSummaryToggleRules();
 
 	if (!isOnMap) return null;
 
@@ -15,6 +24,8 @@ export function MarketSummaryToggle() {
 			<button
 				type="button"
 				onClick={toggle}
+				onPointerEnter={prefetchScope}
+				onFocus={prefetchScope}
 				aria-label={messages.open}
 				title={messages.open}
 				aria-expanded={isActive}

@@ -62,14 +62,14 @@ const mapState = vi.hoisted(() => ({
 	setWorkerUrl: vi.fn(),
 }));
 const queryClient = vi.hoisted(() => ({}));
-const mockPrefetchFacilityReservationStats = vi.hoisted(() => vi.fn());
+const mockPrefetchFacilityStats = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-query", () => ({
 	useQueryClient: () => queryClient,
 }));
 
-vi.mock("@/presentation/hooks/use-facility/prefetch-facility-reservation-stats", () => ({
-	prefetchFacilityReservationStats: mockPrefetchFacilityReservationStats,
+vi.mock("@/presentation/hooks/use-facility/prefetch-facility-stats", () => ({
+	prefetchFacilityStats: mockPrefetchFacilityStats,
 }));
 
 vi.mock("maplibre-gl", () => {
@@ -897,7 +897,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			flipY: false,
 			viewport: { width: 1000, height: 800 },
 		});
-		expect(mockPrefetchFacilityReservationStats).toHaveBeenCalledWith(queryClient, "f1");
+		expect(mockPrefetchFacilityStats).toHaveBeenCalledWith(queryClient, "f1");
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("missing")));
 		expect(result.current.hovered).toBeNull();
 

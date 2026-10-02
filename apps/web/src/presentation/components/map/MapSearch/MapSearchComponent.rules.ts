@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
@@ -7,7 +8,10 @@ import type {
 	MapSearchProps,
 	MarketSearchResult,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
+import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
+import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
+import { useIntentPrefetch } from "@/presentation/hooks/use-prefetch/use-intent-prefetch";
 
 const RESULT_LIMIT = 8;
 
@@ -40,6 +44,8 @@ export function useMapSearchRules({
 	const [isOpen, setIsOpen] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isOpen);
 	const rootRef = useRef<HTMLDivElement>(null);
+	const queryClient = useQueryClient();
+	const intent = useIntentPrefetch();
 	const markets = useMemo(() => buildMarketSearchResults(facilities), [facilities]);
 	const normalizedQuery = query.trim().toLocaleLowerCase();
 	const visibleMarkets = markets
@@ -82,6 +88,16 @@ export function useMapSearchRules({
 		onFacilitySelect(facility);
 	};
 
+	const prefetchMarket = (market: MarketSearchResult) =>
+		intent.schedule(() => {
+			void prefetchMarketSummary(queryClient, market.id).catch(() => undefined);
+		});
+
+	const prefetchFacility = (facility: MapSearchProps["facilities"][number]) =>
+		intent.schedule(() => {
+			void prefetchFacilityStats(queryClient, facility.id).catch(() => undefined);
+		});
+
 	const clear = () => {
 		setQuery("");
 		setIsOpen(true);
@@ -89,12 +105,15 @@ export function useMapSearchRules({
 	};
 
 	return {
+		cancelPrefetch: intent.cancel,
 		clear,
 		finishResultsMotion: finishReveal,
 		handleChange,
 		handleKeyDown,
 		isOpen,
 		isResultsShown: isShown,
+		prefetchFacility,
+		prefetchMarket,
 		query,
 		resultsMotion: motion,
 		rootRef,

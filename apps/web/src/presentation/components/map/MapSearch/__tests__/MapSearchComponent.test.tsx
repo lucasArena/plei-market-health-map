@@ -3,6 +3,13 @@ import { EN_MESSAGES } from "@/application/test/messages";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { buildMarketSearchResults } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 
+const mockPrefetchQuery = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@tanstack/react-query")>()),
+	useQueryClient: () => ({ prefetchQuery: mockPrefetchQuery }),
+}));
+
 const FACILITIES = [
 	{
 		id: "a1",
@@ -202,5 +209,45 @@ describe("MapSearch", () => {
 			"search-results-in",
 			"overflow-y-auto",
 		);
+	});
+
+	it("loads a market or facility once the pointer rests on it, not while skimming", () => {
+		vi.useFakeTimers();
+		mockPrefetchQuery.mockClear();
+		render(
+			<MapSearch
+				facilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets or facilities" }));
+		const austin = screen.getByRole("option", { name: /Austin.*2 facilities/ });
+		const facility = screen.getByRole("option", { name: /Eastside Futsal Arena/ });
+
+		fireEvent.pointerEnter(austin);
+		act(() => vi.advanceTimersByTime(100));
+		fireEvent.pointerLeave(austin);
+		act(() => vi.advanceTimersByTime(200));
+		expect(mockPrefetchQuery).not.toHaveBeenCalled();
+
+		fireEvent.pointerEnter(austin);
+		act(() => vi.advanceTimersByTime(150));
+		expect(mockPrefetchQuery.mock.calls[0]?.[0].queryKey).toEqual([
+			"market-summary",
+			"reservations",
+			"austin",
+		]);
+
+		mockPrefetchQuery.mockClear();
+		fireEvent.focus(facility);
+		act(() => vi.advanceTimersByTime(150));
+		expect(mockPrefetchQuery.mock.calls.map(([options]) => options.queryKey.at(-1))).toEqual([
+			"reservations",
+			"players",
+		]);
+		vi.useRealTimers();
 	});
 });

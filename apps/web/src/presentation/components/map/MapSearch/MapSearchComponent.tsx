@@ -15,12 +15,15 @@ import type { MapSearchProps } from "@/presentation/components/map/MapSearch/Map
 export function MapSearch(props: MapSearchProps) {
 	const { messages } = props;
 	const {
+		cancelPrefetch,
 		clear,
 		finishResultsMotion,
 		handleChange,
 		handleKeyDown,
 		isOpen,
 		isResultsShown,
+		prefetchFacility,
+		prefetchMarket,
 		query,
 		resultsMotion,
 		rootRef,
@@ -98,6 +101,9 @@ export function MapSearch(props: MapSearchProps) {
 									aria-selected="false"
 									className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 									onClick={() => selectMarket(market)}
+									onPointerEnter={() => prefetchMarket(market)}
+									onPointerLeave={cancelPrefetch}
+									onFocus={() => prefetchMarket(market)}
 								>
 									<span className={`truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{market.name}</span>
 									<span className="ml-3 shrink-0 text-xs text-muted-foreground">
@@ -126,6 +132,9 @@ export function MapSearch(props: MapSearchProps) {
 									aria-selected="false"
 									className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 									onClick={() => selectFacility(facility)}
+									onPointerEnter={() => prefetchFacility(facility)}
+									onPointerLeave={cancelPrefetch}
+									onFocus={() => prefetchFacility(facility)}
 								>
 									<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>
 										{facility.name}
