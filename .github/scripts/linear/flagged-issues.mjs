@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { createLinearClient, requestAppToken } from "./move-issues.mjs";
 
-export const FLAG_LABEL = "flag";
+export const FLAG_LABEL = "feature flag";
 
 const ISSUE_LABELS_QUERY = `query IssueLabels($id: String!) {
 	issue(id: $id) { identifier labels { nodes { name } } }

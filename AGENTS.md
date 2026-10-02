@@ -194,7 +194,7 @@ Put user-facing work behind a feature flag when it should reach `staging` or `ma
 3. Read it in the component's `.rules.ts` hook with `useFeatureFlag("<key>")` from `presentation/hooks/use-feature-flags/use-feature-flags.ts`, and render the new behavior only when it is `true`. Keep the current behavior working when it is `false`, which is also the answer while the flags load. Server code can call `listEnabledFeatureFlags()` from the container.
 4. Test both states by mocking `useFeatureFlag`.
 5. A new flag starts **off**. Say in the PR which flag to turn on, and leave turning it on to an admin.
-6. Add the **`flag`** label to the Linear ticket. While a ticket has it, production releases leave its commits out of the release notes and the Linear release, and it doesn't move to Released (`release-notes.mjs` and `flagged-issues.mjs` in `cd.production.yml`).
+6. Add the **`feature flag`** label to the Linear ticket. While a ticket has it, production releases leave its commits out of the release notes and the Linear release, and it doesn't move to Released (`release-notes.mjs` and `flagged-issues.mjs` in `cd.production.yml`).
 
 Switches reach users within about a minute: the server caches the flags for 30 seconds and each browser refetches them after 30 seconds.
 
@@ -204,7 +204,7 @@ Switches reach users within about a minute: the server caches the flags for 30 s
 2. Remove the key from `FEATURE_FLAG_KEYS` and its descriptions from every catalog.
 3. Leave the database row. Rows for keys that are no longer in code are ignored and disappear from the control panel.
 4. Name the removed flag in the PR title or description.
-5. Remove the `flag` label from the tickets the flag covered. Work that shipped while it was flagged is not added to a release later on its own; move those tickets to Released by hand once the flag is fully on.
+5. Remove the `feature flag` label from the tickets the flag covered. Work that shipped while it was flagged is not added to a release later on its own; move those tickets to Released by hand once the flag is fully on.
 
 ## Linear tracking (mandatory)
 

@@ -9,10 +9,10 @@ import {
 } from "../flagged-issues.mjs";
 
 describe("hasFlagLabel", () => {
-	it("matches the flag label in any case, and nothing else", () => {
-		assert.equal(FLAG_LABEL, "flag");
-		assert.equal(hasFlagLabel([{ name: "bug" }, { name: " Flag " }]), true);
-		assert.equal(hasFlagLabel([{ name: "flags" }, { name: "feature" }]), false);
+	it("matches only the feature flag label, in any case", () => {
+		assert.equal(FLAG_LABEL, "feature flag");
+		assert.equal(hasFlagLabel([{ name: "bug" }, { name: " Feature Flag " }]), true);
+		assert.equal(hasFlagLabel([{ name: "flag" }, { name: "feature" }, { name: "feature flags" }]), false);
 		assert.equal(hasFlagLabel([]), false);
 	});
 });
@@ -20,9 +20,9 @@ describe("hasFlagLabel", () => {
 describe("flaggedIssueIds", () => {
 	it("returns the referenced tickets that carry the flag label, keeping their original IDs", async () => {
 		const labels = {
-			"ENG-1": [{ name: "flag" }],
-			"PROD-466": [{ name: "Flag" }],
-			"ENG-2": [{ name: "bug" }],
+			"ENG-1": [{ name: "feature flag" }],
+			"PROD-466": [{ name: "Feature flag" }],
+			"ENG-2": [{ name: "flag" }],
 		};
 		const request = async (_query, { id }) => {
 			if (id === "ENG-9") throw new Error("Entity not found");
@@ -53,8 +53,8 @@ describe("unlinkFlaggedIssues", () => {
 					release: {
 						issues: {
 							nodes: [
-								{ id: "u1", identifier: "ENG-1", labels: { nodes: [{ name: "flag" }] } },
-								{ id: "u2", identifier: "ENG-2", labels: { nodes: [] } },
+								{ id: "u1", identifier: "ENG-1", labels: { nodes: [{ name: "feature flag" }] } },
+								{ id: "u2", identifier: "ENG-2", labels: { nodes: [{ name: "flag" }] } },
 							],
 						},
 					},
