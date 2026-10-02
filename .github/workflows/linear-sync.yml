@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   opened-to-staging:
@@ -42,6 +43,31 @@ jobs:
           node-version: 24
       - name: Move the ticket to Feedback
         run: node .github/scripts/linear/move-issues.mjs Feedback "$TITLE" "$HEAD_REF" --skip-from Done,Released,Canceled
+      - name: Collect the inline review comments
+        if: github.event.review.user.type != 'Bot'
+        id: review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEW_ID: ${{ github.event.review.id }}
+        run: |
+          comments=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews/$REVIEW_ID/comments" --jq '[.[] | {path, line, body}]' || echo "[]")
+          {
+            echo "comments<<REVIEW_COMMENTS_EOF"
+            echo "$comments"
+            echo "REVIEW_COMMENTS_EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Hand the review to the fix agent
+        if: github.event.review.user.type != 'Bot'
+        env:
+          LINEAR_FIX_AGENT_ID: ${{ vars.LINEAR_FIX_AGENT_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REVIEWER: ${{ github.event.review.user.login }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          REVIEW_COMMENTS: ${{ steps.review.outputs.comments }}
+        run: node .github/scripts/linear/delegate-review.mjs
 
   merged-to-staging:
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
