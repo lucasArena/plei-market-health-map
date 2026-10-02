@@ -43,8 +43,8 @@ export function MapLayersPanel() {
 		finishCardMotion,
 		isCardShown,
 		isExpanded,
+		isCustomized,
 		isOnMap,
-		hasLayersOn,
 		messages,
 		rootRef,
 		showActiveFacilities,
@@ -81,7 +81,7 @@ export function MapLayersPanel() {
 				aria-label={collapseLabel}
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
-				data-active={hasLayersOn}
+				data-active={isCustomized}
 				className={`map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none`}
 			>
 				<svg
@@ -98,7 +98,7 @@ export function MapLayersPanel() {
 					<circle cx="11.333" cy="11.333" r="2" />
 					<circle cx="4.667" cy="4.667" r="2" />
 				</svg>
-				{hasLayersOn && (
+				{isCustomized && (
 					<span
 						data-testid="layers-indicator"
 						aria-hidden="true"

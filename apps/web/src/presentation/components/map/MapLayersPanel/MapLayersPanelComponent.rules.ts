@@ -26,7 +26,11 @@ export function useMapLayersPanelRules() {
 	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
-	const hasLayersOn = showActiveFacilities || showInactiveFacilities || showSessions;
+	const hasSessionFilters = Object.values(layers?.sessionFilters ?? {}).some(
+		(value) => value !== undefined,
+	);
+	const isCustomized =
+		!showActiveFacilities || !showInactiveFacilities || !showSessions || hasSessionFilters;
 
 	const expand = useCallback((next: boolean) => {
 		layersPanelPreference.remember(next);
@@ -82,7 +86,7 @@ export function useMapLayersPanelRules() {
 		isCardShown: isShown,
 		isExpanded,
 		isOnMap,
-		hasLayersOn,
+		isCustomized,
 		messages: messages.map,
 		rootRef,
 		showActiveFacilities,

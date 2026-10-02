@@ -260,7 +260,7 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
 			"data-active",
-			"true",
+			"false",
 		);
 	});
 
@@ -274,30 +274,60 @@ describe("MapLayersPanel", () => {
 		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
 	});
 
-	it("shows a dot on the button while any layer is on", () => {
+	it("shows a dot on the button only while a layer differs from the default", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
 			</MapLayersProvider>,
 		);
 		const button = screen.getByRole("button", { name: "Hide layers" });
-		expect(button).toHaveAttribute("data-active", "true");
-		expect(screen.getByTestId("layers-indicator")).toHaveClass(
-			"absolute",
-			"top-0",
-			"right-0",
-			"rounded-full",
-			"bg-pleiful-pitch-green-50",
-		);
-
-		fireEvent.click(switchByName("App sessions"));
-		fireEvent.click(switchByName("Active facilities"));
-		expect(button).toHaveAttribute("data-active", "true");
-		fireEvent.click(switchByName("Inactive facilities"));
 		expect(button).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
-		fireEvent.click(switchByName("App sessions"));
+
+		for (const name of ["App sessions", "Active facilities", "Inactive facilities"]) {
+			fireEvent.click(switchByName(name));
+			expect(button).toHaveAttribute("data-active", "true");
+			expect(screen.getByTestId("layers-indicator")).toHaveClass(
+				"absolute",
+				"top-0",
+				"right-0",
+				"rounded-full",
+				"bg-pleiful-pitch-green-50",
+			);
+			fireEvent.click(switchByName(name));
+			expect(button).toHaveAttribute("data-active", "false");
+			expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		}
+	});
+
+	it("shows the dot while a player filter is applied", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		function Cohort() {
+			const layers = useMapLayers();
+			return (
+				<>
+					<button type="button" onClick={() => layers?.setSessionFilters({ gender: "Female" })}>
+						Set cohort
+					</button>
+					<button type="button" onClick={() => layers?.setSessionFilters({ gender: undefined })}>
+						Clear cohort
+					</button>
+				</>
+			);
+		}
+		renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<Cohort />
+			</MapLayersProvider>,
+		);
+		const button = screen.getByRole("button", { name: "Hide layers" });
+		expect(button).toHaveAttribute("data-active", "false");
+		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
 		expect(button).toHaveAttribute("data-active", "true");
+		fireEvent.click(screen.getByRole("button", { name: "Clear cohort" }));
+		expect(button).toHaveAttribute("data-active", "false");
+		mockFeatureFlag.mockReturnValue(false);
 	});
 });
 
