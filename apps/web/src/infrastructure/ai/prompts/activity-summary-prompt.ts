@@ -120,7 +120,6 @@ export class ActivitySummaryPrompt {
 				stats.activatedPlayersPeriodChangePercent,
 			),
 			this.confirmationFact(stats.confirmationRate, stats.confirmationRateChangePoints),
-			`Weekly games (oldest first): ${stats.weeklyActivity.map((week) => `${week.weekStart}: ${week.gamesPlayed}`).join(", ")}.`,
 		];
 	}
 

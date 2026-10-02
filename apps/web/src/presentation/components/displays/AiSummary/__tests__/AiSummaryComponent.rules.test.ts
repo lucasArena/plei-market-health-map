@@ -172,8 +172,8 @@ describe("useAiSummaryRules", () => {
 			"en",
 		);
 
-		expect(facility.cacheKey).toBe("v9:facility-889:2026-09-30:en");
-		expect(market.cacheKey).toBe("v9:market-2:2026-09-30:en");
+		expect(facility.cacheKey).toBe("v10:facility-889:2026-09-30:en");
+		expect(market.cacheKey).toBe("v10:market-2:2026-09-30:en");
 		expect(market.prompt.at(-1)?.content).toContain("Market: Houston.");
 	});
 
@@ -206,5 +206,42 @@ describe("useAiSummaryRules", () => {
 		act(() => result.current.toggleExpanded());
 		expect(result.current.isExpanded).toBe(false);
 		expect(result.current.isOverflowing).toBe(true);
+	});
+
+	it("never shows or caches a line whose numbers don't match the data", async () => {
+		const wrong = "- Pickup games rose 99% from the previous 28 days.";
+		llm.generate.mockImplementation(async (_prompt: unknown, callbacks: BrowserLlmCallbacks) => {
+			callbacks.onText?.(wrong);
+			return `- Pickup games rose ${FACILITY_DETAIL.stats.playedPeriodChangePercent}% from the previous 28 days.\n${wrong}`;
+		});
+		const { result } = renderRules();
+
+		await waitFor(() => expect(result.current.status).toBe("ready"));
+		expect(result.current.text).toBe(
+			`- Pickup games rose ${FACILITY_DETAIL.stats.playedPeriodChangePercent}% from the previous 28 days.`,
+		);
+		expect(aiSummaryCache.read(contextFor().cacheKey)).not.toContain("99%");
+	});
+
+	it("falls back to the written insights when no line matches the data", async () => {
+		llm.generate.mockResolvedValue("- Pickup games rose 99% from the previous 28 days.");
+		const { result } = renderRules();
+
+		await waitFor(() => expect(result.current.status).toBe("error"));
+		expect(result.current.text).toBe(FALLBACK);
+		expect(aiSummaryCache.read(contextFor().cacheKey)).toBeNull();
+	});
+
+	it("re-checks a cached summary, and writes a new one when nothing in it matches", async () => {
+		aiSummaryCache.write(
+			contextFor().cacheKey,
+			"- Pickup games rose 99% from the previous 28 days.",
+		);
+		llm.generate.mockResolvedValue("- Pickup games rose 6% from the previous 28 days.");
+		const { result } = renderRules();
+
+		await waitFor(() => expect(result.current.status).toBe("ready"));
+		expect(result.current.text).toBe("- Pickup games rose 6% from the previous 28 days.");
+		expect(llm.generate).toHaveBeenCalledTimes(1);
 	});
 });

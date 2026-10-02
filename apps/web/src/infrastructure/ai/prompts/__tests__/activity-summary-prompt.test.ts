@@ -30,7 +30,7 @@ describe("ActivitySummaryPrompt", () => {
 			/Confirmation rate: [\d.]+%, up 1\.5 percentage points from the previous 28 days\./,
 		);
 		expect(facts).not.toContain("Change versus the previous 28 days:");
-		expect(messages.at(-1)?.content).toContain("Weekly games (oldest first)");
+		expect(messages.at(-1)?.content).not.toContain("Weekly games");
 	});
 	it("handles missing comparisons", () => {
 		const content = prompt
