@@ -87,11 +87,11 @@ popular_times as (
     ) as games_played
   from time_grid t
   left join games g
-    on extract(isodow from g.game_time)::int = t.day_of_week
+    on extract(isodow from g.game_time - interval '7 hours')::int = t.day_of_week
     and case
-      when extract(hour from g.game_time) < 12 then 0
-      when extract(hour from g.game_time) < 17 then 1
-      when extract(hour from g.game_time) < 21 then 2
+      when extract(hour from g.game_time) between 7 and 11 then 0
+      when extract(hour from g.game_time) between 12 and 16 then 1
+      when extract(hour from g.game_time) between 17 and 21 then 2
       else 3
     end = t.time_period
     and g.game_date >= (select today - 28 from bounds)

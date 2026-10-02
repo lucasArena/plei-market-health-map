@@ -88,6 +88,7 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 							title={messages.popularTimes}
 							dayLabels={view.dayLabels}
 							periodLabels={view.timePeriodLabels}
+							periodRanges={messages.timePeriodRanges}
 							cells={view.popularTimes}
 							quietLabel={messages.quiet}
 							busyLabel={messages.busy}

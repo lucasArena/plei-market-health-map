@@ -85,6 +85,18 @@ describe("facility stats SQL", () => {
 			"g.game_date >= b.today - 56 and g.game_date < b.today - 28",
 		);
 	});
+
+	it("buckets popular times into the mobile app's local day parts", () => {
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("r.date_with_time as game_time");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("between 7 and 11 then 0");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("between 12 and 16 then 1");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("between 17 and 21 then 2");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("else 3");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"extract(isodow from g.game_time - interval '7 hours')::int = t.day_of_week",
+		);
+		expect(FACILITY_RESERVATION_STATS_SQL.match(/interval '7 hours'/g)).toHaveLength(1);
+	});
 });
 
 describe("warehouse facility stats mappers", () => {

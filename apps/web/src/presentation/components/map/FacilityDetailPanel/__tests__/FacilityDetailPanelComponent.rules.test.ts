@@ -242,7 +242,8 @@ describe("buildPopularTimes", () => {
 		expect(popularTimes.find((cell) => cell.key === "6-2")).toMatchObject({
 			value: 9,
 			intensity: 4,
-			tooltip: "Sat, PM: 9 games",
+			label: "Sat, Evening: 9 games",
+			tooltip: "9 games",
 		});
 		expect(popularTimes.find((cell) => cell.key === "1-0")).toMatchObject({
 			value: 0,

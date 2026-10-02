@@ -109,7 +109,8 @@ export interface Messages {
 		popularTimes: string;
 		dayLabels: string[];
 		timePeriodLabels: string[];
-		popularTimeTooltip: string;
+		timePeriodRanges: string[];
+		popularTimeCellLabel: string;
 		quiet: string;
 		busy: string;
 		lastPlayed: string;
