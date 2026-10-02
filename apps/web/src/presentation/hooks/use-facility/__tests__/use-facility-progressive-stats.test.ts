@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
-import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
+import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import {
 	facilityPlayerStatsQueryKey,
 	useFacilityPlayerStats,
@@ -52,7 +52,7 @@ describe("progressive facility stats hooks", () => {
 		expect(facilityPlayerStatsQueryKey("889")).toEqual(["facilities", "detail", "889", "players"]);
 	});
 
-	it("prefetches reservation analytics and stays idle without a selection", async () => {
+	it("prefetches reservation and player analytics together and stays idle without a selection", async () => {
 		const fetchMock = vi.fn().mockResolvedValue({
 			ok: true,
 			status: 200,
@@ -68,9 +68,14 @@ describe("progressive facility stats hooks", () => {
 		expect(result.current.fetchStatus).toBe("idle");
 		expect(players.result.current.fetchStatus).toBe("idle");
 
-		await prefetchFacilityReservationStats(client, "889");
+		await prefetchFacilityStats(client, "889");
 
-		expect(fetchMock).toHaveBeenCalledOnce();
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(fetchMock.mock.calls.map(([url]) => url).sort()).toEqual([
+			"/api/v1/facilities/889/players",
+			"/api/v1/facilities/889/reservations",
+		]);
+		expect(client.getQueryData(facilityPlayerStatsQueryKey("889"))).toBeDefined();
 		expect(client.getQueryData(facilityReservationStatsQueryKey("889"))).toEqual({
 			facility: { id: "889" },
 			stats: {},

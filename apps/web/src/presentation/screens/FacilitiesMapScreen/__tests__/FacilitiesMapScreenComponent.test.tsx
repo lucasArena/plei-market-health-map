@@ -4,6 +4,13 @@ import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotPro
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
+const mockPrefetchQuery = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@tanstack/react-query")>()),
+	useQueryClient: () => ({ prefetchQuery: mockPrefetchQuery }),
+}));
+
 const mockRules = vi.fn();
 
 vi.mock(

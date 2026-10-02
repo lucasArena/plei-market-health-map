@@ -1,11 +1,16 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import type { MarketSummaryToggleState } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.types";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useSidePanels } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
+import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
+import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
+import { useIdleMarketPrefetch } from "@/presentation/hooks/use-market/use-idle-market-prefetch";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
 export function nextToggleState(state: MarketSummaryToggleState): MarketSummaryToggleState {
@@ -18,6 +23,18 @@ export function useMarketSummaryToggleRules() {
 	const [state, setState] = useState<MarketSummaryToggleState>("closed");
 	const { activePanel, closePanel } = useSidePanels();
 	const isFacilitySelected = activePanel === "facility-detail";
+	const queryClient = useQueryClient();
+	const { scope } = useMapScope();
+	useIdleMarketPrefetch(isOnMap);
+
+	const prefetchScope = useCallback(() => {
+		if (scope.kind === "facility") {
+			void prefetchFacilityStats(queryClient, scope.id).catch(() => undefined);
+			return;
+		}
+		const marketId = scope.kind === "market" ? scope.id : null;
+		void prefetchMarketSummary(queryClient, marketId).catch(() => undefined);
+	}, [queryClient, scope]);
 
 	const toggle = useCallback(() => {
 		if (isFacilitySelected) {
@@ -39,6 +56,7 @@ export function useMarketSummaryToggleRules() {
 	}, [isOnMap]);
 
 	return {
+		prefetchScope,
 		close,
 		handleClosed,
 		isActive: state === "open" || isFacilitySelected,

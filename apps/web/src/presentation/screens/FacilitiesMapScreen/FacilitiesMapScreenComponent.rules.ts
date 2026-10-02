@@ -17,7 +17,7 @@ import {
 	type AppSessionHeatmapCellView,
 	useAppSessionHeatmap,
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
-import { prefetchFacilityReservationStats } from "@/presentation/hooks/use-facility/prefetch-facility-reservation-stats";
+import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
@@ -879,7 +879,7 @@ export function useFacilitiesMapScreenRules() {
 					hoverViewport(),
 				),
 			});
-			void prefetchFacilityReservationStats(queryClient, facility.id);
+			void prefetchFacilityStats(queryClient, facility.id);
 		},
 		[cancelHoverDismiss, clearHover, facilityFromEvent, hoverViewport, queryClient],
 	);
