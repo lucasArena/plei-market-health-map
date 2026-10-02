@@ -7,6 +7,7 @@ import {
 	MAP_MENU_GROUP_LABEL_CLASS,
 	MAP_MENU_ROW_LABEL_CLASS,
 	MAP_MENU_SURFACE_CLASS,
+	MAP_SEARCH_OPTION_HOVER_CLASS,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
@@ -43,9 +44,11 @@ export function MapLayersPanel() {
 		finishCardMotion,
 		isCardShown,
 		isExpanded,
+		isCustomized,
 		isOnMap,
-		hasLayersOn,
 		messages,
+		resetCount,
+		resetLayers,
 		rootRef,
 		showActiveFacilities,
 		showInactiveFacilities,
@@ -81,7 +84,7 @@ export function MapLayersPanel() {
 				aria-label={collapseLabel}
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
-				data-active={hasLayersOn}
+				data-active={isCustomized}
 				className={`map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none`}
 			>
 				<svg
@@ -98,7 +101,7 @@ export function MapLayersPanel() {
 					<circle cx="11.333" cy="11.333" r="2" />
 					<circle cx="4.667" cy="4.667" r="2" />
 				</svg>
-				{hasLayersOn && (
+				{isCustomized && (
 					<span
 						data-testid="layers-indicator"
 						aria-hidden="true"
@@ -122,7 +125,7 @@ export function MapLayersPanel() {
 							onToggle={toggleSessions}
 						/>
 					</div>
-					{showDemographics && <AppSessionFilters showSessions={showSessions} />}
+					{showDemographics && <AppSessionFilters key={resetCount} showSessions={showSessions} />}
 					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersSupply}
 					</h2>
@@ -142,6 +145,17 @@ export function MapLayersPanel() {
 							onToggle={toggleInactiveFacilities}
 						/>
 					</div>
+					{isCustomized && (
+						<div className="-mx-1 mt-1 flex justify-end border-t border-border px-1 pt-1">
+							<button
+								type="button"
+								onClick={resetLayers}
+								className={`cursor-pointer rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus:text-foreground ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+							>
+								{messages.layersReset}
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 		</aside>

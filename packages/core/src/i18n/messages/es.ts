@@ -82,6 +82,7 @@ export const es: Messages = {
 		layersSessions: "Sesiones de la app",
 		layersCollapse: "Ocultar capas",
 		layersExpand: "Mostrar capas",
+		layersReset: "Restablecer",
 	},
 	facilityAi: {
 		generate: "Encontrar hallazgos clave",

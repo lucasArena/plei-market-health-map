@@ -80,6 +80,7 @@ export const en: Messages = {
 		layersSessions: "App sessions",
 		layersCollapse: "Hide layers",
 		layersExpand: "Show layers",
+		layersReset: "Reset",
 	},
 	facilityAi: {
 		generate: "Find key insights",
