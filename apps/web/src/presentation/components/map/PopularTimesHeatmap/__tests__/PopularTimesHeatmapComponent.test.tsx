@@ -1,33 +1,51 @@
 import { render, screen } from "@testing-library/react";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 
+function renderHeatmap(periodRanges: string[]) {
+	render(
+		<PopularTimesHeatmap
+			title="Popular times"
+			dayLabels={["Mon"]}
+			periodLabels={["Morning"]}
+			periodRanges={periodRanges}
+			cells={[
+				{
+					key: "1-0",
+					dayLabel: "Mon",
+					periodLabel: "Morning",
+					value: 3,
+					label: "Mon, Morning: 3 games",
+					tooltip: "3 games",
+					intensity: 4,
+				},
+			]}
+			quietLabel="Quiet"
+			busyLabel="Busy"
+		/>,
+	);
+}
+
 describe("PopularTimesHeatmap", () => {
 	it("renders interactive cells and the intensity legend", () => {
-		render(
-			<PopularTimesHeatmap
-				title="Popular times"
-				dayLabels={["Mon"]}
-				periodLabels={["AM"]}
-				cells={[
-					{
-						key: "1-0",
-						dayLabel: "Mon",
-						periodLabel: "AM",
-						value: 3,
-						tooltip: "Mon, AM: 3 games",
-						intensity: 4,
-					},
-				]}
-				quietLabel="Quiet"
-				busyLabel="Busy"
-			/>,
-		);
+		renderHeatmap(["7am–12pm"]);
 		expect(screen.getByRole("heading", { name: "Popular times" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Mon, AM: 3 games" })).toHaveClass(
+		expect(screen.getByRole("button", { name: "Mon, Morning: 3 games" })).toHaveClass(
 			"bg-pleiful-pitch-green-50",
 		);
-		expect(screen.getByRole("tooltip")).toHaveTextContent("Mon, AM: 3 games");
+		expect(screen.getByText("3 games")).toHaveAttribute("role", "tooltip");
 		expect(screen.getByText("Quiet")).toBeInTheDocument();
 		expect(screen.getByText("Busy")).toBeInTheDocument();
+	});
+
+	it("explains each period label with its time range", () => {
+		renderHeatmap(["7am–12pm"]);
+		const label = screen.getByRole("button", { name: "Morning" });
+		expect(label).toHaveClass("cursor-help");
+		expect(label).toHaveAccessibleDescription("7am–12pm");
+	});
+
+	it("keeps the period label when no range is provided", () => {
+		renderHeatmap([]);
+		expect(screen.getByRole("button", { name: "Morning" })).toBeInTheDocument();
 	});
 });

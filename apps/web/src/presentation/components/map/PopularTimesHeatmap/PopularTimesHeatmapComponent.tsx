@@ -3,6 +3,7 @@
 import { edgeTooltipClass } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.rules";
 import {
 	HEATMAP_CELL_CLASS,
+	HEATMAP_PERIOD_LABEL_CLASS,
 	HEATMAP_TOOLTIP_CLASS,
 } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.styles";
 import type {
@@ -14,6 +15,7 @@ export function PopularTimesHeatmap({
 	title,
 	dayLabels,
 	periodLabels,
+	periodRanges,
 	cells,
 	quietLabel,
 	busyLabel,
@@ -23,7 +25,7 @@ export function PopularTimesHeatmap({
 			<h3 id="popular-times-title" className="text-sm font-semibold">
 				{title}
 			</h3>
-			<div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] gap-1 text-center text-[9px] text-muted-foreground">
+			<div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] gap-1 text-center text-[9px] text-muted-foreground">
 				<span />
 				{dayLabels.map((label) => (
 					<span key={label}>{label}</span>
@@ -32,6 +34,7 @@ export function PopularTimesHeatmap({
 					<FragmentRow
 						key={periodLabel}
 						periodLabel={periodLabel}
+						periodRange={periodRanges[periodIndex] ?? ""}
 						cells={cells.filter((cell) => cell.periodLabel === periodLabel)}
 						periodIndex={periodIndex}
 					/>
@@ -48,15 +51,34 @@ export function PopularTimesHeatmap({
 	);
 }
 
-function FragmentRow({ periodLabel, cells, periodIndex }: Readonly<PopularTimesHeatmapRowProps>) {
+function FragmentRow({
+	periodLabel,
+	periodRange,
+	cells,
+	periodIndex,
+}: Readonly<PopularTimesHeatmapRowProps>) {
 	return (
 		<>
-			<span className="flex items-center justify-end pr-1">{periodLabel}</span>
+			<button
+				type="button"
+				aria-label={periodLabel}
+				aria-describedby={`popular-times-period-${periodIndex}`}
+				className={HEATMAP_PERIOD_LABEL_CLASS}
+			>
+				{periodLabel}
+				<span
+					id={`popular-times-period-${periodIndex}`}
+					role="tooltip"
+					className={`${HEATMAP_TOOLTIP_CLASS} left-0 translate-x-0`}
+				>
+					{periodRange}
+				</span>
+			</button>
 			{cells.map((cell, index) => (
 				<button
 					key={cell.key}
 					type="button"
-					aria-label={cell.tooltip}
+					aria-label={cell.label}
 					data-period={periodIndex}
 					className={`group relative h-6 rounded-md transition-transform hover:z-10 hover:scale-110 focus:z-10 focus:outline-none focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-pleiful-pitch-green-30 ${HEATMAP_CELL_CLASS[cell.intensity]}`}
 				>

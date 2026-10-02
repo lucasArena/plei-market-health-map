@@ -3,6 +3,7 @@ export interface PopularTimeCellView {
 	dayLabel: string;
 	periodLabel: string;
 	value: number;
+	label: string;
 	tooltip: string;
 	intensity: number;
 }
@@ -11,6 +12,7 @@ export interface PopularTimesHeatmapProps {
 	title: string;
 	dayLabels: string[];
 	periodLabels: string[];
+	periodRanges: string[];
 	cells: PopularTimeCellView[];
 	quietLabel: string;
 	busyLabel: string;
@@ -18,6 +20,7 @@ export interface PopularTimesHeatmapProps {
 
 export interface PopularTimesHeatmapRowProps {
 	periodLabel: string;
+	periodRange: string;
 	cells: PopularTimeCellView[];
 	periodIndex: number;
 }

@@ -50,14 +50,15 @@ const VIEW = {
 		{
 			key: "1-0",
 			dayLabel: "Mon",
-			periodLabel: "AM",
+			periodLabel: "Morning",
 			value: 2,
-			tooltip: "Mon, AM: 2 games",
+			label: "Mon, Morning: 2 games",
+			tooltip: "2 games",
 			intensity: 4,
 		},
 	],
 	dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-	timePeriodLabels: ["AM", "Midday", "PM", "Late"],
+	timePeriodLabels: ["Morning", "Afternoon", "Evening", "Late night"],
 	topMarkets: [
 		{ key: "houston", rank: 1, name: "Houston", detail: "6 of 9 facilities active", value: "120" },
 	],
@@ -97,7 +98,7 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByText("of 142")).toBeInTheDocument();
 		expect(screen.getByTestId("market-stat-players-skeleton")).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Mon, AM: 2 games" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Mon, Morning: 2 games" })).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Top markets" })).toBeInTheDocument();
 		expect(screen.getByText("6 of 9 facilities active")).toBeInTheDocument();
 		expect(screen.getByText(EN_MESSAGES.marketSummary.noRankings)).toBeInTheDocument();

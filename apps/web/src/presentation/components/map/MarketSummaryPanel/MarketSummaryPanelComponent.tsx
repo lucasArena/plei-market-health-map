@@ -139,6 +139,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							title={detailMessages.popularTimes}
 							dayLabels={view.dayLabels}
 							periodLabels={view.timePeriodLabels}
+							periodRanges={detailMessages.timePeriodRanges}
 							cells={view.popularTimes}
 							quietLabel={detailMessages.quiet}
 							busyLabel={detailMessages.busy}

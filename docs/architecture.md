@@ -120,7 +120,14 @@ reads the last played date separately. The slower player query reads qualifying 
 `fct_games_opened` for the same two rolling 28-day periods. `toFacilityStatsView` can still merge both
 slices for callers that need the complete detail. The panel shows four scorecards, a weekly activity
 chart, and a popular-times heatmap; every chart point and heatmap cell is available by hover and
-keyboard focus. Scorecards, comparisons and popular times use rolling periods ending yesterday.
+keyboard focus. Popular times use the mobile app's day parts in the game's local time
+(`date_with_time` is already local wall-clock time, so it is never converted again): Morning
+7am–12pm, Afternoon 12pm–5pm, Evening 5pm–10pm and Late night, shown as 10pm–2am but counting every
+game from 10pm to 7am. In the heatmap only, games before 7am count toward the previous day's late
+night (a 1am Saturday game appears under Friday); every other metric keeps the calendar day. Each period
+label's tooltip shows its displayed range (`timePeriodRanges`); cell tooltips show only the game
+count, while each cell's accessible label also names its day and period.
+Scorecards, comparisons and popular times use rolling periods ending yesterday.
 The weekly activity chart alone shows the last four completed Monday to Sunday weeks
 (the SQL buckets them from `date_trunc('week', current_date)` and leaves out the week in
 progress). Each point is labeled by the Sunday that ends its week (`weekEndOf` in core), so

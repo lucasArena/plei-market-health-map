@@ -289,11 +289,12 @@ export function buildPopularTimes(
 				dayLabel,
 				periodLabel,
 				value,
-				tooltip: formatMessage(messages.popularTimeTooltip, {
+				label: formatMessage(messages.popularTimeCellLabel, {
 					day: dayLabel,
 					period: periodLabel,
 					games,
 				}),
+				tooltip: games,
 				intensity: value === 0 ? 0 : Math.max(1, Math.ceil((value / maximum) * 4)),
 			};
 		}),
