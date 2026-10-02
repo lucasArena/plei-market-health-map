@@ -1,6 +1,13 @@
 import type { AppSessionFilters } from "@market-health-map/core/application";
 import type { ReactNode } from "react";
 
+export interface MapLayersSettings {
+	showActiveFacilities: boolean;
+	showInactiveFacilities: boolean;
+	showSessions: boolean;
+	sessionFilters: AppSessionFilters;
+}
+
 export interface MapLayersValue {
 	sessionFilters: AppSessionFilters;
 	setSessionFilters: (filters: AppSessionFilters) => void;
@@ -10,6 +17,7 @@ export interface MapLayersValue {
 	setShowInactiveFacilities: (showInactiveFacilities: boolean) => void;
 	showSessions: boolean;
 	setShowSessions: (showSessions: boolean) => void;
+	resetLayers: () => void;
 }
 
 export interface MapLayersProviderProps {

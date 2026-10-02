@@ -1,7 +1,8 @@
 "use client";
 
 import type { AppSessionFilters } from "@market-health-map/core/application";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type {
 	MapLayersProviderProps,
 	MapLayersValue,
@@ -10,10 +11,22 @@ import type {
 const MapLayersContext = createContext<MapLayersValue | null>(null);
 
 export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>) {
-	const [showActiveFacilities, setShowActiveFacilities] = useState(true);
-	const [showInactiveFacilities, setShowInactiveFacilities] = useState(true);
-	const [showSessions, setShowSessions] = useState(true);
-	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({});
+	const [showActiveFacilities, setShowActiveFacilities] = useState(
+		MAP_LAYERS_DEFAULTS.showActiveFacilities,
+	);
+	const [showInactiveFacilities, setShowInactiveFacilities] = useState(
+		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
+	);
+	const [showSessions, setShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
+	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({
+		...MAP_LAYERS_DEFAULTS.sessionFilters,
+	});
+	const resetLayers = useCallback(() => {
+		setShowActiveFacilities(MAP_LAYERS_DEFAULTS.showActiveFacilities);
+		setShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
+		setShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
+		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
+	}, []);
 	const value = useMemo(
 		() => ({
 			showActiveFacilities,
@@ -24,8 +37,9 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 			setSessionFilters,
 			showSessions,
 			setShowSessions,
+			resetLayers,
 		}),
-		[showActiveFacilities, showInactiveFacilities, showSessions, sessionFilters],
+		[showActiveFacilities, showInactiveFacilities, showSessions, sessionFilters, resetLayers],
 	);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }

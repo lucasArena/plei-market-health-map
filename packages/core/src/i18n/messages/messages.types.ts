@@ -77,6 +77,7 @@ export interface Messages {
 		layersSessions: string;
 		layersCollapse: string;
 		layersExpand: string;
+		layersReset: string;
 	};
 	facilityAi: {
 		generate: string;

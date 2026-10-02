@@ -1,4 +1,5 @@
-import { act, fireEvent, screen } from "@testing-library/react";
+import { getMessages } from "@market-health-map/core/i18n";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { LAYERS_PANEL_OPEN_KEY } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
@@ -7,6 +8,7 @@ import {
 	MapLayersProvider,
 	useMapLayers,
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockFeatureFlag = vi.fn(() => false);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
@@ -328,6 +330,144 @@ describe("MapLayersPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Clear cohort" }));
 		expect(button).toHaveAttribute("data-active", "false");
 		mockFeatureFlag.mockReturnValue(false);
+	});
+});
+
+describe("MapLayersPanel reset", () => {
+	function LayersState() {
+		const layers = useMapLayers();
+		return (
+			<>
+				<output data-testid="layers-state">
+					{JSON.stringify({
+						showActiveFacilities: layers?.showActiveFacilities,
+						showInactiveFacilities: layers?.showInactiveFacilities,
+						showSessions: layers?.showSessions,
+						sessionFilters: layers?.sessionFilters,
+					})}
+				</output>
+				<button type="button" onClick={() => layers?.setSessionFilters({ gender: "Female" })}>
+					Set cohort
+				</button>
+			</>
+		);
+	}
+
+	const DEFAULT_STATE = JSON.stringify({
+		showActiveFacilities: true,
+		showInactiveFacilities: true,
+		showSessions: true,
+		sessionFilters: {},
+	});
+
+	function renderWithProvider() {
+		return renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<LayersState />
+			</MapLayersProvider>,
+		);
+	}
+
+	it("is not rendered while every setting matches the default", () => {
+		renderWithProvider();
+
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		expect(switchByName("Inactive facilities").parentElement?.nextElementSibling).toBeNull();
+	});
+
+	it("appears in a right-aligned footer inside the glass card when a setting differs", () => {
+		renderWithProvider();
+		const card = screen.getByRole("heading", { name: "Demand" }).parentElement;
+
+		for (const name of ["App sessions", "Active facilities", "Inactive facilities"]) {
+			fireEvent.click(switchByName(name));
+			const reset = screen.getByRole("button", { name: "Reset" });
+			expect(reset).toBeEnabled();
+			expect(screen.getByTestId("layers-indicator")).toBeInTheDocument();
+			fireEvent.click(switchByName(name));
+			expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		}
+
+		fireEvent.click(switchByName("Inactive facilities"));
+		const reset = screen.getByRole("button", { name: "Reset" });
+		const footer = reset.parentElement;
+		expect(card).toHaveClass("map-glass");
+		expect(card?.lastElementChild).toBe(footer);
+		expect(footer).toHaveClass("flex", "justify-end", "border-t", "border-border");
+		expect(reset).toHaveClass("text-xs", "text-muted-foreground", "hover:text-foreground");
+		expect(reset).not.toHaveClass("bg-primary");
+	});
+
+	it("restores every setting to the default so the button and the dot disappear", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderWithProvider();
+		const toggle = screen.getByRole("button", { name: "Hide layers" });
+
+		fireEvent.click(switchByName("App sessions"));
+		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("Inactive facilities"));
+		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+		expect(screen.getByTestId("layers-state")).toHaveTextContent(
+			JSON.stringify({
+				showActiveFacilities: false,
+				showInactiveFacilities: false,
+				showSessions: false,
+				sessionFilters: { gender: "Female" },
+			}),
+		);
+		expect(toggle).toHaveAttribute("data-active", "true");
+
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+		expect(toggle).toHaveAttribute("data-active", "false");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
+		expect(toggle).toHaveFocus();
+		mockFeatureFlag.mockReturnValue(false);
+	});
+
+	it("shows Reset for a player filter alone and clears it", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderWithProvider();
+
+		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
+		expect(screen.getByText("Player filters")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		mockFeatureFlag.mockReturnValue(false);
+	});
+
+	it("restores the defaults without a provider", () => {
+		renderWithMessages(<MapLayersPanel />);
+
+		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("App sessions"));
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	});
+
+	it("reads Redefinir in Portuguese", () => {
+		render(
+			<MessagesProvider locale="pt-BR" messages={getMessages("pt-BR")}>
+				<MapLayersPanel />
+			</MessagesProvider>,
+		);
+
+		fireEvent.click(screen.getByRole("switch", { name: "Instalações ativas" }));
+		expect(screen.getByRole("button", { name: "Redefinir" })).toBeInTheDocument();
 	});
 });
 

@@ -81,6 +81,7 @@ export const ptBR: Messages = {
 		layersSessions: "Sessões do app",
 		layersCollapse: "Ocultar camadas",
 		layersExpand: "Mostrar camadas",
+		layersReset: "Redefinir",
 	},
 	facilityAi: {
 		generate: "Encontrar principais sinais",
