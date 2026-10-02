@@ -5,6 +5,7 @@ import {
 	linearIssuesIn,
 	parseCommitLog,
 	previousStableTag,
+	withoutFlaggedWork,
 } from "../release-notes.mjs";
 
 const REPO = "https://github.com/acme/app";
@@ -98,5 +99,39 @@ describe("buildReleaseNotes", () => {
 		assert.match(notes, /\[v0\.1\.0\]\(https:\/\/github\.com\/acme\/app\/tree\/v0\.1\.0\)/);
 		assert.match(notes, /No changes since the last release\./);
 		assert.match(notes, /No Linear issues were referenced in these commits\./);
+	});
+});
+
+describe("feature-flagged work", () => {
+	const commits = [
+		{ sha: "aaaaaaa1", subject: "feat(map): demographics (ENG-1)", body: "" },
+		{ sha: "bbbbbbb2", subject: "fix(map): panel (ENG-2)", body: "" },
+		{ sha: "ccccccc3", subject: "feat(map): both (ENG-1, ENG-3)", body: "" },
+		{ sha: "ddddddd4", subject: "chore: deps", body: "" },
+	];
+
+	it("drops commits that only reference flagged tickets", () => {
+		assert.deepEqual(
+			withoutFlaggedWork(commits, ["ENG-1"]).map((commit) => commit.sha),
+			["bbbbbbb2", "ccccccc3", "ddddddd4"],
+		);
+		assert.equal(withoutFlaggedWork(commits, []).length, 4);
+	});
+
+	it("leaves flagged tickets out of the notes and the Linear issues list", () => {
+		const notes = buildReleaseNotes({
+			tag: "v1.1.0",
+			previousTag: "v1.0.0",
+			date: "2026-10-02",
+			repoUrl: REPO,
+			commits,
+			flagged: ["ENG-1"],
+		});
+
+		assert.ok(!notes.includes("demographics"));
+		assert.ok(notes.includes("feat(map): both (ENG-1, ENG-3)"));
+		assert.ok(notes.includes("- ENG-2"));
+		assert.ok(notes.includes("- ENG-3"));
+		assert.ok(!notes.includes("- ENG-1"));
 	});
 });

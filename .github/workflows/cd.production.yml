@@ -58,6 +58,7 @@ jobs:
           echo "$summary"
           echo "previous-tag=$(echo "$summary" | jq -r '.previousTag // empty')" >> "$GITHUB_OUTPUT"
           echo "issues=$(echo "$summary" | jq -r '.issues | join(" ")')" >> "$GITHUB_OUTPUT"
+          echo "flagged=$(echo "$summary" | jq -r '.flagged | join(" ")')" >> "$GITHUB_OUTPUT"
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
       - name: Warn when Linear is not configured
         if: env.LINEAR_ACCESS_KEY == ''
@@ -74,9 +75,16 @@ jobs:
           release_notes: release-notes.md
           documents: Changelog ${{ env.TAG }}=release-notes.md
           links: ${{ github.server_url }}/${{ github.repository }}/tree/${{ env.TAG }}
+      - name: Remove feature-flagged tickets from the Linear release
+        if: steps.linear.outputs.release-id != ''
+        run: node .github/scripts/linear/flagged-issues.mjs unlink "${{ steps.linear.outputs.release-id }}"
       - name: Link the Linear release
         if: steps.linear.outputs.release-url != ''
-        run: echo "Linear release ${{ steps.linear.outputs.release-url }}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          FLAGGED: ${{ steps.notes.outputs.flagged }}
+        run: |
+          echo "Linear release ${{ steps.linear.outputs.release-url }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$FLAGGED" ]; then echo "Behind feature flags, left out: $FLAGGED" >> "$GITHUB_STEP_SUMMARY"; fi
       - name: Move the released tickets to Released
         if: steps.notes.outputs.issues != ''
         env:
