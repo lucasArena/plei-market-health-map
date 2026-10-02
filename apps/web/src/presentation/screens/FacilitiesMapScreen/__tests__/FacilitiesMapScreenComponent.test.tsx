@@ -155,7 +155,7 @@ describe("FacilitiesMapScreen", () => {
 		expect(gradient).toHaveStyle({
 			backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
 		});
-		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#7DD3FC", "#0080FF", "#7C3AED"]);
+		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#4ADE80", "#16A34A", "#16755C"]);
 	});
 
 	it("explains when the current map view has no sessions", () => {

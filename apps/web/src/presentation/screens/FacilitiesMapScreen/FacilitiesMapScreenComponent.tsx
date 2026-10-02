@@ -130,7 +130,7 @@ export function FacilitiesMapScreen() {
 									</span>
 									<span
 										aria-hidden="true"
-										className="text-[10px] font-medium tabular-nums text-pleiful-moonlight-70"
+										className="text-[10px] font-medium tabular-nums text-pleiful-pitch-green-50"
 									>
 										{highValue}+
 									</span>

@@ -132,7 +132,7 @@ describe("facility dot styles", () => {
 
 describe("app session weather-map styles", () => {
 	it("uses a continuous Pleiful heat scale at every zoom", () => {
-		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#7DD3FC", "#0080FF", "#7C3AED"]);
+		expect(SESSION_HEATMAP_BUCKET_COLORS).toEqual(["#4ADE80", "#16A34A", "#16755C"]);
 		expect(new Set(SESSION_HEATMAP_BUCKET_COLORS).size).toBe(3);
 		expect(SESSION_HEATMAP_BUCKET_COLORS).not.toContain(FACILITY_COLOR);
 		expect(SESSION_HEATMAP_BUCKET_OPACITIES).toEqual([0.35, 0.55, 0.75, 0.92]);

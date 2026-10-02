@@ -104,3 +104,4 @@ The project requires documenting how agents were used. Add an entry for each mea
 | 2026-10-01 | Codex | ENG-5783 | Renamed the default-off rollout flag to player-demographic-filters; staging admins enable it through Feature flags. Local only. |
 | 2026-10-01 | Codex | ENG-5783 | Capitalized gender display labels and summaries while retaining exact warehouse filter values. |
 | 2026-10-01 | Codex | Resolved PR #69 staging conflict (ENG-5783), retaining demographic-filter and facility-hover agent entries | Conflict markers and whitespace checked; affected map/filter tests and required pre-push checks |
+| 2026-10-01 | Cursor | Recolored the App sessions heatmap and its scale from purple-blue to a lively Plei green ramp, Success 40 and 60 into Pitch Green 50 (ENG-5830, REQ-909 feedback). Draft PR | Map screen tests pass; `pnpm check` on push |

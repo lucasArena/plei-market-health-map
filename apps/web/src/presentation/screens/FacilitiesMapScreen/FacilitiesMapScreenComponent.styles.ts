@@ -131,9 +131,9 @@ export const SESSION_HEATMAP_LEGEND_CLASS = [
 ].join(" ");
 
 export const SESSION_HEATMAP_BUCKET_COLORS = [
-	PLEIFUL_COLORS.sky[30],
-	"#0080FF",
-	PLEIFUL_COLORS.moonlight[60],
+	PLEIFUL_COLORS.success[40],
+	PLEIFUL_COLORS.success[60],
+	PLEIFUL_COLORS.pitchGreen[50],
 ] as const;
 
 export const SESSION_HEATMAP_COLOR = SESSION_HEATMAP_BUCKET_COLORS[0];
@@ -149,7 +149,7 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 		["linear"],
 		["heatmap-density"],
 		0,
-		"rgba(125, 211, 252, 0)",
+		"rgba(74, 222, 128, 0)",
 		0.25,
 		SESSION_HEATMAP_BUCKET_COLORS[0],
 		0.55,

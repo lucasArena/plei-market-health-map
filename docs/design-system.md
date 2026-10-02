@@ -10,6 +10,11 @@ Use semantic application tokens such as `primary`, `muted`, and `destructive` fo
 elements. Use the named Pleiful scales for charts, maps, branded illustrations, or other places where a
 specific palette value carries meaning.
 
+The App sessions heatmap runs from Success 40 through Success 60 to Pitch Green 50 (`#4ADE80`,
+`#16A34A`, `#16755C`) from low to high density. The bright Success greens keep it as lively as a
+multi-hue heat scale, and it ends on the core Plei green while staying lighter than the Pitch Green 80
+facility markers. The sessions scale shows its high count in Pitch Green 50.
+
 The TypeScript constants retain uppercase Figma hex values for APIs such as MapLibre that cannot resolve
 CSS custom properties. The CSS values are the same tokens exposed through Tailwind v4's theme layer.
 
@@ -31,7 +36,7 @@ Three Tailwind utilities apply them. Only the fill changes between tiers:
 
 `glass-strong` and `glass-panel` also swap `--muted-foreground` for `--glass-muted-foreground`, a darker
 gray (lighter in the dark theme), so secondary text keeps at least 4.5:1 contrast on the translucent
-fill, even over the purple session heatmap. The dark fills stay higher than the light ones because the
+fill, even over the green session heatmap. The dark fills stay higher than the light ones because the
 basemap stays light in the dark theme. Add shape and spacing classes next to the utility, for example `glass rounded-full` or
 `glass-panel rounded-2xl`. Don't add `border`, `bg-*`, `shadow-*` or `backdrop-blur-*`, since the utility
 sets them. Focus rings (`ring-*`) still work on top of the glass shadow.
