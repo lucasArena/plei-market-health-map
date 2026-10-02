@@ -2,7 +2,7 @@
 
 An internal Plei tool that shows market health across supply, player activity, facilities, organizers, game quality, and technology incidents. It lives in its own repo, separate from PleiOS and the Plei app, so its releases never block theirs.
 
-Must-haves (from the Linear project): SSO login, tracking which internal users log in and when (adoption), and documenting how agents were used (`docs/agent-usage.md`).
+Must-haves (from the Linear project): SSO login, tracking which internal users log in and when (adoption), and documenting how agents were used. That record is the Linear ticket every piece of agent work gets (see *Linear tracking* in `AGENTS.md`) plus the PR description; there is no log file in the repo.
 
 ## Architecture
 
