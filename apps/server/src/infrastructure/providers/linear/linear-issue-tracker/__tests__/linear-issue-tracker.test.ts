@@ -77,10 +77,15 @@ function setupWith(auth: LinearAuth, ...responses: Array<Response | Error>) {
 
 const ATTACHMENT = { filename: "shot.png", contentType: "image/png", bytes: PNG };
 const DRAFT = {
-	type: "bug" as const,
-	title: "[MHM bug] Map blank",
+	type: "improvement" as const,
+	title: "[MHM feedback] Add filters",
 	requestBody: "Body",
 	submitter: { displayName: "Stefano Sanchez", avatarUrl: "https://img/s.png" },
+};
+const BUG_DRAFT = {
+	...DRAFT,
+	type: "bug" as const,
+	title: "[MHM bug] Map blank",
 };
 
 describe("LinearIssueTracker", () => {
@@ -116,7 +121,7 @@ describe("LinearIssueTracker", () => {
 		expect(new Uint8Array(await body.arrayBuffer())).toEqual(PNG);
 	});
 
-	it("creates the issue with the mapped team, state, project and labels", async () => {
+	it("creates an improvement issue and its customer request", async () => {
 		const { tracker, graphqlBody } = setup(issueCreateOk(), customerNeedCreateOk());
 
 		await expect(tracker.createIssue(DRAFT)).resolves.toEqual({
@@ -127,11 +132,11 @@ describe("LinearIssueTracker", () => {
 		expect(graphqlBody(0).query).toContain("issueCreate(");
 		expect(graphqlBody(0).variables).toEqual({
 			input: {
-				teamId: "bd06d3df-8b17-42f7-96b1-0b6b7b3eb5ad",
-				stateId: "904a3068-92b9-4e7d-bd86-bc52cde54a83",
+				teamId: "635f83c3-3276-4ae6-aa29-5b633dc8dc38",
+				stateId: "973949af-0a76-4de3-a870-de074888bc75",
 				projectId: "98a63408-5cac-4a0e-85a9-1b73d17ea096",
-				labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
-				title: "[MHM bug] Map blank",
+				labelIds: [],
+				title: "[MHM feedback] Add filters",
 			},
 		});
 		expect(graphqlBody(1).query).toContain("customerNeedCreate(");
@@ -141,6 +146,22 @@ describe("LinearIssueTracker", () => {
 				body: "Body",
 			},
 		});
+	});
+
+	it("creates a bug issue without a customer request", async () => {
+		const { tracker, fetch, graphqlBody } = setup(issueCreateOk());
+
+		await expect(tracker.createIssue(BUG_DRAFT)).resolves.toMatchObject({
+			identifier: "ENG-42",
+		});
+
+		expect(graphqlBody(0).variables).toMatchObject({
+			input: {
+				teamId: "bd06d3df-8b17-42f7-96b1-0b6b7b3eb5ad",
+				labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
+			},
+		});
+		expect(fetch).toHaveBeenCalledTimes(1);
 	});
 
 	it("files the issue as the app on behalf of the submitter with a Bearer token", async () => {

@@ -104,6 +104,9 @@ export class LinearIssueTracker implements IssueTracker {
 		if (!data.issueCreate.success || !issue) {
 			throw new IssueTrackerError("Linear did not create the issue.");
 		}
+		if (draft.type === "bug") {
+			return { identifier: issue.identifier, url: issue.url };
+		}
 		const customerNeed = await this.graphql(
 			CUSTOMER_NEED_CREATE_MUTATION,
 			{

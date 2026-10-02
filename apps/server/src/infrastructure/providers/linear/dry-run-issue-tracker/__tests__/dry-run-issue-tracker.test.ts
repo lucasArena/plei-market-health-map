@@ -37,8 +37,9 @@ describe("DryRunIssueTracker", () => {
 			title: "[MHM bug] a",
 		});
 		expect(payload).not.toHaveProperty("createAsUser");
-		const requestPayload = JSON.parse(log.mock.calls[2]?.[1] as string);
-		expect(requestPayload).toEqual({ issueId: "DRY-1", body: "b" });
+		const requestPayload = JSON.parse(log.mock.calls[3]?.[1] as string);
+		expect(requestPayload).toEqual({ issueId: "DRY-2", body: "d" });
+		expect(log).toHaveBeenCalledTimes(4);
 	});
 
 	it("logs to the console by default", async () => {
@@ -52,7 +53,7 @@ describe("DryRunIssueTracker", () => {
 		});
 
 		expect(spy).toHaveBeenCalledWith("[feedback:dry-run] would create issue", expect.any(String));
-		expect(spy).toHaveBeenCalledWith(
+		expect(spy).not.toHaveBeenCalledWith(
 			"[feedback:dry-run] would create customer request",
 			expect.any(String),
 		);
