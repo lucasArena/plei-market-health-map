@@ -62,7 +62,7 @@ export async function delegateReview({ ids, agentId, comment, request, log = con
 				await request(DELEGATE_MUTATION, { id: issue.id, delegateId: null });
 			}
 			await request(DELEGATE_MUTATION, { id: issue.id, delegateId: agentId });
-			log(`${issue.identifier}: review posted and delegated to the agent`);
+			log(`${issue.identifier}: comment posted and delegated to the agent`);
 			results.push({ id: issue.identifier, action: "delegate" });
 		} catch (error) {
 			log(`::warning::${id}: not delegated (${error.message})`);
