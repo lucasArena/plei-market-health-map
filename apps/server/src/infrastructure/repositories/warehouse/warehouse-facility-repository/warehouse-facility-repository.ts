@@ -1,5 +1,6 @@
 import type { FacilityRepository } from "@market-health-map/core/application";
 import { asEntityId, Facility } from "@market-health-map/core/domain";
+import { companyLogoUrl } from "@server/infrastructure/repositories/warehouse/company-logo-url/company-logo-url";
 import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse/is-ignored-facility/is-ignored-facility";
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
@@ -26,10 +27,12 @@ facility_activity as (
 )
 select l.location_id, l.location_name, l.address, l.city, l.state,
        l.region_id, r.region_name, l.location_latitude, l.location_longitude,
-       coalesce(a.played_last_28_days, 0) as played_last_28_days
+       coalesce(a.played_last_28_days, 0) as played_last_28_days,
+       c.id as company_id, c.logo as company_logo
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
 left join facility_activity a on a.location_id = l.location_id
+left join plei_bronze.companies c on c.id = l.company_id and c.deleted_at is null
 where l.deleted_at is null
   and l.location_latitude is not null
   and l.location_longitude is not null
@@ -66,7 +69,7 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 			name: row.location_name,
 			address: formatAddress(row),
 			location: { latitude, longitude },
-			avatarUrl: null,
+			avatarUrl: companyLogoUrl(row.company_id, row.company_logo),
 			metrics: {
 				activePlayers: 0,
 				gamesLastWeek: 0,
