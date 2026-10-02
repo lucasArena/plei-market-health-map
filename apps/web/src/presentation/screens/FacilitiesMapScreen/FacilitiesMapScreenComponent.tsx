@@ -33,7 +33,7 @@ export function FacilitiesMapScreen() {
 		selectSearchMarket,
 		sessionScale,
 		sessionFilterSummary,
-		sessionQueryStatus,
+		sessionLegendState,
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { legendSlot, searchSlot } = useHeaderSlot();
@@ -45,6 +45,7 @@ export function FacilitiesMapScreen() {
 	const lowValue = numberFormatter.format(sessionScale.low);
 	const midValue = numberFormatter.format(Math.round((sessionScale.low + sessionScale.high) / 2));
 	const highValue = numberFormatter.format(sessionScale.high);
+	const heatmapGradient = `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`;
 
 	return (
 		<section aria-label={messages.title} className="absolute inset-0">
@@ -96,18 +97,30 @@ export function FacilitiesMapScreen() {
 								</span>
 							)}
 						</p>
-						{sessionScale.high === 0 ? (
+						{sessionLegendState === "loading" && (
+							<div role="status" className="mt-2 flex flex-col gap-1">
+								<div
+									data-testid="session-heatmap-loading"
+									aria-hidden="true"
+									className="h-2.5 w-full rounded-full opacity-40 motion-safe:animate-pulse"
+									style={{ backgroundImage: heatmapGradient }}
+								/>
+								<span className="text-[10px] font-medium text-muted-foreground">
+									{messages.sessionHeatmapLoading}
+								</span>
+							</div>
+						)}
+						{sessionLegendState === "empty" && (
 							<p className="mt-2 text-[10px] font-medium text-muted-foreground">
-								{sessionQueryStatus || messages.sessionHeatmapNoActivity}
+								{messages.sessionHeatmapNoActivity}
 							</p>
-						) : (
+						)}
+						{sessionLegendState === "scale" && (
 							<div className="mt-2 flex flex-col gap-1">
 								<div
 									data-testid="session-heatmap-gradient"
 									className="h-2.5 w-full rounded-full"
-									style={{
-										backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
-									}}
+									style={{ backgroundImage: heatmapGradient }}
 								/>
 								<div className="relative flex items-center justify-between">
 									<span

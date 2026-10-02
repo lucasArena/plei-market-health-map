@@ -31,6 +31,8 @@ export type MapHover = FacilityHover | ClusterHover;
 
 export type FacilitiesMapStatus = "loading" | "error" | "ready";
 
+export type SessionLegendState = "loading" | "empty" | "scale";
+
 export type FacilityLayerMotion = "enter" | "exit";
 
 export interface FacilityFeatureProperties {

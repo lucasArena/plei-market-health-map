@@ -35,6 +35,7 @@ export const ptBR: Messages = {
 		sessionHeatmapLegend: "Sessões por área sombreada · últimos 28 dias",
 		sessionHeatmapContext: "A escala é atualizada para a visualização atual do mapa",
 		sessionHeatmapNoActivity: "Nenhuma sessão na visualização atual do mapa",
+		sessionHeatmapLoading: "Carregando sessões do app…",
 		sessionHeatmapLowValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapMidValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",

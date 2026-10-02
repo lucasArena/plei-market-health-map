@@ -1514,12 +1514,49 @@ describe("useFacilitiesMapScreenRules", () => {
 			expect(result.current.sessionFilterSummary).toBe(summary);
 		},
 	);
-	it.each([
-		[true, false, "Couldn’t load sessions. Try again."],
-		[false, true, "Updating sessions…"],
-	])("reports session query state", (isError, isPending, status) => {
-		mockUseAppSessionHeatmap.mockReturnValue({ data: [], isError, isPending });
+	it("shows the session legend as loading while app sessions are pending", async () => {
+		mockUseAppSessionHeatmap.mockReturnValue({ data: undefined, isPending: true, isError: false });
 		const { result } = renderRules();
-		expect(result.current.sessionQueryStatus).toBe(status);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.hasSessionHeatmap).toBe(false);
+		expect(result.current.sessionLegendState).toBe("loading");
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-in");
+	});
+
+	it("keeps the session legend loading until the map can draw the heatmap", async () => {
+		const { result } = renderRules();
+		expect(result.current.sessionLegendState).toBe("loading");
+
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.sessionLegendState).toBe("scale");
+	});
+
+	it("reports an empty session legend when loaded sessions have no weight", async () => {
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [{ lat: 29.75, lng: -95.35, sessionWeight: 0 }],
+			isPending: false,
+			isError: false,
+		});
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.sessionLegendState).toBe("empty");
+	});
+
+	it.each([
+		[{ data: undefined, isPending: false, isError: true }, true],
+		[{ data: undefined, isPending: true, isError: false }, false],
+	])("does not report loading for failed or hidden sessions %#", (heatmap, showSessions) => {
+		layersState.showSessions = showSessions;
+		mockUseAppSessionHeatmap.mockReturnValue(heatmap);
+		const { result } = renderRules();
+		expect(result.current.sessionLegendState).not.toBe("loading");
+		expect(result.current.isLegendShown).toBe(false);
 	});
 });
