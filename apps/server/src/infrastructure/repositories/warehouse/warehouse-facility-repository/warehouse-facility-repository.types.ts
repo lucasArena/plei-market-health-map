@@ -9,6 +9,8 @@ export interface WarehouseLocationRow {
 	location_latitude: number | null;
 	location_longitude: number | null;
 	played_last_28_days: number | string;
+	company_id: number | string | null;
+	company_logo: string | null;
 }
 
 export interface WarehouseQueryable {
