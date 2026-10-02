@@ -87,6 +87,8 @@ export interface Messages {
 		writing: string;
 		label: string;
 		failed: string;
+		showMore: string;
+		showLess: string;
 	};
 	facilityDetail: {
 		label: string;

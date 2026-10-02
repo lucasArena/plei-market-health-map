@@ -90,6 +90,8 @@ export const en: Messages = {
 		writing: "Finding key insights…",
 		label: "Key insights",
 		failed: "AI insights aren't available on this device. Showing the strongest period changes.",
+		showMore: "Show more",
+		showLess: "Show less",
 	},
 	facilityDetail: {
 		label: "Facility details",
