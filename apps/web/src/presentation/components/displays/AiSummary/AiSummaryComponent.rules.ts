@@ -4,6 +4,10 @@ import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { browserLlm } from "@/infrastructure/ai/browser-llm/browser-llm";
+import {
+	buildInsightChecks,
+	supportedInsightText,
+} from "@/infrastructure/ai/insight-check/insight-check";
 import { activitySummaryPrompt } from "@/infrastructure/ai/prompts/activity-summary-prompt";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
 import { aiSummaryCache } from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache";
@@ -25,6 +29,7 @@ export function aiSummaryContextFor(
 			locale,
 		),
 		prompt: activitySummaryPrompt.build(subject, locale),
+		checks: buildInsightChecks(subject),
 	};
 }
 
@@ -42,7 +47,7 @@ export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
 	const [expandedKey, setExpandedKey] = useState<string | null>(null);
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const contentRef = useRef<HTMLDivElement>(null);
-	const { cacheKey, prompt } = context;
+	const { cacheKey, prompt, checks } = context;
 	const text = summaryTextFor(state, fallback);
 	const isExpanded = expandedKey === cacheKey;
 
@@ -53,7 +58,8 @@ export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
 	);
 
 	useEffect(() => {
-		const cached = aiSummaryCache.read(cacheKey);
+		const supported = (text: string) => (checks ? supportedInsightText(text, checks) : text);
+		const cached = supported(aiSummaryCache.read(cacheKey) ?? "");
 		if (cached) {
 			setState({ status: "ready", text: cached, progress: 1 });
 			return;
@@ -76,17 +82,20 @@ export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
 			const text = await browserLlm.generate(prompt, {
 				signal,
 				onProgress: (progress) => update({ status: "loading", text: null, progress }),
-				onText: (partial) => update({ status: "generating", text: partial, progress: 1 }),
+				onText: (partial) =>
+					update({ status: "generating", text: supported(partial) || null, progress: 1 }),
 			});
 			if (signal.aborted) return;
 			if (!text) throw new Error("Empty AI summary");
-			aiSummaryCache.write(cacheKey, text);
+			const checked = supported(text);
+			if (!checked) throw new Error("No AI insight matched the data");
+			aiSummaryCache.write(cacheKey, checked);
 			activityTracker.count("aiSummaries");
-			update({ status: "ready", text, progress: 1 });
+			update({ status: "ready", text: checked, progress: 1 });
 		};
 		run().catch(() => update({ status: "error", text: null, progress: 0 }));
 		return () => controller.abort();
-	}, [cacheKey, prompt, isRequested]);
+	}, [cacheKey, checks, prompt, isRequested]);
 
 	useEffect(() => {
 		const content = contentRef.current;

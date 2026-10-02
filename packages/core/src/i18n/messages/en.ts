@@ -139,7 +139,7 @@ export const en: Messages = {
 		ofTotal: "of {total}",
 		topFacilities: "Top facilities",
 		overallGameChange:
-			"Overall games: {previous} → {current}, a net change of {change} versus the previous 28 days. Largest contributors:",
+			"Overall games: {previous} → {current}, a net change of {change} games versus the previous 28 days. Largest contributors:",
 		insightsFailed:
 			"Could not load market insights. The scorecards and charts are still available.",
 		keyInsights: "Key insights",
