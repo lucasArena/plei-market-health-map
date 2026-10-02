@@ -93,6 +93,8 @@ export const ptBR: Messages = {
 		label: "Principais sinais",
 		failed:
 			"A IA não está disponível neste dispositivo. Mostrando as maiores variações do período.",
+		showMore: "Mostrar mais",
+		showLess: "Mostrar menos",
 	},
 	facilityDetail: {
 		label: "Detalhes da instalação",

@@ -94,6 +94,8 @@ export const es: Messages = {
 		label: "Hallazgos clave",
 		failed:
 			"Los hallazgos con IA no están disponibles en este dispositivo. Mostramos los cambios más fuertes del período.",
+		showMore: "Ver más",
+		showLess: "Ver menos",
 	},
 	facilityDetail: {
 		label: "Detalles de la sede",

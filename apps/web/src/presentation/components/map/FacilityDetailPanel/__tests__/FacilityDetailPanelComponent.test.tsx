@@ -4,6 +4,12 @@ import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetai
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent", () => ({
+	AiSummarySkeleton: ({ testId }: { testId: string }) => (
+		<div data-testid={testId} aria-busy="true" />
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
 	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));

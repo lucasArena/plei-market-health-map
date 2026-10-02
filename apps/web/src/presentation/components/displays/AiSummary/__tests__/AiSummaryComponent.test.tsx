@@ -12,7 +12,11 @@ const messages = EN_MESSAGES.facilityAi;
 
 function rulesWith(status: string, overrides: object = {}) {
 	return {
+		contentRef: { current: null },
 		handleGenerate: vi.fn(),
+		isExpanded: false,
+		isOverflowing: false,
+		toggleExpanded: vi.fn(),
 		messages,
 		progressLabel: "Loading the AI model on this device… 40%",
 		progressPercent: 40,
@@ -27,14 +31,15 @@ function renderSummary() {
 }
 
 describe("AiSummary", () => {
-	it("offers the one-time download", () => {
-		const rules = rulesWith("idle");
+	it("offers the one-time download over a skeleton, without template text", () => {
+		const rules = rulesWith("idle", { text: null });
 		mockRules.mockReturnValue(rules);
 		renderSummary();
 
 		fireEvent.click(screen.getByRole("button", { name: `✨ ${messages.generate}` }));
 
-		expect(screen.getByText("Summary text.")).toBeInTheDocument();
+		expect(screen.queryByText("Summary text.")).not.toBeInTheDocument();
+		expect(screen.getByTestId("key-insights-skeleton")).toBeInTheDocument();
 		expect(screen.getByText(messages.downloadHint)).toBeInTheDocument();
 		expect(rules.handleGenerate).toHaveBeenCalled();
 	});
@@ -73,5 +78,29 @@ describe("AiSummary", () => {
 
 		expect(screen.getByText("Key insights")).toBeInTheDocument();
 		expect(screen.getByTestId("ai-summary-icon")).toBeInTheDocument();
+	});
+
+	it("keeps a fixed height and offers Show more only when the text overflows", () => {
+		const rules = rulesWith("ready", { isOverflowing: true });
+		mockRules.mockReturnValue(rules);
+		const { rerender } = render(
+			<AiSummary context={{ cacheKey: "k", prompt: [] }} fallback="Summary text." />,
+		);
+
+		expect(screen.getByTestId("ai-summary-content")).toHaveClass("h-44", "overflow-hidden");
+		const toggle = screen.getByRole("button", { name: messages.showMore });
+		expect(toggle).toHaveAttribute("aria-expanded", "false");
+		expect(toggle).toHaveClass("rounded-full", "bg-white/90");
+		expect(screen.getByTestId("ai-summary-toggle-row")).toHaveClass("justify-center", "-mt-6");
+		fireEvent.click(toggle);
+		expect(rules.toggleExpanded).toHaveBeenCalled();
+
+		mockRules.mockReturnValue(rulesWith("ready", { isOverflowing: true, isExpanded: true }));
+		rerender(<AiSummary context={{ cacheKey: "k", prompt: [] }} fallback="Summary text." />);
+		expect(screen.getByTestId("ai-summary-content")).not.toHaveClass("h-44");
+		expect(screen.getByRole("button", { name: messages.showLess })).toHaveAttribute(
+			"aria-expanded",
+			"true",
+		);
 	});
 });

@@ -6,6 +6,7 @@ import type { BrowserLlmCallbacks } from "@/infrastructure/ai/browser-llm/browse
 import { aiSummaryCache } from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache";
 import {
 	aiSummaryContextFor,
+	summaryTextFor,
 	useAiSummaryRules,
 } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
@@ -86,7 +87,7 @@ describe("useAiSummaryRules", () => {
 		act(() => lastCallbacks().onProgress(0.426));
 		expect(result.current.progressPercent).toBe(43);
 		expect(result.current.progressLabel).toBe("Loading the AI model on this device… 43%");
-		expect(result.current.text).toBe(FALLBACK);
+		expect(result.current.text).toBeNull();
 
 		act(() => lastCallbacks().onText("Pegaso HTX"));
 		expect(result.current.status).toBe("generating");
@@ -174,5 +175,36 @@ describe("useAiSummaryRules", () => {
 		expect(facility.cacheKey).toBe("v5:facility-889:2026-09-30:en");
 		expect(market.cacheKey).toBe("v5:market-2:2026-09-30:en");
 		expect(market.prompt.at(-1)?.content).toContain("Market: Houston.");
+	});
+
+	it("shows no template text while the model loads, waits for consent, or is checking", () => {
+		expect(summaryTextFor({ status: "checking", text: null, progress: 0 }, FALLBACK)).toBeNull();
+		expect(summaryTextFor({ status: "idle", text: null, progress: 0 }, FALLBACK)).toBeNull();
+		expect(summaryTextFor({ status: "loading", text: null, progress: 0.4 }, FALLBACK)).toBeNull();
+		expect(summaryTextFor({ status: "generating", text: "Busy", progress: 1 }, FALLBACK)).toBe(
+			"Busy",
+		);
+		expect(summaryTextFor({ status: "unsupported", text: null, progress: 0 }, FALLBACK)).toBe(
+			FALLBACK,
+		);
+		expect(summaryTextFor({ status: "error", text: null, progress: 0 }, FALLBACK)).toBe(FALLBACK);
+	});
+
+	it("expands, and measures whether the collapsed text overflows", async () => {
+		aiSummaryCache.write(contextFor().cacheKey, "Cached.");
+		const { result } = renderRules();
+		await waitFor(() => expect(result.current.text).toBe("Cached."));
+		expect(result.current.isOverflowing).toBe(false);
+
+		act(() => result.current.toggleExpanded());
+		expect(result.current.isExpanded).toBe(true);
+		expect(result.current.isOverflowing).toBe(true);
+
+		Object.assign(result.current.contentRef, {
+			current: { scrollHeight: 300, clientHeight: 144 },
+		});
+		act(() => result.current.toggleExpanded());
+		expect(result.current.isExpanded).toBe(false);
+		expect(result.current.isOverflowing).toBe(true);
 	});
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMessage } from "@market-health-map/core/i18n";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { browserLlm } from "@/infrastructure/ai/browser-llm/browser-llm";
 import { activitySummaryPrompt } from "@/infrastructure/ai/prompts/activity-summary-prompt";
@@ -30,13 +30,27 @@ export function aiSummaryContextFor(
 
 const CHECKING: AiSummaryState = { status: "checking", text: null, progress: 0 };
 
+export function summaryTextFor(state: AiSummaryState, fallback: string): string | null {
+	if (state.text) return state.text;
+	return state.status === "unsupported" || state.status === "error" ? fallback : null;
+}
+
 export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
 	const { messages } = useMessages();
 	const [state, setState] = useState<AiSummaryState>(CHECKING);
 	const [isRequested, setIsRequested] = useState(false);
+	const [expandedKey, setExpandedKey] = useState<string | null>(null);
+	const [isOverflowing, setIsOverflowing] = useState(false);
+	const contentRef = useRef<HTMLDivElement>(null);
 	const { cacheKey, prompt } = context;
+	const text = summaryTextFor(state, fallback);
+	const isExpanded = expandedKey === cacheKey;
 
 	const handleGenerate = useCallback(() => setIsRequested(true), []);
+	const toggleExpanded = useCallback(
+		() => setExpandedKey((current) => (current === cacheKey ? null : cacheKey)),
+		[cacheKey],
+	);
 
 	useEffect(() => {
 		const cached = aiSummaryCache.read(cacheKey);
@@ -74,14 +88,24 @@ export function useAiSummaryRules({ context, fallback }: AiSummaryProps) {
 		return () => controller.abort();
 	}, [cacheKey, prompt, isRequested]);
 
+	useEffect(() => {
+		const content = contentRef.current;
+		if (!content || isExpanded) return;
+		setIsOverflowing(Boolean(text) && content.scrollHeight > content.clientHeight);
+	}, [isExpanded, text]);
+
 	const progressPercent = Math.round(state.progress * 100);
 
 	return {
+		contentRef,
+		isExpanded,
+		isOverflowing: isOverflowing || isExpanded,
+		toggleExpanded,
 		handleGenerate,
 		messages: messages.facilityAi,
 		progressLabel: formatMessage(messages.facilityAi.loading, { percent: String(progressPercent) }),
 		progressPercent,
 		status: state.status,
-		text: state.text || fallback,
+		text,
 	};
 }
