@@ -11,7 +11,7 @@ import {
 } from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry";
 import type { CacheEntry } from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry.types";
 
-export const APP_SESSION_HEATMAP_CACHE_TTL_MS = 5 * 60 * 1000;
+export const APP_SESSION_HEATMAP_CACHE_TTL_MS = 60 * 60 * 1000;
 
 export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
 	private readonly cache = new Map<string, CacheEntry<AppSessionHeatmapCellView[]>>();

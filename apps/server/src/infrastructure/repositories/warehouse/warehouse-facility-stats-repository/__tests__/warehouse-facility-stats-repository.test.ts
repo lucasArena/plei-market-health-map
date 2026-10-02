@@ -67,6 +67,8 @@ describe("facility stats SQL", () => {
 	it("queries current and previous 28-day player analytics separately", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.confirmed_game + 0 = 1");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.players_type || '' = 'pleiapp_player'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("player_lifecycle = 'Activated'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= current_date - 56");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played < current_date");

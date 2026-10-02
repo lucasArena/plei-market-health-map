@@ -1,4 +1,7 @@
-import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
+import {
+	APP_SESSION_HEATMAP_CACHE_TTL_MS,
+	CachedAppSessionHeatmapRepository,
+} from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
 
 const CELL = { lat: 29.746, lng: -95.352, sessionWeight: 1134 };
 
@@ -39,18 +42,24 @@ describe("CachedAppSessionHeatmapRepository", () => {
 		expect(listLast28Days).toHaveBeenCalledTimes(2);
 	});
 
-	it("uses a five-minute cache by default", async () => {
+	it("keeps the heatmap for an hour by default, since it only changes once a day", async () => {
+		let now = 0;
 		const listLast28Days = vi.fn().mockResolvedValue([]);
 		const repository = new CachedAppSessionHeatmapRepository(
 			{
 				listLast28Days,
 				listFilterOptions: vi.fn().mockResolvedValue({ genders: [], skills: [], ages: [] }),
 			},
-			{ now: () => new Date(0) },
+			{ now: () => new Date(now) },
 		);
 		await repository.listLast28Days();
+		now = APP_SESSION_HEATMAP_CACHE_TTL_MS - 1;
 		await repository.listLast28Days();
 		expect(listLast28Days).toHaveBeenCalledTimes(1);
+		now = APP_SESSION_HEATMAP_CACHE_TTL_MS;
+		await repository.listLast28Days();
+		expect(listLast28Days).toHaveBeenCalledTimes(2);
+		expect(APP_SESSION_HEATMAP_CACHE_TTL_MS).toBe(60 * 60 * 1000);
 	});
 });
 
