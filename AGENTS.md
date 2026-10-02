@@ -44,7 +44,7 @@ packages/
 .github/
   workflows/                      CI/CD workflows only (GitHub reads every YAML here)
   scripts/release/                scripts the workflows run (next-version, release-notes)
-docs/                             repo-wide docs (architecture, conventions, deployment, design system, agent usage)
+docs/                             repo-wide docs (architecture, conventions, deployment, design system)
 ```
 
 Rules:
@@ -206,7 +206,7 @@ Switches reach users within about a minute: the server caches the flags for 30 s
 
 ## Linear tracking (mandatory)
 
-Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.
+Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did. The ticket and the PR description are also the project's record of how agents were used (a project must-have), so say in the PR which agent did the work and how you verified it. There is no separate log file.
 
 1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Engineering** team (`ENG`), in that project, assigned to the person you are working for.
 2. **Set it to In Progress** while you work.
@@ -219,7 +219,6 @@ Reach Linear through the Linear MCP server in your agent client, or the GraphQL 
 
 - `pnpm check` passes.
 - New files follow the folder structure above, and docs in `CLAUDE.md` and `docs/` match what changed.
-- A row is added to `docs/agent-usage.md` for meaningful agent-assisted work (a project must-have).
 - The Linear ticket is linked to the PR and has the right status.
 
 <!-- BEGIN:turborepo-agent-rules -->
