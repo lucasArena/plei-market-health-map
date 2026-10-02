@@ -93,6 +93,7 @@ import type {
 	SessionHeatmapArea,
 	SessionHeatmapBounds,
 	SessionHeatmapScale,
+	SessionLegendState,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 function byActiveLast(a: FacilityPointView, b: FacilityPointView): number {
@@ -777,11 +778,6 @@ export function useFacilitiesMapScreenRules() {
 	]
 		.filter(Boolean)
 		.join(" · ");
-	const sessionQueryStatus =
-		{
-			[`${heatmapQuery.isError}`]: messages.map.sessionFilters.sessionsError,
-			[`${heatmapQuery.isPending}`]: messages.map.sessionFilters.updating,
-		}.true ?? "";
 
 	const showFacilitiesRef = useRef(showFacilities);
 	const facilitiesGlassLiveRef = useRef(showFacilities);
@@ -1200,6 +1196,13 @@ export function useFacilitiesMapScreenRules() {
 	]);
 
 	const hasSessionHeatmap = showSessions && heatmapFeatureCollection.features.length > 0;
+	const isSessionHeatmapLoading =
+		showSessions && !heatmapQuery.isError && (heatmapQuery.isPending || !isMapReady);
+	const sessionLegendState = {
+		[`${true}`]: "scale",
+		[`${sessionScale.high === 0}`]: "empty",
+		[`${isSessionHeatmapLoading}`]: "loading",
+	}.true as SessionLegendState;
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -1337,7 +1340,7 @@ export function useFacilitiesMapScreenRules() {
 		finishReveal: finishLegendMotion,
 		isShown: isLegendShown,
 		motion: legendMotion,
-	} = useRevealMotion(hasSessionHeatmap, PANEL_SLIDE_MS);
+	} = useRevealMotion(hasSessionHeatmap || isSessionHeatmapLoading, PANEL_SLIDE_MS);
 
 	const legendMotionClass = {
 		hidden: "",
@@ -1348,7 +1351,7 @@ export function useFacilitiesMapScreenRules() {
 
 	return {
 		sessionFilterSummary,
-		sessionQueryStatus,
+		sessionLegendState,
 		clearSearchScope,
 		closePanel,
 		containerRef,

@@ -77,6 +77,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
+		sessionLegendState: "empty",
 		status,
 		...overrides,
 	};
@@ -132,6 +133,7 @@ describe("FacilitiesMapScreen", () => {
 				isLegendShown: true,
 				legendMotionClass: "session-legend-in",
 				sessionScale: { low: 12, high: 480 },
+				sessionLegendState: "scale",
 			}),
 		);
 
@@ -164,6 +166,23 @@ describe("FacilitiesMapScreen", () => {
 		render(<FacilitiesMapScreen />);
 
 		expect(screen.getByText("No sessions in the current map view")).toBeInTheDocument();
+		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
+	});
+
+	it("shows a loading state instead of an empty legend while sessions load", () => {
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", { isLegendShown: true, sessionLegendState: "loading" }),
+		);
+
+		render(<FacilitiesMapScreen />);
+
+		expect(screen.getByRole("status")).toHaveTextContent("Loading app sessions…");
+		expect(screen.getByTestId("session-heatmap-loading")).toHaveClass("motion-safe:animate-pulse");
+		expect(screen.getByTestId("session-heatmap-loading")).toHaveStyle({
+			backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
+		});
+		expect(screen.queryByText("No sessions in the current map view")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
 	});
 
@@ -230,6 +249,7 @@ describe("FacilitiesMapScreen", () => {
 				legendMotionClass: "session-legend-in",
 				selectedFacilityId: "f1",
 				sessionScale: { low: 1, high: 10 },
+				sessionLegendState: "scale",
 			}),
 		);
 

@@ -34,6 +34,7 @@ export const en: Messages = {
 		sessionHeatmapLegend: "Sessions per shaded area · last 28 days",
 		sessionHeatmapContext: "Scale updates for the current map view",
 		sessionHeatmapNoActivity: "No sessions in the current map view",
+		sessionHeatmapLoading: "Loading app sessions…",
 		sessionHeatmapLowValue: "{count} sessions in a shaded area",
 		sessionHeatmapMidValue: "{count} sessions in a shaded area",
 		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
