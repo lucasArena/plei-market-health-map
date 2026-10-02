@@ -1,4 +1,5 @@
 import { writeFileSync } from "node:fs";
+import { flaggedIssueIds, linearClientFromEnv } from "../linear/flagged-issues.mjs";
 import { pathToFileURL } from "node:url";
 import {
 	BUMP_COMMIT_PREFIX,
@@ -45,6 +46,14 @@ export function parseCommitLog(output) {
 		.filter((commit) => !commit.subject.startsWith(BUMP_COMMIT_PREFIX));
 }
 
+export function withoutFlaggedWork(commits, flagged) {
+	const flaggedIds = new Set(flagged);
+	return commits.filter((commit) => {
+		const ids = `${commit.subject}\n${commit.body}`.match(LINEAR_ISSUE_PATTERN) ?? [];
+		return ids.length === 0 || ids.some((id) => !flaggedIds.has(id));
+	});
+}
+
 export function linearIssuesIn(commits) {
 	const ids = commits.flatMap((commit) =>
 		`${commit.subject}\n${commit.body}`.match(LINEAR_ISSUE_PATTERN) ?? [],
@@ -57,7 +66,8 @@ function commitLine(commit, repoUrl) {
 	return `- ${commit.subject} ([${shortSha}](${repoUrl}/commit/${commit.sha}))`;
 }
 
-export function buildReleaseNotes({ tag, previousTag, date, repoUrl, commits }) {
+export function buildReleaseNotes({ tag, previousTag, date, repoUrl, commits: allCommits, flagged = [] }) {
+	const commits = withoutFlaggedWork(allCommits, flagged);
 	const range = previousTag
 		? `[${previousTag}...${tag}](${repoUrl}/compare/${previousTag}...${tag})`
 		: `[${tag}](${repoUrl}/tree/${tag})`;
@@ -66,7 +76,7 @@ export function buildReleaseNotes({ tag, previousTag, date, repoUrl, commits }) 
 		if (matching.length === 0) return [];
 		return [`## ${title}`, "", ...matching.map((commit) => commitLine(commit, repoUrl)), ""];
 	});
-	const issues = linearIssuesIn(commits);
+	const issues = linearIssuesIn(commits).filter((id) => !flagged.includes(id));
 	const issueSection =
 		issues.length === 0
 			? ["## Linear issues", "", "No Linear issues were referenced in these commits.", ""]
@@ -96,10 +106,22 @@ if (isCli) {
 	const [tag, outputPath = "release-notes.md"] = process.argv.slice(2);
 	if (!tag) throw new Error("Usage: node .github/scripts/release/release-notes.mjs <tag> [output.md]");
 	const { previousTag, commits } = readReleaseCommits(tag);
+	const referenced = linearIssuesIn(commits);
+	let flagged = [];
+	try {
+		const request = await linearClientFromEnv();
+		if (request) flagged = await flaggedIssueIds({ ids: referenced, request, log: console.error });
+	} catch (error) {
+		console.error(`::warning::Could not check for feature-flagged tickets (${error.message}).`);
+	}
 	const repoUrl = `${process.env.GITHUB_SERVER_URL ?? "https://github.com"}/${process.env.GITHUB_REPOSITORY ?? "lucasArena/plei-market-health-map"}`;
 	const date = new Date().toISOString().slice(0, 10);
-	writeFileSync(outputPath, buildReleaseNotes({ tag, previousTag, date, repoUrl, commits }));
+	writeFileSync(
+		outputPath,
+		buildReleaseNotes({ tag, previousTag, date, repoUrl, commits, flagged }),
+	);
+	const issues = referenced.filter((id) => !flagged.includes(id));
 	process.stdout.write(
-		`${JSON.stringify({ previousTag, issues: linearIssuesIn(commits), commits: commits.length })}\n`,
+		`${JSON.stringify({ previousTag, issues, flagged, commits: commits.length })}\n`,
 	);
 }

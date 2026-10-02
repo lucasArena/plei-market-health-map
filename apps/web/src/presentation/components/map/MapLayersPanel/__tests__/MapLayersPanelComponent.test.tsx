@@ -1,4 +1,5 @@
-import { act, fireEvent, screen } from "@testing-library/react";
+import { getMessages } from "@market-health-map/core/i18n";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { LAYERS_PANEL_OPEN_KEY } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
@@ -7,6 +8,15 @@ import {
 	MapLayersProvider,
 	useMapLayers,
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+
+const mockFeatureFlag = vi.fn(() => false);
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockFeatureFlag(),
+}));
+vi.mock("@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent", () => ({
+	AppSessionFilters: () => <div>Player filters</div>,
+}));
 
 const mockPathname = vi.fn(() => "/");
 
@@ -37,7 +47,7 @@ describe("MapLayersPanel", () => {
 			"z-50",
 			"w-[32px]",
 		);
-		const layersCard = screen.getByText("Layers").parentElement;
+		const layersCard = screen.getByRole("heading", { name: "Demand" }).parentElement;
 		expect(layersCard).toHaveClass(
 			"map-glass",
 			"right-0",
@@ -70,9 +80,30 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("button", { name: "All" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
-		expect(screen.getByText("Layers")).toHaveClass("px-2", "py-1.5", "text-xs", "uppercase");
-		expect(screen.getByText("Demand")).toBeInTheDocument();
-		expect(screen.getByText("Supply")).toBeInTheDocument();
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.getByText("Demand")).toHaveClass(
+			"px-2",
+			"pt-1.5",
+			"pb-1",
+			"text-[10px]",
+			"font-semibold",
+			"tracking-wider",
+			"text-muted-foreground",
+			"uppercase",
+		);
+		expect(screen.getByText("Demand")).not.toHaveClass("font-medium", "text-sm");
+		expect(screen.getByText("Supply")).toHaveClass(
+			"text-[10px]",
+			"font-semibold",
+			"tracking-wider",
+			"text-muted-foreground",
+			"uppercase",
+		);
+		expect(screen.getByText("App sessions")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Active facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Inactive facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("App sessions").parentElement).toHaveClass("px-2", "py-1.5", "gap-2");
+		expect(screen.getByText("App sessions").parentElement).not.toHaveClass("text-sm");
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 		expect(screen.getByText("Active facilities").previousElementSibling).toBeNull();
 		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
@@ -166,12 +197,12 @@ describe("MapLayersPanel", () => {
 		vi.useFakeTimers();
 		fireEvent.click(toggle);
 
-		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-out")).toBeInTheDocument();
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
 
-		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 		expect(screen.queryByRole("switch", { name: "Active facilities" })).not.toBeInTheDocument();
 		const expand = screen.getByRole("button", { name: "Show layers" });
 		expect(expand).toHaveClass("map-glass", "map-icon-button", "rounded-full");
@@ -180,8 +211,8 @@ describe("MapLayersPanel", () => {
 
 		fireEvent.click(expand);
 
-		expect(screen.getByText("Layers").closest(".search-results-in")).toBeInTheDocument();
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-in")).toBeInTheDocument();
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
@@ -202,21 +233,22 @@ describe("MapLayersPanel", () => {
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
 
 		fireEvent.keyDown(toggle, { key: "ArrowDown" });
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
 		fireEvent.pointerDown(toggle);
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
 
 		fireEvent.keyDown(toggle, { key: "Escape" });
-		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-out")).toBeInTheDocument();
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
-		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
-		expect(screen.getByText("Layers")).toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
+		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
 		fireEvent.pointerDown(document.body);
-		expect(screen.getByText("Layers").closest(".search-results-out")).toBeInTheDocument();
+		expect(screen.getByText("Demand").closest(".search-results-out")).toBeInTheDocument();
 	});
 
 	it("starts collapsed when the person never left it open", () => {
@@ -227,10 +259,10 @@ describe("MapLayersPanel", () => {
 			"aria-expanded",
 			"false",
 		);
-		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Show layers" })).toHaveAttribute(
 			"data-active",
-			"true",
+			"false",
 		);
 	});
 
@@ -244,29 +276,239 @@ describe("MapLayersPanel", () => {
 		expect(localStorage.getItem(LAYERS_PANEL_OPEN_KEY)).toBe("false");
 	});
 
-	it("shows a dot on the button while any layer is on", () => {
+	it("shows a dot on the button only while a layer differs from the default", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
 			</MapLayersProvider>,
 		);
 		const button = screen.getByRole("button", { name: "Hide layers" });
-		expect(button).toHaveAttribute("data-active", "true");
-		expect(screen.getByTestId("layers-indicator")).toHaveClass(
-			"absolute",
-			"top-0",
-			"right-0",
-			"rounded-full",
-			"bg-pleiful-pitch-green-50",
+		expect(button).toHaveAttribute("data-active", "false");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+
+		for (const name of ["App sessions", "Active facilities", "Inactive facilities"]) {
+			fireEvent.click(switchByName(name));
+			expect(button).toHaveAttribute("data-active", "true");
+			expect(screen.getByTestId("layers-indicator")).toHaveClass(
+				"absolute",
+				"top-0",
+				"right-0",
+				"rounded-full",
+				"bg-pleiful-pitch-green-50",
+			);
+			fireEvent.click(switchByName(name));
+			expect(button).toHaveAttribute("data-active", "false");
+			expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		}
+	});
+
+	it("shows the dot while a player filter is applied", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		function Cohort() {
+			const layers = useMapLayers();
+			return (
+				<>
+					<button type="button" onClick={() => layers?.setSessionFilters({ gender: "Female" })}>
+						Set cohort
+					</button>
+					<button type="button" onClick={() => layers?.setSessionFilters({ gender: undefined })}>
+						Clear cohort
+					</button>
+				</>
+			);
+		}
+		renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<Cohort />
+			</MapLayersProvider>,
 		);
+		const button = screen.getByRole("button", { name: "Hide layers" });
+		expect(button).toHaveAttribute("data-active", "false");
+		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+		expect(button).toHaveAttribute("data-active", "true");
+		fireEvent.click(screen.getByRole("button", { name: "Clear cohort" }));
+		expect(button).toHaveAttribute("data-active", "false");
+		mockFeatureFlag.mockReturnValue(false);
+	});
+});
+
+describe("MapLayersPanel reset", () => {
+	function LayersState() {
+		const layers = useMapLayers();
+		return (
+			<>
+				<output data-testid="layers-state">
+					{JSON.stringify({
+						showActiveFacilities: layers?.showActiveFacilities,
+						showInactiveFacilities: layers?.showInactiveFacilities,
+						showSessions: layers?.showSessions,
+						sessionFilters: layers?.sessionFilters,
+					})}
+				</output>
+				<button type="button" onClick={() => layers?.setSessionFilters({ gender: "Female" })}>
+					Set cohort
+				</button>
+			</>
+		);
+	}
+
+	const DEFAULT_STATE = JSON.stringify({
+		showActiveFacilities: true,
+		showInactiveFacilities: true,
+		showSessions: true,
+		sessionFilters: {},
+	});
+
+	function renderWithProvider() {
+		return renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<LayersState />
+			</MapLayersProvider>,
+		);
+	}
+
+	it("is not rendered while every setting matches the default", () => {
+		renderWithProvider();
+
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		expect(switchByName("Inactive facilities").parentElement?.nextElementSibling).toBeNull();
+	});
+
+	it("appears in a right-aligned footer inside the glass card when a setting differs", () => {
+		renderWithProvider();
+		const card = screen.getByRole("heading", { name: "Demand" }).parentElement;
+
+		for (const name of ["App sessions", "Active facilities", "Inactive facilities"]) {
+			fireEvent.click(switchByName(name));
+			const reset = screen.getByRole("button", { name: "Reset" });
+			expect(reset).toBeEnabled();
+			expect(screen.getByTestId("layers-indicator")).toBeInTheDocument();
+			fireEvent.click(switchByName(name));
+			expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		}
+
+		fireEvent.click(switchByName("Inactive facilities"));
+		const reset = screen.getByRole("button", { name: "Reset" });
+		const footer = reset.parentElement;
+		expect(card).toHaveClass("map-glass");
+		expect(card?.lastElementChild).toBe(footer);
+		expect(footer).toHaveClass("flex", "justify-end", "border-t", "border-border");
+		expect(reset).toHaveClass("text-xs", "text-muted-foreground", "hover:text-foreground");
+		expect(reset).not.toHaveClass("bg-primary");
+	});
+
+	it("restores every setting to the default so the button and the dot disappear", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderWithProvider();
+		const toggle = screen.getByRole("button", { name: "Hide layers" });
 
 		fireEvent.click(switchByName("App sessions"));
 		fireEvent.click(switchByName("Active facilities"));
-		expect(button).toHaveAttribute("data-active", "true");
 		fireEvent.click(switchByName("Inactive facilities"));
-		expect(button).toHaveAttribute("data-active", "false");
+		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+		expect(screen.getByTestId("layers-state")).toHaveTextContent(
+			JSON.stringify({
+				showActiveFacilities: false,
+				showInactiveFacilities: false,
+				showSessions: false,
+				sessionFilters: { gender: "Female" },
+			}),
+		);
+		expect(toggle).toHaveAttribute("data-active", "true");
+
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+		expect(toggle).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
-		fireEvent.click(switchByName("App sessions"));
-		expect(button).toHaveAttribute("data-active", "true");
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		expect(screen.getByText("Demand")).toBeInTheDocument();
+		expect(toggle).toHaveFocus();
+		mockFeatureFlag.mockReturnValue(false);
 	});
+
+	it("shows Reset for a player filter alone and clears it", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderWithProvider();
+
+		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
+		expect(screen.getByText("Player filters")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+		mockFeatureFlag.mockReturnValue(false);
+	});
+
+	it("restores the defaults without a provider", () => {
+		renderWithMessages(<MapLayersPanel />);
+
+		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("App sessions"));
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	});
+
+	it("reads Redefinir in Portuguese", () => {
+		render(
+			<MessagesProvider locale="pt-BR" messages={getMessages("pt-BR")}>
+				<MapLayersPanel />
+			</MessagesProvider>,
+		);
+
+		fireEvent.click(screen.getByRole("switch", { name: "Instalações ativas" }));
+		expect(screen.getByRole("button", { name: "Redefinir" })).toBeInTheDocument();
+	});
+});
+
+it("shows demographic controls only when the flag is on", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	const { unmount } = renderWithMessages(<MapLayersPanel />);
+	expect(screen.getByText("Player filters")).toBeInTheDocument();
+	unmount();
+	mockFeatureFlag.mockReturnValue(false);
+	renderWithMessages(<MapLayersPanel />);
+	expect(screen.queryByText("Player filters")).not.toBeInTheDocument();
+});
+
+it("clears the applied cohort when its feature flag is disabled", () => {
+	function State() {
+		const layers = useMapLayers();
+		return (
+			<>
+				<output data-testid="cohort">{JSON.stringify(layers?.sessionFilters)}</output>
+				<button type="button" onClick={() => layers?.setSessionFilters({ gender: "Female" })}>
+					Set cohort
+				</button>
+			</>
+		);
+	}
+	mockFeatureFlag.mockReturnValue(true);
+	const tree = (
+		<MapLayersProvider>
+			<MapLayersPanel />
+			<State />
+		</MapLayersProvider>
+	);
+	const { rerender } = renderWithMessages(tree);
+	fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
+	expect(screen.getByTestId("cohort")).toHaveTextContent("Female");
+	mockFeatureFlag.mockReturnValue(false);
+	rerender(
+		<MapLayersProvider>
+			<MapLayersPanel />
+			<State />
+		</MapLayersProvider>,
+	);
+	expect(screen.getByTestId("cohort")).toHaveTextContent("{}");
 });

@@ -4,6 +4,12 @@ import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetai
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent", () => ({
+	AiSummarySkeleton: ({ testId }: { testId: string }) => (
+		<div data-testid={testId} aria-busy="true" />
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
 	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
@@ -51,14 +57,15 @@ const VIEW = {
 		{
 			key: "1-0",
 			dayLabel: "Mon",
-			periodLabel: "AM",
+			periodLabel: "Morning",
 			value: 2,
-			tooltip: "Mon, AM: 2 games",
+			label: "Mon, Morning: 2 games",
+			tooltip: "2 games",
 			intensity: 4,
 		},
 	],
 	dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-	timePeriodLabels: ["AM", "Midday", "PM", "Late"],
+	timePeriodLabels: ["Morning", "Afternoon", "Evening", "Late night"],
 	lastPlayedLabel: "Last game played Sep 27, 2026",
 };
 
@@ -96,7 +103,7 @@ describe("FacilityDetailPanel", () => {
 		expect(screen.getByText("82%")).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Sep 21: 12 games" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Mon, AM: 2 games" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Mon, Morning: 2 games" })).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
 		expect(screen.queryByText("Week of Sep 21 – Sep 27, 2026")).not.toBeInTheDocument();
 	});

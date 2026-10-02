@@ -37,4 +37,13 @@ describe("KeyInsights", () => {
 		rerender(<KeyInsights title="Key insights" text="" />);
 		expect(screen.getByRole("heading", { name: "Key insights" })).toBeInTheDocument();
 	});
+
+	it("shows a skeleton instead of text while loading", () => {
+		render(<KeyInsights title="Key insights" text="" isLoading />);
+
+		expect(screen.getByRole("heading", { name: "Key insights" })).toBeInTheDocument();
+		expect(screen.getByTestId("key-insights-skeleton")).toBeInTheDocument();
+		expect(screen.queryByRole("list")).not.toBeInTheDocument();
+		expect(document.querySelector("p")).toBeNull();
+	});
 });

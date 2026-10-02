@@ -44,7 +44,7 @@ describe("submitFeedback", () => {
 		expect(issues.issues).toHaveLength(1);
 		expect(issues.issues[0]?.type).toBe("improvement");
 		expect(issues.issues[0]?.title).toBe("Feedback from Stefano Sanchez");
-		expect(issues.issues[0]?.description).toContain("2026-09-29T20:00:00.000Z");
+		expect(issues.issues[0]?.requestBody).toContain("2026-09-29T20:00:00.000Z");
 		expect(issues.attachments).toHaveLength(0);
 	});
 
@@ -96,9 +96,9 @@ describe("submitFeedback", () => {
 		});
 
 		expect(issues.attachments.map((file) => file.filename)).toEqual(["one.png", "screenshot"]);
-		const description = issues.issues[0]?.description ?? "";
-		expect(description).toContain("![](https://uploads.test/1/one.png)");
-		expect(description).toContain("![](https://uploads.test/2/screenshot)");
+		const requestBody = issues.issues[0]?.requestBody ?? "";
+		expect(requestBody).toContain("![](https://uploads.test/1/one.png)");
+		expect(requestBody).toContain("![](https://uploads.test/2/screenshot)");
 	});
 
 	it("treats blank page, view and name as missing", async () => {
@@ -111,9 +111,9 @@ describe("submitFeedback", () => {
 			submitter: { name: null, email: "stefano@plei.com" },
 		});
 
-		const description = issues.issues[0]?.description ?? "";
-		expect(description).not.toContain("**Page:**");
-		expect(description).toContain("**Submitted by:** stefano@plei.com");
+		const requestBody = issues.issues[0]?.requestBody ?? "";
+		expect(requestBody).not.toContain("**Page:**");
+		expect(requestBody).toContain("**Submitted by:** stefano@plei.com");
 	});
 
 	it("refuses screenshots that add up to more than the request limit", async () => {

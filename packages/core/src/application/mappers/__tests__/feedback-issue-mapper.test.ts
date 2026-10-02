@@ -1,6 +1,6 @@
 import type { Feedback } from "@core/application/dtos/feedback-dto.types";
 import {
-	toFeedbackIssueDescription,
+	toFeedbackCustomerRequestBody,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
 	toFeedbackIssueTitle,
@@ -39,33 +39,33 @@ describe("toFeedbackIssueTitle", () => {
 	});
 });
 
-describe("toFeedbackIssueDescription", () => {
+describe("toFeedbackCustomerRequestBody", () => {
 	it("includes the message, submitter, page, view, timestamp and screenshots", () => {
-		const description = toFeedbackIssueDescription(
+		const body = toFeedbackCustomerRequestBody(
 			FEEDBACK,
 			["https://a/1.png", "https://a/2.png"],
 			AT,
 		);
 
-		expect(description).toContain(FEEDBACK.message);
-		expect(description).toContain("**Submitted by:** Stefano Sanchez (stefano@plei.com)");
-		expect(description).toContain("**Page:** http://localhost:3000/");
-		expect(description).toContain("**View:** facilities-map");
-		expect(description).toContain("**Submitted at:** 2026-09-29T20:00:00.000Z");
-		expect(description).toContain("![](https://a/1.png)\n\n![](https://a/2.png)");
+		expect(body).toContain(FEEDBACK.message);
+		expect(body).toContain("**Submitted by:** Stefano Sanchez (stefano@plei.com)");
+		expect(body).toContain("**Page:** http://localhost:3000/");
+		expect(body).toContain("**View:** facilities-map");
+		expect(body).toContain("**Submitted at:** 2026-09-29T20:00:00.000Z");
+		expect(body).toContain("![](https://a/1.png)\n\n![](https://a/2.png)");
 	});
 
 	it("omits what was not provided", () => {
-		const description = toFeedbackIssueDescription(
+		const body = toFeedbackCustomerRequestBody(
 			{ ...FEEDBACK, pageUrl: undefined, view: undefined, submitter: { email: "a@plei.com" } },
 			[],
 			AT,
 		);
 
-		expect(description).toContain("**Submitted by:** a@plei.com");
-		expect(description).not.toContain("**Page:**");
-		expect(description).not.toContain("**View:**");
-		expect(description).not.toContain("Screenshots");
+		expect(body).toContain("**Submitted by:** a@plei.com");
+		expect(body).not.toContain("**Page:**");
+		expect(body).not.toContain("**View:**");
+		expect(body).not.toContain("Screenshots");
 	});
 });
 
@@ -78,7 +78,7 @@ describe("toFeedbackIssueDraft", () => {
 			title: "Bug Report from Stefano Sanchez",
 			submitter: { displayName: "Stefano Sanchez" },
 		});
-		expect(draft.description.startsWith(FEEDBACK.message)).toBe(true);
+		expect(draft.requestBody.startsWith(FEEDBACK.message)).toBe(true);
 	});
 });
 

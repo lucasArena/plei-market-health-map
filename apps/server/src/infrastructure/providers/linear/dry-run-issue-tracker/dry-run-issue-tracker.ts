@@ -7,6 +7,7 @@ import type {
 import type { DryRunIssueTrackerOptions } from "@server/infrastructure/providers/linear/dry-run-issue-tracker/dry-run-issue-tracker.types";
 import {
 	DEFAULT_LINEAR_FEEDBACK_CONFIG,
+	toLinearCustomerNeedInput,
 	toLinearIssueInput,
 } from "@server/infrastructure/providers/linear/linear-feedback-config/linear-feedback-config";
 import type { LinearFeedbackConfig } from "@server/infrastructure/providers/linear/linear-feedback-config/linear-feedback-config.types";
@@ -46,6 +47,12 @@ export class DryRunIssueTracker implements IssueTracker {
 			"[feedback:dry-run] would create issue",
 			JSON.stringify(toLinearIssueInput(draft, this.config), null, 2),
 		);
+		if (draft.type === "improvement") {
+			this.log(
+				"[feedback:dry-run] would create customer request",
+				JSON.stringify(toLinearCustomerNeedInput(draft, identifier), null, 2),
+			);
+		}
 		return Promise.resolve({ identifier, url: `${DRY_RUN_ISSUE_BASE_URL}/${identifier}` });
 	}
 }

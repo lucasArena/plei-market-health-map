@@ -1,4 +1,7 @@
-import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
+import {
+	CachedFacilityStatsRepository,
+	FACILITY_PLAYER_STATS_CACHE_TTL_MS,
+} from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
 
 const RESERVATION_STATS = {
 	periodStart: "2026-09-03",
@@ -87,6 +90,28 @@ describe("CachedFacilityStatsRepository", () => {
 		await repository.getReservationStats(["889" as never]);
 
 		expect(getReservationStats).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps player stats for an hour, since they only cover completed weeks", async () => {
+		let now = 0;
+		const getPlayerStats = vi.fn().mockResolvedValue(PLAYER_STATS);
+		const repository = new CachedFacilityStatsRepository(
+			{
+				getReservationStats: vi.fn().mockResolvedValue(RESERVATION_STATS),
+				getPlayerStats,
+				getGameComparisons: vi.fn().mockResolvedValue([]),
+			},
+			{ now: () => new Date(now) },
+		);
+
+		await repository.getPlayerStats(["1" as never]);
+		now = FACILITY_PLAYER_STATS_CACHE_TTL_MS - 1;
+		await repository.getPlayerStats(["1" as never]);
+		expect(getPlayerStats).toHaveBeenCalledTimes(1);
+		now = FACILITY_PLAYER_STATS_CACHE_TTL_MS;
+		await repository.getPlayerStats(["1" as never]);
+		expect(getPlayerStats).toHaveBeenCalledTimes(2);
+		expect(FACILITY_PLAYER_STATS_CACHE_TTL_MS).toBe(60 * 60 * 1000);
 	});
 });
 

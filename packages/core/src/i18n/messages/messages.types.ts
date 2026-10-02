@@ -31,6 +31,7 @@ export interface Messages {
 		sessionHeatmapLegend: string;
 		sessionHeatmapContext: string;
 		sessionHeatmapNoActivity: string;
+		sessionHeatmapLoading: string;
 		sessionHeatmapLowValue: string;
 		sessionHeatmapMidValue: string;
 		sessionHeatmapHighValue: string;
@@ -41,9 +42,43 @@ export interface Messages {
 		layersSupply: string;
 		layersActiveFacilities: string;
 		layersInactiveFacilities: string;
+		sessionFilters: {
+			add: string;
+			remove: string;
+			close: string;
+			heading: string;
+			gender: string;
+			skill: string;
+			age: string;
+			minimumAge: string;
+			maximumAge: string;
+			ageRangeHelp: string;
+			invalidAge: string;
+			allGenders: string;
+			allSkills: string;
+			allAges: string;
+			under18: string;
+			age18: string;
+			age25: string;
+			age35: string;
+			age45: string;
+			apply: string;
+			reset: string;
+			allPlayers: string;
+			help: string;
+			loading: string;
+			optionsError: string;
+			updating: string;
+			sessionsError: string;
+			empty: string;
+			retry: string;
+			applied: string;
+			pending: string;
+		};
 		layersSessions: string;
 		layersCollapse: string;
 		layersExpand: string;
+		layersReset: string;
 	};
 	facilityAi: {
 		generate: string;
@@ -52,6 +87,8 @@ export interface Messages {
 		writing: string;
 		label: string;
 		failed: string;
+		showMore: string;
+		showLess: string;
 	};
 	facilityDetail: {
 		label: string;
@@ -76,7 +113,8 @@ export interface Messages {
 		popularTimes: string;
 		dayLabels: string[];
 		timePeriodLabels: string[];
-		popularTimeTooltip: string;
+		timePeriodRanges: string[];
+		popularTimeCellLabel: string;
 		quiet: string;
 		busy: string;
 		lastPlayed: string;

@@ -20,6 +20,11 @@ export type {
 	ListAppMetricsPeopleInput,
 	RecordDailyActivityInput,
 } from "@core/application/dtos/app-metrics-dto.types";
+export { appSessionFiltersSchema } from "@core/application/dtos/app-session-filters-dto";
+export type {
+	AppSessionFilterOptions,
+	AppSessionFilters,
+} from "@core/application/dtos/app-session-filters-dto.types";
 export type { AppSessionHeatmapCellView } from "@core/application/dtos/app-session-heatmap-dto.types";
 export { getFacilityDetailSchema } from "@core/application/dtos/facility-detail-dto";
 export type {
@@ -95,7 +100,7 @@ export {
 } from "@core/application/mappers/facility-stats-mapper";
 export {
 	FEEDBACK_TITLES,
-	toFeedbackIssueDescription,
+	toFeedbackCustomerRequestBody,
 	toFeedbackIssueDraft,
 	toFeedbackIssueSubmitter,
 	toFeedbackIssueTitle,
@@ -140,6 +145,7 @@ export { makeGetMarketGameInsights } from "@core/application/services/get-market
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
+export { makeListAppSessionFilterOptions } from "@core/application/services/list-app-session-filter-options";
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
 export { makeListEnabledFeatureFlags } from "@core/application/services/list-enabled-feature-flags";
 export { makeListFacilities } from "@core/application/services/list-facilities";

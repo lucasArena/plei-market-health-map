@@ -11,6 +11,23 @@ const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({ usePathname: () => mockPathname() }));
 
+const mockPrefetchMarket = vi.fn().mockResolvedValue(undefined);
+const mockPrefetchFacility = vi.fn().mockResolvedValue(undefined);
+const mockScope = vi.fn(() => ({ kind: "all" }));
+
+vi.mock("@/presentation/hooks/use-market/prefetch-market-summary", () => ({
+	prefetchMarketSummary: (...args: unknown[]) => mockPrefetchMarket(...args),
+}));
+vi.mock("@/presentation/hooks/use-facility/prefetch-facility-stats", () => ({
+	prefetchFacilityStats: (...args: unknown[]) => mockPrefetchFacility(...args),
+}));
+vi.mock("@/presentation/hooks/use-market/use-idle-market-prefetch", () => ({
+	useIdleMarketPrefetch: vi.fn(),
+}));
+vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
+	useMapScope: () => ({ scope: mockScope() }),
+}));
+
 vi.mock("@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent", () => ({
 	MarketSummaryPanel: (props: {
 		isClosing: boolean;
@@ -114,5 +131,24 @@ describe("MarketSummaryToggle", () => {
 
 		fireEvent.click(button);
 		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
+	});
+
+	it("loads the drawer's data as soon as the pointer or focus reaches the button", () => {
+		const { rerender } = renderWithMessages(<MarketSummaryToggle />);
+		const button = () => screen.getByRole("button", { name: "Market summary" });
+
+		fireEvent.pointerEnter(button());
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), null);
+
+		mockScope.mockReturnValue({ kind: "market", id: "houston" } as never);
+		rerender(<MarketSummaryToggle />);
+		fireEvent.focus(button());
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), "houston");
+
+		mockScope.mockReturnValue({ kind: "facility", id: "889" } as never);
+		rerender(<MarketSummaryToggle />);
+		fireEvent.pointerEnter(button());
+		expect(mockPrefetchFacility).toHaveBeenLastCalledWith(expect.anything(), "889");
+		mockScope.mockReturnValue({ kind: "all" });
 	});
 });

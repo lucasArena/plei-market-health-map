@@ -8,9 +8,15 @@ export interface HoverPlacement {
 	flipY: boolean;
 }
 
+export interface ClusterHoverViewport {
+	width: number;
+	height: number;
+}
+
 export interface FacilityHover extends HoverPlacement {
 	kind: "facility";
 	facility: FacilityPointView;
+	viewport: ClusterHoverViewport;
 }
 
 export interface ClusterHover extends HoverPlacement {
@@ -18,11 +24,14 @@ export interface ClusterHover extends HoverPlacement {
 	clusterId: number;
 	total: number;
 	facilities: FacilityPointView[];
+	viewport: ClusterHoverViewport;
 }
 
 export type MapHover = FacilityHover | ClusterHover;
 
 export type FacilitiesMapStatus = "loading" | "error" | "ready";
+
+export type SessionLegendState = "loading" | "empty" | "scale";
 
 export type FacilityLayerMotion = "enter" | "exit";
 

@@ -1,8 +1,14 @@
 "use client";
 
+import { AppSessionFilters } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
-import { MAP_MENU_SURFACE_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
+import {
+	MAP_MENU_GROUP_LABEL_CLASS,
+	MAP_MENU_ROW_LABEL_CLASS,
+	MAP_MENU_SURFACE_CLASS,
+	MAP_SEARCH_OPTION_HOVER_CLASS,
+} from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	const track = {
@@ -32,14 +38,17 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 
 export function MapLayersPanel() {
 	const {
+		showDemographics,
 		cardMotion,
 		closeOnEscape,
 		finishCardMotion,
 		isCardShown,
 		isExpanded,
+		isCustomized,
 		isOnMap,
-		hasLayersOn,
 		messages,
+		resetCount,
+		resetLayers,
 		rootRef,
 		showActiveFacilities,
 		showInactiveFacilities,
@@ -65,6 +74,7 @@ export function MapLayersPanel() {
 	return (
 		<aside
 			ref={rootRef}
+			onKeyDown={closeOnEscape}
 			aria-label={messages.layersHeading}
 			className="fixed top-[var(--map-frame)] left-[calc(50%+min(12rem,50%-12rem)+4px)] z-50 w-[32px]"
 		>
@@ -74,7 +84,7 @@ export function MapLayersPanel() {
 				aria-label={collapseLabel}
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
-				data-active={hasLayersOn}
+				data-active={isCustomized}
 				className={`map-icon-button map-glass pointer-events-auto relative flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-map-icon shadow-[var(--map-shadow)] outline-none`}
 			>
 				<svg
@@ -91,7 +101,7 @@ export function MapLayersPanel() {
 					<circle cx="11.333" cy="11.333" r="2" />
 					<circle cx="4.667" cy="4.667" r="2" />
 				</svg>
-				{hasLayersOn && (
+				{isCustomized && (
 					<span
 						data-testid="layers-indicator"
 						aria-hidden="true"
@@ -102,41 +112,50 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`${MAP_MENU_SURFACE_CLASS} right-0 w-max ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+36px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
 				>
-					<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase">
-						{messages.layersHeading}
-					</p>
-					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersDemand}
 					</h2>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersSessions}</p>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
+						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersSessions}</p>
 						<LayerSwitch
 							checked={showSessions}
 							label={messages.layersSessions}
 							onToggle={toggleSessions}
 						/>
 					</div>
-					<h2 className="px-2 pt-1.5 pb-1 text-[10px] font-medium text-muted-foreground uppercase">
+					{showDemographics && <AppSessionFilters key={resetCount} showSessions={showSessions} />}
+					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersSupply}
 					</h2>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersActiveFacilities}</p>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
+						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersActiveFacilities}</p>
 						<LayerSwitch
 							checked={showActiveFacilities}
 							label={messages.layersActiveFacilities}
 							onToggle={toggleActiveFacilities}
 						/>
 					</div>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm">
-						<p>{messages.layersInactiveFacilities}</p>
+					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
+						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
 						<LayerSwitch
 							checked={showInactiveFacilities}
 							label={messages.layersInactiveFacilities}
 							onToggle={toggleInactiveFacilities}
 						/>
 					</div>
+					{isCustomized && (
+						<div className="-mx-1 mt-1 flex justify-end border-t border-border px-1 pt-1">
+							<button
+								type="button"
+								onClick={resetLayers}
+								className={`cursor-pointer rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus:text-foreground ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+							>
+								{messages.layersReset}
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 		</aside>

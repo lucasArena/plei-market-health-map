@@ -4,6 +4,12 @@ import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryP
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent", () => ({
+	AiSummarySkeleton: ({ testId }: { testId: string }) => (
+		<div data-testid={testId} aria-busy="true" />
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
 	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
@@ -50,14 +56,15 @@ const VIEW = {
 		{
 			key: "1-0",
 			dayLabel: "Mon",
-			periodLabel: "AM",
+			periodLabel: "Morning",
 			value: 2,
-			tooltip: "Mon, AM: 2 games",
+			label: "Mon, Morning: 2 games",
+			tooltip: "2 games",
 			intensity: 4,
 		},
 	],
 	dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-	timePeriodLabels: ["AM", "Midday", "PM", "Late"],
+	timePeriodLabels: ["Morning", "Afternoon", "Evening", "Late night"],
 	topMarkets: [
 		{ key: "houston", rank: 1, name: "Houston", detail: "6 of 9 facilities active", value: "120" },
 	],
@@ -97,7 +104,7 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByText("of 142")).toBeInTheDocument();
 		expect(screen.getByTestId("market-stat-players-skeleton")).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Mon, AM: 2 games" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Mon, Morning: 2 games" })).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Top markets" })).toBeInTheDocument();
 		expect(screen.getByText("6 of 9 facilities active")).toBeInTheDocument();
 		expect(screen.getByText(EN_MESSAGES.marketSummary.noRankings)).toBeInTheDocument();
@@ -119,6 +126,24 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top facilities" })).not.toBeInTheDocument();
+	});
+
+	it("shows the AI skeleton, not the template, while player analytics load even when insights are ready", () => {
+		mockRules.mockReturnValue(rulesWith({ isSummaryPending: true, aiContext: null }));
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-summary-text-skeleton")).toBeInTheDocument();
+		expect(screen.queryByRole("heading", { name: "Key insights" })).not.toBeInTheDocument();
+	});
+
+	it("falls back to the written insights once player analytics are done without AI", () => {
+		mockRules.mockReturnValue(rulesWith({ isSummaryPending: false, aiContext: null }));
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.queryByTestId("market-summary-text-skeleton")).not.toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Key insights" })).toBeInTheDocument();
 	});
 
 	it("shows a sentence skeleton while player analytics load", () => {

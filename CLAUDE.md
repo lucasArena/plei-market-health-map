@@ -2,7 +2,7 @@
 
 An internal Plei tool that shows market health across supply, player activity, facilities, organizers, game quality, and technology incidents. It lives in its own repo, separate from PleiOS and the Plei app, so its releases never block theirs.
 
-Must-haves (from the Linear project): SSO login, tracking which internal users log in and when (adoption), and documenting how agents were used (`docs/agent-usage.md`).
+Must-haves (from the Linear project): SSO login, tracking which internal users log in and when (adoption), and documenting how agents were used. That record is the Linear ticket every piece of agent work gets (see *Linear tracking* in `AGENTS.md`) plus the PR description; there is no log file in the repo.
 
 ## Architecture
 
@@ -25,7 +25,7 @@ packages/
   core/                   pure TypeScript, no framework
     src/domain/             entities, value rules (guard), DomainError, EntityId
     src/application/        services/, repositories/ and providers/ (interfaces), Zod DTOs, mappers, errors; fakes in testing/
-    src/i18n/               typed en and pt-BR catalogs, getMessages, parseAcceptLanguage
+    src/i18n/               typed en, pt-BR and es catalogs, getMessages, parseAcceptLanguage
   config/                 shared tsconfig presets and the Vitest factory (95% thresholds)
 ```
 
@@ -87,7 +87,7 @@ Read [`AGENTS.md`](AGENTS.md) before any git work. Branches are `feature/`, `hot
 - `PrismaNeon` talks to Neon over WebSockets, so it can't connect to a plain local Postgres. Point local dev at a Neon branch.
 - The service worker must reference `self.__SW_MANIFEST` literally, so `sw.ts` uses `declare const self`.
 - The tsconfig base lives in `packages/config/tsconfig/base.json` rather than at the root. Prisma's config loader doesn't follow symlinked `extends` out of `node_modules`.
-- Facilities come from the `dataplei` warehouse through `WarehouseFacilityRepository` when `DATA_WAREHOUSE_URL` is set (read-only, cached 5 min), otherwise from mocks. Only locations with at least one reservation ever are listed, and co-located records sharing a base name (before " | ") are merged into one facility with `memberIds` (`merge-colocated-facilities.ts`). Follow `~/www/plei/plei-data-catalog` (`AGENTS.md`, `tables/dim_location.yml`) before touching queries, and never select columns it tags `hide`. MapLibre needs WebGL, so tests mock `maplibre-gl`.
+- Facilities come from the `dataplei` warehouse through `WarehouseFacilityRepository` when `DATA_WAREHOUSE_URL` is set (read-only, cached 5 min), otherwise from mocks. Only locations with at least one reservation ever are listed, and co-located records sharing a base name (before " | ") are merged into one facility with `memberIds` (`merge-colocated-facilities.ts`). Follow `~/www/plei/plei-data-catalog` (`AGENTS.md`, `tables/dim_location.yml`) before touching queries, and never select columns it tags `hide`. Logos are the exception: `avatarUrl` comes from the bronze `plei_bronze.companies.logo` (joined on `dim_location.company_id`) through `companyLogoUrl`, which URL-encodes the file name. MapLibre needs WebGL, so tests mock `maplibre-gl`.
 - MapLibre v6 ships its web worker as ES modules (`maplibre-gl-worker.mjs` imports `maplibre-gl-shared.mjs`), and webpack can't bundle that. `apps/web/scripts/copy-maplibre-worker.mjs` copies both files to `public/maplibre/` (gitignored) before `dev` and `build`, and the map calls `setWorkerUrl` with that path. Don't downgrade to v5: every version before 6.4.1 has a critical XSS advisory.
 - `pnpm.overrides` in the root `package.json` pins patched transitive deps (`browserslist`, `deepmerge-ts`, `mysql2`) so `pnpm audit --prod --audit-level high` passes in CI.
 - Sign-in is Auth.js with Google only (`src/auth.ts`). The `signIn` callback (`evaluateSignIn`) lets in verified `@plei.com` accounts and sends everyone else back to `/sign-in?error=domain&email=…` with a message. The protected layout and `requireUser()` re-check the domain on every request.
@@ -102,4 +102,8 @@ Key insights prioritize period comparisons and scoped game contributions over sc
 
 The combined account and feedback control lives at the bottom left: improvement, bug report, the existing App metrics link for authorized viewers, then sign-out with the version. The header supplies the authenticated user and MapScopeProvider shares the current facility selection with feedback. Metrics storage, tracking and permissions are unchanged.
 
+While App sessions are on and the heatmap request is pending (or the map cannot draw it yet), the session legend stays visible with a pulsing gradient bar and "Loading app sessions…" as a `role="status"`, so a slow warehouse response never looks like missing data. The rules hook exposes `sessionLegendState` (`loading`, `empty`, `scale`); failed or hidden sessions hide the legend.
+
 The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. Both facility statuses start visible; filtering uses `isActive` before clustering so counts and previews follow the selected supply scope.
+
+App sessions demographic filtering is gated by `player-demographic-filters` (off by default). `AppSessionFilters` under Demand starts with Add filter and shows only added fields as removable chips with custom glass option lists; it stages gender, stored skill description and inclusive minimum/maximum ages with either bound optional until Apply; Reset clears both draft and applied filters. `MapLayersProvider` holds the applied cohort and the scale legend names it even after the menu closes. The API validates query parameters and the warehouse uses bound parameters in an `EXISTS` profile predicate, preserving session counts and the existing coordinate aggregation. `/api/v1/app-session-heatmap/filters` loads actual profile choices independently. Each cohort and the choices cache for five minutes; the server cohort cache is capped at 100 entries. Warehouse failures propagate as errors instead of empty activity.

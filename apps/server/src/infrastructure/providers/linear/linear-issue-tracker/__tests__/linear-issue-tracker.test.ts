@@ -36,6 +36,14 @@ const issueCreateOk = () =>
 			},
 		},
 	});
+const customerNeedCreateOk = () =>
+	json({
+		data: {
+			customerNeedCreate: {
+				success: true,
+			},
+		},
+	});
 
 function appAuth(): LinearAuth & { invalidate: ReturnType<typeof vi.fn> } {
 	let token = 1;
@@ -69,10 +77,15 @@ function setupWith(auth: LinearAuth, ...responses: Array<Response | Error>) {
 
 const ATTACHMENT = { filename: "shot.png", contentType: "image/png", bytes: PNG };
 const DRAFT = {
+	type: "improvement" as const,
+	title: "[MHM feedback] Add filters",
+	requestBody: "Body",
+	submitter: { displayName: "Stefano Sanchez", avatarUrl: "https://img/s.png" },
+};
+const BUG_DRAFT = {
+	...DRAFT,
 	type: "bug" as const,
 	title: "[MHM bug] Map blank",
-	description: "Body",
-	submitter: { displayName: "Stefano Sanchez", avatarUrl: "https://img/s.png" },
 };
 
 describe("LinearIssueTracker", () => {
@@ -108,8 +121,8 @@ describe("LinearIssueTracker", () => {
 		expect(new Uint8Array(await body.arrayBuffer())).toEqual(PNG);
 	});
 
-	it("creates the issue with the mapped team, state, project and labels", async () => {
-		const { tracker, graphqlBody } = setup(issueCreateOk());
+	it("creates an improvement issue and its customer request", async () => {
+		const { tracker, graphqlBody } = setup(issueCreateOk(), customerNeedCreateOk());
 
 		await expect(tracker.createIssue(DRAFT)).resolves.toEqual({
 			identifier: "ENG-42",
@@ -119,18 +132,44 @@ describe("LinearIssueTracker", () => {
 		expect(graphqlBody(0).query).toContain("issueCreate(");
 		expect(graphqlBody(0).variables).toEqual({
 			input: {
-				teamId: "bd06d3df-8b17-42f7-96b1-0b6b7b3eb5ad",
-				stateId: "904a3068-92b9-4e7d-bd86-bc52cde54a83",
+				teamId: "635f83c3-3276-4ae6-aa29-5b633dc8dc38",
+				stateId: "973949af-0a76-4de3-a870-de074888bc75",
 				projectId: "98a63408-5cac-4a0e-85a9-1b73d17ea096",
-				labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
-				title: "[MHM bug] Map blank",
-				description: "Body",
+				labelIds: [],
+				title: "[MHM feedback] Add filters",
+			},
+		});
+		expect(graphqlBody(1).query).toContain("customerNeedCreate(");
+		expect(graphqlBody(1).variables).toEqual({
+			input: {
+				issueId: "ENG-42",
+				body: "Body",
 			},
 		});
 	});
 
+	it("creates a bug issue without a customer request", async () => {
+		const { tracker, fetch, graphqlBody } = setup(issueCreateOk());
+
+		await expect(tracker.createIssue(BUG_DRAFT)).resolves.toMatchObject({
+			identifier: "ENG-42",
+		});
+
+		expect(graphqlBody(0).variables).toMatchObject({
+			input: {
+				teamId: "bd06d3df-8b17-42f7-96b1-0b6b7b3eb5ad",
+				labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
+			},
+		});
+		expect(fetch).toHaveBeenCalledTimes(1);
+	});
+
 	it("files the issue as the app on behalf of the submitter with a Bearer token", async () => {
-		const { tracker, fetch, graphqlBody } = setupWith(appAuth(), issueCreateOk());
+		const { tracker, fetch, graphqlBody } = setupWith(
+			appAuth(),
+			issueCreateOk(),
+			customerNeedCreateOk(),
+		);
 
 		await tracker.createIssue(DRAFT);
 
@@ -138,6 +177,9 @@ describe("LinearIssueTracker", () => {
 			headers: { Authorization: "Bearer app_token_1" },
 		});
 		expect(graphqlBody(0).variables).toMatchObject({
+			input: { createAsUser: "Stefano Sanchez", displayIconUrl: "https://img/s.png" },
+		});
+		expect(graphqlBody(1).variables).toMatchObject({
 			input: { createAsUser: "Stefano Sanchez", displayIconUrl: "https://img/s.png" },
 		});
 	});
@@ -162,6 +204,7 @@ describe("LinearIssueTracker", () => {
 			auth,
 			json({ errors: [{ message: "Authentication required" }] }, 401),
 			issueCreateOk(),
+			customerNeedCreateOk(),
 		);
 
 		await expect(tracker.createIssue(DRAFT)).resolves.toMatchObject({ identifier: "ENG-42" });
@@ -222,6 +265,15 @@ describe("LinearIssueTracker", () => {
 		await expect(tracker.createIssue(DRAFT)).rejects.toThrow(/did not create/);
 	});
 
+	it("fails when Linear does not create the customer request", async () => {
+		const { tracker } = setup(
+			issueCreateOk(),
+			json({ data: { customerNeedCreate: { success: false } } }),
+		);
+
+		await expect(tracker.createIssue(DRAFT)).rejects.toThrow(/customer request/);
+	});
+
 	it("wraps network failures with the cause", async () => {
 		const cause = new TypeError("fetch failed");
 		const { tracker } = setup(cause);
@@ -233,7 +285,10 @@ describe("LinearIssueTracker", () => {
 	});
 
 	it("uses the global fetch by default", async () => {
-		const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(issueCreateOk());
+		const spy = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValueOnce(issueCreateOk())
+			.mockResolvedValueOnce(customerNeedCreateOk());
 
 		await new LinearIssueTracker({ auth: new LinearApiKeyAuth("k") }).createIssue(DRAFT);
 

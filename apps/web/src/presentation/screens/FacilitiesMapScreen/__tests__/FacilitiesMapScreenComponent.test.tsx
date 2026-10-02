@@ -4,6 +4,13 @@ import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotPro
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
+const mockPrefetchQuery = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@tanstack/react-query")>()),
+	useQueryClient: () => ({ prefetchQuery: mockPrefetchQuery }),
+}));
+
 const mockRules = vi.fn();
 
 vi.mock(
@@ -77,6 +84,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
+		sessionLegendState: "empty",
 		status,
 		...overrides,
 	};
@@ -132,6 +140,7 @@ describe("FacilitiesMapScreen", () => {
 				isLegendShown: true,
 				legendMotionClass: "session-legend-in",
 				sessionScale: { low: 12, high: 480 },
+				sessionLegendState: "scale",
 			}),
 		);
 
@@ -167,23 +176,53 @@ describe("FacilitiesMapScreen", () => {
 		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
 	});
 
+	it("shows a loading state instead of an empty legend while sessions load", () => {
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", { isLegendShown: true, sessionLegendState: "loading" }),
+		);
+
+		render(<FacilitiesMapScreen />);
+
+		expect(screen.getByRole("status")).toHaveTextContent("Loading app sessions…");
+		expect(screen.getByTestId("session-heatmap-loading")).toHaveClass("motion-safe:animate-pulse");
+		expect(screen.getByTestId("session-heatmap-loading")).toHaveStyle({
+			backgroundImage: `linear-gradient(to right, ${SESSION_HEATMAP_BUCKET_COLORS.join(", ")})`,
+		});
+		expect(screen.queryByText("No sessions in the current map view")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
+	});
+
 	it("shows the hover card for the hovered facility", () => {
 		mockRules.mockReturnValue(
 			rulesWith("ready", {
 				hovered: {
 					kind: "facility",
 					facility: FACILITY,
-					x: 100,
-					y: 50,
+					x: 640,
+					y: 420,
 					flipX: false,
 					flipY: false,
+					viewport: { width: 1280, height: 800 },
 				},
 			}),
 		);
 
 		render(<FacilitiesMapScreen />);
 
-		expect(screen.getByRole("tooltip")).toHaveTextContent("Eastside Futsal Arena");
+		const card = screen.getByRole("tooltip");
+		expect(card).toHaveTextContent("Eastside Futsal Arena");
+		expect(card).toHaveStyle({ transform: "translate(-50%, -100%)" });
+		expect(screen.getByTestId("cluster-hover-surface")).toHaveClass("map-glass", "py-1.5");
+	});
+
+	it("keeps the map mounted when nothing is hovered", () => {
+		mockRules.mockReturnValue(rulesWith("ready", { hovered: null }));
+
+		render(<FacilitiesMapScreen />);
+
+		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
+		expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 	});
 
 	it.each([
@@ -217,6 +256,7 @@ describe("FacilitiesMapScreen", () => {
 				legendMotionClass: "session-legend-in",
 				selectedFacilityId: "f1",
 				sessionScale: { low: 1, high: 10 },
+				sessionLegendState: "scale",
 			}),
 		);
 

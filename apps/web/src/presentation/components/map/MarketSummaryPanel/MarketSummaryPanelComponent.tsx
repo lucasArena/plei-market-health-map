@@ -1,6 +1,7 @@
 "use client";
 
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
+import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
@@ -105,21 +106,20 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							<h2 className="truncate text-base font-semibold">{heading.title}</h2>
 							<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
 						</header>
-						{view.summary && (
+						{aiContext && view.summary && (
 							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
-								{aiContext ? (
-									<AiSummary context={aiContext} fallback={view.summary} introFirst />
-								) : (
-									<KeyInsights title={messages.keyInsights} text={view.summary} introFirst />
-								)}
+								<AiSummary context={aiContext} fallback={view.summary} introFirst />
 							</section>
 						)}
-						{!view.summary && isSummaryPending && (
-							<div
-								data-testid="market-summary-text-skeleton"
-								aria-busy="true"
-								className="h-20 animate-pulse rounded-xl bg-pleiful-moonlight-5"
-							/>
+						{!(aiContext && view.summary) && isSummaryPending && (
+							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+								<AiSummarySkeleton testId="market-summary-text-skeleton" />
+							</section>
+						)}
+						{!aiContext && !isSummaryPending && view.summary && (
+							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+								<KeyInsights title={messages.keyInsights} text={view.summary} introFirst />
+							</section>
 						)}
 						{isInsightsFailed && (
 							<p role="status" className="text-xs text-muted-foreground">
@@ -139,6 +139,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							title={detailMessages.popularTimes}
 							dayLabels={view.dayLabels}
 							periodLabels={view.timePeriodLabels}
+							periodRanges={detailMessages.timePeriodRanges}
 							cells={view.popularTimes}
 							quietLabel={detailMessages.quiet}
 							busyLabel={detailMessages.busy}

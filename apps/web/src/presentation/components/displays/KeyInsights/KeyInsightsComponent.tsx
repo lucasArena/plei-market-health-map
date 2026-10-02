@@ -16,16 +16,29 @@ export function KeyInsights(props: Readonly<KeyInsightsProps>) {
 				</svg>
 				{props.title}
 			</h3>
-			{intro && <p className="mb-3 text-sm leading-relaxed">{intro}</p>}
-			{isList && lines.length > 0 ? (
-				<ul className="list-disc space-y-2 pl-4 text-sm leading-relaxed">
-					{lines.map((line) => (
-						<li key={line}>{line}</li>
-					))}
-				</ul>
-			) : (
-				<p className="text-sm leading-relaxed">{lines[0]}</p>
+			{props.isLoading && (
+				<div
+					data-testid="key-insights-skeleton"
+					aria-hidden="true"
+					className="animate-pulse space-y-2.5 pt-1"
+				>
+					<div className="h-3 w-11/12 rounded bg-pleiful-moonlight-10" />
+					<div className="h-3 w-full rounded bg-pleiful-moonlight-10" />
+					<div className="h-3 w-4/5 rounded bg-pleiful-moonlight-10" />
+					<div className="h-3 w-2/3 rounded bg-pleiful-moonlight-10" />
+				</div>
 			)}
+			{!props.isLoading && intro && <p className="mb-3 text-sm leading-relaxed">{intro}</p>}
+			{!props.isLoading &&
+				(isList && lines.length > 0 ? (
+					<ul className="list-disc space-y-2 pl-4 text-sm leading-relaxed">
+						{lines.map((line) => (
+							<li key={line}>{line}</li>
+						))}
+					</ul>
+				) : (
+					<p className="text-sm leading-relaxed">{lines[0]}</p>
+				))}
 		</>
 	);
 }

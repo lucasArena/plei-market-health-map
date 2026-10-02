@@ -395,9 +395,7 @@ export function useMarketSummaryPanelRules({
 		heading,
 		isClosing,
 		isSummaryPending:
-			status === "ready" &&
-			((isMarketScope && insightsQuery.isPending) ||
-				(!insightsView?.summary && playerQuery.isPending)),
+			status === "ready" && ((isMarketScope && insightsQuery.isPending) || playerQuery.isPending),
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,

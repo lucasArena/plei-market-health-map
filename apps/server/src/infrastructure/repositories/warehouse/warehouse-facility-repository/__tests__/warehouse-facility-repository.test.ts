@@ -26,6 +26,8 @@ function row(overrides: object = {}) {
 		location_latitude: 38.62,
 		location_longitude: -90.19,
 		played_last_28_days: "12",
+		company_id: null,
+		company_logo: null,
 		...overrides,
 	};
 }
@@ -43,6 +45,13 @@ describe("toFacility", () => {
 			metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 12, utilization: 0 },
 			memberIds: ["1042"],
 		});
+	});
+
+	it("uses the company logo as the facility avatar", () => {
+		expect(
+			toFacility(row({ company_id: 123, company_logo: "Crossbar_+_Beer.png" }))?.toJSON().avatarUrl,
+		).toBe("https://pleiapp.s3.amazonaws.com/uploads/company/logo/123/Crossbar_%2B_Beer.png");
+		expect(toFacility(row({ company_id: 123, company_logo: "" }))?.toJSON().avatarUrl).toBeNull();
 	});
 
 	it("falls back for missing region and address parts", () => {
@@ -95,6 +104,14 @@ describe("WarehouseFacilityRepository", () => {
 		const existsClause = ACTIVE_LOCATIONS_SQL.slice(ACTIVE_LOCATIONS_SQL.indexOf("and exists ("));
 		expect(existsClause).not.toContain("status");
 		expect(existsClause).not.toContain("reservation_type");
+	});
+
+	it("joins the location's live company for its logo", () => {
+		expect(ACTIVE_LOCATIONS_SQL).toContain("c.id as company_id, c.logo as company_logo");
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"left join plei_bronze.companies c on c.id = l.company_id and c.deleted_at is null",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).not.toContain("logo_url");
 	});
 
 	it("merges a sponsor twin into its base facility at the same spot", async () => {

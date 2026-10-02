@@ -8,6 +8,7 @@ import {
 import type { LinearAuth } from "@server/infrastructure/providers/linear/linear-auth/linear-auth.types";
 import {
 	DEFAULT_LINEAR_FEEDBACK_CONFIG,
+	toLinearCustomerNeedInput,
 	toLinearIssueInput,
 } from "@server/infrastructure/providers/linear/linear-feedback-config/linear-feedback-config";
 import type { LinearFeedbackConfig } from "@server/infrastructure/providers/linear/linear-feedback-config/linear-feedback-config.types";
@@ -16,6 +17,7 @@ import type {
 	LinearIssueTrackerOptions,
 } from "@server/infrastructure/providers/linear/linear-issue-tracker/linear-issue-tracker.types";
 import {
+	customerNeedCreateResponseSchema,
 	fileUploadResponseSchema,
 	issueCreateResponseSchema,
 	linearErrorsSchema,
@@ -37,6 +39,12 @@ const ISSUE_CREATE_MUTATION = `mutation FeedbackIssueCreate($input: IssueCreateI
   issueCreate(input: $input) {
     success
     issue { identifier url }
+  }
+}`;
+
+const CUSTOMER_NEED_CREATE_MUTATION = `mutation FeedbackCustomerNeedCreate($input: CustomerNeedCreateInput!) {
+  customerNeedCreate(input: $input) {
+    success
   }
 }`;
 
@@ -95,6 +103,21 @@ export class LinearIssueTracker implements IssueTracker {
 		const issue = data.issueCreate.issue;
 		if (!data.issueCreate.success || !issue) {
 			throw new IssueTrackerError("Linear did not create the issue.");
+		}
+		if (draft.type === "bug") {
+			return { identifier: issue.identifier, url: issue.url };
+		}
+		const customerNeed = await this.graphql(
+			CUSTOMER_NEED_CREATE_MUTATION,
+			{
+				input: toLinearCustomerNeedInput(draft, issue.identifier, {
+					asApp: this.auth.mode === "app",
+				}),
+			},
+			customerNeedCreateResponseSchema,
+		);
+		if (!customerNeed.data.customerNeedCreate.success) {
+			throw new IssueTrackerError("Linear did not create the customer request.");
 		}
 		return { identifier: issue.identifier, url: issue.url };
 	}

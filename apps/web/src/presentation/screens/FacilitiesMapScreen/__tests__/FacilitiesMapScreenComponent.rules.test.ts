@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import type { AppSessionFilters } from "@market-health-map/core/application";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
@@ -14,6 +17,7 @@ import {
 	appSessionHeatmapAreas,
 	appSessionHeatmapScale,
 	bindFacilityGlass,
+	clusterListZoom,
 	createClusterGlassNode,
 	createFacilityGlassNode,
 	FACILITY_LAYER_ENTER_MS,
@@ -24,6 +28,7 @@ import {
 	readClusterGlassBadges,
 	readFacilityGlassBadges,
 	resolveMapStatus,
+	syncClusterGlass,
 	toAppSessionHeatmapFeatureCollection,
 	toFacilityFeatureCollection,
 	useFacilitiesMapScreenRules,
@@ -33,8 +38,15 @@ import {
 	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_ACTIVE_COUNT_EXPRESSION,
 	CLUSTER_ACTIVE_COUNT_KEY,
+	CLUSTER_HOVER_DISMISS_MS,
 	CLUSTER_LAYER_ID,
+	CLUSTER_MARKER_CLASS,
+	CLUSTER_MARKER_HOVER_SCALE,
+	CLUSTER_MARKER_MOTION_EASING,
+	CLUSTER_MARKER_MOTION_MS,
+	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
+	FACILITY_DOT_ZOOM,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 import type { ClusterTreeSource } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
@@ -50,14 +62,14 @@ const mapState = vi.hoisted(() => ({
 	setWorkerUrl: vi.fn(),
 }));
 const queryClient = vi.hoisted(() => ({}));
-const mockPrefetchFacilityReservationStats = vi.hoisted(() => vi.fn());
+const mockPrefetchFacilityStats = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-query", () => ({
 	useQueryClient: () => queryClient,
 }));
 
-vi.mock("@/presentation/hooks/use-facility/prefetch-facility-reservation-stats", () => ({
-	prefetchFacilityReservationStats: mockPrefetchFacilityReservationStats,
+vi.mock("@/presentation/hooks/use-facility/prefetch-facility-stats", () => ({
+	prefetchFacilityStats: mockPrefetchFacilityStats,
 }));
 
 vi.mock("maplibre-gl", () => {
@@ -71,8 +83,10 @@ vi.mock("maplibre-gl", () => {
 		fitBounds = vi.fn();
 		setPaintProperty = vi.fn();
 		triggerRepaint = vi.fn();
+		project = vi.fn(() => ({ x: 200, y: 80 }));
 		getCanvas = vi.fn(() => mapState.canvas);
 		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
+		getZoom = vi.fn(() => 4);
 		getBounds = vi.fn(() => ({ contains: () => true }));
 		getSource = vi.fn(() => ({
 			setData: mapState.setData,
@@ -112,6 +126,7 @@ const layersState = vi.hoisted(() => ({
 	showInactiveFacilities: true,
 	showSessions: true,
 	hasProvider: true,
+	sessionFilters: {} as AppSessionFilters,
 }));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
@@ -123,6 +138,7 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					setShowActiveFacilities: vi.fn(),
 					setShowInactiveFacilities: vi.fn(),
 					showSessions: layersState.showSessions,
+					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
 			: null,
@@ -335,6 +351,36 @@ describe("facility glass", () => {
 		expect((label as HTMLElement).style.color).toBe("rgb(55, 65, 81)");
 		expect(ring).toBeInstanceOf(HTMLElement);
 		expect((ring as HTMLElement).style.borderColor).toBe("rgb(137, 142, 153)");
+	});
+
+	it("scales a hovered cluster marker and eases the transform back", () => {
+		const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+		const markerStart = css.indexOf(".cluster-marker {");
+		const marker = css.slice(markerStart, markerStart + 120);
+		const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
+		expect(marker).toContain(
+			`transition: transform ${CLUSTER_MARKER_MOTION_MS}ms ${CLUSTER_MARKER_MOTION_EASING};`,
+		);
+		expect(reduced).toContain(".cluster-marker {");
+		expect(reduced).toContain("transition-duration: 1ms;");
+		const host = document.createElement("div");
+		const nodes = new Map<number, HTMLElement>();
+		const badges = [
+			{ id: 62, label: "62", x: 40, y: 420, active: true },
+			{ id: 8, label: "8", x: 200, y: 300, active: true },
+		];
+		syncClusterGlass(host, badges, nodes, 62);
+		const hovered = nodes.get(62);
+		const resting = nodes.get(8);
+		expect(hovered?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
+		expect(resting?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
+		expect(createFacilityGlassNode().classList.contains(CLUSTER_MARKER_CLASS)).toBe(false);
+		expect(hovered?.style.transform).toBe(
+			`translate(40px, 420px) translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
+		);
+		expect(resting?.style.transform).toBe("translate(200px, 300px) translate(-50%, -50%) scale(1)");
+		syncClusterGlass(host, badges, nodes, null);
+		expect(hovered?.style.transform).toBe("translate(40px, 420px) translate(-50%, -50%) scale(1)");
 	});
 
 	it("keeps one badge per cluster and marks a cluster inactive when it has no active facility", () => {
@@ -700,6 +746,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.showInactiveFacilities = true;
 		layersState.showSessions = true;
 		layersState.hasProvider = true;
+		layersState.sessionFilters = {};
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -844,12 +891,13 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.hovered).toEqual({
 			kind: "facility",
 			facility: FACILITY,
-			x: 120,
+			x: 200,
 			y: 80,
 			flipX: false,
 			flipY: false,
+			viewport: { width: 1000, height: 800 },
 		});
-		expect(mockPrefetchFacilityReservationStats).toHaveBeenCalledWith(queryClient, "f1");
+		expect(mockPrefetchFacilityStats).toHaveBeenCalledWith(queryClient, "f1");
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("missing")));
 		expect(result.current.hovered).toBeNull();
 
@@ -859,7 +907,31 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
 		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
+		expect(result.current.hovered).toMatchObject({ kind: "facility", facility: FACILITY });
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, CLUSTER_HOVER_DISMISS_MS + 30));
+		});
 		expect(result.current.hovered).toBeNull();
+	});
+
+	it("keeps the facility card anchored when the pointer moves inside the same dot", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() =>
+			expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
+		);
+		const move = (point: { x: number; y: number }) => {
+			mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.({
+				features: [{ properties: { id: "f1" } }],
+				point,
+			});
+		};
+
+		act(() => move({ x: 120, y: 80 }));
+		expect(result.current.hovered).toMatchObject({ kind: "facility", x: 200, y: 80 });
+		act(() => move({ x: 180, y: 140 }));
+		expect(result.current.hovered).toMatchObject({ kind: "facility", x: 200, y: 80 });
 	});
 
 	it("opens the detail panel on facility click and closes it with an animation", async () => {
@@ -1069,21 +1141,26 @@ describe("useFacilitiesMapScreenRules", () => {
 		await act(async () => {
 			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(10));
 		});
-		expect(mapState.getClusterLeaves).toHaveBeenCalledWith(7, 8, 0);
+		expect(mapState.getClusterLeaves).toHaveBeenCalledWith(7, 12, 0);
 		expect(result.current.hovered).toEqual({
 			kind: "cluster",
 			clusterId: 7,
 			total: 12,
 			facilities: [FACILITY],
-			x: 10,
-			y: 40,
+			x: 200,
+			y: 80,
 			flipX: false,
 			flipY: false,
+			viewport: { width: 1000, height: 800 },
 		});
 
 		act(() => mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30)));
 		expect(mapState.getClusterLeaves).toHaveBeenCalledTimes(1);
-		expect(result.current.hovered).toMatchObject({ x: 30, facilities: [FACILITY] });
+		expect(result.current.hovered).toMatchObject({
+			x: 200,
+			y: 80,
+			facilities: [FACILITY],
+		});
 
 		act(() => mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(30, "bad")));
 		expect(result.current.hovered).toMatchObject({ clusterId: 7 });
@@ -1125,6 +1202,71 @@ describe("useFacilitiesMapScreenRules", () => {
 			center: [-97.1, 30.4],
 			zoom: 12,
 			duration: 500,
+		});
+	});
+
+	it("keeps the cluster card open while the pointer moves onto it", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		await waitFor(() => expect(mapState.handlers.has(`mousemove:${CLUSTER_LAYER_ID}`)).toBe(true));
+		const map = mapState.instances[0];
+		mapState.getClusterLeaves.mockResolvedValue([{ properties: { id: "f1" } }]);
+		const clusterEvent = {
+			features: [
+				{
+					properties: { cluster_id: 7, point_count: 12 },
+					geometry: { type: "Point", coordinates: [-97.7, 30.3] },
+				},
+			],
+			point: { x: 10, y: 40 },
+		};
+
+		await act(async () => {
+			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent);
+		});
+		act(() => mapState.handlers.get(`mouseleave:${CLUSTER_LAYER_ID}`)?.());
+		expect(result.current.hovered).toMatchObject({ kind: "cluster", clusterId: 7 });
+
+		act(() => result.current.holdClusterHover());
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, CLUSTER_HOVER_DISMISS_MS + 30));
+		});
+		expect(result.current.hovered).toMatchObject({ kind: "cluster", clusterId: 7 });
+
+		act(() => result.current.releaseClusterHover());
+		expect(result.current.hovered).toMatchObject({ kind: "cluster", clusterId: 7 });
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, CLUSTER_HOVER_DISMISS_MS + 30));
+		});
+		expect(result.current.hovered).toBeNull();
+
+		await act(async () => {
+			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent);
+		});
+		act(() => result.current.selectFacility(FACILITY));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		expect(result.current.hovered).toBeNull();
+		expect(FACILITY_DOT_ZOOM).toBe(CLUSTER_MAX_ZOOM + 1);
+		expect(clusterListZoom(4)).toBeGreaterThanOrEqual(FACILITY_DOT_ZOOM);
+		expect(clusterListZoom(15)).toBe(15);
+		expect(map?.easeTo).toHaveBeenCalledWith({
+			center: [-97.74, 30.27],
+			zoom: FACILITY_DOT_ZOOM,
+			padding: { top: 0, bottom: 0, left: 0, right: 384 },
+			duration: 600,
+		});
+
+		act(() => result.current.handlePanelClosed());
+		const easeTo = map?.easeTo;
+		if (!map || !easeTo) throw new Error("map was not created");
+		map.getZoom = vi.fn(() => 15);
+		easeTo.mockClear();
+		act(() => result.current.selectFacility(FACILITY));
+		expect(easeTo).toHaveBeenCalledWith({
+			center: [-97.74, 30.27],
+			padding: { top: 0, bottom: 0, left: 0, right: 384 },
+			duration: 600,
 		});
 	});
 
@@ -1258,6 +1400,9 @@ describe("useFacilitiesMapScreenRules", () => {
 		);
 		act(() => mapState.handlers.get(`mouseleave:${CLUSTER_LAYER_ID}`)?.());
 		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, CLUSTER_HOVER_DISMISS_MS + 30));
+		});
+		await act(async () => {
 			resolveLeaves([{ properties: { id: "f1" } }]);
 		});
 
@@ -1352,5 +1497,66 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("skips the map when there is no container", () => {
 		renderHook(() => useFacilitiesMapScreenRules(), { wrapper });
 		expect(mapState.instances).toHaveLength(0);
+	});
+	it.each([
+		[
+			{ gender: ["male", "female"], skill: ["Beginner", "Expert"], ageMin: 18, ageMax: 35 },
+			"Male, Female · Beginner, Expert · 18–35",
+		],
+		[{ gender: "other", skill: "Advanced", ageMin: 21 }, "Other · Advanced · 21+"],
+		[{ ageMax: 17 }, "≤ 17"],
+		[{ ageMin: 25, ageMax: 25 }, "25"],
+	] satisfies [AppSessionFilters, string][])(
+		"names the applied demographic cohort %j",
+		(filters, summary) => {
+			layersState.sessionFilters = filters;
+			const { result } = renderRules();
+			expect(result.current.sessionFilterSummary).toBe(summary);
+		},
+	);
+	it("shows the session legend as loading while app sessions are pending", async () => {
+		mockUseAppSessionHeatmap.mockReturnValue({ data: undefined, isPending: true, isError: false });
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.hasSessionHeatmap).toBe(false);
+		expect(result.current.sessionLegendState).toBe("loading");
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.legendMotionClass).toBe("session-legend-in");
+	});
+
+	it("keeps the session legend loading until the map can draw the heatmap", async () => {
+		const { result } = renderRules();
+		expect(result.current.sessionLegendState).toBe("loading");
+
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.sessionLegendState).toBe("scale");
+	});
+
+	it("reports an empty session legend when loaded sessions have no weight", async () => {
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [{ lat: 29.75, lng: -95.35, sessionWeight: 0 }],
+			isPending: false,
+			isError: false,
+		});
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+
+		expect(result.current.sessionLegendState).toBe("empty");
+	});
+
+	it.each([
+		[{ data: undefined, isPending: false, isError: true }, true],
+		[{ data: undefined, isPending: true, isError: false }, false],
+	])("does not report loading for failed or hidden sessions %#", (heatmap, showSessions) => {
+		layersState.showSessions = showSessions;
+		mockUseAppSessionHeatmap.mockReturnValue(heatmap);
+		const { result } = renderRules();
+		expect(result.current.sessionLegendState).not.toBe("loading");
+		expect(result.current.isLegendShown).toBe(false);
 	});
 });

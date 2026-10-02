@@ -14,6 +14,7 @@ import {
 import type { CacheEntry } from "@server/infrastructure/repositories/warehouse/cache-entry/cache-entry.types";
 
 export const FACILITY_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
+export const FACILITY_PLAYER_STATS_CACHE_TTL_MS = 60 * 60 * 1000;
 
 export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 	private readonly reservationCache = new Map<string, CacheEntry<FacilityReservationStats>>();
@@ -24,6 +25,7 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		private readonly inner: FacilityStatsRepository & FacilityGameComparisonRepository,
 		private readonly clock: Clock,
 		private readonly ttlMs: number = FACILITY_STATS_CACHE_TTL_MS,
+		private readonly playerTtlMs: number = FACILITY_PLAYER_STATS_CACHE_TTL_MS,
 	) {}
 
 	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
@@ -54,7 +56,7 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		const cached = this.playerCache.get(key);
 		if (!cached || isExpired(cached, now)) {
 			const fromWarehouse = this.inner.getPlayerStats(facilityIds);
-			return remember(this.playerCache, key, fromWarehouse, now + this.ttlMs);
+			return remember(this.playerCache, key, fromWarehouse, now + this.playerTtlMs);
 		}
 		return cached.value;
 	}

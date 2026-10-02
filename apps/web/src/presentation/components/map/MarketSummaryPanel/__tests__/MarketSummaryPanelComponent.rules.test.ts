@@ -359,6 +359,16 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(result.current.isSummaryPending).toBe(false);
 	});
 
+	it("stays pending until player analytics arrive even when insights are ready", () => {
+		mockUseMarketPlayerStats.mockReturnValue({ data: undefined, isPending: true, isError: false });
+
+		const { result } = renderRules();
+
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, true);
+		expect(result.current.aiContext).toBeNull();
+		expect(result.current.isSummaryPending).toBe(true);
+	});
+
 	it("keeps the summary sentence pending while player analytics load", () => {
 		mockUseMarketPlayerStats.mockReturnValue({ data: undefined, isPending: true, isError: false });
 

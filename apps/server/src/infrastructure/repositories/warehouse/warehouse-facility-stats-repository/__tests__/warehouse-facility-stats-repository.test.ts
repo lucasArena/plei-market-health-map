@@ -67,6 +67,8 @@ describe("facility stats SQL", () => {
 	it("queries current and previous 28-day player analytics separately", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.confirmed_game + 0 = 1");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.players_type || '' = 'pleiapp_player'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("player_lifecycle = 'Activated'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= current_date - 56");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played < current_date");
@@ -84,6 +86,18 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
 			"g.game_date >= b.today - 56 and g.game_date < b.today - 28",
 		);
+	});
+
+	it("buckets popular times into the mobile app's local day parts", () => {
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("r.date_with_time as game_time");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("between 7 and 11 then 0");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("between 12 and 16 then 1");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("between 17 and 21 then 2");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("else 3");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"extract(isodow from g.game_time - interval '7 hours')::int = t.day_of_week",
+		);
+		expect(FACILITY_RESERVATION_STATS_SQL.match(/interval '7 hours'/g)).toHaveLength(1);
 	});
 });
 

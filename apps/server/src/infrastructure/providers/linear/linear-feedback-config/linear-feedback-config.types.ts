@@ -17,7 +17,13 @@ export interface LinearIssueCreateInput {
 	projectId: string;
 	labelIds: string[];
 	title: string;
-	description: string;
+	createAsUser?: string;
+	displayIconUrl?: string;
+}
+
+export interface LinearCustomerNeedCreateInput {
+	issueId: string;
+	body: string;
 	createAsUser?: string;
 	displayIconUrl?: string;
 }

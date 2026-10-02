@@ -44,7 +44,7 @@ packages/
 .github/
   workflows/                      CI/CD workflows only (GitHub reads every YAML here)
   scripts/release/                scripts the workflows run (next-version, release-notes)
-docs/                             repo-wide docs (architecture, conventions, deployment, design system, agent usage)
+docs/                             repo-wide docs (architecture, conventions, deployment, design system)
 ```
 
 Rules:
@@ -190,23 +190,25 @@ Put user-facing work behind a feature flag when it should reach `staging` or `ma
 **Adding a flag**
 
 1. Add a kebab-case key to `FEATURE_FLAG_KEYS` in `packages/core/src/application/dtos/feature-flags-dto.ts`. Flags only exist in code; the control panel can switch them but never create them.
-2. Describe it in `featureFlags.descriptions` in both `packages/core/src/i18n/messages/en.ts` and `pt-BR.ts`. `packages/core/src/__tests__/feature-flag-descriptions.test.ts` fails if a key has no description or a description has no key.
+2. Describe it in `featureFlags.descriptions` in `packages/core/src/i18n/messages/en.ts`, `pt-BR.ts` and `es.ts`. `packages/core/src/__tests__/feature-flag-descriptions.test.ts` fails if a key has no description or a description has no key.
 3. Read it in the component's `.rules.ts` hook with `useFeatureFlag("<key>")` from `presentation/hooks/use-feature-flags/use-feature-flags.ts`, and render the new behavior only when it is `true`. Keep the current behavior working when it is `false`, which is also the answer while the flags load. Server code can call `listEnabledFeatureFlags()` from the container.
 4. Test both states by mocking `useFeatureFlag`.
 5. A new flag starts **off**. Say in the PR which flag to turn on, and leave turning it on to an admin.
+6. Add the **`feature flag`** label to the Linear ticket. While a ticket has it, production releases leave its commits out of the release notes and the Linear release, and it doesn't move to Released (`release-notes.mjs` and `flagged-issues.mjs` in `cd.production.yml`).
 
 Switches reach users within about a minute: the server caches the flags for 30 seconds and each browser refetches them after 30 seconds.
 
 **Removing a flag** (once it is on for everyone and staying on)
 
 1. Delete every `useFeatureFlag("<key>")` check and the old behavior, keeping only the "on" path.
-2. Remove the key from `FEATURE_FLAG_KEYS` and its descriptions from both catalogs.
+2. Remove the key from `FEATURE_FLAG_KEYS` and its descriptions from every catalog.
 3. Leave the database row. Rows for keys that are no longer in code are ignored and disappear from the control panel.
 4. Name the removed flag in the PR title or description.
+5. Remove the `feature flag` label from the tickets the flag covered. Work that shipped while it was flagged is not added to a release later on its own; move those tickets to Released by hand once the flag is fully on.
 
 ## Linear tracking (mandatory)
 
-Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did.
+Every piece of agent work is tracked in a Linear ticket, including work that starts in a chat instead of a ticket. Nobody should have to add tickets by hand to keep a record of what agents did. The ticket and the PR description are also the project's record of how agents were used (a project must-have), so say in the PR which agent did the work and how you verified it. There is no separate log file.
 
 1. **Find or create the ticket before you change code.** Use the ticket you were given. If there is none, look for a matching one in the **Market health map** project. If nothing fits, create one in the **Engineering** team (`ENG`), in that project, assigned to the person you are working for.
 2. **Set it to In Progress** while you work.
@@ -219,7 +221,6 @@ Reach Linear through the Linear MCP server in your agent client, or the GraphQL 
 
 - `pnpm check` passes.
 - New files follow the folder structure above, and docs in `CLAUDE.md` and `docs/` match what changed.
-- A row is added to `docs/agent-usage.md` for meaningful agent-assisted work (a project must-have).
 - The Linear ticket is linked to the PR and has the right status.
 
 <!-- BEGIN:turborepo-agent-rules -->
