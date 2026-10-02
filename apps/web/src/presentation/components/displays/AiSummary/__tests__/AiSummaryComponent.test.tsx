@@ -87,7 +87,7 @@ describe("AiSummary", () => {
 			<AiSummary context={{ cacheKey: "k", prompt: [] }} fallback="Summary text." />,
 		);
 
-		expect(screen.getByTestId("ai-summary-content")).toHaveClass("h-36", "overflow-hidden");
+		expect(screen.getByTestId("ai-summary-content")).toHaveClass("h-44", "overflow-hidden");
 		const toggle = screen.getByRole("button", { name: messages.showMore });
 		expect(toggle).toHaveAttribute("aria-expanded", "false");
 		expect(toggle).toHaveClass("rounded-full", "bg-white/90");
@@ -97,7 +97,7 @@ describe("AiSummary", () => {
 
 		mockRules.mockReturnValue(rulesWith("ready", { isOverflowing: true, isExpanded: true }));
 		rerender(<AiSummary context={{ cacheKey: "k", prompt: [] }} fallback="Summary text." />);
-		expect(screen.getByTestId("ai-summary-content")).not.toHaveClass("h-36");
+		expect(screen.getByTestId("ai-summary-content")).not.toHaveClass("h-44");
 		expect(screen.getByRole("button", { name: messages.showLess })).toHaveAttribute(
 			"aria-expanded",
 			"true",
