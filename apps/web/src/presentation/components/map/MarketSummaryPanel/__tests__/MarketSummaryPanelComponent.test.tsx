@@ -4,6 +4,12 @@ import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryP
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent", () => ({
+	AiSummarySkeleton: ({ testId }: { testId: string }) => (
+		<div data-testid={testId} aria-busy="true" />
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
 	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
@@ -120,6 +126,24 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top facilities" })).not.toBeInTheDocument();
+	});
+
+	it("shows the AI skeleton, not the template, while player analytics load even when insights are ready", () => {
+		mockRules.mockReturnValue(rulesWith({ isSummaryPending: true, aiContext: null }));
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-summary-text-skeleton")).toBeInTheDocument();
+		expect(screen.queryByRole("heading", { name: "Key insights" })).not.toBeInTheDocument();
+	});
+
+	it("falls back to the written insights once player analytics are done without AI", () => {
+		mockRules.mockReturnValue(rulesWith({ isSummaryPending: false, aiContext: null }));
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.queryByTestId("market-summary-text-skeleton")).not.toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Key insights" })).toBeInTheDocument();
 	});
 
 	it("shows a sentence skeleton while player analytics load", () => {

@@ -1,10 +1,13 @@
 "use client";
 
 import { useAiSummaryRules } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
+import {
+	AI_SUMMARY_BOX_CLASS,
+	AI_SUMMARY_HEIGHT_CLASS,
+} from "@/presentation/components/displays/AiSummary/AiSummaryComponent.styles";
 import type { AiSummaryProps } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.types";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 
-const AI_SUMMARY_HEIGHT_CLASS = { collapsed: "h-44", expanded: "" };
 const AI_SUMMARY_TOGGLE_ROW_CLASS = { collapsed: "-mt-6", expanded: "" };
 
 export function AiSummary(props: Readonly<AiSummaryProps>) {
@@ -23,7 +26,7 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 
 	return (
 		<div
-			className="space-y-2 rounded-xl bg-pleiful-moonlight-5 p-3.5"
+			className={AI_SUMMARY_BOX_CLASS}
 			aria-busy={status === "loading" || status === "generating"}
 		>
 			<div

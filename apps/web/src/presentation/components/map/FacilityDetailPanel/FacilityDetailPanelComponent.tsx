@@ -1,6 +1,7 @@
 "use client";
 
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
+import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent";
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
@@ -69,15 +70,10 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 								<p className="truncate text-xs text-muted-foreground">{view.address}</p>
 							</div>
 						</header>
-						{aiContext && view.summary ? (
-							<AiSummary context={aiContext} fallback={view.summary} />
-						) : isAiPending ? (
-							<div
-								data-testid="facility-ai-summary-skeleton"
-								aria-busy="true"
-								className="h-20 animate-pulse rounded-xl bg-pleiful-moonlight-5"
-							/>
-						) : null}
+						{aiContext && view.summary && <AiSummary context={aiContext} fallback={view.summary} />}
+						{!(aiContext && view.summary) && isAiPending && (
+							<AiSummarySkeleton testId="facility-ai-summary-skeleton" />
+						)}
 						<StatTiles tiles={view.tiles} testIdPrefix="facility-stat" />
 						<WeeklyActivityChart
 							title={messages.weeklyActivity}
