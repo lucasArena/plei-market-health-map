@@ -8,7 +8,7 @@ export class InMemoryAppSessionHeatmapRepository implements AppSessionHeatmapRep
 		return { genders: [], skills: [], ages: [] };
 	}
 
-	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {
+	async listSessions(): Promise<AppSessionHeatmapCellView[]> {
 		return [...this.cells];
 	}
 }

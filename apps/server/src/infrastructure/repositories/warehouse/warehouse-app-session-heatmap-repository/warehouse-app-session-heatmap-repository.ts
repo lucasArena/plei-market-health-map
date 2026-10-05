@@ -2,6 +2,7 @@ import type {
 	AppSessionFilters,
 	AppSessionHeatmapCellView,
 	AppSessionHeatmapRepository,
+	StatsPeriod,
 } from "@market-health-map/core/application";
 import type {
 	WarehouseAppSessionFilterRow,
@@ -15,18 +16,24 @@ SELECT DISTINCT NULLIF(TRIM(gender::text), '') AS gender,
 FROM plei_gold.dim_player
 WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)`;
 
-export const APP_SESSION_HEATMAP_LAST_28D_SQL = `
+const SESSION_WINDOWS: Record<StatsPeriod, string> = {
+	week: "date >= date_trunc('week', CURRENT_DATE)::date - 7\n  AND date < date_trunc('week', CURRENT_DATE)::date",
+	month: "date >= CURRENT_DATE - 28\n  AND date < CURRENT_DATE",
+};
+
+export function appSessionHeatmapSql(period: StatsPeriod): string {
+	return `
 SELECT
   ROUND(lat::numeric, 3) AS lat,
   ROUND(lng::numeric, 3) AS lng,
   SUM(q_sessions)::bigint AS session_weight
 FROM plei_gold.players_behaviour
-WHERE date >= CURRENT_DATE - 28
-  AND date < CURRENT_DATE
+WHERE ${SESSION_WINDOWS[period]}
   AND lat IS NOT NULL
   AND lng IS NOT NULL
   AND NOT (ABS(lat) < 0.01 AND ABS(lng) < 0.01)
 GROUP BY 1, 2`;
+}
 
 export function toAppSessionHeatmapCell(
 	row: WarehouseAppSessionHeatmapRow,
@@ -63,7 +70,10 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 		};
 	}
 
-	async listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
+	async listSessions(
+		period: StatsPeriod,
+		filters: AppSessionFilters = {},
+	): Promise<AppSessionHeatmapCellView[]> {
 		const predicates: string[] = [];
 		const values: unknown[] = [];
 		for (const [column, value, operator] of [
@@ -80,7 +90,7 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 					: `${column} ${operator} $${values.length}`,
 			);
 		}
-		let sql = APP_SESSION_HEATMAP_LAST_28D_SQL;
+		let sql = appSessionHeatmapSql(period);
 		if (predicates.length) {
 			sql = sql.replace(
 				"GROUP BY 1, 2",

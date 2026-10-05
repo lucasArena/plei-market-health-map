@@ -74,7 +74,7 @@ describe("market summary hooks", () => {
 
 		renderHook(() => useMarketSummary(null, false), { wrapper: Wrapper });
 		renderHook(() => useMarketPlayerStats(null, false), { wrapper: Wrapper });
-		renderHook(() => useMarketGameInsights(null, false), { wrapper: Wrapper });
+		renderHook(() => useMarketGameInsights(null, "week", false), { wrapper: Wrapper });
 
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
@@ -83,13 +83,18 @@ describe("market summary hooks", () => {
 it("loads market insights separately and caches them by scope", async () => {
 	const fetchMock = stubFetch([]);
 	const { Wrapper } = createQueryWrapper();
-	const first = renderHook(() => useMarketGameInsights("philly & co", true), { wrapper: Wrapper });
+	const first = renderHook(() => useMarketGameInsights("philly & co", "week", true), {
+		wrapper: Wrapper,
+	});
 	await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
 	first.unmount();
-	renderHook(() => useMarketGameInsights("philly & co", true), { wrapper: Wrapper });
+	renderHook(() => useMarketGameInsights("philly & co", "week", true), { wrapper: Wrapper });
 	expect(fetchMock).toHaveBeenCalledOnce();
-	expect(fetchMock.mock.calls[0]?.[0]).toBe(
-		"/api/v1/market-summary/insights?market=philly%20%26%20co",
-	);
+	const month = renderHook(() => useMarketGameInsights(null, "month", true), { wrapper: Wrapper });
+	await waitFor(() => expect(month.result.current.isSuccess).toBe(true));
+	expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+		"/api/v1/market-summary/insights?period=week&market=philly+%26+co",
+		"/api/v1/market-summary/insights?period=month",
+	]);
 	vi.unstubAllGlobals();
 });

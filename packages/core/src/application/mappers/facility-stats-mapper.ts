@@ -2,12 +2,16 @@ import type {
 	FacilityPlayerStatsView,
 	FacilityReservationStatsView,
 	FacilityStatsView,
+	PlayerPeriodView,
+	ReservationPeriodView,
+	StatsPeriod,
 } from "@core/application/dtos/facility-detail-dto.types";
 import type {
 	FacilityPlayerStats,
 	FacilityReservationStats,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
+import { weekEndOf } from "@core/domain";
 
 function roundTo(value: number, decimals: number): number {
 	const factor = 10 ** decimals;
@@ -46,10 +50,7 @@ export function toFacilityReservationStatsView(
 		cancellationRate:
 			scheduledLastWeek > 0 ? roundTo((cancelledLastWeek / scheduledLastWeek) * 100, 1) : null,
 		confirmationRate: currentConfirmation,
-		confirmationRateChangePoints:
-			currentConfirmation === null || previousConfirmation === null
-				? null
-				: roundTo(currentConfirmation - previousConfirmation, 1),
+		confirmationRateChangePoints: changePoints(currentConfirmation, previousConfirmation),
 	};
 }
 
@@ -77,5 +78,87 @@ export function toFacilityStatsView(counts: FacilityWeeklyCounts): FacilityStats
 	return {
 		...toFacilityReservationStatsView(counts),
 		...toFacilityPlayerStatsView(counts),
+	};
+}
+
+function changePoints(current: number | null, previous: number | null): number | null {
+	if (current === null || previous === null) return null;
+	return roundTo(current - previous, 1);
+}
+
+function reservationCounts(stats: FacilityReservationStats, period: StatsPeriod) {
+	if (period === "week") {
+		return {
+			start: stats.weekStart,
+			end: weekEndOf(stats.weekStart),
+			played: stats.playedLastWeek,
+			playedPrevious: stats.playedPreviousWeek,
+			scheduled: stats.scheduledLastWeek,
+			scheduledPrevious: stats.scheduledPreviousWeek,
+		};
+	}
+	return {
+		start: stats.periodStart,
+		end: stats.periodEnd,
+		played: stats.playedLast28Days,
+		playedPrevious: stats.playedPrevious28Days,
+		scheduled: stats.scheduledLast28Days,
+		scheduledPrevious: stats.scheduledPrevious28Days,
+	};
+}
+
+export function toReservationPeriodView(
+	stats: FacilityReservationStats,
+	period: StatsPeriod,
+): ReservationPeriodView {
+	const { start, end, played, playedPrevious, scheduled, scheduledPrevious } = reservationCounts(
+		stats,
+		period,
+	);
+	const current = confirmationRate(played, scheduled);
+	return {
+		period,
+		start,
+		end,
+		played,
+		playedPrevious,
+		playedChangePercent: percentChange(played, playedPrevious),
+		confirmationRate: current,
+		confirmationRateChangePoints: changePoints(
+			current,
+			confirmationRate(playedPrevious, scheduledPrevious),
+		),
+	};
+}
+
+function playerCounts(stats: FacilityPlayerStats, period: StatsPeriod) {
+	if (period === "week") {
+		return {
+			uniquePlayers: stats.uniquePlayersLastWeek,
+			uniquePlayersPrevious: stats.uniquePlayersPreviousWeek,
+			activatedPlayers: stats.activatedPlayersLastWeek,
+			activatedPlayersPrevious: stats.activatedPlayersPreviousWeek,
+		};
+	}
+	return {
+		uniquePlayers: stats.uniquePlayersLast28Days,
+		uniquePlayersPrevious: stats.uniquePlayersPrevious28Days,
+		activatedPlayers: stats.activatedPlayersLast28Days,
+		activatedPlayersPrevious: stats.activatedPlayersPrevious28Days,
+	};
+}
+
+export function toPlayerPeriodView(
+	stats: FacilityPlayerStats,
+	period: StatsPeriod,
+): PlayerPeriodView {
+	const counts = playerCounts(stats, period);
+	return {
+		...counts,
+		uniquePlayersChangePercent: percentChange(counts.uniquePlayers, counts.uniquePlayersPrevious),
+		activatedPlayersChangePercent: percentChange(
+			counts.activatedPlayers,
+			counts.activatedPlayersPrevious,
+		),
 	};
 }

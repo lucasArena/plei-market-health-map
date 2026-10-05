@@ -82,6 +82,7 @@ function rulesWith(overrides: object = {}) {
 		isSummaryPending: false,
 		messages: EN_MESSAGES.marketSummary,
 		onClose: vi.fn(),
+		rankingsEmptyLabel: "No games played last week.",
 		status: "ready",
 		view: VIEW,
 		...overrides,
@@ -107,7 +108,7 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByRole("button", { name: "Mon, Morning: 2 games" })).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Top markets" })).toBeInTheDocument();
 		expect(screen.getByText("6 of 9 facilities active")).toBeInTheDocument();
-		expect(screen.getByText(EN_MESSAGES.marketSummary.noRankings)).toBeInTheDocument();
+		expect(screen.getByText("No games played last week.")).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
 	});
 

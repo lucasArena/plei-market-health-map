@@ -25,7 +25,7 @@ vi.mock("@/presentation/hooks/use-market/use-idle-market-prefetch", () => ({
 	useIdleMarketPrefetch: vi.fn(),
 }));
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
-	useMapScope: () => ({ scope: mockScope() }),
+	useMapScope: () => ({ scope: mockScope(), period: "month" }),
 }));
 
 vi.mock("@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent", () => ({
@@ -138,12 +138,12 @@ describe("MarketSummaryToggle", () => {
 		const button = () => screen.getByRole("button", { name: "Market summary" });
 
 		fireEvent.pointerEnter(button());
-		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), null);
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), null, "month");
 
 		mockScope.mockReturnValue({ kind: "market", id: "houston" } as never);
 		rerender(<MarketSummaryToggle />);
 		fireEvent.focus(button());
-		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), "houston");
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), "houston", "month");
 
 		mockScope.mockReturnValue({ kind: "facility", id: "889" } as never);
 		rerender(<MarketSummaryToggle />);
