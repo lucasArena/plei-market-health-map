@@ -143,7 +143,7 @@ export const es: Messages = {
 		ofTotal: "de {total}",
 		topFacilities: "Sedes principales",
 		overallGameChange:
-			"Partidos en total: {previous} → {current}, un cambio neto de {change} frente a los 28 días anteriores. Principales contribuyentes:",
+			"Partidos en total: {previous} → {current}, un cambio neto de {change} partidos frente a los 28 días anteriores. Principales contribuyentes:",
 		insightsFailed:
 			"No se pudieron cargar los hallazgos del mercado. Los indicadores y gráficos siguen disponibles.",
 		keyInsights: "Hallazgos clave",

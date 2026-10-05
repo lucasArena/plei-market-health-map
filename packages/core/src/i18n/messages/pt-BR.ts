@@ -143,7 +143,7 @@ export const ptBR: Messages = {
 		ofTotal: "de {total}",
 		topFacilities: "Principais instalações",
 		overallGameChange:
-			"Total de jogos: {previous} → {current}, variação líquida de {change} em relação aos 28 dias anteriores. Maiores contribuições:",
+			"Total de jogos: {previous} → {current}, variação líquida de {change} jogos em relação aos 28 dias anteriores. Maiores contribuições:",
 		insightsFailed:
 			"Não foi possível carregar os sinais. Os indicadores e gráficos continuam disponíveis.",
 		keyInsights: "Principais sinais",

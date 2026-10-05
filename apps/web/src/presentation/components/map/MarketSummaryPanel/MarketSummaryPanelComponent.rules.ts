@@ -87,6 +87,11 @@ export function buildScopeTiles(
 	];
 }
 
+export function contributorFactsFrom(summaryText: string | null | undefined): string | undefined {
+	const contributors = (summaryText ?? "").split("\n\n").slice(1).join("\n\n");
+	return contributors || undefined;
+}
+
 export function buildMarketSummaryText(
 	summary: MarketSummaryView,
 	playerStats: FacilityPlayerStatsView | undefined,
@@ -110,7 +115,7 @@ export function buildMarketSummaryText(
 	if (selected.length > 0) {
 		const totalChange = summary.stats.playedLast28Days - summary.stats.playedPrevious28Days;
 		const overall = formatMessage(messages.overallGameChange, {
-			change: formatters.number.format(totalChange),
+			change: `${totalChange > 0 ? "+" : ""}${formatters.number.format(totalChange)}`,
 			previous: formatters.number.format(summary.stats.playedPrevious28Days),
 			current: formatters.number.format(summary.stats.playedLast28Days),
 		});
@@ -126,7 +131,7 @@ export function buildMarketSummaryText(
 							? messages.noBaseline
 							: `${formatters.decimal.format(item.changePercent)}%`,
 				}),
-				change: formatters.number.format(item.change),
+				change: `${item.change > 0 ? "+" : ""}${formatters.number.format(item.change)}`,
 			}),
 		);
 		return [overall, ...insights].join("\n\n");
@@ -360,7 +365,10 @@ export function useMarketSummaryPanelRules({
 		if (isMarketScope && (insightsQuery.isPending || insightsQuery.isError)) return null;
 		const subject = buildMarketAiSubject(scope, heading, summary, facilityReport, playerStats);
 		return subject
-			? aiSummaryContextFor({ ...subject, insightFacts: view?.summary ?? undefined }, locale)
+			? aiSummaryContextFor(
+					{ ...subject, insightFacts: contributorFactsFrom(view?.summary) },
+					locale,
+				)
 			: null;
 	}, [
 		scope,

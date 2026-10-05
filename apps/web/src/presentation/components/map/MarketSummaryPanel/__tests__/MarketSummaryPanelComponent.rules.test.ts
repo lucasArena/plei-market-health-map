@@ -13,6 +13,7 @@ import {
 	buildMarketSummaryViewModel,
 	buildScopeHeading,
 	buildScopeTiles,
+	contributorFactsFrom,
 	useMarketSummaryPanelRules,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
@@ -436,6 +437,39 @@ describe("scope-specific game contributors", () => {
 			},
 		],
 	};
+	it("states the overall change as a signed number of games, so it can't be read as a percentage", () => {
+		const grew = buildMarketSummaryText(
+			{ ...summary, stats: { ...summary.stats, playedPrevious28Days: 24, playedLast28Days: 33 } },
+			undefined,
+			messages,
+			detailMessages,
+			formatters,
+		);
+		const fell = buildMarketSummaryText(
+			{ ...summary, stats: { ...summary.stats, playedPrevious28Days: 33, playedLast28Days: 24 } },
+			undefined,
+			messages,
+			detailMessages,
+			formatters,
+		);
+
+		expect(grew).toContain(
+			"Overall games: 24 → 33, a net change of +9 games versus the previous 28 days.",
+		);
+		expect(fell).toContain(
+			"Overall games: 33 → 24, a net change of -9 games versus the previous 28 days.",
+		);
+	});
+	it("gives the AI only the contributor lines, never the overall total", () => {
+		const text = buildMarketSummaryText(summary, undefined, messages, detailMessages, formatters);
+		const facts = contributorFactsFrom(text) ?? "";
+
+		expect(facts).not.toContain("Overall games");
+		expect(facts).toContain("Houston: games declined");
+		expect(facts).toContain("contribution to the overall change: +80 games");
+		expect(contributorFactsFrom("Only one paragraph.")).toBeUndefined();
+		expect(contributorFactsFrom(null)).toBeUndefined();
+	});
 	it("names markets and their contributions without facilities in all-markets scope", () => {
 		const text = buildMarketSummaryText(summary, undefined, messages, detailMessages, formatters);
 		expect(text).toContain("Houston: games declined");
