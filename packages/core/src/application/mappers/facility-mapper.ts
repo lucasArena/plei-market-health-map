@@ -18,6 +18,7 @@ export function toFacilityPointView(facility: Facility): FacilityPointView {
 		...(metrics.gamesPreviousByDepartment
 			? { gamesPreviousByDepartment: metrics.gamesPreviousByDepartment }
 			: {}),
+		isActiveLastWeek: metrics.gamesLastWeek > 0,
 		location,
 	};
 }

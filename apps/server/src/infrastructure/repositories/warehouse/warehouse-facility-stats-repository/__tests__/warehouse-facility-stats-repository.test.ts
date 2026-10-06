@@ -17,6 +17,7 @@ const RESERVATION_ROW = {
 	scheduled_last_28_days: "250",
 	scheduled_previous_28_days: "240",
 	scheduled_last_week: "87",
+	scheduled_previous_week: "87",
 	cancelled_last_week: "32",
 	upcoming_next_seven_days: "41",
 	last_played_date: "2026-09-28",
@@ -34,6 +35,10 @@ const PLAYER_ROW = {
 	unique_players_previous_28_days: "120",
 	activated_players_last_28_days: "24",
 	activated_players_previous_28_days: "20",
+	unique_players_last_week: "30",
+	unique_players_previous_week: "25",
+	activated_players_last_week: "6",
+	activated_players_previous_week: "5",
 };
 
 describe("facility stats SQL", () => {
@@ -64,7 +69,7 @@ describe("facility stats SQL", () => {
 		);
 	});
 
-	it("queries current and previous 28-day player analytics separately", () => {
+	it("queries weekly and 28-day player analytics in one bounded scan", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("plei_gold.fct_games_opened");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("p.players_type = 'pleiapp_player'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.confirmed_game + 0 = 1");
@@ -74,7 +79,10 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played < current_date");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.today - 28");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("group by b.today");
-		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("b.this_week");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain(
+			"date_played >= b.this_week - 14 and date_played < b.this_week - 7",
+		);
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= current_date - 56");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("exists (");
 		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("dim_reservation");
 	});
@@ -114,6 +122,7 @@ describe("warehouse facility stats mappers", () => {
 			scheduledLast28Days: 250,
 			scheduledPrevious28Days: 240,
 			scheduledLastWeek: 87,
+			scheduledPreviousWeek: 87,
 			cancelledLastWeek: 32,
 			upcomingNextSevenDays: 41,
 			lastPlayedDate: "2026-09-28",
@@ -130,6 +139,10 @@ describe("warehouse facility stats mappers", () => {
 			uniquePlayersPrevious28Days: 120,
 			activatedPlayersLast28Days: 24,
 			activatedPlayersPrevious28Days: 20,
+			uniquePlayersLastWeek: 30,
+			uniquePlayersPreviousWeek: 25,
+			activatedPlayersLastWeek: 6,
+			activatedPlayersPreviousWeek: 5,
 		});
 	});
 });
@@ -169,19 +182,36 @@ describe("WarehouseFacilityStatsRepository", () => {
 });
 
 describe("facility game comparison batch", () => {
-	it("reads both complete periods in one parameterized query", async () => {
+	it("reads the weekly and 28-day periods in one parameterized query", async () => {
 		const query = vi.fn().mockResolvedValue({
-			rows: [{ location_id: 889, played_last_28_days: "30", played_previous_28_days: "50" }],
+			rows: [
+				{
+					location_id: 889,
+					played_last_week: "7",
+					played_previous_week: "9",
+					played_last_28_days: "30",
+					played_previous_28_days: "50",
+				},
+			],
 		});
 		const result = await new WarehouseFacilityStatsRepository({ query }).getGameComparisons([
 			"889" as never,
 		]);
-		expect(result).toEqual([{ facilityId: "889", playedLast28Days: 30, playedPrevious28Days: 50 }]);
+		expect(result).toEqual([
+			{
+				facilityId: "889",
+				playedLastWeek: 7,
+				playedPreviousWeek: 9,
+				playedLast28Days: 30,
+				playedPrevious28Days: 50,
+			},
+		]);
+		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date >= b.this_week - 14");
 		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [[889]]);
 		expect(query.mock.calls[0]?.[0]).toContain("r.confirmed and r.status <> 'cancelled'");
 		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.today");
 		expect(query.mock.calls[0]?.[0]).toContain(
-			"with bounds as (select (now() at time zone 'Pacific/Honolulu')::date as today)",
+			"date_trunc('week', (now() at time zone 'Pacific/Honolulu')::date)::date as this_week",
 		);
 	});
 });

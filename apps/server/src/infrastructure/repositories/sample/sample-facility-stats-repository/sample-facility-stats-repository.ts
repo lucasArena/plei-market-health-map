@@ -20,8 +20,12 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 
 	async getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
 		const {
+			uniquePlayersLastWeek: _uniquePlayersLastWeek,
+			uniquePlayersPreviousWeek: _uniquePlayersPreviousWeek,
 			uniquePlayersLast28Days: _uniquePlayersLast28Days,
 			uniquePlayersPrevious28Days: _uniquePlayersPrevious28Days,
+			activatedPlayersLastWeek: _activatedPlayersLastWeek,
+			activatedPlayersPreviousWeek: _activatedPlayersPreviousWeek,
 			activatedPlayersLast28Days: _activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
 			...reservationStats
@@ -42,6 +46,10 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 				0,
 			),
 			scheduledLastWeek: members.reduce((total, member) => total + member.scheduledLastWeek, 0),
+			scheduledPreviousWeek: members.reduce(
+				(total, member) => total + member.scheduledPreviousWeek,
+				0,
+			),
 			cancelledLastWeek: members.reduce((total, member) => total + member.cancelledLastWeek, 0),
 			upcomingNextSevenDays: members.reduce(
 				(total, member) => total + member.upcomingNextSevenDays,
@@ -70,6 +78,8 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			const counts = this.makeCounts([facilityId]);
 			return {
 				facilityId,
+				playedLastWeek: counts.playedLastWeek,
+				playedPreviousWeek: counts.playedPreviousWeek,
 				playedLast28Days: counts.playedLast28Days,
 				playedPrevious28Days: counts.playedPrevious28Days,
 			};
@@ -79,8 +89,12 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
 		const counts = this.makeCounts(facilityIds);
 		return {
+			uniquePlayersLastWeek: counts.uniquePlayersLastWeek,
+			uniquePlayersPreviousWeek: counts.uniquePlayersPreviousWeek,
 			uniquePlayersLast28Days: counts.uniquePlayersLast28Days,
 			uniquePlayersPrevious28Days: counts.uniquePlayersPrevious28Days,
+			activatedPlayersLastWeek: counts.activatedPlayersLastWeek,
+			activatedPlayersPreviousWeek: counts.activatedPlayersPreviousWeek,
 			activatedPlayersLast28Days: counts.activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days: counts.activatedPlayersPrevious28Days,
 		};
@@ -109,6 +123,12 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		const activatedPlayersPrevious28Days = Math.round(
 			playedPrevious28Days * (0.25 + random() * 0.3),
 		);
+		const scheduledPreviousWeek =
+			playedPreviousWeek + Math.round(playedPreviousWeek * random() * 0.3);
+		const uniquePlayersLastWeek = Math.round(playedLastWeek * (3 + random() * 2));
+		const uniquePlayersPreviousWeek = Math.round(playedPreviousWeek * (3 + random() * 2));
+		const activatedPlayersLastWeek = Math.round(playedLastWeek * (0.25 + random() * 0.3));
+		const activatedPlayersPreviousWeek = Math.round(playedPreviousWeek * (0.25 + random() * 0.3));
 		const weekStart = lastCompletedWeekStart(now);
 		const start = new Date(`${weekStart}T00:00:00Z`);
 		start.setUTCDate(start.getUTCDate() - 21);
@@ -122,11 +142,16 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			playedPrevious28Days,
 			scheduledLast28Days,
 			scheduledPrevious28Days,
+			uniquePlayersLastWeek,
+			uniquePlayersPreviousWeek,
 			uniquePlayersLast28Days,
 			uniquePlayersPrevious28Days,
+			activatedPlayersLastWeek,
+			activatedPlayersPreviousWeek,
 			activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days,
 			scheduledLastWeek,
+			scheduledPreviousWeek,
 			cancelledLastWeek,
 			upcomingNextSevenDays: Math.round(random() * 30),
 			lastPlayedDate: isoDate(new Date(now.getTime() - DAY_MS)),

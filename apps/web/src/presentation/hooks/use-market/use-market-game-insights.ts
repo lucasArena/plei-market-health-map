@@ -1,22 +1,35 @@
 "use client";
-import type { MarketGameChangeView } from "@market-health-map/core/application";
+import type { MarketGameChangeView, StatsPeriod } from "@market-health-map/core/application";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
-import { marketSummaryPath } from "@/presentation/hooks/use-market/use-market-summary";
 
-export const marketGameInsightsQueryKey = (marketId: string | null = null) =>
-	["market-summary", "insights", marketId ?? "all"] as const;
+export const marketGameInsightsQueryKey = (marketId: string | null, period: StatsPeriod) =>
+	["market-summary", "insights", marketId ?? "all", period] as const;
 
-export function marketGameInsightsQueryOptions(marketId: string | null = null, enabled = true) {
+export function marketGameInsightsPath(marketId: string | null, period: StatsPeriod): string {
+	const params = new URLSearchParams({ period });
+	if (marketId !== null) params.set("market", marketId);
+	return `/api/v1/market-summary/insights?${params.toString()}`;
+}
+
+export function marketGameInsightsQueryOptions(
+	marketId: string | null,
+	period: StatsPeriod,
+	enabled = true,
+) {
 	return {
-		queryKey: marketGameInsightsQueryKey(marketId),
-		queryFn: () => apiClient.get<MarketGameChangeView[]>(marketSummaryPath("/insights", marketId)),
+		queryKey: marketGameInsightsQueryKey(marketId, period),
+		queryFn: () => apiClient.get<MarketGameChangeView[]>(marketGameInsightsPath(marketId, period)),
 		enabled,
 		staleTime: Number.POSITIVE_INFINITY,
 		gcTime: Number.POSITIVE_INFINITY,
 	};
 }
 
-export function useMarketGameInsights(marketId: string | null, enabled: boolean) {
-	return useQuery(marketGameInsightsQueryOptions(marketId, enabled));
+export function useMarketGameInsights(
+	marketId: string | null,
+	period: StatsPeriod,
+	enabled: boolean,
+) {
+	return useQuery(marketGameInsightsQueryOptions(marketId, period, enabled));
 }

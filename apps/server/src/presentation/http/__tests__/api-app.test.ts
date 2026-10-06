@@ -162,11 +162,14 @@ describe("createApiApp", () => {
 describe("market insights route", () => {
 	it("loads insights through their own authenticated scoped endpoint", async () => {
 		const { get, services } = setup();
-		expect(await get("/market-summary/insights?market=houston")).toEqual({
+		expect(await get("/market-summary/insights?market=houston&period=month")).toEqual({
 			status: 200,
 			body: { data: [] },
 		});
-		expect(services.getMarketGameInsights).toHaveBeenCalledWith({ market: "houston" });
+		expect(services.getMarketGameInsights).toHaveBeenCalledWith({
+			market: "houston",
+			period: "month",
+		});
 		expect(services.getMarketSummary).not.toHaveBeenCalled();
 	});
 });
@@ -175,14 +178,16 @@ describe("session demographics API", () => {
 	it("passes validated combined filters and serves options", async () => {
 		const { get, services } = setup();
 		expect(
-			(await get("/app-session-heatmap?gender=Female&skill=Advanced&ageMin=25&ageMax=34")).status,
+			(
+				await get(
+					"/app-session-heatmap?gender=Female&skill=Advanced&ageMin=25&ageMax=34&period=week",
+				)
+			).status,
 		).toBe(200);
-		expect(services.listAppSessionHeatmap).toHaveBeenCalledWith({
-			gender: "Female",
-			skill: "Advanced",
-			ageMin: 25,
-			ageMax: 34,
-		});
+		expect(services.listAppSessionHeatmap).toHaveBeenCalledWith(
+			{ gender: "Female", skill: "Advanced", ageMin: 25, ageMax: 34 },
+			"week",
+		);
 		expect((await get("/app-session-heatmap/filters")).body).toEqual({
 			data: { genders: ["Female"], skills: ["Advanced"], ages: [25] },
 		});

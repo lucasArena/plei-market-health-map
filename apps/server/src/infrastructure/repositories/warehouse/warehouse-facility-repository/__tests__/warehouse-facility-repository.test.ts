@@ -29,6 +29,7 @@ function row(overrides: object = {}) {
 		location_latitude: 38.62,
 		location_longitude: -90.19,
 		played_last_28_days: "12",
+		played_last_week: "0",
 		company_id: null,
 		company_logo: null,
 		...overrides,
@@ -129,12 +130,14 @@ describe("WarehouseFacilityRepository", () => {
 					location_id: 292,
 					location_name: "Phield House",
 					played_last_28_days: "16",
+					played_last_week: "0",
 					...spot,
 				}),
 				row({
 					location_id: 698,
 					location_name: "Phield House | Morby",
 					played_last_28_days: "0",
+					played_last_week: "0",
 					...spot,
 				}),
 			],
@@ -161,6 +164,7 @@ function rowsWithIgnored() {
 			location_id: 2,
 			location_name: "Phield House | IGNORE",
 			played_last_28_days: "9",
+			played_last_week: "0",
 			...SPOT,
 		}),
 		row({ location_id: 3, location_name: "IGNORE - Test Gym", played_last_28_days: "40" }),
@@ -172,6 +176,7 @@ function rowsWithIgnored() {
 			location_latitude: 29.76,
 			location_longitude: -95.37,
 			played_last_28_days: "5",
+			played_last_week: "0",
 		}),
 		row({
 			location_id: 5,
@@ -179,6 +184,7 @@ function rowsWithIgnored() {
 			location_latitude: 38.7,
 			location_longitude: -90.3,
 			played_last_28_days: "3",
+			played_last_week: "0",
 		}),
 	];
 }
@@ -200,6 +206,7 @@ const COUNTS = {
 	scheduledLast28Days: 0,
 	scheduledPrevious28Days: 0,
 	scheduledLastWeek: 0,
+	scheduledPreviousWeek: 0,
 	cancelledLastWeek: 0,
 	upcomingNextSevenDays: 0,
 	lastPlayedDate: null,
@@ -209,6 +216,10 @@ const COUNTS = {
 	uniquePlayersPrevious28Days: 0,
 	activatedPlayersLast28Days: 0,
 	activatedPlayersPrevious28Days: 0,
+	uniquePlayersLastWeek: 0,
+	uniquePlayersPreviousWeek: 0,
+	activatedPlayersLastWeek: 0,
+	activatedPlayersPreviousWeek: 0,
 };
 
 describe("ignored facilities downstream", () => {
@@ -252,14 +263,14 @@ describe("ignored facilities downstream", () => {
 
 		const summary = await makeGetMarketSummary({ facilities: ignoredRepository(), stats })();
 
-		expect(summary.scope).toEqual({
+		expect(summary.periods.month.scope).toEqual({
 			facilityCount: 2,
 			activeFacilityCount: 2,
 			marketCount: 1,
 			activeMarketCount: 1,
 		});
-		expect(summary.topFacilities.map((facility) => facility.id)).toEqual(["1", "5"]);
-		expect(summary.topMarkets.map((market) => market.id)).toEqual(["7"]);
+		expect(summary.periods.month.topFacilities.map((facility) => facility.id)).toEqual(["1", "5"]);
+		expect(summary.periods.month.topMarkets.map((market) => market.id)).toEqual(["7"]);
 		expect(stats.reservationRequested).toEqual([["1", "5"]]);
 	});
 
@@ -274,8 +285,20 @@ describe("ignored facilities downstream", () => {
 
 	it("leaves them out of market player stats and game insights", async () => {
 		const stats = new InMemoryFacilityStatsRepository(COUNTS, [
-			{ facilityId: asEntityId("1"), playedLast28Days: 16, playedPrevious28Days: 4 },
-			{ facilityId: asEntityId("3"), playedLast28Days: 40, playedPrevious28Days: 1 },
+			{
+				facilityId: asEntityId("1"),
+				playedLastWeek: 4,
+				playedPreviousWeek: 1,
+				playedLast28Days: 16,
+				playedPrevious28Days: 4,
+			},
+			{
+				facilityId: asEntityId("3"),
+				playedLastWeek: 10,
+				playedPreviousWeek: 0,
+				playedLast28Days: 40,
+				playedPrevious28Days: 1,
+			},
 		]);
 
 		await makeGetMarketPlayerStats({ facilities: ignoredRepository(), stats })();

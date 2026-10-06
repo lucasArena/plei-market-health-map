@@ -13,7 +13,7 @@ import type {
 
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
-  select ${WAREHOUSE_TODAY_SQL} as today
+  select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
 ),
 organizer_partners as (
   select distinct partner_id from plei_gold.fct_terms
@@ -32,6 +32,7 @@ facility_activity as (
      just before them, split with conditional aggregates so the trend needs no second query. */
   select r.location_id,
          count(distinct r.reservation_id) filter (where r.in_current) as played_last_28_days,
+         count(distinct r.reservation_id) filter (where r.in_last_week) as played_last_week,
          count(distinct r.reservation_id) filter (where not r.in_current) as played_previous_28_days,
          count(distinct r.reservation_id) filter (where r.in_current and r.department = 'magic') as magic_games,
          count(distinct r.reservation_id) filter (where r.in_current and r.department = 'organizers') as organizer_games,
@@ -41,6 +42,7 @@ facility_activity as (
          count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'partnerships') as partnership_games_previous
   from (
     select g.location_id, g.reservation_id, g.department,
+           g.date_with_time::date >= b.this_week - 7 and g.date_with_time::date < b.this_week as in_last_week,
            g.date_with_time::date >= b.today - ${GAMES_WINDOW_DAYS} as in_current
     from classified_games g
     cross join bounds b
@@ -62,6 +64,7 @@ select l.location_id, l.location_name, l.address, l.city, l.state,
        coalesce(a.magic_games_previous, 0) as magic_games_previous,
        coalesce(a.organizer_games_previous, 0) as organizer_games_previous,
        coalesce(a.partnership_games_previous, 0) as partnership_games_previous,
+       coalesce(a.played_last_week, 0) as played_last_week,
        c.id as company_id, c.logo as company_logo
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
@@ -106,7 +109,7 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 			avatarUrl: companyLogoUrl(row.company_id, row.company_logo),
 			metrics: {
 				activePlayers: 0,
-				gamesLastWeek: 0,
+				gamesLastWeek: Number(row.played_last_week),
 				gamesLast28Days: Number(row.played_last_28_days),
 				...(row.played_previous_28_days !== undefined
 					? { gamesPrevious28Days: Number(row.played_previous_28_days) }

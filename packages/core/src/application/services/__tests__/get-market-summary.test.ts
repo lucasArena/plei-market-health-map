@@ -7,7 +7,13 @@ import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { asEntityId, Facility } from "@core/domain";
 
-function facility(id: string, marketId: string, gamesLast28Days: number, memberIds: string[] = []) {
+function facility(
+	id: string,
+	marketId: string,
+	gamesLast28Days: number,
+	memberIds: string[] = [],
+	gamesLastWeek = 0,
+) {
 	return Facility.create({
 		id: asEntityId(id),
 		marketId: asEntityId(marketId),
@@ -17,7 +23,7 @@ function facility(id: string, marketId: string, gamesLast28Days: number, memberI
 		location: { latitude: 39.96, longitude: -75.15 },
 		avatarUrl: null,
 		memberIds: memberIds.map(asEntityId),
-		metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days, utilization: 0 },
+		metrics: { activePlayers: 0, gamesLastWeek, gamesLast28Days, utilization: 0 },
 	});
 }
 
@@ -35,7 +41,12 @@ const COUNTS = {
 	uniquePlayersPrevious28Days: 120,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	uniquePlayersLastWeek: 30,
+	uniquePlayersPreviousWeek: 25,
+	activatedPlayersLastWeek: 6,
+	activatedPlayersPreviousWeek: 5,
 	scheduledLastWeek: 80,
+	scheduledPreviousWeek: 80,
 	cancelledLastWeek: 20,
 	upcomingNextSevenDays: 41,
 	lastPlayedDate: "2026-09-28",
@@ -65,7 +76,7 @@ describe("market summary", () => {
 
 		expect(stats.reservationRequested).toEqual([["292", "698", "10", "31"]]);
 		expect(stats.playerRequested).toEqual([]);
-		expect(summary.scope).toEqual({
+		expect(summary.periods.month.scope).toEqual({
 			facilityCount: 3,
 			activeFacilityCount: 2,
 			marketCount: 2,
@@ -77,21 +88,21 @@ describe("market summary", () => {
 			confirmationRate: 84.8,
 			cancellationRate: 25,
 		});
-		expect(summary.topFacilities.map((rank) => rank.id)).toEqual(["31", "292"]);
-		expect(summary.topMarkets).toEqual([
+		expect(summary.periods.month.topFacilities.map((rank) => rank.id)).toEqual(["31", "292"]);
+		expect(summary.periods.month.topMarkets).toEqual([
 			{
 				id: "houston",
 				name: "Market houston",
 				facilityCount: 1,
 				activeFacilityCount: 1,
-				gamesLast28Days: 40,
+				games: 40,
 			},
 			{
 				id: "philly",
 				name: "Market philly",
 				facilityCount: 2,
 				activeFacilityCount: 1,
-				gamesLast28Days: 16,
+				games: 16,
 			},
 		]);
 	});
@@ -104,6 +115,10 @@ describe("market summary", () => {
 			uniquePlayersPrevious28Days: 120,
 			activatedPlayersLast28Days: 24,
 			activatedPlayersPrevious28Days: 20,
+			uniquePlayersLastWeek: 30,
+			uniquePlayersPreviousWeek: 25,
+			activatedPlayersLastWeek: 6,
+			activatedPlayersPreviousWeek: 5,
 			uniquePlayersPeriodChangePercent: 5,
 			activatedPlayersPeriodChangePercent: 20,
 		});
@@ -114,10 +129,13 @@ describe("market summary", () => {
 	it("reports an empty scope when no facility is visible", async () => {
 		const { getMarketSummary } = setup([]);
 
-		await expect(getMarketSummary()).resolves.toMatchObject({
+		const empty = {
 			scope: { facilityCount: 0, activeFacilityCount: 0, marketCount: 0, activeMarketCount: 0 },
 			topFacilities: [],
 			topMarkets: [],
+		};
+		await expect(getMarketSummary()).resolves.toMatchObject({
+			periods: { week: empty, month: empty },
 		});
 	});
 
@@ -131,14 +149,35 @@ describe("market summary", () => {
 		const summary = await getMarketSummary({ market: " philly " });
 
 		expect(stats.reservationRequested).toEqual([["292", "698", "10"]]);
-		expect(summary.scope).toEqual({
+		expect(summary.periods.month.scope).toEqual({
 			facilityCount: 2,
 			activeFacilityCount: 1,
 			marketCount: 1,
 			activeMarketCount: 1,
 		});
-		expect(summary.topFacilities.map((rank) => rank.id)).toEqual(["292"]);
-		expect(summary.topMarkets.map((rank) => rank.id)).toEqual(["philly"]);
+		expect(summary.periods.month.topFacilities.map((rank) => rank.id)).toEqual(["292"]);
+		expect(summary.periods.month.topMarkets.map((rank) => rank.id)).toEqual(["philly"]);
+	});
+
+	it("ranks and counts active facilities by last week's games for the week", async () => {
+		const { getMarketSummary } = setup([
+			facility("292", "philly", 16, [], 3),
+			facility("10", "philly", 20, [], 0),
+			facility("31", "houston", 40, [], 1),
+		]);
+
+		const { periods } = await getMarketSummary();
+
+		expect(periods.week.scope).toMatchObject({ activeFacilityCount: 2, activeMarketCount: 2 });
+		expect(periods.week.topFacilities.map((rank) => [rank.id, rank.games])).toEqual([
+			["292", 3],
+			["31", 1],
+		]);
+		expect(periods.week.topMarkets.map((rank) => [rank.id, rank.games])).toEqual([
+			["philly", 3],
+			["houston", 1],
+		]);
+		expect(periods.month.scope.activeFacilityCount).toBe(3);
 	});
 
 	it("scopes player analytics to one market when asked", async () => {
@@ -177,15 +216,31 @@ it("returns game comparisons for every market, including inactive facilities", a
 		facility("2", "philly", 50),
 	]);
 	const stats = new InMemoryFacilityStatsRepository(COUNTS, [
-		{ facilityId: asEntityId("1"), playedLast28Days: 0, playedPrevious28Days: 100 },
-		{ facilityId: asEntityId("2"), playedLast28Days: 50, playedPrevious28Days: 25 },
+		{
+			facilityId: asEntityId("1"),
+			playedLastWeek: 3,
+			playedPreviousWeek: 6,
+			playedLast28Days: 0,
+			playedPrevious28Days: 100,
+		},
+		{
+			facilityId: asEntityId("2"),
+			playedLastWeek: 10,
+			playedPreviousWeek: 5,
+			playedLast28Days: 50,
+			playedPrevious28Days: 25,
+		},
 	]);
-	const changes = await makeGetMarketGameInsights({ facilities, stats })();
-	expect(changes).toMatchObject([
+	const insights = makeGetMarketGameInsights({ facilities, stats });
+	expect(await insights({ period: "month" })).toMatchObject([
 		{ id: "houston", change: -100, changePercent: -100 },
 		{ id: "philly", change: 25, changePercent: 100 },
 	]);
-	const selected = await makeGetMarketGameInsights({ facilities, stats })({ market: "houston" });
+	expect(await insights()).toMatchObject([
+		{ id: "houston", played: 3, playedPrevious: 6, change: -3, changePercent: -50 },
+		{ id: "philly", played: 10, playedPrevious: 5, change: 5, changePercent: 100 },
+	]);
+	const selected = await insights({ market: "houston" });
 	expect(selected.map((market) => market.id)).toEqual(["houston"]);
 });
 
@@ -206,5 +261,6 @@ it("validates insight scope before requesting comparisons", async () => {
 	const insights = makeGetMarketGameInsights({ facilities, stats });
 	await expect(insights({ market: " " })).rejects.toBeInstanceOf(InvalidRequestError);
 	await expect(insights({ market: "unknown" })).rejects.toBeInstanceOf(NotFoundError);
+	await expect(insights({ period: "year" as never })).rejects.toBeInstanceOf(InvalidRequestError);
 	expect(comparisons).not.toHaveBeenCalled();
 });

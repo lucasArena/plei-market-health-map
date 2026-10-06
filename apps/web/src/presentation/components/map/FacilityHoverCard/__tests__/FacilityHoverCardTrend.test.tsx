@@ -24,6 +24,7 @@ const POINT = {
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
+	isActiveLastWeek: true,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
 

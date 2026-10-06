@@ -36,7 +36,7 @@ describe("market summary mapper", () => {
 			...Array.from({ length: 6 }, (_, index) => facility(`x${index}`, "b", 1)),
 		];
 
-		const ranked = toTopFacilities(facilities);
+		const ranked = toTopFacilities(facilities, "month");
 
 		expect(ranked).toHaveLength(MARKET_SUMMARY_RANK_LIMIT);
 		expect(ranked.slice(0, 3).map((rank) => rank.name)).toEqual(["Facility 3", "Alpha", "Beta"]);
@@ -44,17 +44,18 @@ describe("market summary mapper", () => {
 			id: "3",
 			name: "Facility 3",
 			marketName: "a",
-			gamesLast28Days: 9,
+			games: 9,
 		});
 	});
 
 	it("ranks markets by summed games and skips markets without activity", () => {
 		const ranked = toTopMarkets(
 			[facility("1", "a", 2), facility("2", "b", 3), facility("3", "a", 4), facility("4", "c", 0)],
+			"month",
 			2,
 		);
 
-		expect(ranked.map((rank) => [rank.id, rank.gamesLast28Days])).toEqual([
+		expect(ranked.map((rank) => [rank.id, rank.games])).toEqual([
 			["a", 6],
 			["b", 3],
 		]);
