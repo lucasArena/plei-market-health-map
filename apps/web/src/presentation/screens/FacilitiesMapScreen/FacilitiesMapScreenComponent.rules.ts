@@ -121,7 +121,14 @@ export function facilitiesForPeriod(
 	period: StatsPeriod,
 ): FacilityPointView[] {
 	if (period === "month") return facilities;
-	return facilities.map((facility) => ({ ...facility, isActive: facility.isActiveLastWeek }));
+	return facilities.map((facility) => ({
+		...facility,
+		isActive: facility.isActiveLastWeek,
+		gamesLast28Days: facility.gamesLastWeek,
+		gamesByDepartment: facility.gamesLastWeekByDepartment,
+		gamesPrevious28Days: facility.gamesPreviousWeek,
+		gamesPreviousByDepartment: facility.gamesPreviousWeekByDepartment,
+	}));
 }
 
 function byActiveLast(a: FacilityPointView, b: FacilityPointView): number {

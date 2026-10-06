@@ -71,6 +71,7 @@ describe("getFacilityDetail", () => {
 			avatarUrl: null,
 			isActive: false,
 			gamesLast28Days: 0,
+			gamesLastWeek: 0,
 			isActiveLastWeek: false,
 			location: { latitude: 29.76, longitude: -95.37 },
 			address: "1 Main St, Houston, Texas",

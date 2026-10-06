@@ -13,7 +13,18 @@ import {
 	formatGamesCount,
 	formatGamesTrend,
 	HOVER_TREND_LINE_HEIGHT,
+	trendWindowDays,
 } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
+
+const mockPeriod = vi.hoisted(() => vi.fn(() => "month"));
+
+vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
+	useMapScope: () => ({ period: mockPeriod() }),
+}));
+
+beforeEach(() => {
+	mockPeriod.mockReturnValue("month");
+});
 
 const TREND = EN_MESSAGES.map.trend;
 
@@ -173,6 +184,24 @@ describe("hover card trend line", () => {
 		);
 		expect(formatGamesChange(gamesTrend(60, 46), TREND)).toBe("Up 14 from the previous 28 days");
 		expect(formatGamesCount(1, TREND)).toBe("1 game");
+	});
+
+	it("names the selected period's window in the hover copy", () => {
+		mockPeriod.mockReturnValue("week");
+		const { rerender } = render(
+			<FacilityHoverCard hover={facilityHover(games(42, 51), 42)} messages={EN_MESSAGES.map} />,
+		);
+		expect(screen.getByTestId("facility-hover-trend")).toHaveTextContent(
+			"42 games, down 9 from the previous 7 days",
+		);
+
+		rerender(
+			<FacilityHoverCard hover={clusterHover(games(130, 100), 130)} messages={EN_MESSAGES.map} />,
+		);
+		expect(screen.getByTestId("cluster-hover-trend")).toHaveTextContent(
+			"Up 30 from the previous 7 days",
+		);
+		expect(trendWindowDays("month")).toBe(28);
 	});
 
 	it("reserves room for the trend line when placing the card", () => {

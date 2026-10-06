@@ -418,3 +418,42 @@ describe("previous window games for the trend", () => {
 		});
 	});
 });
+
+describe("weekly games for the 7D period", () => {
+	it("counts the last completed week and the week before in the same query", () => {
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"g.date_with_time::date >= b.this_week - 14 and g.date_with_time::date < b.this_week - 7 as in_previous_week",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"filter (where r.in_last_week and r.department = 'magic') as magic_games_last_week",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"count(distinct r.reservation_id) filter (where r.in_previous_week) as played_previous_week",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"coalesce(a.partnership_games_previous_week, 0) as partnership_games_previous_week",
+		);
+	});
+
+	it("keeps both weeks and their department splits on the facility", () => {
+		const facility = toFacility(
+			row({
+				played_last_week: "6",
+				magic_games_last_week: "1",
+				organizer_games_last_week: "2",
+				partnership_games_last_week: "3",
+				played_previous_week: "9",
+				magic_games_previous_week: "4",
+				organizer_games_previous_week: "0",
+				partnership_games_previous_week: "5",
+			}),
+		);
+
+		expect(facility?.toJSON().metrics).toMatchObject({
+			gamesLastWeek: 6,
+			gamesLastWeekByDepartment: { magic: 1, organizers: 2, partnerships: 3 },
+			gamesPreviousWeek: 9,
+			gamesPreviousWeekByDepartment: { magic: 4, organizers: 0, partnerships: 5 },
+		});
+	});
+});

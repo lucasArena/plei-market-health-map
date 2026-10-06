@@ -39,10 +39,18 @@ facility_activity as (
          count(distinct r.reservation_id) filter (where r.in_current and r.department = 'partnerships') as partnership_games,
          count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'magic') as magic_games_previous,
          count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'organizers') as organizer_games_previous,
-         count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'partnerships') as partnership_games_previous
+         count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'partnerships') as partnership_games_previous,
+         count(distinct r.reservation_id) filter (where r.in_last_week and r.department = 'magic') as magic_games_last_week,
+         count(distinct r.reservation_id) filter (where r.in_last_week and r.department = 'organizers') as organizer_games_last_week,
+         count(distinct r.reservation_id) filter (where r.in_last_week and r.department = 'partnerships') as partnership_games_last_week,
+         count(distinct r.reservation_id) filter (where r.in_previous_week) as played_previous_week,
+         count(distinct r.reservation_id) filter (where r.in_previous_week and r.department = 'magic') as magic_games_previous_week,
+         count(distinct r.reservation_id) filter (where r.in_previous_week and r.department = 'organizers') as organizer_games_previous_week,
+         count(distinct r.reservation_id) filter (where r.in_previous_week and r.department = 'partnerships') as partnership_games_previous_week
   from (
     select g.location_id, g.reservation_id, g.department,
            g.date_with_time::date >= b.this_week - 7 and g.date_with_time::date < b.this_week as in_last_week,
+           g.date_with_time::date >= b.this_week - 14 and g.date_with_time::date < b.this_week - 7 as in_previous_week,
            g.date_with_time::date >= b.today - ${GAMES_WINDOW_DAYS} as in_current
     from classified_games g
     cross join bounds b
@@ -65,6 +73,13 @@ select l.location_id, l.location_name, l.address, l.city, l.state,
        coalesce(a.organizer_games_previous, 0) as organizer_games_previous,
        coalesce(a.partnership_games_previous, 0) as partnership_games_previous,
        coalesce(a.played_last_week, 0) as played_last_week,
+       coalesce(a.magic_games_last_week, 0) as magic_games_last_week,
+       coalesce(a.organizer_games_last_week, 0) as organizer_games_last_week,
+       coalesce(a.partnership_games_last_week, 0) as partnership_games_last_week,
+       coalesce(a.played_previous_week, 0) as played_previous_week,
+       coalesce(a.magic_games_previous_week, 0) as magic_games_previous_week,
+       coalesce(a.organizer_games_previous_week, 0) as organizer_games_previous_week,
+       coalesce(a.partnership_games_previous_week, 0) as partnership_games_previous_week,
        c.id as company_id, c.logo as company_logo
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
@@ -129,6 +144,27 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 								magic: Number(row.magic_games_previous),
 								organizers: Number(row.organizer_games_previous),
 								partnerships: Number(row.partnership_games_previous),
+							},
+						}
+					: {}),
+				...(row.magic_games_last_week !== undefined
+					? {
+							gamesLastWeekByDepartment: {
+								magic: Number(row.magic_games_last_week),
+								organizers: Number(row.organizer_games_last_week),
+								partnerships: Number(row.partnership_games_last_week),
+							},
+						}
+					: {}),
+				...(row.played_previous_week !== undefined
+					? { gamesPreviousWeek: Number(row.played_previous_week) }
+					: {}),
+				...(row.magic_games_previous_week !== undefined
+					? {
+							gamesPreviousWeekByDepartment: {
+								magic: Number(row.magic_games_previous_week),
+								organizers: Number(row.organizer_games_previous_week),
+								partnerships: Number(row.partnership_games_previous_week),
 							},
 						}
 					: {}),

@@ -78,6 +78,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 	const players = distribute(market.metrics.activePlayers, weights);
 	const names = buildFacilityNames(count, random);
 	const trendRandom = createSeededRandom(`${market.id}-trend`);
+	const weekTrendRandom = createSeededRandom(`${market.id}-week-trend`);
 
 	return weights.map((_, index) => ({
 		id: asEntityId(`${market.id}-facility-${index + 1}`),
@@ -92,6 +93,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 			gamesLastWeek: games[index] as number,
 			gamesLast28Days: (games[index] as number) * 4,
 			gamesPrevious28Days: samplePreviousGames((games[index] as number) * 4, trendRandom),
+			gamesPreviousWeek: samplePreviousGames(games[index] as number, weekTrendRandom),
 			utilization: Math.round(35 + random() * 63),
 		},
 	}));

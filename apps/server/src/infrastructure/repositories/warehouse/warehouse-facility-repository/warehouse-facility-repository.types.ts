@@ -17,6 +17,13 @@ export interface WarehouseLocationRow {
 	magic_games_previous?: number | string;
 	organizer_games_previous?: number | string;
 	partnership_games_previous?: number | string;
+	magic_games_last_week?: number | string;
+	organizer_games_last_week?: number | string;
+	partnership_games_last_week?: number | string;
+	played_previous_week?: number | string;
+	magic_games_previous_week?: number | string;
+	organizer_games_previous_week?: number | string;
+	partnership_games_previous_week?: number | string;
 	company_id: number | string | null;
 	company_logo: string | null;
 }

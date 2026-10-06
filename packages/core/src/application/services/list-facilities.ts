@@ -6,7 +6,7 @@ import type { ListFacilitiesDeps } from "@core/application/services/list-facilit
 const GAMES_FLAG: FeatureFlagKey = "facility-games-layer";
 const GAMES_TREND_FLAG: FeatureFlagKey = "facility-games-trend";
 
-/** Drops the games fields while games are off, and the previous window while the trend is off. */
+/** Drops the games fields while games are off, and the previous windows while the trend is off. */
 function gateFacilityPoint(
 	point: FacilityPointView,
 	showGames: boolean,
@@ -18,13 +18,19 @@ function gateFacilityPoint(
 		gamesByDepartment,
 		gamesPrevious28Days: _previous,
 		gamesPreviousByDepartment: _previousByDepartment,
+		gamesLastWeek,
+		gamesLastWeekByDepartment,
+		gamesPreviousWeek: _previousWeek,
+		gamesPreviousWeekByDepartment: _previousWeekByDepartment,
 		...rest
 	} = point;
 	if (!showGames) return rest;
 	return {
 		...rest,
-		...(gamesLast28Days === undefined ? {} : { gamesLast28Days }),
+		gamesLast28Days,
 		...(gamesByDepartment ? { gamesByDepartment } : {}),
+		gamesLastWeek,
+		...(gamesLastWeekByDepartment ? { gamesLastWeekByDepartment } : {}),
 	};
 }
 

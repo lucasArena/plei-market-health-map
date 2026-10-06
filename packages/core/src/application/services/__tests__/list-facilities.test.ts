@@ -33,6 +33,7 @@ describe("listFacilities", () => {
 				avatarUrl: null,
 				isActive: true,
 				gamesLast28Days: 40,
+				gamesLastWeek: 10,
 				isActiveLastWeek: true,
 				location: { latitude: 30.27, longitude: -97.74 },
 			},
@@ -44,6 +45,7 @@ describe("listFacilities", () => {
 				avatarUrl: null,
 				isActive: false,
 				gamesLast28Days: 0,
+				gamesLastWeek: 10,
 				isActiveLastWeek: true,
 				location: { latitude: 30.27, longitude: -97.74 },
 			},
@@ -101,6 +103,26 @@ describe("listFacilities", () => {
 		).toThrow("non-negative");
 	});
 
+	it("rejects negative previous week games", () => {
+		expect(() =>
+			Facility.create({
+				id: asEntityId("d"),
+				marketId: asEntityId("austin"),
+				name: "Location d",
+				address: "1 Main St",
+				location: { latitude: 30.27, longitude: -97.74 },
+				avatarUrl: null,
+				metrics: {
+					activePlayers: 0,
+					gamesLastWeek: 0,
+					gamesLast28Days: 0,
+					gamesPreviousWeek: -1,
+					utilization: 0,
+				},
+			}),
+		).toThrow("non-negative");
+	});
+
 	it("returns an empty list when there are no facilities", async () => {
 		const listFacilities = makeListFacilities({
 			facilities: new InMemoryFacilityRepository(),
@@ -124,6 +146,9 @@ describe("listFacilities", () => {
 				gamesPrevious28Days: 12,
 				gamesByDepartment: { magic: 1, organizers: 2, partnerships: 3 },
 				gamesPreviousByDepartment: { magic: 2, organizers: 4, partnerships: 6 },
+				gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+				gamesPreviousWeek: 3,
+				gamesPreviousWeekByDepartment: { magic: 1, organizers: 1, partnerships: 1 },
 				utilization: 0,
 			},
 		});
@@ -156,6 +181,8 @@ describe("listFacilities", () => {
 					...base,
 					gamesLast28Days: 6,
 					gamesByDepartment: { magic: 1, organizers: 2, partnerships: 3 },
+					gamesLastWeek: 0,
+					gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
 				},
 			]);
 		});
@@ -172,6 +199,10 @@ describe("listFacilities", () => {
 					gamesByDepartment: { magic: 1, organizers: 2, partnerships: 3 },
 					gamesPrevious28Days: 12,
 					gamesPreviousByDepartment: { magic: 2, organizers: 4, partnerships: 6 },
+					gamesLastWeek: 0,
+					gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+					gamesPreviousWeek: 3,
+					gamesPreviousWeekByDepartment: { magic: 1, organizers: 1, partnerships: 1 },
 				},
 			]);
 		});

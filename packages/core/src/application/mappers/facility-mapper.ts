@@ -18,6 +18,16 @@ export function toFacilityPointView(facility: Facility): FacilityPointView {
 		...(metrics.gamesPreviousByDepartment
 			? { gamesPreviousByDepartment: metrics.gamesPreviousByDepartment }
 			: {}),
+		gamesLastWeek: metrics.gamesLastWeek,
+		...(metrics.gamesLastWeekByDepartment
+			? { gamesLastWeekByDepartment: metrics.gamesLastWeekByDepartment }
+			: {}),
+		...(metrics.gamesPreviousWeek === undefined
+			? {}
+			: { gamesPreviousWeek: metrics.gamesPreviousWeek }),
+		...(metrics.gamesPreviousWeekByDepartment
+			? { gamesPreviousWeekByDepartment: metrics.gamesPreviousWeekByDepartment }
+			: {}),
 		isActiveLastWeek: metrics.gamesLastWeek > 0,
 		location,
 	};
