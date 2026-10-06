@@ -26,6 +26,7 @@ function setup(access: AccessDecision = ALLOWED) {
 		listEnabledFeatureFlags: vi.fn().mockResolvedValue({ enabled: [] }),
 		listFeatureFlags: vi.fn().mockResolvedValue([]),
 		setFeatureFlag: vi.fn(),
+		searchPlaces: vi.fn().mockResolvedValue([{ id: "R1", name: "Wichita" }]),
 	};
 	const resolveAccess = vi.fn().mockResolvedValue(access);
 	const app = createApiApp({ resolveAccess, services: () => services });
@@ -156,6 +157,20 @@ describe("createApiApp", () => {
 
 	it("uses the real container by default", () => {
 		expect(createApiApp({ resolveAccess: vi.fn() })).toBeDefined();
+	});
+});
+
+describe("places route", () => {
+	it("searches places for a signed-in user", async () => {
+		const { get, services } = setup();
+
+		expect(await get("/places?q=wichita")).toEqual({
+			status: 200,
+			body: { data: [{ id: "R1", name: "Wichita" }] },
+		});
+		await get("/places");
+		expect(services.searchPlaces).toHaveBeenNthCalledWith(1, { query: "wichita" });
+		expect(services.searchPlaces).toHaveBeenNthCalledWith(2, { query: "" });
 	});
 });
 

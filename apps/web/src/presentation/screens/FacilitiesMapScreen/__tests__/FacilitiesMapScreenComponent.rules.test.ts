@@ -1387,6 +1387,38 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.navigate);
 	});
 
+	it("fits a searched city's bounds, or centers on it when it has none, and clears the scope", async () => {
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const map = mapState.instances[0];
+		const wichita = {
+			id: "R123",
+			name: "Wichita",
+			kind: "city" as const,
+			context: "Kansas, United States",
+			location: { latitude: 37.69, longitude: -97.34 },
+			bounds: [-97.73, 37.48, -97.15, 37.84] as [number, number, number, number],
+		};
+
+		act(() => result.current.selectSearchPlace(wichita));
+		expect(map?.fitBounds).toHaveBeenLastCalledWith(
+			[
+				[-97.73, 37.48],
+				[-97.15, 37.84],
+			],
+			{ padding: 72, maxZoom: 11, duration: 700 },
+		);
+		expect(result.current.selectedFacilityId).toBeNull();
+
+		act(() => result.current.selectSearchPlace({ ...wichita, bounds: null }));
+		expect(map?.easeTo).toHaveBeenLastCalledWith({
+			center: [-97.34, 37.69],
+			zoom: 11,
+			duration: 700,
+		});
+	});
+
 	it("zooms to facilities and fits markets selected from search", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));

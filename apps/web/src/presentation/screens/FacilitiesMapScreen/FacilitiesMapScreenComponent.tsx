@@ -37,6 +37,7 @@ export function FacilitiesMapScreen() {
 		selectFacility,
 		selectSearchFacility,
 		selectSearchMarket,
+		selectSearchPlace,
 		retrySessionHeatmap,
 		sessionFilterChips,
 		sessionQueryFailed,
@@ -70,6 +71,7 @@ export function FacilitiesMapScreen() {
 						messages={messages}
 						onFacilitySelect={selectSearchFacility}
 						onMarketSelect={selectSearchMarket}
+						onPlaceSelect={selectSearchPlace}
 						onClear={clearSearchScope}
 					/>,
 					searchSlot,

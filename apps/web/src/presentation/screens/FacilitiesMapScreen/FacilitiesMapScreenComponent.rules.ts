@@ -3,6 +3,7 @@
 import type {
 	AppSessionFilters,
 	FacilityPointView,
+	PlaceView,
 	StatsPeriod,
 } from "@market-health-map/core/application";
 import type {
@@ -1022,6 +1023,8 @@ export function bindFacilityGlass(
 	};
 }
 
+export const PLACE_MAX_ZOOM = 11;
+
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
 	const { period, setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
@@ -1399,6 +1402,33 @@ export function useFacilitiesMapScreenRules() {
 				return;
 			}
 			map.fitBounds(bounds, { padding: 72, maxZoom: 11, duration: 700 });
+		},
+		[setScope],
+	);
+
+	const selectSearchPlace = useCallback(
+		(place: PlaceView) => {
+			setScope(ALL_MARKETS_SCOPE);
+			setSelectedFacilityId(null);
+			setIsPanelClosing(false);
+			const map = mapRef.current;
+			if (!map) return;
+			if (place.bounds) {
+				const [west, south, east, north] = place.bounds;
+				map.fitBounds(
+					[
+						[west, south],
+						[east, north],
+					],
+					{ padding: 72, maxZoom: PLACE_MAX_ZOOM, duration: 700 },
+				);
+				return;
+			}
+			map.easeTo({
+				center: [place.location.longitude, place.location.latitude],
+				zoom: PLACE_MAX_ZOOM,
+				duration: 700,
+			});
 		},
 		[setScope],
 	);
@@ -1858,6 +1888,7 @@ export function useFacilitiesMapScreenRules() {
 		selectedTrend,
 		selectSearchFacility,
 		selectSearchMarket,
+		selectSearchPlace,
 		showTrend,
 		shownFacilities,
 		status,

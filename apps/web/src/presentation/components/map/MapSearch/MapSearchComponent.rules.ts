@@ -1,5 +1,6 @@
 "use client";
 
+import type { PlaceView } from "@market-health-map/core/application";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, KeyboardEvent } from "react";
@@ -14,9 +15,11 @@ import { useMessages } from "@/presentation/components/providers/MessagesProvide
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
+import { usePlaceSearch } from "@/presentation/hooks/use-place/use-place-search";
 import { useIntentPrefetch } from "@/presentation/hooks/use-prefetch/use-intent-prefetch";
 
 const RESULT_LIMIT = 8;
+export const PLACE_SEARCH_DEBOUNCE_MS = 300;
 
 export function buildMarketSearchResults(
 	facilities: MapSearchProps["facilities"],
@@ -43,12 +46,14 @@ export function useMapSearchRules({
 	messages,
 	onFacilitySelect,
 	onMarketSelect,
+	onPlaceSelect,
 	onClear,
 }: MapSearchProps) {
 	const { locale } = useMessages();
 	const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
 	const { period } = useMapScope();
 	const [query, setQuery] = useState("");
+	const [placeQuery, setPlaceQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isOpen);
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -66,6 +71,13 @@ export function useMapSearchRules({
 		.filter((facility) => facility.name.toLocaleLowerCase().includes(normalizedQuery))
 		.sort((a, b) => a.name.localeCompare(b.name))
 		.slice(0, RESULT_LIMIT);
+	const placeSearch = usePlaceSearch(placeQuery);
+	const isPlaceQueryCurrent = placeQuery === query && normalizedQuery !== "";
+	const visiblePlaces = isPlaceQueryCurrent ? (placeSearch.data ?? []) : [];
+	const isSearchingPlaces =
+		normalizedQuery !== "" && (!isPlaceQueryCurrent || placeSearch.isFetching);
+	const hasResults =
+		visibleMarkets.length > 0 || visibleFacilities.length > 0 || visiblePlaces.length > 0;
 
 	useEffect(() => {
 		const closeWhenOutside = (event: PointerEvent) => {
@@ -99,6 +111,19 @@ export function useMapSearchRules({
 		onFacilitySelect(facility);
 	};
 
+	const selectPlace = (place: PlaceView) => {
+		activityTracker.count("searches");
+		setQuery(place.name);
+		setPlaceQuery(place.name);
+		setIsOpen(false);
+		onPlaceSelect(place);
+	};
+
+	const placeDetail = (place: PlaceView) =>
+		[place.kind === "city" ? "" : messages.placeKinds[place.kind], place.context]
+			.filter(Boolean)
+			.join(" · ");
+
 	const prefetchMarket = (market: MarketSearchResult) =>
 		intent.schedule(() => {
 			void prefetchMarketSummary(queryClient, market.id, period).catch(() => undefined);
@@ -122,6 +147,11 @@ export function useMapSearchRules({
 		onClear();
 	};
 
+	useEffect(() => {
+		const timer = window.setTimeout(() => setPlaceQuery(query), PLACE_SEARCH_DEBOUNCE_MS);
+		return () => window.clearTimeout(timer);
+	}, [query]);
+
 	return {
 		cancelPrefetch: intent.cancel,
 		clear,
@@ -130,16 +160,22 @@ export function useMapSearchRules({
 		handleChange,
 		handleKeyDown,
 		isOpen,
+		isSearchingPlaces,
 		isResultsShown: isShown,
 		prefetchFacility,
+		placeDetail,
 		prefetchMarket,
 		query,
 		resultsMotion: motion,
 		rootRef,
 		selectFacility,
 		selectMarket,
+		selectPlace,
 		setIsOpen,
+		showNoResults: !hasResults && !isSearchingPlaces,
+		showSearching: !hasResults && isSearchingPlaces,
 		visibleFacilities,
 		visibleMarkets,
+		visiblePlaces,
 	};
 }
