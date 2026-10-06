@@ -21,6 +21,11 @@ export const ptBR: Messages = {
 		adminControlsDescription: "Métricas de uso e feature flags.",
 	},
 	map: {
+		gameDepartment: "Departamento",
+		gameDepartmentMagic: "Magic",
+		gameDepartmentOrganizers: "Organizadores",
+		gameDepartmentPartnerships: "Parcerias",
+		gameDepartmentsAll: "Todos os jogos",
 		layersRegistrations: "Cadastros de usuários",
 		registrationHeatmapLegend: "Cadastros por mercado · últimos 28 dias",
 		registrationHeatmapContext:

@@ -1,6 +1,7 @@
 "use client";
 
 import type { AppSessionFilters } from "@market-health-map/core/application";
+import type { GameDepartment } from "@market-health-map/core/domain";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type {
@@ -18,6 +19,9 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
 	const [demandMetric, setDemandMetric] = useState<"sessions" | "registrations">("sessions");
+	const [demandFiltersPresent, setDemandFiltersPresent] = useState(false);
+	const [supplyFiltersPresent, setSupplyFiltersPresent] = useState(false);
+	const [gameDepartments, setGameDepartments] = useState<GameDepartment[]>([]);
 	const [supplyMetric, setSupplyMetric] = useState<"facilities" | "games">("games");
 	const [showSessions, setShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
 	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({
@@ -29,13 +33,22 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		setShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
 		setDemandMetric("sessions");
 		setSupplyMetric("games");
+		setGameDepartments([]);
+		setDemandFiltersPresent(false);
+		setSupplyFiltersPresent(false);
 		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
 	}, []);
 	const value = useMemo(
 		() => ({
 			demandMetric,
 			setDemandMetric,
+			demandFiltersPresent,
+			supplyFiltersPresent,
+			gameDepartments,
 			supplyMetric,
+			setDemandFiltersPresent,
+			setSupplyFiltersPresent,
+			setGameDepartments,
 			setSupplyMetric,
 			showActiveFacilities,
 			setShowActiveFacilities,
@@ -49,6 +62,9 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		}),
 		[
 			demandMetric,
+			demandFiltersPresent,
+			supplyFiltersPresent,
+			gameDepartments,
 			supplyMetric,
 			showActiveFacilities,
 			showInactiveFacilities,

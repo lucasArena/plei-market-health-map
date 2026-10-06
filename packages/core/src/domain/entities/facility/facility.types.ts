@@ -1,7 +1,12 @@
 import type { GeoPoint } from "@core/domain/shared/geo-point.types";
 import type { EntityId } from "@core/domain/shared/id.types";
 
+export type GameDepartment = "magic" | "organizers" | "partnerships";
+
+export type GameDepartmentCounts = Record<GameDepartment, number>;
+
 export interface FacilityMetrics {
+	gamesByDepartment?: GameDepartmentCounts;
 	activePlayers: number;
 	gamesLastWeek: number;
 	gamesLast28Days: number;

@@ -75,6 +75,19 @@ function mergeCluster(cluster: Facility[]): Facility {
 			gamesLastWeek: total((facility) => facility.toJSON().metrics.gamesLastWeek),
 			gamesLast28Days: total((facility) => facility.toJSON().metrics.gamesLast28Days),
 			utilization: props.metrics.utilization,
+			...(members.some((facility) => facility.toJSON().metrics.gamesByDepartment)
+				? {
+						gamesByDepartment: {
+							magic: total((facility) => facility.toJSON().metrics.gamesByDepartment?.magic ?? 0),
+							organizers: total(
+								(facility) => facility.toJSON().metrics.gamesByDepartment?.organizers ?? 0,
+							),
+							partnerships: total(
+								(facility) => facility.toJSON().metrics.gamesByDepartment?.partnerships ?? 0,
+							),
+						},
+					}
+				: {}),
 		},
 	});
 }

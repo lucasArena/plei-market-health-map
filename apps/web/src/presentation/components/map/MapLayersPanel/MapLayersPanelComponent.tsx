@@ -1,6 +1,7 @@
 "use client";
 
 import { AppSessionFilters } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent";
+import { GameDepartmentFilter } from "@/presentation/components/map/GameDepartmentFilter/GameDepartmentFilterComponent";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
 import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
@@ -200,7 +201,9 @@ export function MapLayersPanel() {
 							onToggle={toggleSessions}
 						/>
 					</div>
-					{showDemographics && <AppSessionFilters key={resetCount} showSessions={showSessions} />}
+					{showDemographics && showSessions && (
+						<AppSessionFilters key={resetCount} showSessions={showSessions} />
+					)}
 					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersSupply}
 					</h2>
@@ -227,7 +230,13 @@ export function MapLayersPanel() {
 							onToggle={toggleActiveFacilities}
 						/>
 					</div>
-					{supplyMetric === "facilities" && (
+					{showGamesSelector && showActiveFacilities && (
+						<GameDepartmentFilter
+							key={`game-departments-${resetCount}`}
+							enabled={showActiveFacilities}
+						/>
+					)}
+					{showActiveFacilities && supplyMetric === "facilities" && (
 						<div className="flex w-full items-center justify-between gap-2 rounded-sm pl-5 pr-2 py-1.5">
 							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
 							<LayerSwitch

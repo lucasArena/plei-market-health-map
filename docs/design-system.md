@@ -57,3 +57,4 @@ Skill choices follow Beginner, Intermediate, Advanced, Expert progression while 
 Cluster circles follow map projection immediately during camera movement. Only hover scale animates; geographic positions must never ease behind a drag.
 
 Glass circles synchronize inside the map render callback, without scheduling another animation frame, so overlays and the map paint together.
+Layer sub-controls are visible only while their parent toggle is on: player filters follow Demand, and Department and Show inactive facilities follow Supply. Applied settings are retained when controls are hidden.

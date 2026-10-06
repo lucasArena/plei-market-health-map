@@ -110,7 +110,7 @@ describe("MapLayersPanel", () => {
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
-	it("toggles inactive facilities independently", () => {
+	it("hides inactive facilities controls while Supply is off and retains their setting", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
@@ -121,8 +121,11 @@ describe("MapLayersPanel", () => {
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 		fireEvent.click(switchByName("Facilities"));
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
-		fireEvent.click(switchByName("Show inactive facilities"));
-		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(
+			screen.queryByRole("switch", { name: "Show inactive facilities" }),
+		).not.toBeInTheDocument();
+		fireEvent.click(switchByName("Facilities"));
+		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("toggles inactive facilities without a provider", () => {
@@ -632,5 +635,65 @@ it("shows the inactive sub-filter only for Facilities and defaults it off", () =
 	expect(
 		screen.queryByRole("switch", { name: "Show inactive facilities" }),
 	).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("preserves Department across supply modes and clears it with the layer Reset", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+	fireEvent.click(screen.getByRole("option", { name: "Department" }));
+	fireEvent.click(screen.getByRole("option", { name: "Magic" }));
+	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+	const department = screen.getByRole("button", { name: "Department" });
+	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+	expect(department).toHaveTextContent("Magic");
+	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+	fireEvent.click(screen.getByRole("option", { name: "Games" }));
+	expect(department).toHaveTextContent("Magic");
+	fireEvent.click(screen.getAllByRole("button", { name: "Reset" }).at(-1) as HTMLElement);
+	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
+	expect(screen.queryByText("All games")).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("offers only the footer Reset for pending filter pills", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+	fireEvent.click(screen.getByRole("option", { name: "Department" }));
+	expect(screen.getAllByRole("button", { name: "Reset" })).toHaveLength(1);
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("hides player and department sub-filters while their parent layer is off", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	fireEvent.click(switchByName("Games"));
+	expect(screen.queryByRole("region", { name: "Department" })).not.toBeInTheDocument();
+	expect(screen.getByText("Player filters")).toBeInTheDocument();
+	fireEvent.click(switchByName("Games"));
+	expect(screen.getByRole("region", { name: "Department" })).toBeInTheDocument();
+	fireEvent.click(switchByName("App sessions"));
+	expect(screen.queryByText("Player filters")).not.toBeInTheDocument();
+	fireEvent.click(switchByName("App sessions"));
+	expect(screen.getByText("Player filters")).toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });

@@ -298,3 +298,32 @@ describe("ignored facilities downstream", () => {
 		expect(JSON.stringify(insights)).not.toContain("IGNORE");
 	});
 });
+
+it("maps disjoint department totals and preserves the catalog classification order", () => {
+	const result = toFacility(
+		row({ magic_games: "6", organizer_games: "4", partnership_games: "2" }),
+	);
+	expect(result?.toJSON().metrics.gamesByDepartment).toEqual({
+		magic: 6,
+		organizers: 4,
+		partnerships: 2,
+	});
+	expect(ACTIVE_LOCATIONS_SQL).toContain("select distinct partner_id from plei_gold.fct_terms");
+	expect(ACTIVE_LOCATIONS_SQL).toContain("name ilike '%Organizer Program%' and deleted_at is null");
+	expect(ACTIVE_LOCATIONS_SQL).toContain("when r.partner_id in (6, 52, 62) then 'magic'");
+	expect(ACTIVE_LOCATIONS_SQL.indexOf("then 'magic'")).toBeLessThan(
+		ACTIVE_LOCATIONS_SQL.indexOf("then 'organizers'"),
+	);
+	expect(ACTIVE_LOCATIONS_SQL).toContain("else 'partnerships'");
+});
+
+it("exposes department counts through the facility map DTO", async () => {
+	const repository = new WarehouseFacilityRepository({
+		query: vi.fn().mockResolvedValue({
+			rows: [row({ magic_games: 6, organizer_games: 4, partnership_games: 2 })],
+		}),
+	});
+	const points = await makeListFacilities({ facilities: repository })();
+	expect(points[0]?.gamesByDepartment).toEqual({ magic: 6, organizers: 4, partnerships: 2 });
+	expect(points[0]?.gamesLast28Days).toBe(12);
+});

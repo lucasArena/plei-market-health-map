@@ -35,6 +35,13 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 	const options = useAppSessionFilterOptions(
 		showSessions && (menu === "gender" || menu === "skill"),
 	);
+	const reportFields = layers?.setDemandFiltersPresent;
+	const hasFields = fields.length > 0;
+	useEffect(() => {
+		reportFields?.(hasFields);
+		return () => reportFields?.(false);
+	}, [reportFields, hasFields]);
+
 	useEffect(() => {
 		if (!menu) return;
 		const selector =
@@ -108,12 +115,6 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		layers?.setSessionFilters(
 			Object.fromEntries(Object.entries(draft).filter(([, value]) => value !== undefined)),
 		);
-	}
-	function reset() {
-		setFields([]);
-		setMenu(null);
-		setDraft({});
-		layers?.setSessionFilters({});
 	}
 	const fieldLabels = { gender: copy.gender, skill: copy.skill, age: copy.age };
 	const availableFields = (["gender", "skill", "age"] as const).filter(
@@ -243,7 +244,6 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		setField,
 
 		apply,
-		reset,
 		status,
 	};
 }

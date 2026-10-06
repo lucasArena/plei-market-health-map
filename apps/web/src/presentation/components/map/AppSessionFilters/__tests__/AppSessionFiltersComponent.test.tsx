@@ -77,8 +77,12 @@ it("starts compact, adds only chosen filters and applies one combined cohort", a
 	expect(screen.getByRole("button", { name: "Add filter" })).toBeDisabled();
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 	await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-	expect(screen.getByText("Applied: Female · Advanced · 18–35")).toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(screen.queryByText("Applied: Female · Advanced · 18–35")).not.toBeInTheDocument();
+	for (const label of ["Gender", "Player skill level", "Player age"]) {
+		const remove = screen.queryByRole("button", { name: `Remove ${label} filter` });
+		if (remove) fireEvent.click(remove);
+	}
+	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 	expect(screen.getByTestId("filters")).toHaveTextContent("{}");
 	expect(screen.queryByRole("button", { name: "Gender" })).not.toBeInTheDocument();
 });
@@ -176,7 +180,10 @@ it("handles a standalone control and loading options", () => {
 	fireEvent.click(screen.getByRole("option", { name: "Player age" }));
 	fireEvent.change(screen.getByLabelText("Minimum age"), { target: { value: "18" } });
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
-	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	for (const label of ["Gender", "Player skill level", "Player age"]) {
+		const remove = screen.queryByRole("button", { name: `Remove ${label} filter` });
+		if (remove) fireEvent.click(remove);
+	}
 	client.clear();
 });
 
@@ -269,7 +276,7 @@ it("validates numeric age bounds and leaves input arrow keys available", async (
 	expect(screen.getByRole("alert")).toBeInTheDocument();
 	fireEvent.change(max, { target: { value: "17" } });
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
-	expect(screen.getByText("Applied: ≤ 17")).toBeInTheDocument();
+	expect(screen.queryByText("Applied: ≤ 17")).not.toBeInTheDocument();
 });
 
 it("preserves additional warehouse skill values after known levels", async () => {
@@ -310,5 +317,5 @@ it("capitalizes gender labels while submitting stored warehouse values", async (
 	).toEqual(["All genders", "Female", "Male", "Other", "Prefer not to say"]);
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 	expect(screen.getByTestId("filters")).toHaveTextContent('"gender":["prefer not to say"]');
-	expect(screen.getByText("Applied: Prefer not to say")).toBeInTheDocument();
+	expect(screen.queryByText("Applied: Prefer not to say")).not.toBeInTheDocument();
 });

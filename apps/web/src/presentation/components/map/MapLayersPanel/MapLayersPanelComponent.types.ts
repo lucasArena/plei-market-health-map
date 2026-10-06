@@ -1,4 +1,5 @@
 import type { AppSessionFilters } from "@market-health-map/core/application";
+import type { GameDepartment } from "@market-health-map/core/domain";
 import type { ReactNode } from "react";
 
 export interface MapLayersSettings {
@@ -9,6 +10,12 @@ export interface MapLayersSettings {
 }
 
 export interface MapLayersValue {
+	demandFiltersPresent?: boolean;
+	supplyFiltersPresent?: boolean;
+	setDemandFiltersPresent?: (present: boolean) => void;
+	setSupplyFiltersPresent?: (present: boolean) => void;
+	gameDepartments?: GameDepartment[];
+	setGameDepartments?: (departments: GameDepartment[]) => void;
 	demandMetric?: "sessions" | "registrations";
 	setDemandMetric?: (metric: "sessions" | "registrations") => void;
 	supplyMetric?: "facilities" | "games";
