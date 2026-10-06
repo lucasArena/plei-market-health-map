@@ -660,8 +660,8 @@ button.map-icon-button[aria-expanded="true"],
 }
 
 .games-trend-tip[data-trend-tip] {
-  width: 45px !important;
-  height: 45px !important;
+  width: 41px !important;
+  height: 41px !important;
   background-color: transparent !important;
   background-image: none !important;
   border-color: transparent !important;
@@ -683,11 +683,12 @@ button.map-icon-button[aria-expanded="true"],
   height: 100%;
   transform: translate(-50%, -50%);
   box-sizing: border-box;
-  border: 3px solid var(--games-trend-color);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   border-radius: 50%;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.08) 60%),
+    url("/icons/games-trend-ring.svg") center / 35px 35px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.08) 46%, rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(18px) saturate(1.8);
   -webkit-backdrop-filter: blur(18px) saturate(1.8);
@@ -698,31 +699,36 @@ button.map-icon-button[aria-expanded="true"],
 .games-trend-tip[data-trend-tip] [data-testid="facility-glass-label"] {
   position: relative;
   z-index: 1;
+  font-size: 14px !important;
+  font-weight: 600;
+  color: #111827;
 }
 
 .games-trend-tip[data-trend-tip]::after {
   content: "";
   position: absolute;
-  right: -3px;
+  right: -2px;
   top: -5px;
   z-index: 2;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background-color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.7);
   background-position: center;
-  background-size: 15px 15px;
+  background-size: 12px 12px;
   background-repeat: no-repeat;
-  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   pointer-events: none;
 }
 
 .games-trend-tip[data-trend-tip="up"]::after {
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2013V3M3%208l5-5%205%205%22%20fill%3D%22none%22%20stroke%3D%22%2322C55E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+  background-image: url("/icons/games-trend-up.svg");
 }
 
 .games-trend-tip[data-trend-tip="down"]::after {
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%203v10M3%208l5%205%205-5%22%20fill%3D%22none%22%20stroke%3D%22%23EF4444%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+  background-image: url("/icons/games-trend-down.svg");
 }
 
 .games-trend-tip[data-trend-tip="stable"]::after {
