@@ -12,6 +12,7 @@ const FEEDBACK: Feedback = {
 	message: "The side panel covers the zoom buttons.\nSteps: open any facility.",
 	pageUrl: "http://localhost:3000/",
 	view: "facilities-map",
+	appVersion: "0.47.0",
 	images: [],
 	submitter: { name: "Stefano Sanchez", email: "stefano@plei.com" },
 };
@@ -40,7 +41,7 @@ describe("toFeedbackIssueTitle", () => {
 });
 
 describe("toFeedbackCustomerRequestBody", () => {
-	it("includes the message, submitter, page, view, timestamp and screenshots", () => {
+	it("includes the message, submitter, page, view, app version, timestamp and screenshots", () => {
 		const body = toFeedbackCustomerRequestBody(
 			FEEDBACK,
 			["https://a/1.png", "https://a/2.png"],
@@ -51,13 +52,20 @@ describe("toFeedbackCustomerRequestBody", () => {
 		expect(body).toContain("**Submitted by:** Stefano Sanchez (stefano@plei.com)");
 		expect(body).toContain("**Page:** http://localhost:3000/");
 		expect(body).toContain("**View:** facilities-map");
+		expect(body).toContain("**App version:** 0.47.0");
 		expect(body).toContain("**Submitted at:** 2026-09-29T20:00:00.000Z");
 		expect(body).toContain("![](https://a/1.png)\n\n![](https://a/2.png)");
 	});
 
 	it("omits what was not provided", () => {
 		const body = toFeedbackCustomerRequestBody(
-			{ ...FEEDBACK, pageUrl: undefined, view: undefined, submitter: { email: "a@plei.com" } },
+			{
+				...FEEDBACK,
+				pageUrl: undefined,
+				view: undefined,
+				appVersion: undefined,
+				submitter: { email: "a@plei.com" },
+			},
 			[],
 			AT,
 		);
@@ -65,6 +73,7 @@ describe("toFeedbackCustomerRequestBody", () => {
 		expect(body).toContain("**Submitted by:** a@plei.com");
 		expect(body).not.toContain("**Page:**");
 		expect(body).not.toContain("**View:**");
+		expect(body).not.toContain("**App version:**");
 		expect(body).not.toContain("Screenshots");
 	});
 });

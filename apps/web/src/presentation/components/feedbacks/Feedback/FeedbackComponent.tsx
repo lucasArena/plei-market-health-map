@@ -37,7 +37,7 @@ function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 				stroke="currentColor"
 				strokeWidth="1.8"
 				aria-hidden="true"
-				className="size-5"
+				className="size-4"
 			>
 				<path d="M8 8a4 4 0 0 1 8 0v1H8V8Z" />
 				<rect x="7" y="9" width="10" height="11" rx="5" />
@@ -52,14 +52,14 @@ function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 			stroke="currentColor"
 			strokeWidth="1.8"
 			aria-hidden="true"
-			className="size-5"
+			className="size-4"
 		>
 			<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3Z" />
 		</svg>
 	);
 }
 
-function FlagIcon() {
+function AdminControlsIcon() {
 	return (
 		<svg
 			viewBox="0 0 24 24"
@@ -67,27 +67,13 @@ function FlagIcon() {
 			stroke="currentColor"
 			strokeWidth="1.8"
 			strokeLinecap="round"
-			strokeLinejoin="round"
 			aria-hidden="true"
 			className="size-4"
 		>
-			<path d="M5 21V4M5 4h11l-2 4 2 4H5" />
-		</svg>
-	);
-}
-
-function MetricsIcon() {
-	return (
-		<svg
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.8"
-			aria-hidden="true"
-			className="size-4"
-		>
-			<path d="M4 19V5M4 19h16" />
-			<path d="M8 16v-5M12 16V8M16 16v-3" />
+			<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" />
+			<circle cx="16" cy="6" r="2" />
+			<circle cx="10" cy="12" r="2" />
+			<circle cx="18" cy="18" r="2" />
 		</svg>
 	);
 }
@@ -143,7 +129,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 	const triggerLabel = user ? accountMessages.accountMenu : messages.open;
 	const dialogLabel = user && step === "home" ? accountMessages.accountMenu : messages.title;
 	const showHome = !created && step === "home";
-	const showAdminLinks = Boolean(user?.isAdmin);
+	const showAdminControls = Boolean(user?.isAdmin);
 
 	return (
 		<div ref={containerRef} data-testid="feedback-widget" className={FEEDBACK_STACK_CLASS}>
@@ -223,42 +209,35 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 										key={candidate.type}
 										type="button"
 										onClick={() => chooseType(candidate.type)}
-										className={`${FEEDBACK_MENU_ITEM_CLASS} items-start gap-3 py-2`}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
 									>
 										<span className={FEEDBACK_ICON_WELL_CLASS}>
 											<TypeIcon type={candidate.type} />
 										</span>
 										<span className="flex min-w-0 flex-col gap-0.5 text-left">
 											<span className="font-medium">{messages[candidate.title]}</span>
-											<span className="text-xs font-normal text-muted-foreground">
+											<span className="truncate text-xs font-normal text-muted-foreground">
 												{messages[candidate.description]}
 											</span>
 										</span>
 									</button>
 								))}
-								{showAdminLinks && (
-									<>
-										<Link
-											href={{ pathname: "/metrics" }}
-											onClick={close}
-											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
-										>
-											<span className={FEEDBACK_ICON_WELL_CLASS}>
-												<MetricsIcon />
+								{showAdminControls && (
+									<Link
+										href={{ pathname: "/admin/metrics" }}
+										onClick={close}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+									>
+										<span className={FEEDBACK_ICON_WELL_CLASS}>
+											<AdminControlsIcon />
+										</span>
+										<span className="flex min-w-0 flex-col gap-0.5 text-left">
+											<span className="font-medium">{accountMessages.adminControls}</span>
+											<span className="truncate text-xs font-normal text-muted-foreground">
+												{accountMessages.adminControlsDescription}
 											</span>
-											<span className="font-medium">{accountMessages.appMetrics}</span>
-										</Link>
-										<Link
-											href={{ pathname: "/feature-flags" }}
-											onClick={close}
-											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
-										>
-											<span className={FEEDBACK_ICON_WELL_CLASS}>
-												<FlagIcon />
-											</span>
-											<span className="font-medium">{accountMessages.featureFlags}</span>
-										</Link>
-									</>
+										</span>
+									</Link>
 								)}
 							</div>
 							{user && (

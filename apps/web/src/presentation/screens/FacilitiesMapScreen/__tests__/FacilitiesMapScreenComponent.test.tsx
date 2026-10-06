@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import { renderWithMessages } from "@/application/test/render-with-messages";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
@@ -86,6 +87,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
 		sessionLegendState: "empty",
+		shownFacilities: [],
 		status,
 		...overrides,
 	};
@@ -94,7 +96,7 @@ function rulesWith(status: string, overrides: object = {}) {
 describe("FacilitiesMapScreen", () => {
 	it("renders the search into the header slot once the header provides it", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
-		const { unmount } = render(<FacilitiesMapScreen />);
+		const { unmount } = renderWithMessages(<FacilitiesMapScreen />);
 		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 		unmount();
 
@@ -106,7 +108,7 @@ describe("FacilitiesMapScreen", () => {
 			legendSlot: null,
 			setLegendSlot: vi.fn(),
 		});
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(slot).toContainElement(
 			screen.getByRole("combobox", { name: "Search markets or facilities" }),
@@ -123,7 +125,7 @@ describe("FacilitiesMapScreen", () => {
 	it("renders only the map, without an attribution line", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
 		expect(screen.getByTestId("facilities-map")).toHaveClass("map-frame");
@@ -145,7 +147,7 @@ describe("FacilitiesMapScreen", () => {
 			}),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		const legend = screen.getByTestId("session-heatmap-legend");
 		expect(slot).toContainElement(legend);
@@ -171,7 +173,7 @@ describe("FacilitiesMapScreen", () => {
 	it("explains when the current map view has no sessions", () => {
 		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true, isLegendShown: true }));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByText("No sessions in the current map view")).toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
@@ -183,7 +185,7 @@ describe("FacilitiesMapScreen", () => {
 			rulesWith("ready", { isLegendShown: true, sessionLegendState: "loading" }),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("status")).toHaveTextContent("Loading app sessions…");
 		expect(screen.getByTestId("session-heatmap-loading")).toHaveClass("motion-safe:animate-pulse");
@@ -209,7 +211,7 @@ describe("FacilitiesMapScreen", () => {
 			}),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		const card = screen.getByRole("tooltip");
 		expect(card).toHaveTextContent("Eastside Futsal Arena");
@@ -220,7 +222,7 @@ describe("FacilitiesMapScreen", () => {
 	it("keeps the map mounted when nothing is hovered", () => {
 		mockRules.mockReturnValue(rulesWith("ready", { hovered: null }));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
 		expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
@@ -232,7 +234,7 @@ describe("FacilitiesMapScreen", () => {
 	])("shows the %s overlay", (status, text) => {
 		mockRules.mockReturnValue(rulesWith(status));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("status")).toHaveTextContent(text);
 	});
@@ -242,7 +244,7 @@ describe("FacilitiesMapScreen", () => {
 			rulesWith("ready", { selectedFacilityId: "f1", isPanelClosing: true }),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByTestId("detail-panel")).toHaveTextContent("f1");
 		expect(screen.getByTestId("detail-panel")).toHaveAttribute("data-closing", "true");
@@ -261,7 +263,7 @@ describe("FacilitiesMapScreen", () => {
 			}),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.queryByTestId("feedback-widget")).not.toBeInTheDocument();
 		const legend = screen.getByTestId("session-heatmap-legend");
@@ -290,7 +292,7 @@ describe("FacilitiesMapScreen", () => {
 				sessionScale: { low: 1, high: 4 },
 			}),
 		);
-		const { rerender } = render(<FacilitiesMapScreen />);
+		const { rerender } = renderWithMessages(<FacilitiesMapScreen />);
 		expect(screen.getByTestId("session-heatmap-legend")).toHaveClass("session-legend-in");
 
 		exiting = true;

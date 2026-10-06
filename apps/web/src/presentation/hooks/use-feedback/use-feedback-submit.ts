@@ -25,6 +25,7 @@ export function toFeedbackFormData(submission: FeedbackSubmission): FormData {
 	for (const image of submission.images) form.append("images", image, image.name);
 	if (submission.pageUrl) form.append("pageUrl", submission.pageUrl);
 	if (submission.view) form.append("view", submission.view);
+	if (submission.appVersion) form.append("appVersion", submission.appVersion);
 	return form;
 }
 

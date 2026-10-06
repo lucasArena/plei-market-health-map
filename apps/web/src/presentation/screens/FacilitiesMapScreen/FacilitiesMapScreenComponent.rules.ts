@@ -854,18 +854,20 @@ export function useFacilitiesMapScreenRules() {
 	const hoveredFacilityIdRef = useRef<string | null>(null);
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
-	const featureCollection = useMemo(
+	const shownFacilities = useMemo(
 		() =>
-			toFacilityFeatureCollection(
-				facilities.filter((facility) =>
-					showGames
-						? showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0
-						: facility.isActive
-							? showActiveFacilities
-							: showInactiveFacilities,
-				),
+			facilities.filter((facility) =>
+				showGames
+					? showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0
+					: facility.isActive
+						? showActiveFacilities
+						: showInactiveFacilities,
 			),
 		[facilities, showActiveFacilities, showInactiveFacilities, showGames],
+	);
+	const featureCollection = useMemo(
+		() => toFacilityFeatureCollection(shownFacilities),
+		[shownFacilities],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -1485,6 +1487,7 @@ export function useFacilitiesMapScreenRules() {
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
+		shownFacilities,
 		status,
 	};
 }
