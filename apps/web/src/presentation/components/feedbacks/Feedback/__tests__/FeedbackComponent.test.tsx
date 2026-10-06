@@ -119,6 +119,7 @@ describe("Feedback", () => {
 
 	afterEach(() => {
 		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
 		createObjectURL.mockClear();
 		revokeObjectURL.mockClear();
 	});
@@ -299,6 +300,7 @@ describe("Feedback", () => {
 	});
 
 	it("submits the feedback and shows the Linear ticket", async () => {
+		vi.stubEnv("NEXT_PUBLIC_APP_VERSION", "0.47.0");
 		let respond: (value: unknown) => void = () => undefined;
 		const fetchMock = vi.fn(
 			() =>
@@ -337,6 +339,7 @@ describe("Feedback", () => {
 		expect((body.get("images") as File).name).toBe("bug.png");
 		expect(body.get("pageUrl")).toBe(window.location.href);
 		expect(body.get("view")).toBe("facilities-map (facility 889)");
+		expect(body.get("appVersion")).toBe("0.47.0");
 
 		fireEvent.keyDown(window, { key: "Escape" });
 		finishClosing();

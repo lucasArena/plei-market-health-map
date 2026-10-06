@@ -63,6 +63,7 @@ describe("POST /api/v1/feedback", () => {
 					message: "Zoom buttons hide behind the panel",
 					pageUrl: "http://localhost:3000/",
 					view: "facilities-map",
+					appVersion: "0.47.0",
 				},
 				[png("one.png"), png("two.png")],
 			),
@@ -76,6 +77,7 @@ describe("POST /api/v1/feedback", () => {
 		expect(draft?.type).toBe("bug");
 		expect(draft?.title).toBe("Bug Report from Stefano Sanchez");
 		expect(draft?.requestBody).toContain("Stefano Sanchez (stefano@plei.com)");
+		expect(draft?.requestBody).toContain("**App version:** 0.47.0");
 		expect(draft?.requestBody).toContain("![](https://uploads.test/2/two.png)");
 		expect(draft?.submitter).toEqual({
 			displayName: "Stefano Sanchez",

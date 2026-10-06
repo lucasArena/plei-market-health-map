@@ -142,6 +142,7 @@ describe("submitFeedback", () => {
 			"message",
 		],
 		["a page url that is too long", { ...INPUT, pageUrl: "a".repeat(2049) }, "pageUrl"],
+		["an app version that is too long", { ...INPUT, appVersion: "a".repeat(2049) }, "appVersion"],
 		["an invalid submitter email", { ...INPUT, submitter: { email: "nope" } }, "submitter"],
 		[
 			"more than five images",
