@@ -12,6 +12,7 @@ export function toFacilityPointView(facility: Facility): FacilityPointView {
 		isActive: metrics.gamesLast28Days > 0,
 		gamesLast28Days: metrics.gamesLast28Days,
 		...(metrics.gamesByDepartment ? { gamesByDepartment: metrics.gamesByDepartment } : {}),
+		isActiveLastWeek: metrics.gamesLastWeek > 0,
 		location,
 	};
 }

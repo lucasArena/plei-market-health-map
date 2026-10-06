@@ -1,5 +1,5 @@
 import {
-	APP_SESSION_HEATMAP_LAST_28D_SQL,
+	appSessionHeatmapSql,
 	toAppSessionHeatmapCell,
 	WarehouseAppSessionHeatmapRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository";
@@ -36,19 +36,22 @@ describe("WarehouseAppSessionHeatmapRepository", () => {
 			rows: [row(), row({ lat: null, lng: -95, session_weight: 10 })],
 		});
 
-		const cells = await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days();
+		const cells = await new WarehouseAppSessionHeatmapRepository({ query }).listSessions("month");
 
-		expect(query).toHaveBeenCalledWith(APP_SESSION_HEATMAP_LAST_28D_SQL);
-		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("CURRENT_DATE - 28");
-		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("date < CURRENT_DATE");
-		expect(APP_SESSION_HEATMAP_LAST_28D_SQL).toContain("SUM(q_sessions)");
+		expect(query).toHaveBeenCalledWith(appSessionHeatmapSql("month"));
+		expect(appSessionHeatmapSql("month")).toContain("CURRENT_DATE - 28");
+		expect(appSessionHeatmapSql("month")).toContain("date < CURRENT_DATE");
+		expect(appSessionHeatmapSql("month")).toContain("SUM(q_sessions)");
+		expect(appSessionHeatmapSql("week")).toContain(
+			"date >= date_trunc('week', CURRENT_DATE)::date - 7\n  AND date < date_trunc('week', CURRENT_DATE)::date",
+		);
 		expect(cells).toEqual([{ lat: 29.746, lng: -95.352, sessionWeight: 1134 }]);
 	});
 });
 
 it("binds filters as parameters and uses EXISTS to avoid multiplying sessions", async () => {
 	const query = vi.fn().mockResolvedValue({ rows: [row()] });
-	await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days({
+	await new WarehouseAppSessionHeatmapRepository({ query }).listSessions("month", {
 		gender: "Female' OR 1=1 --",
 		skill: "Advanced",
 		ageMin: 0,
@@ -65,7 +68,7 @@ it("binds filters as parameters and uses EXISTS to avoid multiplying sessions", 
 });
 it("uses only present predicates for open age bounds", async () => {
 	const query = vi.fn().mockResolvedValue({ rows: [] });
-	await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days({ ageMin: 45 });
+	await new WarehouseAppSessionHeatmapRepository({ query }).listSessions("month", { ageMin: 45 });
 	expect(query.mock.calls[0]?.[1]).toEqual([45]);
 	expect(query.mock.calls[0]?.[0]).not.toContain("p.gender");
 	expect(query.mock.calls[0]?.[0]).not.toContain("p.age_integer <=");
@@ -94,7 +97,7 @@ it("returns distinct stored profile choices without inventing demographic values
 
 it("matches any selected value per field while combining fields", async () => {
 	const query = vi.fn().mockResolvedValue({ rows: [] });
-	await new WarehouseAppSessionHeatmapRepository({ query }).listLast28Days({
+	await new WarehouseAppSessionHeatmapRepository({ query }).listSessions("month", {
 		gender: ["male", "female"],
 		skill: ["Beginner", "Expert"],
 	});
@@ -111,7 +114,7 @@ it("matches any selected value per field while combining fields", async () => {
 it("counts confirmed app registrations once per region over completed days", async () => {
 	const query = vi.fn().mockResolvedValue({ rows: [row()] });
 	const repository = new WarehouseAppSessionHeatmapRepository({ query });
-	expect(await repository.listLast28Days({ metric: "registrations" })).toEqual([
+	expect(await repository.listSessions("month", { metric: "registrations" })).toEqual([
 		{ lat: 29.746, lng: -95.352, sessionWeight: 1134 },
 	]);
 	const sql = query.mock.calls[0]?.[0];
@@ -122,7 +125,7 @@ it("counts confirmed app registrations once per region over completed days", asy
 	expect(sql).toContain("GROUP BY region_id");
 	expect(sql).toContain("percentile_cont(0.5)");
 	expect(sql).not.toContain("players_behaviour");
-	await repository.listLast28Days({
+	await repository.listSessions("month", {
 		metric: "registrations",
 		gender: ["Female", "Male"],
 		skill: "Advanced",

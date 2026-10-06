@@ -29,6 +29,7 @@ describe("listFacilities", () => {
 				avatarUrl: null,
 				isActive: true,
 				gamesLast28Days: 40,
+				isActiveLastWeek: true,
 				location: { latitude: 30.27, longitude: -97.74 },
 			},
 			{
@@ -39,6 +40,7 @@ describe("listFacilities", () => {
 				avatarUrl: null,
 				isActive: false,
 				gamesLast28Days: 0,
+				isActiveLastWeek: true,
 				location: { latitude: 30.27, longitude: -97.74 },
 			},
 		]);

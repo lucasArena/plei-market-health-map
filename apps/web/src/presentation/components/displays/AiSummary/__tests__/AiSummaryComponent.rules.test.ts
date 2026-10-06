@@ -1,6 +1,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
+import {
+	FACILITY_DETAIL,
+	FACILITY_MONTH_ACTIVITY,
+	FACILITY_WEEK_ACTIVITY,
+} from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
 import type { BrowserLlmCallbacks } from "@/infrastructure/ai/browser-llm/browser-llm.types";
 import { aiSummaryCache } from "@/infrastructure/cache/local-storage/ai-summary/ai-summary-cache";
@@ -25,9 +29,9 @@ function wrapper({ children }: { children: ReactNode }) {
 	return createElement(MessagesProvider, { locale: "en", messages: EN_MESSAGES, children });
 }
 
-function contextFor(detail = FACILITY_DETAIL) {
+function contextFor(detail = FACILITY_DETAIL, stats = FACILITY_MONTH_ACTIVITY) {
 	return aiSummaryContextFor(
-		{ kind: "facility", id: detail.facility.id, name: detail.facility.name, stats: detail.stats },
+		{ kind: "facility", id: detail.facility.id, name: detail.facility.name, stats },
 		"en",
 	);
 }
@@ -166,14 +170,17 @@ describe("useAiSummaryRules", () => {
 				kind: "market",
 				id: "2",
 				name: "Houston",
-				stats: FACILITY_DETAIL.stats,
+				stats: FACILITY_MONTH_ACTIVITY,
 				scope: { facilityCount: 48, activeFacilityCount: 31, marketCount: 1, activeMarketCount: 1 },
 			},
 			"en",
 		);
 
-		expect(facility.cacheKey).toBe("v10:facility-889:2026-09-30:en");
-		expect(market.cacheKey).toBe("v10:market-2:2026-09-30:en");
+		expect(facility.cacheKey).toBe("v10:facility-889-month:2026-09-30:en");
+		expect(market.cacheKey).toBe("v10:market-2-month:2026-09-30:en");
+		expect(contextFor(FACILITY_DETAIL, FACILITY_WEEK_ACTIVITY).cacheKey).toBe(
+			"v10:facility-889-week:2026-09-27:en",
+		);
 		expect(market.prompt.at(-1)?.content).toContain("Market: Houston.");
 	});
 
@@ -212,13 +219,13 @@ describe("useAiSummaryRules", () => {
 		const wrong = "- Pickup games rose 99% from the previous 28 days.";
 		llm.generate.mockImplementation(async (_prompt: unknown, callbacks: BrowserLlmCallbacks) => {
 			callbacks.onText?.(wrong);
-			return `- Pickup games rose ${FACILITY_DETAIL.stats.playedPeriodChangePercent}% from the previous 28 days.\n${wrong}`;
+			return `- Pickup games rose ${FACILITY_MONTH_ACTIVITY.playedChangePercent}% from the previous 28 days.\n${wrong}`;
 		});
 		const { result } = renderRules();
 
 		await waitFor(() => expect(result.current.status).toBe("ready"));
 		expect(result.current.text).toBe(
-			`- Pickup games rose ${FACILITY_DETAIL.stats.playedPeriodChangePercent}% from the previous 28 days.`,
+			`- Pickup games rose ${FACILITY_MONTH_ACTIVITY.playedChangePercent}% from the previous 28 days.`,
 		);
 		expect(aiSummaryCache.read(contextFor().cacheKey)).not.toContain("99%");
 	});

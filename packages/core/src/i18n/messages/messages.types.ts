@@ -103,6 +103,11 @@ export interface Messages {
 		showMore: string;
 		showLess: string;
 	};
+	statsPeriods: {
+		switchLabel: string;
+		week: StatsPeriodMessages;
+		month: StatsPeriodMessages;
+	};
 	facilityDetail: {
 		label: string;
 		close: string;
@@ -268,4 +273,12 @@ export interface Messages {
 		payloadTooLarge: string;
 		feedbackDeliveryFailed: string;
 	};
+}
+
+export interface StatsPeriodMessages {
+	short: string;
+	title: string;
+	span: string;
+	within: string;
+	comparison: string;
 }

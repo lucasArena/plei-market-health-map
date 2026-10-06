@@ -8,6 +8,7 @@ export interface WarehouseLocationRow {
 	region_name: string | null;
 	location_latitude: number | null;
 	location_longitude: number | null;
+	played_last_week: string | number;
 	played_last_28_days: number | string;
 	magic_games?: number | string;
 	organizer_games?: number | string;

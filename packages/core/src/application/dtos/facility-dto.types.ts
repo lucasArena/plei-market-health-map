@@ -9,5 +9,6 @@ export interface FacilityPointView {
 	isActive: boolean;
 	gamesLast28Days?: number;
 	gamesByDepartment?: GameDepartmentCounts;
+	isActiveLastWeek: boolean;
 	location: GeoPoint;
 }

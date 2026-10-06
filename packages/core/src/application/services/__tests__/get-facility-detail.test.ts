@@ -28,7 +28,12 @@ const COUNTS = {
 	uniquePlayersPrevious28Days: 120,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	uniquePlayersLastWeek: 30,
+	uniquePlayersPreviousWeek: 25,
+	activatedPlayersLastWeek: 6,
+	activatedPlayersPreviousWeek: 5,
 	scheduledLastWeek: 87,
+	scheduledPreviousWeek: 87,
 	cancelledLastWeek: 32,
 	upcomingNextSevenDays: 41,
 	lastPlayedDate: "2026-09-28",
@@ -66,6 +71,7 @@ describe("getFacilityDetail", () => {
 			avatarUrl: null,
 			isActive: false,
 			gamesLast28Days: 0,
+			isActiveLastWeek: false,
 			location: { latitude: 29.76, longitude: -95.37 },
 			address: "1 Main St, Houston, Texas",
 		});
@@ -111,11 +117,16 @@ describe("getFacilityDetail", () => {
 			playedPreviousWeek: 0,
 			playedPrevious28Days: 0,
 			scheduledLastWeek: 0,
+			scheduledPreviousWeek: 0,
 			cancelledLastWeek: 0,
 			scheduledLast28Days: 0,
 			scheduledPrevious28Days: 0,
 			uniquePlayersPrevious28Days: 0,
 			activatedPlayersPrevious28Days: 0,
+			uniquePlayersLastWeek: 0,
+			uniquePlayersPreviousWeek: 0,
+			activatedPlayersLastWeek: 0,
+			activatedPlayersPreviousWeek: 0,
 		});
 
 		const { stats } = await getFacilityDetail({ facilityId: "889" });
