@@ -406,7 +406,7 @@ describe("MapLayersPanel reset", () => {
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
 
 		fireEvent.click(switchByName("App sessions"));
-		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("Games · last 28 days"));
 		fireEvent.click(switchByName("Inactive facilities"));
 		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(
@@ -423,7 +423,7 @@ describe("MapLayersPanel reset", () => {
 
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Games · last 28 days")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
 		expect(toggle).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
@@ -575,7 +575,7 @@ it("navigates demand options with the keyboard and closes on Escape and outside 
 	mockFeatureFlag.mockReturnValue(false);
 });
 
-it("selects Games as supply and resets to active facilities", () => {
+it("defaults to Games and resets supply back to Games", () => {
 	mockFeatureFlag.mockReturnValue(true);
 	renderWithMessages(
 		<MapLayersProvider>
@@ -583,9 +583,12 @@ it("selects Games as supply and resets to active facilities", () => {
 		</MapLayersProvider>,
 	);
 	const trigger = screen.getByRole("button", { name: "Supply" });
+	expect(trigger).toHaveTextContent("Games · last 28 days");
 	fireEvent.keyDown(trigger, { key: "ArrowDown" });
 	const active = screen.getByRole("option", { name: "Active facilities" });
 	const games = screen.getByRole("option", { name: "Games · last 28 days" });
+	expect(games).toHaveFocus();
+	fireEvent.keyDown(games, { key: "Home" });
 	expect(active).toHaveFocus();
 	fireEvent.keyDown(active, { key: "End" });
 	expect(games).toHaveFocus();
@@ -600,11 +603,11 @@ it("selects Games as supply and resets to active facilities", () => {
 	expect(screen.queryByRole("listbox", { name: "Supply" })).not.toBeInTheDocument();
 	fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
 	fireEvent.click(trigger);
-	fireEvent.click(screen.getByRole("option", { name: "Games · last 28 days" }));
-	expect(trigger).toHaveTextContent("Games · last 28 days");
+	fireEvent.click(screen.getByRole("option", { name: "Active facilities" }));
+	expect(trigger).toHaveTextContent("Active facilities");
 	expect(trigger).toHaveFocus();
-	expect(switchByName("Games · last 28 days")).toHaveAttribute("aria-checked", "true");
+	expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Active facilities");
+	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Games · last 28 days");
 	mockFeatureFlag.mockReturnValue(false);
 });

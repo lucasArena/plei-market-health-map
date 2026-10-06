@@ -1675,3 +1675,32 @@ it("uses summed game counts for clusters and game counts for individual facility
 		host.querySelector<HTMLElement>('[data-testid="facility-glass-core"]')?.style.display,
 	).toBe("");
 });
+
+it.each([
+	[999, "999"],
+	[1000, "1K"],
+	[1400, "1.4K"],
+	[1456, "1.5K"],
+	[1000000, "1M"],
+])("formats %s games as %s on clusters and individual facilities", (count, label) => {
+	const project = () => ({ x: 0, y: 0 });
+	expect(
+		readClusterGlassBadges(
+			[
+				{
+					geometry: { coordinates: [1, 2] },
+					properties: { cluster_id: 1, point_count: 2, gameCount: count },
+				},
+			],
+			project,
+			true,
+		)[0]?.label,
+	).toBe(label);
+	expect(
+		readFacilityGlassBadges(
+			[{ geometry: { coordinates: [1, 2] }, properties: { id: "a", gamesLast28Days: count } }],
+			project,
+			true,
+		)[0]?.label,
+	).toBe(label);
+});

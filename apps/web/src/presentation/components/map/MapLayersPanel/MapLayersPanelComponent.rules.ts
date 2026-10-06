@@ -16,7 +16,7 @@ export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
 	const showGamesSelector = useFeatureFlag("facility-games-layer");
-	const supplyMetric = showGamesSelector ? (layers?.supplyMetric ?? "facilities") : "facilities";
+	const supplyMetric = showGamesSelector ? (layers?.supplyMetric ?? "games") : "facilities";
 	const selectSupplyMetric = (value: string) =>
 		layers?.setSupplyMetric?.(value === "games" ? "games" : "facilities");
 	const showDemographics = useFeatureFlag("player-demographic-filters");
@@ -83,7 +83,7 @@ export function useMapLayersPanelRules() {
 	};
 	const isCustomized =
 		demandMetric !== "sessions" ||
-		supplyMetric !== "facilities" ||
+		(showGamesSelector && supplyMetric !== "games") ||
 		isMapLayersCustomized({
 			showActiveFacilities,
 			showInactiveFacilities,

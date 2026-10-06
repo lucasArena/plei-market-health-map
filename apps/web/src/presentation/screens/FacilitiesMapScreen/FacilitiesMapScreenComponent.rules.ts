@@ -418,8 +418,17 @@ function facilityGlassHosts(map: MapLibreMap) {
 	});
 }
 
+const supplyCountFormatter = new Intl.NumberFormat("en", {
+	notation: "compact",
+	maximumFractionDigits: 1,
+});
+
+function formatSupplyCount(count: number) {
+	return count >= 1000 ? supplyCountFormatter.format(count) : String(count);
+}
+
 function clusterGlassLabel(properties: ClusterGlassFeature["properties"], showGames: boolean) {
-	if (showGames) return String(properties?.gameCount ?? 0);
+	if (showGames) return formatSupplyCount(properties?.gameCount ?? 0);
 	const abbreviated = properties?.point_count_abbreviated;
 	if (typeof abbreviated === "string" || typeof abbreviated === "number")
 		return String(abbreviated);
@@ -576,7 +585,7 @@ export function readFacilityGlassBadges(
 			x: point.x,
 			y: point.y,
 			active: facilityGlassActive(feature.properties?.isActive),
-			...(showGames ? { label: String(feature.properties?.gamesLast28Days ?? 0) } : {}),
+			...(showGames ? { label: formatSupplyCount(feature.properties?.gamesLast28Days ?? 0) } : {}),
 		});
 	}
 	return badges;

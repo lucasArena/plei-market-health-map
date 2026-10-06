@@ -18,7 +18,7 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
 	const [demandMetric, setDemandMetric] = useState<"sessions" | "registrations">("sessions");
-	const [supplyMetric, setSupplyMetric] = useState<"facilities" | "games">("facilities");
+	const [supplyMetric, setSupplyMetric] = useState<"facilities" | "games">("games");
 	const [showSessions, setShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
 	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({
 		...MAP_LAYERS_DEFAULTS.sessionFilters,
@@ -28,7 +28,7 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		setShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
 		setShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
 		setDemandMetric("sessions");
-		setSupplyMetric("facilities");
+		setSupplyMetric("games");
 		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
 	}, []);
 	const value = useMemo(
