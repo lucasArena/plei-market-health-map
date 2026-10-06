@@ -291,12 +291,10 @@ describe("MapSearch", () => {
 			"src",
 			expect.stringContaining("search.svg"),
 		);
-		expect(screen.getByRole("listbox")).toHaveClass(
-			"map-glass",
-			"shadow-[var(--map-shadow)]",
-			"search-results-in",
-			"overflow-y-auto",
-		);
+		const results = screen.getByRole("listbox");
+		expect(results).toHaveClass("map-glass", "shadow-[var(--map-shadow)]", "search-results-in");
+		expect(results).not.toHaveClass("overflow-y-auto");
+		expect(results.querySelector(".overflow-y-auto")).not.toBeNull();
 	});
 
 	it("loads a market or facility once the pointer rests on it, not while skimming", () => {

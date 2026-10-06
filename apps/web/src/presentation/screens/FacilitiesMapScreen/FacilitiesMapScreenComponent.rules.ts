@@ -943,7 +943,7 @@ export function syncFacilityGlass(
 		applyInactiveGamesMarker(
 			current,
 			badge.noGames === true,
-			showCount && ring instanceof HTMLElement ? ring : null,
+			showCount && badge.noGames === true && ring instanceof HTMLElement ? ring : null,
 		);
 		positionGlassMarker(
 			current,
