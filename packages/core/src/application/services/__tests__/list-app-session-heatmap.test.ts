@@ -21,17 +21,17 @@ describe("listAppSessionHeatmap", () => {
 });
 
 it("validates and forwards the complete cohort to storage", async () => {
-	const listLast28Days = vi.fn().mockResolvedValue([]);
+	const listSessions = vi.fn().mockResolvedValue([]);
 	const list = makeListAppSessionHeatmap({
-		appSessionHeatmap: { listLast28Days, listFilterOptions: vi.fn() },
+		appSessionHeatmap: { listSessions, listFilterOptions: vi.fn() },
 	});
 	await list({ gender: " Female ", skill: "Advanced", ageMin: 25, ageMax: 34 });
-	expect(listLast28Days).toHaveBeenCalledWith({
+	expect(listSessions).toHaveBeenCalledWith("week", {
 		gender: "Female",
 		skill: "Advanced",
 		ageMin: 25,
 		ageMax: 34,
 	});
 	await expect(list({ ageMin: 40, ageMax: 18 })).rejects.toThrow();
-	expect(listLast28Days).toHaveBeenCalledTimes(1);
+	expect(listSessions).toHaveBeenCalledTimes(1);
 });

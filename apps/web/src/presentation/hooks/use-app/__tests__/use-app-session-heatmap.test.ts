@@ -18,7 +18,7 @@ describe("useAppSessionHeatmap", () => {
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 		expect(result.current.data).toEqual([{ lat: 29.75, lng: -95.35, sessionWeight: 10 }]);
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/app-session-heatmap");
+		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/app-session-heatmap?period=week");
 	});
 });
 
@@ -32,7 +32,7 @@ it("encodes combined demographics in the request and caches separate cohorts", a
 	);
 	await waitFor(() => expect(result.current.isSuccess).toBe(true));
 	expect(fetchMock.mock.calls[0]?.[0]).toBe(
-		"/api/v1/app-session-heatmap?gender=Female+%26+other&ageMin=25&ageMax=34",
+		"/api/v1/app-session-heatmap?period=week&gender=Female+%26+other&ageMin=25&ageMax=34",
 	);
 	rerender({ gender: "Male" });
 	await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -46,7 +46,7 @@ it("does not fetch a hidden sessions layer", () => {
 	const fetchMock = vi.fn();
 	vi.stubGlobal("fetch", fetchMock);
 	const { Wrapper } = createQueryWrapper();
-	renderHook(() => useAppSessionHeatmap({}, false), { wrapper: Wrapper });
+	renderHook(() => useAppSessionHeatmap({}, "week", false), { wrapper: Wrapper });
 	expect(fetchMock).not.toHaveBeenCalled();
 	vi.unstubAllGlobals();
 });

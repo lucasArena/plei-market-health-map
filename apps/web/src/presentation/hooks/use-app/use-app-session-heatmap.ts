@@ -4,6 +4,7 @@ import type {
 	AppSessionFilterOptions,
 	AppSessionFilters,
 	AppSessionHeatmapCellView,
+	StatsPeriod,
 } from "@market-health-map/core/application";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
@@ -22,18 +23,21 @@ export function useAppSessionFilterOptions(enabled: boolean) {
 	});
 }
 
-export function useAppSessionHeatmap(filters: AppSessionFilters = {}, enabled = true) {
-	const params = new URLSearchParams();
+export function useAppSessionHeatmap(
+	filters: AppSessionFilters = {},
+	period: StatsPeriod = "week",
+	enabled = true,
+) {
+	const params = new URLSearchParams({ period });
 	for (const [key, value] of Object.entries(filters)) {
 		if (Array.isArray(value)) {
 			for (const entry of [...value].sort()) params.append(key, entry);
 		} else if (value !== undefined) params.set(key, String(value));
 	}
-	const suffix = params.size ? `?${params}` : "";
 	return useQuery({
-		queryKey: [...appSessionHeatmapQueryKey, filters],
+		queryKey: [...appSessionHeatmapQueryKey, period, filters],
 		queryFn: () =>
-			apiClient.get<AppSessionHeatmapCellView[]>(`/api/v1/app-session-heatmap${suffix}`),
+			apiClient.get<AppSessionHeatmapCellView[]>(`/api/v1/app-session-heatmap?${params}`),
 		enabled,
 		staleTime: 5 * 60 * 1000,
 		retry: false,

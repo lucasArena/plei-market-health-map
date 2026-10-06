@@ -1,4 +1,4 @@
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
+import { FACILITY_MONTH_ACTIVITY } from "@/application/test/facility-detail";
 import {
 	buildInsightChecks,
 	directionIn,
@@ -20,14 +20,14 @@ function checksFor(changes: {
 		name: "All markets",
 		insightFacts: changes.insightFacts,
 		stats: {
-			...FACILITY_DETAIL.stats,
-			uniquePlayersLast28Days: 0,
-			uniquePlayersPrevious28Days: 0,
-			activatedPlayersLast28Days: 0,
-			activatedPlayersPrevious28Days: 0,
-			playedPeriodChangePercent: changes.games,
-			uniquePlayersPeriodChangePercent: changes.unique,
-			activatedPlayersPeriodChangePercent: changes.activated,
+			...FACILITY_MONTH_ACTIVITY,
+			uniquePlayers: 0,
+			uniquePlayersPrevious: 0,
+			activatedPlayers: 0,
+			activatedPlayersPrevious: 0,
+			playedChangePercent: changes.games,
+			uniquePlayersChangePercent: changes.unique,
+			activatedPlayersChangePercent: changes.activated,
 			confirmationRateChangePoints: changes.confirmation,
 		},
 	});

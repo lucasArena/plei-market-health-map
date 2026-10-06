@@ -15,25 +15,36 @@ function facility(id: string, market: string, members: string[] = []) {
 	});
 }
 
+function comparison(id: string, playedLast28Days: number, playedPrevious28Days: number) {
+	return {
+		facilityId: asEntityId(id),
+		playedLastWeek: 0,
+		playedPreviousWeek: 0,
+		playedLast28Days,
+		playedPrevious28Days,
+	};
+}
+
 describe("market game comparisons", () => {
 	it("merges colocated facilities, retains stopped activity, and reconciles region totals", () => {
 		const rows = toMarketGameChanges(
 			[facility("1", "Houston", ["2"]), facility("3", "Houston"), facility("4", "Philadelphia")],
 			[
-				{ facilityId: asEntityId("1"), playedLast28Days: 20, playedPrevious28Days: 50 },
-				{ facilityId: asEntityId("2"), playedLast28Days: 10, playedPrevious28Days: 20 },
-				{ facilityId: asEntityId("3"), playedLast28Days: 0, playedPrevious28Days: 30 },
-				{ facilityId: asEntityId("4"), playedLast28Days: 80, playedPrevious28Days: 40 },
+				comparison("1", 20, 50),
+				comparison("2", 10, 20),
+				comparison("3", 0, 30),
+				comparison("4", 80, 40),
 			],
+			"month",
 		);
 		expect(rows[0]).toMatchObject({
-			playedLast28Days: 30,
-			playedPrevious28Days: 100,
+			played: 30,
+			playedPrevious: 100,
 			change: -70,
 			changePercent: -70,
 		});
 		expect(rows[0]?.facilities).toMatchObject([
-			{ playedLast28Days: 30, playedPrevious28Days: 70, change: -40 },
+			{ played: 30, playedPrevious: 70, change: -40 },
 			{ change: -30, changePercent: -100 },
 		]);
 		expect(rows[1]).toMatchObject({ change: 40, changePercent: 100 });
@@ -41,16 +52,27 @@ describe("market game comparisons", () => {
 	});
 	it("marks zero baselines without inventing percent growth and handles absent locations", () => {
 		expect(
-			toMarketGameChanges(
-				[facility("1", "Houston")],
-				[{ facilityId: asEntityId("1"), playedLast28Days: 4, playedPrevious28Days: 0 }],
-			)[0],
+			toMarketGameChanges([facility("1", "Houston")], [comparison("1", 4, 0)], "month")[0],
 		).toMatchObject({ change: 4, changePercent: null });
-		expect(toMarketGameChanges([facility("1", "Houston")], [])[0]).toMatchObject({
+		expect(toMarketGameChanges([facility("1", "Houston")], [], "week")[0]).toMatchObject({
 			change: 0,
-			playedLast28Days: 0,
+			played: 0,
 			changePercent: null,
 		});
-		expect(toMarketGameChanges([], [])).toEqual([]);
+		expect(toMarketGameChanges([], [], "month")).toEqual([]);
+	});
+	it("compares the last completed week with the week before when asked for the week", () => {
+		const [houston] = toMarketGameChanges(
+			[facility("1", "Houston")],
+			[{ ...comparison("1", 40, 20), playedLastWeek: 9, playedPreviousWeek: 12 }],
+			"week",
+		);
+
+		expect(houston).toMatchObject({
+			played: 9,
+			playedPrevious: 12,
+			change: -3,
+			changePercent: -25,
+		});
 	});
 });

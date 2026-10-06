@@ -72,6 +72,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],
+		sessionHeatmapLegend: "Sessions per shaded area · last week",
 		finishLegendMotion: vi.fn(),
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
@@ -148,7 +149,7 @@ describe("FacilitiesMapScreen", () => {
 
 		const legend = screen.getByTestId("session-heatmap-legend");
 		expect(slot).toContainElement(legend);
-		expect(legend).toHaveTextContent("Sessions per shaded area · last 28 days");
+		expect(legend).toHaveTextContent("Sessions per shaded area · last week");
 		expect(legend).toHaveTextContent("Scale updates for the current map view");
 		expect(screen.getByText("Scale updates for the current map view")).toHaveClass("text-[10px]");
 		expect(legend).toHaveTextContent("12");

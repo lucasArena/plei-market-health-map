@@ -22,6 +22,7 @@ export interface FacilityReservationStats {
 	scheduledLast28Days: number;
 	scheduledPrevious28Days: number;
 	scheduledLastWeek: number;
+	scheduledPreviousWeek: number;
 	cancelledLastWeek: number;
 	upcomingNextSevenDays: number;
 	lastPlayedDate: string | null;
@@ -30,8 +31,12 @@ export interface FacilityReservationStats {
 }
 
 export interface FacilityPlayerStats {
+	uniquePlayersLastWeek: number;
+	uniquePlayersPreviousWeek: number;
 	uniquePlayersLast28Days: number;
 	uniquePlayersPrevious28Days: number;
+	activatedPlayersLastWeek: number;
+	activatedPlayersPreviousWeek: number;
 	activatedPlayersLast28Days: number;
 	activatedPlayersPrevious28Days: number;
 }
@@ -52,6 +57,8 @@ export interface FacilityStatsRepository
 
 export interface FacilityGameComparison {
 	facilityId: EntityId;
+	playedLastWeek: number;
+	playedPreviousWeek: number;
 	playedLast28Days: number;
 	playedPrevious28Days: number;
 }

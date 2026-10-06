@@ -1,4 +1,4 @@
-import { appSessionFiltersSchema } from "@market-health-map/core/application";
+import { appSessionFiltersSchema, type StatsPeriod } from "@market-health-map/core/application";
 import type { ApiServices } from "@server/presentation/http/api-app.types";
 import { ok } from "@server/presentation/http/respond";
 import { Hono } from "hono";
@@ -6,11 +6,12 @@ import { Hono } from "hono";
 export function appSessionHeatmapController(services: () => ApiServices) {
 	return new Hono()
 		.get("/filters", async () => ok(await services().listAppSessionFilterOptions()))
-		.get("/", async (context) =>
-			ok(
+		.get("/", async (context) => {
+			const { period, ...query } = context.req.query();
+			return ok(
 				await services().listAppSessionHeatmap(
 					appSessionFiltersSchema.parse({
-						...context.req.query(),
+						...query,
 						...Object.fromEntries(
 							["gender", "skill"].flatMap((key) => {
 								const values = context.req.queries(key);
@@ -18,7 +19,8 @@ export function appSessionHeatmapController(services: () => ApiServices) {
 							}),
 						),
 					}),
+					period as StatsPeriod | undefined,
 				),
-			),
-		);
+			);
+		});
 }

@@ -68,6 +68,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		detailMessages,
 		handleAnimationEnd,
 		heading,
+		rankingsEmptyLabel,
 		isClosing,
 		isSummaryPending,
 		isInsightsFailed,
@@ -148,14 +149,14 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							<RankList
 								title={messages.topMarkets}
 								rows={view.topMarkets}
-								emptyLabel={messages.noRankings}
+								emptyLabel={rankingsEmptyLabel}
 							/>
 						)}
 						{view.topFacilities && (
 							<RankList
 								title={messages.topFacilities}
 								rows={view.topFacilities}
-								emptyLabel={messages.noRankings}
+								emptyLabel={rankingsEmptyLabel}
 							/>
 						)}
 						<footer className="border-t pt-3 text-[11px] text-muted-foreground">

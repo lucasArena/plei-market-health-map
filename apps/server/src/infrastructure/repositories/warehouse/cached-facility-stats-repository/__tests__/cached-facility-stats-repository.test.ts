@@ -14,6 +14,7 @@ const RESERVATION_STATS = {
 	scheduledLast28Days: 250,
 	scheduledPrevious28Days: 240,
 	scheduledLastWeek: 87,
+	scheduledPreviousWeek: 87,
 	cancelledLastWeek: 32,
 	upcomingNextSevenDays: 41,
 	lastPlayedDate: "2026-09-28",
@@ -26,6 +27,10 @@ const PLAYER_STATS = {
 	uniquePlayersPrevious28Days: 120,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	uniquePlayersLastWeek: 30,
+	uniquePlayersPreviousWeek: 25,
+	activatedPlayersLastWeek: 6,
+	activatedPlayersPreviousWeek: 5,
 };
 
 function setup() {
