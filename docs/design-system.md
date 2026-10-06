@@ -56,7 +56,7 @@ Skill choices follow Beginner, Intermediate, Advanced, Expert progression while 
 Cluster circles follow map projection immediately during camera movement. Only hover scale animates; geographic positions must never ease behind a drag.
 
 Glass circles synchronize inside the map render callback, without scheduling another animation frame, so overlays and the map paint together.
-Games trend markers use a translucent glass center with blur, saturation and a gentle top highlight, one flat colored ring with a continuous directional tip, without a separate shadow around the center. Growing counts point up; declining counts point down. Exactly unchanged counts use a gray ring with a rightward tip. The glass center meets the colored outline directly, without an extra white rim or overlapping ring strokes.
+Games trend markers use a translucent glass circle with a 35px activity ring inset in a 41px glass disc. A 16px white circular badge overlaps the top-right edge, carrying a rounded green upward arrow, red downward arrow, or gray rightward arrow for unchanged counts. The 12px semibold count remains centered and the badge stays pointer-transparent.
 
 Trend-enabled clusters and individual games markers share a 45px marker box and identical ring geometry, giving abbreviated counts more space and avoiding size changes between grouped and individual markers.
 
@@ -69,3 +69,9 @@ Games trend direction follows every count change without percentage or minimum-g
 Games trend information appears on map markers and hover cards. The facility detail panel does not display a separate games trend card.
 
 Layer sub-controls are visible only while their parent toggle is on: player filters follow Demand, and Department, Show trend and Show inactive facilities follow Supply. Applied settings are retained when controls are hidden.
+
+Count marker rings follow facility activity in both trend states: active facilities use green and inactive facilities use gray; clusters use green when any member is active. Show inactive facilities uses the same text size and weight as Show trend.
+
+Active and inactive count circles use the exact 35px ring assets from Figma nodes 21038:2078 and 21038:2082, with the white translucent overlay above the vertical glass highlight. Count typography remains at the user-preferred 12px in both trend states.
+
+The stable trend arrow is the same 12px arrow geometry as the upward icon, rotated right and colored gray, with the same 1.33px rounded stroke.

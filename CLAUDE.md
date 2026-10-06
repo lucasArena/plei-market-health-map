@@ -125,7 +125,7 @@ The Supply Department multi-select is shared by Games and Facilities under `faci
 
 `facility-games-trend` gates the games trend: the Show trend switch under Games and everything it drives (trend rings and tips and hover changes). It requires `facility-games-layer` (`FEATURE_FLAG_REQUIREMENTS` in `feature-flags-dto.ts`), so it takes effect only while both are on: `GET /api/v1/feature-flags` lists it only then, and the Feature flags page notes the requirement and shows "On, waiting for facility-games-layer" while games is off. `listFacilities` reads the flags in effect and leaves `gamesLast28Days` and the department totals out of `/api/v1/facilities` while games is off, and the previous window (`gamesPrevious28Days`, `gamesPreviousByDepartment`) while the trend is off. Under `next dev` the server treats every flag as on, matching `useFeatureFlag`. Both flags start off like any new flag, so an admin turns on `facility-games-layer` and then `facility-games-trend`.
 
-Trend markers share one glass circle size and continuous colored outline. Growth uses the default pastel green and decline uses pastel red. Drops to zero from a nonzero previous period count as decline and stay visible as declining markers while trend is enabled.
+Count markers share the same 41px glass circle and 12px semibold count with trend on or off. Trend markers share one glass circle size and continuous activity-colored outline inset within a white glass rim. A 16px white circular badge overlaps the top-right edge with a rounded green up arrow, red down arrow, or gray right arrow. Arrow color indicates direction; ring color follows facility activity. Drops to zero from a nonzero previous period count as decline and stay visible as declining markers while trend is enabled.
 
 Supply filters share Demand’s Add filter flow and styling: choose Department, edit a removable chip, stage multi-select options and Apply. Reset clears the chip and applied selection.
 
@@ -136,3 +136,5 @@ Reset is available only in the Layers panel footer. Added filter chips make the 
 Games trend direction follows every count change without percentage or minimum-game thresholds: any increase is green/up, any decrease is red/down, and exactly equal counts are gray/rightward. Hover text reports the count difference.
 
 The 7D | 28D switch also drives Games counts, department totals and the trend. `/api/v1/facilities` carries `gamesLastWeek`/`gamesLastWeekByDepartment` (with games) and `gamesPreviousWeek`/`gamesPreviousWeekByDepartment` (with the trend) for the last completed Monday–Sunday week and the week before; on 7D `facilitiesForPeriod` copies them into the 28-day fields the map reads, and hover trend copy says 7 days.
+
+Count marker rings follow facility activity in both trend states: active facilities use green and inactive facilities use gray; clusters use green when any member is active. Show inactive facilities uses the same text size and weight as Show trend.

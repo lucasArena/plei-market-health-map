@@ -716,7 +716,7 @@ export function clusterMarkerTransform(engaged: boolean) {
 
 export function createClusterGlassNode() {
 	const node = document.createElement("div");
-	node.classList.add(CLUSTER_MARKER_CLASS);
+	node.classList.add(CLUSTER_MARKER_CLASS, "games-count-circle");
 	applyGlassDisc(node, CLUSTER_OUTER_DIAMETER, CLUSTER_GLASS_SHADOW);
 	const ring = document.createElement("span");
 	ring.dataset.testid = "cluster-glass-stroke";
@@ -740,6 +740,7 @@ export function createClusterGlassNode() {
 }
 
 export function applyClusterGlassActivity(node: HTMLElement, active: boolean) {
+	node.dataset.activity = active ? "active" : "inactive";
 	const ring = node.querySelector("[data-testid='cluster-glass-stroke']");
 	const label = node.querySelector("[data-testid='cluster-glass-label']");
 	const labelColor = {
@@ -856,6 +857,7 @@ export function createFacilityGlassNode() {
 }
 
 export function applyFacilityGlassActivity(node: HTMLElement, active: boolean) {
+	node.dataset.activity = active ? "active" : "inactive";
 	const logo = node.querySelector("[data-testid='facility-glass-core']");
 	const logoSrc = {
 		[`${active}`]: PLEI_LOGO_URL,
@@ -915,6 +917,7 @@ export function syncFacilityGlass(
 		applyFacilityGlassActivity(current, badge.active);
 		const logo = current.querySelector("[data-testid='facility-glass-core']");
 		const label = current.querySelector("[data-testid='facility-glass-label']");
+		current.classList.toggle("games-count-circle", showCount);
 		const ring = current.querySelector("[data-testid='facility-glass-stroke']");
 		if (logo instanceof HTMLElement) logo.style.display = showCount ? "none" : "";
 		if (label instanceof HTMLElement) {

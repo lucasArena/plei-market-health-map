@@ -223,7 +223,7 @@ export function MapLayersPanel() {
 						)}
 						{supplyMetric === "facilities" && (
 							<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
-								<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
+								<p className="text-xs">{messages.layersInactiveFacilities}</p>
 								<LayerSwitch
 									checked={showInactiveFacilities}
 									label={messages.layersInactiveFacilities}
@@ -236,7 +236,7 @@ export function MapLayersPanel() {
 				{!showGamesSelector && showActiveFacilities && (
 					<div className="mt-0.5 ml-3 border-l border-border pl-1">
 						<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
-							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
+							<p className="text-xs">{messages.layersInactiveFacilities}</p>
 							<LayerSwitch
 								checked={showInactiveFacilities}
 								label={messages.layersInactiveFacilities}

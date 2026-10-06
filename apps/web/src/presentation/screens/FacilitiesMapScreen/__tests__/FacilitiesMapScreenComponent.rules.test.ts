@@ -436,8 +436,15 @@ describe("facility glass", () => {
 		const node = createClusterGlassNode();
 		const ring = node.querySelector("[data-testid='cluster-glass-stroke']");
 		const label = node.querySelector("[data-testid='cluster-glass-label']");
+		const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 		expect(node.style.width).toBe("41px");
 		expect(node.style.pointerEvents).toBe("none");
+		expect(css).toContain(
+			'.games-count-circle [data-testid="cluster-glass-stroke"],\n.games-count-circle [data-testid="facility-glass-stroke"]',
+		);
+		expect(css).toContain(
+			'var(--games-circle-ring-image, url("/icons/games-trend-ring.svg")) center / 35px 35px no-repeat',
+		);
 		expect(ring).toHaveStyle({ inset: "3px", border: "2px solid #86EFAC" });
 		applyClusterGlassActivity(node, false);
 		expect(node.style.backgroundColor).toBe("rgba(255, 255, 255, 0.28)");

@@ -95,7 +95,7 @@ describe("MapLayersPanel", () => {
 			"border-t",
 			"border-border",
 		);
-		expect(screen.getByText("Show inactive facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Show inactive facilities")).toHaveClass("text-xs");
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
