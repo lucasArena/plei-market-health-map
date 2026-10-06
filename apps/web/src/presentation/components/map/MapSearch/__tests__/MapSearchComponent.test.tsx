@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import { renderWithMessages } from "@/application/test/render-with-messages";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { buildMarketSearchResults } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 
@@ -45,9 +46,18 @@ const FACILITIES = [
 
 describe("buildMarketSearchResults", () => {
 	it("groups facilities by market and sorts markets by name", () => {
-		const markets = buildMarketSearchResults(FACILITIES);
+		const markets = buildMarketSearchResults(FACILITIES, FACILITIES);
 		expect(markets.map((market) => market.name)).toEqual(["Austin", "Miami"]);
 		expect(markets[0]?.facilities).toHaveLength(2);
+	});
+
+	it("keeps every market but gives each only its shown facilities", () => {
+		const shown = FACILITIES.slice(0, 1);
+		const markets = buildMarketSearchResults(FACILITIES, shown);
+		expect(markets).toEqual([
+			{ id: "austin", name: "Austin", facilities: shown },
+			{ id: "miami", name: "Miami", facilities: [] },
+		]);
 	});
 });
 
@@ -55,9 +65,10 @@ describe("MapSearch", () => {
 	it("searches grouped markets and facilities and selects either kind", () => {
 		const onFacilitySelect = vi.fn();
 		const onMarketSelect = vi.fn();
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={onFacilitySelect}
 				onMarketSelect={onMarketSelect}
@@ -103,11 +114,52 @@ describe("MapSearch", () => {
 		expect(input).toHaveValue("Beach Field House");
 	});
 
-	it("clears, closes, and reports an empty result", () => {
-		const onClear = vi.fn();
-		render(
+	it("counts and lists only the facilities the map layers show", () => {
+		const onMarketSelect = vi.fn();
+		const activeFacilities = FACILITIES.filter((facility) => facility.isActive);
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={activeFacilities}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={onMarketSelect}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets or facilities" }));
+
+		expect(screen.getByRole("option", { name: /Austin.*1 facility$/ })).toBeInTheDocument();
+		expect(screen.queryByRole("option", { name: /Northside Soccer Center/ })).toBeNull();
+		fireEvent.click(screen.getByRole("option", { name: /Austin.*1 facility$/ }));
+		expect(onMarketSelect).toHaveBeenCalledWith(
+			expect.objectContaining({ id: "austin", facilities: [FACILITIES[0]] }),
+		);
+	});
+
+	it("still lists a market whose facilities are all hidden", () => {
+		renderWithMessages(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={[]}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets or facilities" }));
+
+		expect(screen.getByRole("option", { name: /Miami.*0 facilities/ })).toBeInTheDocument();
+		expect(screen.queryByText("Facilities")).toBeNull();
+	});
+
+	it("clears, closes, and reports an empty result", () => {
+		const onClear = vi.fn();
+		renderWithMessages(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -145,9 +197,10 @@ describe("MapSearch", () => {
 	});
 
 	it("stays open for other keys and for pointer events inside the search", () => {
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -164,9 +217,10 @@ describe("MapSearch", () => {
 	});
 
 	it("flows inside the header row instead of floating over it", () => {
-		const { container } = render(
+		const { container } = renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -183,9 +237,10 @@ describe("MapSearch", () => {
 	});
 
 	it("draws the field and the results on the shared glass surface", () => {
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -217,9 +272,10 @@ describe("MapSearch", () => {
 	it("loads a market or facility once the pointer rests on it, not while skimming", () => {
 		vi.useFakeTimers();
 		mockPrefetchQuery.mockClear();
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}

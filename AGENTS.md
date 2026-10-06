@@ -185,7 +185,7 @@ Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Onl
 
 ## Feature flags
 
-Put user-facing work behind a feature flag when it should reach `staging` or `main` before everyone gets it, or when it might need to be switched off quickly. A flag is on or off for everyone, and admins switch it at `/feature-flags` (account hub → Feature flags) without a deploy.
+Put user-facing work behind a feature flag when it should reach `staging` or `main` before everyone gets it, or when it might need to be switched off quickly. A flag is on or off for everyone, and admins switch it at `/admin/feature-flags` (account hub → Admin controls → Feature flags) without a deploy.
 
 **Adding a flag**
 

@@ -6,8 +6,8 @@ import { useMessages } from "@/presentation/components/providers/MessagesProvide
 export function useAdminTabsRules() {
 	const { messages } = useMessages();
 	const tabs: AdminTabLink[] = [
-		{ tab: "metrics", href: "/metrics", label: messages.admin.metricsTab },
-		{ tab: "featureFlags", href: "/feature-flags", label: messages.admin.featureFlagsTab },
+		{ tab: "metrics", href: "/admin/metrics", label: messages.admin.metricsTab },
+		{ tab: "featureFlags", href: "/admin/feature-flags", label: messages.admin.featureFlagsTab },
 	];
 	return { label: messages.admin.tabsLabel, tabs };
 }

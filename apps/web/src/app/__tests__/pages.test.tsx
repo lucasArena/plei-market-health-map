@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
-import FeatureFlagsPage from "@/app/(protected)/feature-flags/page";
-import AppMetricsPage from "@/app/(protected)/metrics/page";
+import FeatureFlagsPage from "@/app/(protected)/admin/feature-flags/page";
+import AppMetricsPage from "@/app/(protected)/admin/metrics/page";
+import AdminControlsPage from "@/app/(protected)/admin/page";
 import HomePage from "@/app/(protected)/page";
 import OfflinePage from "@/app/~offline/page";
 import manifest from "@/app/manifest";
@@ -109,6 +110,17 @@ describe("pages", () => {
 
 		mockAccess.mockResolvedValue({ ...allowed, isAdmin: false });
 		await expect(FeatureFlagsPage()).rejects.toThrow("not-found");
+	});
+
+	it("opens Admin controls on App metrics for admins only", async () => {
+		const allowed = { status: "allowed", email: "lucas@plei.com", isAdmin: true };
+		mockAccess.mockResolvedValue(allowed);
+		await expect(AdminControlsPage()).rejects.toThrow("redirect:/admin/metrics");
+
+		mockAccess.mockResolvedValue({ ...allowed, isAdmin: false });
+		await expect(AdminControlsPage()).rejects.toThrow("not-found");
+		mockAccess.mockResolvedValue({ status: "anonymous" });
+		await expect(AdminControlsPage()).rejects.toThrow("not-found");
 	});
 
 	it("renders a localized offline fallback", async () => {

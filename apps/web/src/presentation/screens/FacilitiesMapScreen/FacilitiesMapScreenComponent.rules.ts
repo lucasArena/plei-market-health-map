@@ -1025,17 +1025,15 @@ export function useFacilitiesMapScreenRules() {
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
 	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
-	const featureCollection = useMemo(
+	const shownFacilities = useMemo(
 		() =>
-			toFacilityFeatureCollection(
-				facilitiesForMap(facilities, {
-					gameDepartments,
-					showGames,
-					showTrend,
-					showActiveFacilities,
-					showInactiveFacilities,
-				}),
-			),
+			facilitiesForMap(facilities, {
+				gameDepartments,
+				showGames,
+				showTrend,
+				showActiveFacilities,
+				showInactiveFacilities,
+			}),
 		[
 			facilities,
 			showActiveFacilities,
@@ -1044,6 +1042,10 @@ export function useFacilitiesMapScreenRules() {
 			showTrend,
 			gameDepartments,
 		],
+	);
+	const featureCollection = useMemo(
+		() => toFacilityFeatureCollection(shownFacilities),
+		[shownFacilities],
 	);
 	const trendCountsById = useMemo(
 		() =>
@@ -1706,6 +1708,7 @@ export function useFacilitiesMapScreenRules() {
 		selectSearchFacility,
 		selectSearchMarket,
 		showTrend,
+		shownFacilities,
 		status,
 	};
 }

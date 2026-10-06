@@ -17,6 +17,7 @@ export function MapSearch(props: MapSearchProps) {
 	const {
 		cancelPrefetch,
 		clear,
+		facilityCountLabel,
 		finishResultsMotion,
 		handleChange,
 		handleKeyDown,
@@ -107,7 +108,7 @@ export function MapSearch(props: MapSearchProps) {
 								>
 									<span className={`truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{market.name}</span>
 									<span className="ml-3 shrink-0 text-xs text-muted-foreground">
-										{messages.facilityCount.replace("{count}", String(market.facilities.length))}
+										{facilityCountLabel(market)}
 									</span>
 								</button>
 							))}
