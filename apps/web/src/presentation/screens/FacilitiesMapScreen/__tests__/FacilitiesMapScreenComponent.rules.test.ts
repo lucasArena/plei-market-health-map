@@ -59,6 +59,7 @@ import {
 	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
 	FACILITY_DOT_ZOOM,
+	FACILITY_GLASS_SELECTED_SHADOW,
 	INACTIVE_GAMES_MARKER_STYLE,
 	MAP_CURSOR,
 	REGISTRATION_HEATMAP_PAINT,
@@ -2671,6 +2672,16 @@ describe("games trend on the glass ring", () => {
 		expect(node?.dataset.trendTip).toBeUndefined();
 		expect(node?.style.getPropertyValue("--games-trend-color")).toBe("");
 		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
+	});
+
+	it("keeps the logo marker selected inset shadow when no games", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<string, HTMLElement>();
+		syncFacilityGlass(host, [{ id: "f1", x: 10, y: 20, active: true, noGames: true }], nodes, "f1");
+		const node = nodes.get("f1");
+		const ring = node?.querySelector<HTMLElement>("[data-testid='facility-glass-stroke']");
+		expect(ring?.style.display).toBe("none");
+		expect(node?.style.boxShadow).toBe(FACILITY_GLASS_SELECTED_SHADOW);
 	});
 
 	it("uses the cluster stroke for selected and inactive count badges", () => {

@@ -76,6 +76,13 @@ describe("PeriodSwitch", () => {
 		} else Reflect.deleteProperty(HTMLElement.prototype, "offsetWidth");
 	});
 
+	it("clears option refs when the switch unmounts", () => {
+		const { unmount } = renderWithMessages(<PeriodSwitch />);
+		expect(screen.getByTestId("period-switch-thumb")).toBeInTheDocument();
+		unmount();
+		expect(screen.queryByTestId("period-switch-thumb")).toBeNull();
+	});
+
 	it("only shows on the map", () => {
 		mockPathname.mockReturnValue("/metrics");
 		renderWithMessages(<PeriodSwitch />);
