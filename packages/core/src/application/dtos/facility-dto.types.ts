@@ -11,6 +11,10 @@ export interface FacilityPointView {
 	gamesByDepartment?: GameDepartmentCounts;
 	gamesPrevious28Days?: number;
 	gamesPreviousByDepartment?: GameDepartmentCounts;
+	gamesLastWeek?: number;
+	gamesLastWeekByDepartment?: GameDepartmentCounts;
+	gamesPreviousWeek?: number;
+	gamesPreviousWeekByDepartment?: GameDepartmentCounts;
 	isActiveLastWeek: boolean;
 	location: GeoPoint;
 }

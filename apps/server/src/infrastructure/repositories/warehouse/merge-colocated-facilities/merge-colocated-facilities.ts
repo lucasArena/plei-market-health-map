@@ -100,6 +100,27 @@ function mergeCluster(cluster: Facility[]): Facility {
 						),
 					}
 				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesLastWeekByDepartment)
+				? {
+						gamesLastWeekByDepartment: departmentTotals(
+							members.map((facility) => facility.toJSON().metrics.gamesLastWeekByDepartment),
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesPreviousWeek !== undefined)
+				? {
+						gamesPreviousWeek: total(
+							(facility) => facility.toJSON().metrics.gamesPreviousWeek ?? 0,
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesPreviousWeekByDepartment)
+				? {
+						gamesPreviousWeekByDepartment: departmentTotals(
+							members.map((facility) => facility.toJSON().metrics.gamesPreviousWeekByDepartment),
+						),
+					}
+				: {}),
 			...(members.some((facility) => facility.toJSON().metrics.gamesByDepartment)
 				? {
 						gamesByDepartment: {

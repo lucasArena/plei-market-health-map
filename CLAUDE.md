@@ -133,3 +133,5 @@ Demand and Supply filter selections are displayed in their chips only; the redun
 Reset is available only in the Layers panel footer. Added filter chips make the footer Reset available even before Apply; it clears both Demand and Supply draft/applied filters.
 
 Games trend direction follows every count change without percentage or minimum-game thresholds: any increase is green/up, any decrease is red/down, and exactly equal counts are gray/rightward. Hover text reports the count difference.
+
+The 7D | 28D switch also drives Games counts, department totals and the trend. `/api/v1/facilities` carries `gamesLastWeek`/`gamesLastWeekByDepartment` (with games) and `gamesPreviousWeek`/`gamesPreviousWeekByDepartment` (with the trend) for the last completed Monday–Sunday week and the week before; on 7D `facilitiesForPeriod` copies them into the 28-day fields the map reads, and hover trend copy says 7 days.

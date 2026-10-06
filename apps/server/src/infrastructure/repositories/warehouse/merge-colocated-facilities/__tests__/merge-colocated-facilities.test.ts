@@ -202,3 +202,32 @@ it("sums previous window games across colocated facility members", () => {
 		gamesPreviousByDepartment: { magic: 4, organizers: 3, partnerships: 2 },
 	});
 });
+
+it("sums both weekly windows across colocated facility members", () => {
+	const a = facility("1", "Shared pitch", 7).toJSON();
+	const b = facility("2", "Shared pitch | Other", 5).toJSON();
+	const merged = mergeColocatedFacilities([
+		Facility.create({
+			...a,
+			metrics: {
+				...a.metrics,
+				gamesLastWeekByDepartment: { magic: 2, organizers: 1, partnerships: 0 },
+				gamesPreviousWeek: 4,
+				gamesPreviousWeekByDepartment: { magic: 1, organizers: 2, partnerships: 1 },
+			},
+		}),
+		Facility.create({
+			...b,
+			metrics: {
+				...b.metrics,
+				gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 3 },
+				gamesPreviousWeek: 1,
+			},
+		}),
+	]);
+	expect(merged[0]?.toJSON().metrics).toMatchObject({
+		gamesLastWeekByDepartment: { magic: 2, organizers: 1, partnerships: 3 },
+		gamesPreviousWeek: 5,
+		gamesPreviousWeekByDepartment: { magic: 1, organizers: 2, partnerships: 1 },
+	});
+});

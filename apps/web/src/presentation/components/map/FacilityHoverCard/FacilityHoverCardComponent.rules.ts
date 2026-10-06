@@ -1,6 +1,6 @@
 "use client";
 
-import type { FacilityPointView } from "@market-health-map/core/application";
+import type { FacilityPointView, StatsPeriod } from "@market-health-map/core/application";
 import { GAMES_WINDOW_DAYS, type GamesTrend } from "@market-health-map/core/domain";
 import { formatMessage, type Messages } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import type {
 	ClusterHoverCardPlacementInput,
 	ClusterHoverSide,
 } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import type { RevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion.types";
 import {
@@ -113,12 +114,20 @@ export function formatGamesTrend(
 	return formatMessage(template, { games, change: Math.abs(trend.change), days });
 }
 
-export function clusterLabels(hover: ClusterHover, messages: Messages["map"]) {
+export function trendWindowDays(period: StatsPeriod) {
+	return { week: 7, month: GAMES_WINDOW_DAYS }[period];
+}
+
+export function clusterLabels(
+	hover: ClusterHover,
+	messages: Messages["map"],
+	days = GAMES_WINDOW_DAYS,
+) {
 	if (hover.games !== undefined) {
 		// Games mode reads in games only: the count, then the change under it while trend is on.
 		return {
 			title: formatGamesCount(hover.games, messages.trend),
-			trend: hover.trend ? formatGamesChange(hover.trend, messages.trend) : null,
+			trend: hover.trend ? formatGamesChange(hover.trend, messages.trend, days) : null,
 			more: null,
 		};
 	}
@@ -207,11 +216,15 @@ export function facilityHoverCardHeight(hasTrend = false, hasGamesCount = false)
 }
 
 /** The line under a facility name: games (with the change while trend is on) in Games mode. */
-export function facilityTrendLine(hover: MapHover | null, messages: Messages["map"]) {
+export function facilityTrendLine(
+	hover: MapHover | null,
+	messages: Messages["map"],
+	days = GAMES_WINDOW_DAYS,
+) {
 	if (hover?.kind !== "facility") return null;
 	if (hover.games === undefined) return null;
 	return hover.trend
-		? formatGamesTrend(hover.trend, messages.trend)
+		? formatGamesTrend(hover.trend, messages.trend, days)
 		: formatGamesCount(hover.games, messages.trend);
 }
 
@@ -253,6 +266,8 @@ export function useFacilityHoverCardRules(
 	messages: Messages["map"],
 	onFacilitySelect?: (facility: FacilityPointView) => void,
 ) {
+	const { period } = useMapScope();
+	const days = trendWindowDays(period);
 	const { finishReveal, isShown, motion } = useRevealMotion(hover !== null);
 	const held = useRef<MapHover | null>(null);
 	const previousKey = useRef<string | null>(null);
@@ -325,9 +340,9 @@ export function useFacilityHoverCardRules(
 		clusterCard,
 		facilities,
 		facilityCard,
-		facilityTrend: facilityTrendLine(facilityCard, messages),
+		facilityTrend: facilityTrendLine(facilityCard, messages, days),
 		finishReveal,
-		labels: clusterCard ? clusterLabels(clusterCard, messages) : null,
+		labels: clusterCard ? clusterLabels(clusterCard, messages, days) : null,
 		listFadeClass: clusterListFadeClass(showsBottomFade),
 		listMaxHeight: clusterHoverListMaxHeight(),
 		listRef,

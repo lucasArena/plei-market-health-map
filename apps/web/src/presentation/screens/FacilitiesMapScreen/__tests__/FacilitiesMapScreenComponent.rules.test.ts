@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { AppSessionFilters } from "@market-health-map/core/application";
+import type { AppSessionFilters, FacilityPointView } from "@market-health-map/core/application";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { GAMES_TREND_COLORS } from "@/application/constants/games-trend-colors";
@@ -191,6 +191,16 @@ const FACILITY = {
 	isActiveLastWeek: true,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
+
+function sameInBothPeriods<T extends Partial<FacilityPointView>>(facility: T) {
+	return {
+		...facility,
+		gamesLastWeek: facility.gamesLast28Days,
+		gamesPreviousWeek: facility.gamesPrevious28Days,
+		gamesLastWeekByDepartment: facility.gamesByDepartment,
+		gamesPreviousWeekByDepartment: facility.gamesPreviousByDepartment,
+	};
+}
 
 function wrapper({ children }: { children: ReactNode }) {
 	return createElement(MessagesProvider, { locale: "en", messages: EN_MESSAGES, children });
@@ -827,15 +837,15 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockSupplyFlag.mockReturnValue(true);
 		layersState.supplyMetric = "games";
 		layersState.showInactiveFacilities = true;
-		const played = { ...FACILITY, gamesLast28Days: 12 };
-		const inactive = {
+		const played = sameInBothPeriods({ ...FACILITY, gamesLast28Days: 12 });
+		const inactive = sameInBothPeriods({
 			...FACILITY,
 			id: "inactive",
 			isActive: false,
 			isActiveLastWeek: false,
 			gamesLast28Days: 0,
-		};
-		const empty = { ...FACILITY, id: "empty", gamesLast28Days: 0 };
+		});
+		const empty = sameInBothPeriods({ ...FACILITY, id: "empty", gamesLast28Days: 0 });
 		mockUseFacilities.mockReturnValue({
 			data: [played, inactive, empty],
 			isPending: false,
@@ -857,17 +867,17 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockSupplyFlag.mockReturnValue(true);
 		layersState.supplyMetric = "games";
 		layersState.gameDepartments = ["magic", "organizers"];
-		const included = {
+		const included = sameInBothPeriods({
 			...FACILITY,
 			gamesLast28Days: 10,
 			gamesByDepartment: { magic: 3, organizers: 2, partnerships: 5 },
-		};
-		const excluded = {
+		});
+		const excluded = sameInBothPeriods({
 			...FACILITY,
 			id: "other",
 			gamesLast28Days: 7,
 			gamesByDepartment: { magic: 0, organizers: 0, partnerships: 7 },
-		};
+		});
 		mockUseFacilities.mockReturnValue({
 			data: [included, excluded],
 			isPending: false,
@@ -1819,22 +1829,27 @@ it.each([
 });
 
 describe("games trend", () => {
-	const growing = {
+	const growing = sameInBothPeriods({
 		...FACILITY,
 		gamesLast28Days: 46,
 		gamesPrevious28Days: 40,
 		gamesByDepartment: { magic: 40, organizers: 6, partnerships: 0 },
 		gamesPreviousByDepartment: { magic: 20, organizers: 20, partnerships: 0 },
-	};
-	const stopped = {
+	});
+	const stopped = sameInBothPeriods({
 		...FACILITY,
 		id: "stopped",
 		gamesLast28Days: 0,
 		gamesPrevious28Days: 9,
 		gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
 		gamesPreviousByDepartment: { magic: 0, organizers: 9, partnerships: 0 },
-	};
-	const neverPlayed = { ...FACILITY, id: "never", gamesLast28Days: 0, gamesPrevious28Days: 0 };
+	});
+	const neverPlayed = sameInBothPeriods({
+		...FACILITY,
+		id: "never",
+		gamesLast28Days: 0,
+		gamesPrevious28Days: 0,
+	});
 	const base = {
 		showGames: true,
 		showTrend: false,
@@ -2346,6 +2361,31 @@ describe("facilitiesForPeriod", () => {
 
 		expect(facilitiesForPeriod([quietLastWeek], "week")[0]?.isActive).toBe(false);
 		expect(facilitiesForPeriod([quietLastWeek], "month")[0]?.isActive).toBe(true);
+	});
+
+	it("uses the weekly games windows for the week and the 28 day windows otherwise", () => {
+		const counted = {
+			...FACILITY,
+			gamesLast28Days: 40,
+			gamesPrevious28Days: 30,
+			gamesByDepartment: { magic: 20, organizers: 10, partnerships: 10 },
+			gamesPreviousByDepartment: { magic: 15, organizers: 10, partnerships: 5 },
+			gamesLastWeek: 9,
+			gamesPreviousWeek: 12,
+			gamesLastWeekByDepartment: { magic: 5, organizers: 2, partnerships: 2 },
+			gamesPreviousWeekByDepartment: { magic: 6, organizers: 3, partnerships: 3 },
+		};
+
+		expect(facilitiesForPeriod([counted], "week")[0]).toMatchObject({
+			gamesLast28Days: 9,
+			gamesPrevious28Days: 12,
+			gamesByDepartment: { magic: 5, organizers: 2, partnerships: 2 },
+			gamesPreviousByDepartment: { magic: 6, organizers: 3, partnerships: 3 },
+		});
+		expect(facilitiesForPeriod([counted], "month")[0]).toMatchObject({
+			gamesLast28Days: 40,
+			gamesPrevious28Days: 30,
+		});
 	});
 });
 
