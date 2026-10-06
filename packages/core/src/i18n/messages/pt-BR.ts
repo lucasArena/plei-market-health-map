@@ -27,8 +27,8 @@ export const ptBR: Messages = {
 			"Totais por mercado posicionados na localização mediana das instalações",
 		registrationHeatmapLoading: "Carregando cadastros de usuários…",
 		registrationHeatmapNoActivity: "Nenhum cadastro na área atual do mapa",
-		registrationHeatmapValue: "{count} cadastros em uma área sombreada",
-		registrationHeatmapHighValue: "{count}+ cadastros em uma área sombreada",
+		registrationHeatmapValue: "{count} cadastros em um mercado",
+		registrationHeatmapHighValue: "{count}+ cadastros em um mercado",
 
 		title: "Mapa de instalações",
 		loading: "Carregando instalações…",

@@ -35,6 +35,7 @@ import {
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
+	APP_SESSION_HEATMAP_PAINT,
 	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_ACTIVE_COUNT_EXPRESSION,
 	CLUSTER_ACTIVE_COUNT_KEY,
@@ -47,6 +48,7 @@ import {
 	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
 	FACILITY_DOT_ZOOM,
+	REGISTRATION_HEATMAP_PAINT,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 import type { ClusterTreeSource } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
@@ -1580,6 +1582,11 @@ describe("useFacilitiesMapScreenRules", () => {
 			true,
 		);
 		expect(result.current.messages.sessionHeatmapLegend).toContain("Registrations per market");
+		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"heatmap-intensity",
+			REGISTRATION_HEATMAP_PAINT?.["heatmap-intensity"],
+		);
 		expect(result.current.messages.sessionHeatmapLoading).toBe("Loading user registrations…");
 		expect(result.current.messages.sessionHeatmapLowValue).toContain("registrations");
 		mockUseAppSessionHeatmap.mockReturnValue({ data: [], isPending: false, isError: false });
@@ -1590,5 +1597,26 @@ describe("useFacilitiesMapScreenRules", () => {
 		rerender();
 		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(layersState.sessionFilters, true);
 		expect(result.current.messages.sessionHeatmapLegend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
+		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"heatmap-intensity",
+			APP_SESSION_HEATMAP_PAINT?.["heatmap-intensity"],
+		);
 	});
+});
+
+it("uses individual market counts for registrations even when markets share a viewport area", () => {
+	const cells = [
+		{ lat: 1, lng: 1, sessionWeight: 100 },
+		{ lat: 1.01, lng: 1.01, sessionWeight: 200 },
+	];
+	const bounds = {
+		contains: () => true,
+		getWest: () => 0,
+		getEast: () => 24,
+		getSouth: () => 0,
+		getNorth: () => 16,
+	};
+	expect(appSessionHeatmapScale(cells, bounds)).toEqual({ low: 300, high: 300 });
+	expect(appSessionHeatmapScale(cells, bounds, false)).toEqual({ low: 100, high: 200 });
 });

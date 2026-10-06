@@ -28,8 +28,8 @@ export const es: Messages = {
 			"Totales por mercado situados en la ubicación mediana de las instalaciones",
 		registrationHeatmapLoading: "Cargando registros de usuarios…",
 		registrationHeatmapNoActivity: "No hay registros en la vista actual del mapa",
-		registrationHeatmapValue: "{count} registros en un área sombreada",
-		registrationHeatmapHighValue: "{count}+ registros en un área sombreada",
+		registrationHeatmapValue: "{count} registros en un mercado",
+		registrationHeatmapHighValue: "{count}+ registros en un mercado",
 
 		title: "Mapa de sedes",
 		loading: "Cargando sedes…",

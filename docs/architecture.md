@@ -243,3 +243,5 @@ Enable `player-demographic-filters` in the admin Feature flags page to expose Pl
 The existing geographic source uses the player's most recent coordinates. The catalog marks those coordinates unsuitable for standard regional reporting; this change preserves the existing heatmap and does not establish session-time locations. Live query latency and historical location correctness remain unverified.
 
 The app-session heatmap endpoint accepts optional `metric=registrations` behind the demographic demand selector. Its repository counts distinct confirmed app accounts by region for the last 28 completed days, joining one median facility coordinate per region. Profile predicates remain bound parameters. Metric and demographic cohort both participate in the heatmap cache key. Missing geographic coverage is omitted; the UI explains the market-level placement.
+
+Registration rendering uses a stronger heatmap intensity and wider radius for isolated market points. Its legend uses individual visible market counts, rather than summing nearby markets into session viewport areas. Switching back restores the session paint settings.

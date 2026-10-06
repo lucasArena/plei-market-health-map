@@ -25,8 +25,8 @@ export const en: Messages = {
 		registrationHeatmapContext: "Market totals placed at the median facility location",
 		registrationHeatmapLoading: "Loading user registrations…",
 		registrationHeatmapNoActivity: "No registrations in the current map view",
-		registrationHeatmapValue: "{count} registrations in a shaded area",
-		registrationHeatmapHighValue: "{count}+ registrations in a shaded area",
+		registrationHeatmapValue: "{count} registrations in a market",
+		registrationHeatmapHighValue: "{count}+ registrations in a market",
 
 		title: "Facilities map",
 		loading: "Loading facilities…",

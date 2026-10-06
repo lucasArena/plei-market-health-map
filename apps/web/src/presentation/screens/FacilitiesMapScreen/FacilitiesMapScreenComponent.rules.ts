@@ -74,6 +74,7 @@ import {
 	MAP_STYLE_URL,
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
+	REGISTRATION_HEATMAP_PAINT,
 	selectedRingColor,
 	selectedRingWidth,
 	UNCLUSTERED_FILTER,
@@ -195,8 +196,13 @@ export function appSessionHeatmapAreas(
 export function appSessionHeatmapScale(
 	cells: AppSessionHeatmapCellView[],
 	bounds?: SessionHeatmapBounds,
+	aggregateAreas = true,
 ): SessionHeatmapScale {
-	const sortedWeights = appSessionHeatmapAreas(cells, bounds)
+	const visibleCells = bounds
+		? cells.filter((cell) => bounds.contains([cell.lng, cell.lat]))
+		: cells;
+	const scaleCells = aggregateAreas ? appSessionHeatmapAreas(cells, bounds) : visibleCells;
+	const sortedWeights = scaleCells
 		.map((cell) => cell.sessionWeight)
 		.filter((weight) => weight > 0)
 		.sort((a, b) => a - b);
@@ -1054,11 +1060,11 @@ export function useFacilitiesMapScreenRules() {
 		map
 			.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)
 			?.setData(toAppSessionHeatmapFeatureCollection(heatmapQuery.data, bounds));
-		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds);
+		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds, !isRegistrations);
 		setSessionScale((current) =>
 			current.low === nextScale.low && current.high === nextScale.high ? current : nextScale,
 		);
-	}, [heatmapQuery.data, heatmapQuery.isError]);
+	}, [heatmapQuery.data, heatmapQuery.isError, isRegistrations]);
 
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
 	useExclusiveSidePanel(
@@ -1208,6 +1214,15 @@ export function useFacilitiesMapScreenRules() {
 		[`${sessionScale.high === 0}`]: "empty",
 		[`${isSessionHeatmapLoading}`]: "loading",
 	}.true as SessionLegendState;
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
+		const paint = isRegistrations ? REGISTRATION_HEATMAP_PAINT : APP_SESSION_HEATMAP_PAINT;
+		for (const property of ["heatmap-intensity", "heatmap-radius"] as const) {
+			map.setPaintProperty(APP_SESSION_HEATMAP_LAYER_ID, property, paint?.[property]);
+		}
+	}, [isMapReady, isRegistrations]);
 
 	useEffect(() => {
 		const map = mapRef.current;
