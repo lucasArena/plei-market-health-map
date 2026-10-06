@@ -113,3 +113,5 @@ With `player-demographic-filters` enabled, Demand selects App sessions or User r
 Registration rendering uses a stronger heatmap intensity and wider radius for isolated market points. Its legend uses individual visible market counts, rather than summing nearby markets into session viewport areas. Switching back restores the session paint settings.
 
 The Demand picker uses a custom glass listbox matching the demographic filter option menus, with selected checkmarks, arrow/Home/End navigation, Escape dismissal, outside-click dismissal, and focus restoration on selection.
+
+`useFeatureFlag` resolves every UI feature flag to true under `next dev` (`NODE_ENV=development`), including while saved settings load. Staging and production builds honor the saved flags. Admin controls still display and edit persisted settings; the local override does not write to the database.
