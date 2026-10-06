@@ -1,0 +1,5 @@
+{
+	"name": "Market Health Map",
+	"user": "ubuntu",
+	"install": "nvm install && nvm alias default 24.21.0 && nvm use && corepack enable && pnpm install --frozen-lockfile"
+}
