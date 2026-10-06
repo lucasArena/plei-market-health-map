@@ -1,4 +1,4 @@
-import type { GeoPoint } from "@core/domain";
+import type { GameDepartmentCounts, GeoPoint } from "@core/domain";
 
 export interface FacilityPointView {
 	id: string;
@@ -8,6 +8,7 @@ export interface FacilityPointView {
 	avatarUrl: string | null;
 	isActive: boolean;
 	gamesLast28Days?: number;
+	gamesByDepartment?: GameDepartmentCounts;
 	isActiveLastWeek: boolean;
 	location: GeoPoint;
 }

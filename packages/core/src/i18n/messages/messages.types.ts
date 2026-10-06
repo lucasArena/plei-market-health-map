@@ -17,6 +17,11 @@ export interface Messages {
 		adminControlsDescription: string;
 	};
 	map: {
+		gameDepartment: string;
+		gameDepartmentMagic: string;
+		gameDepartmentOrganizers: string;
+		gameDepartmentPartnerships: string;
+		gameDepartmentsAll: string;
 		title: string;
 		loading: string;
 		failed: string;

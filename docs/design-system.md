@@ -53,3 +53,5 @@ Age filters offer optional minimum and maximum whole-year inputs (0–120) witho
 Gender and skill menus support multiple checked choices and remain open while selecting. Values within each field match with OR; separate fields combine with AND.
 
 Skill choices follow Beginner, Intermediate, Advanced, Expert progression while retaining warehouse-backed values.
+
+Layer sub-controls are visible only while their parent toggle is on: player filters follow Demand, and Department and Show inactive facilities follow Supply. Applied settings are retained when controls are hidden.
