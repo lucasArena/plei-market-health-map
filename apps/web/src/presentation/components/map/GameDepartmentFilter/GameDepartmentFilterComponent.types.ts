@@ -1,5 +1,13 @@
+import type { ReactNode } from "react";
+
 export interface GameDepartmentFilterProps {
 	enabled: boolean;
 }
 
-export type GameDepartmentMenu = "add" | "department" | null;
+export interface GameDepartmentFiltersProps extends GameDepartmentFilterProps {
+	children?: ReactNode;
+}
+
+export interface DepartmentCheckMarkProps {
+	selected: boolean;
+}

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
@@ -73,7 +73,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],
-		sessionHeatmapLegend: "Sessions per shaded area · last week",
+		sessionHeatmapLegend: "App session density · last week",
 		finishLegendMotion: vi.fn(),
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
@@ -85,6 +85,13 @@ function rulesWith(status: string, overrides: object = {}) {
 		selectSearchFacility: vi.fn(),
 		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
+		sessionFilterChips: [],
+		sessionFilterSummary: "",
+		sessionQueryStatus: "",
+		sessionQueryFailed: false,
+		retrySessionHeatmap: vi.fn(),
+		canRemoveSessionFilters: true,
+		removeSessionFilter: vi.fn(),
 		sessionScale: { low: 0, high: 0 },
 		sessionLegendState: "empty",
 		shownFacilities: [],
@@ -151,9 +158,9 @@ describe("FacilitiesMapScreen", () => {
 
 		const legend = screen.getByTestId("session-heatmap-legend");
 		expect(slot).toContainElement(legend);
-		expect(legend).toHaveTextContent("Sessions per shaded area · last week");
-		expect(legend).toHaveTextContent("Scale updates for the current map view");
-		expect(screen.getByText("Scale updates for the current map view")).toHaveClass("text-[10px]");
+		expect(legend).toHaveTextContent("App session density · last week");
+		expect(legend).toHaveTextContent("All players · scale follows the map view");
+		expect(screen.getByText("All players · scale follows the map view")).toHaveClass("text-[10px]");
 		expect(legend).toHaveTextContent("12");
 		expect(legend).toHaveTextContent("246");
 		expect(legend).toHaveTextContent("480+");
@@ -177,6 +184,118 @@ describe("FacilitiesMapScreen", () => {
 
 		expect(screen.getByText("No sessions in the current map view")).toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+	});
+
+	it("expands the legend filters when they overflow a single line", () => {
+		let notify: ResizeObserverCallback = () => undefined;
+		vi.stubGlobal(
+			"ResizeObserver",
+			class {
+				constructor(callback: ResizeObserverCallback) {
+					notify = callback;
+				}
+				observe() {
+					notify([] as unknown as ResizeObserverEntry[], this as unknown as ResizeObserver);
+				}
+				unobserve() {}
+				disconnect() {}
+			},
+		);
+		const scrollWidth = vi
+			.spyOn(HTMLElement.prototype, "scrollWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 240 : 0;
+			});
+		const clientWidth = vi
+			.spyOn(HTMLElement.prototype, "clientWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 160 : 0;
+			});
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				isLegendShown: true,
+				sessionScale: { low: 1, high: 10 },
+				sessionFilterChips: [
+					{ field: "gender", id: "female", label: "Female" },
+					{ field: "gender", id: "male", label: "Male" },
+					{ field: "skill", id: "beginner", label: "Beginner" },
+					{ field: "age", id: "age", label: "18–64" },
+				],
+				sessionFilterSummary: "Female · Male · Beginner · 18–64",
+				canRemoveSessionFilters: true,
+				removeSessionFilter: vi.fn(),
+			}),
+		);
+
+		renderWithMessages(<FacilitiesMapScreen />);
+		const row = screen.getByTestId("session-legend-filters");
+		act(() => {
+			notify([] as unknown as ResizeObserverEntry[], {} as ResizeObserver);
+		});
+
+		const expand = screen.getByRole("button", { name: "Show all filters" });
+		expect(row).toHaveClass("flex-nowrap", "overflow-hidden");
+		fireEvent.click(expand);
+		expect(screen.getByRole("button", { name: "Show fewer filters" })).toBeInTheDocument();
+		expect(row).toHaveClass("flex-wrap");
+		expect(row).not.toHaveClass("overflow-hidden");
+		scrollWidth.mockRestore();
+		clientWidth.mockRestore();
+		vi.unstubAllGlobals();
+	});
+
+	it("measures legend filter overflow when ResizeObserver is unavailable", () => {
+		vi.stubGlobal("ResizeObserver", undefined);
+		const scrollWidth = vi
+			.spyOn(HTMLElement.prototype, "scrollWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 240 : 0;
+			});
+		const clientWidth = vi
+			.spyOn(HTMLElement.prototype, "clientWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 160 : 0;
+			});
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				isLegendShown: true,
+				sessionScale: { low: 1, high: 10 },
+				sessionFilterChips: [
+					{ field: "gender", id: "female", label: "Female" },
+					{ field: "gender", id: "male", label: "Male" },
+				],
+				canRemoveSessionFilters: true,
+				removeSessionFilter: vi.fn(),
+			}),
+		);
+		renderWithMessages(<FacilitiesMapScreen />);
+		expect(screen.getByRole("button", { name: "Show all filters" })).toBeInTheDocument();
+		scrollWidth.mockRestore();
+		clientWidth.mockRestore();
+		vi.unstubAllGlobals();
+	});
+
+	it("removes a filter chip from the session reference panel", () => {
+		const removeSessionFilter = vi.fn();
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				isLegendShown: true,
+				sessionScale: { low: 1, high: 10 },
+				sessionFilterChips: [{ field: "gender", id: "female", label: "Female" }],
+				canRemoveSessionFilters: true,
+				removeSessionFilter,
+			}),
+		);
+		renderWithMessages(<FacilitiesMapScreen />);
+		fireEvent.click(screen.getByRole("button", { name: "Remove Female filter" }));
+		expect(removeSessionFilter).toHaveBeenCalledWith("gender", "female");
 	});
 
 	it("shows a loading state instead of an empty legend while sessions load", () => {

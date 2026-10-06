@@ -1,73 +1,108 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithMessages } from "@/application/test/render-with-messages";
-import { GameDepartmentFilter } from "@/presentation/components/map/GameDepartmentFilter/GameDepartmentFilterComponent";
+import {
+	GameDepartmentFilterAdd,
+	GameDepartmentFilterApply,
+	GameDepartmentFilterChips,
+	GameDepartmentFilters,
+} from "@/presentation/components/map/GameDepartmentFilter/GameDepartmentFilterComponent";
 import { MapLayersProvider } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 
-function addDepartment() {
+function openDepartment() {
 	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
-	fireEvent.click(screen.getByRole("option", { name: "Department" }));
+	fireEvent.click(screen.getByRole("button", { name: "Department" }));
+}
+
+function renderDepartmentFilters() {
+	return renderWithMessages(
+		<MapLayersProvider>
+			<GameDepartmentFilters enabled>
+				<GameDepartmentFilterChips />
+				<GameDepartmentFilterAdd />
+				<GameDepartmentFilterApply />
+			</GameDepartmentFilters>
+		</MapLayersProvider>,
+	);
 }
 
 it("adds Department, stages multiple choices and applies them with matching filter styling", () => {
-	renderWithMessages(
-		<MapLayersProvider>
-			<GameDepartmentFilter enabled />
-		</MapLayersProvider>,
-	);
-	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
-	expect(screen.queryByText("All games")).not.toBeInTheDocument();
-	addDepartment();
-	const magic = screen.getByRole("option", { name: "Magic" });
+	renderDepartmentFilters();
+	expect(screen.queryByText("Magic")).not.toBeInTheDocument();
+	openDepartment();
+	const magic = screen.getByRole("checkbox", { name: "Magic" });
 	expect(magic).toHaveFocus();
-	expect(screen.getByRole("listbox", { name: "Department" }).parentElement).toHaveClass(
-		"map-glass",
-		"rounded-[var(--map-radius)]",
-	);
-	fireEvent.click(magic);
-	fireEvent.click(screen.getByRole("option", { name: "Organizers" }));
-	expect(screen.getByRole("button", { name: "Department" })).toHaveTextContent("Magic, Organizers");
-	expect(screen.queryByText("All games")).not.toBeInTheDocument();
-	fireEvent.click(magic);
-	expect(magic).toHaveAttribute("aria-selected", "false");
-	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 	expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-	expect(screen.queryByRole("button", { name: "Apply filters" })).not.toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Department" }));
-	fireEvent.click(screen.getByRole("button", { name: "Close filter options" }));
-	fireEvent.click(screen.getByRole("button", { name: "Remove Department filter" }));
-	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
+	fireEvent.click(magic);
+	fireEvent.click(screen.getByRole("checkbox", { name: "Organizers" }));
+	expect(screen.queryByRole("button", { name: "Remove Magic filter" })).not.toBeInTheDocument();
+	fireEvent.click(magic);
+	expect(magic).not.toBeChecked();
+	fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+	expect(screen.getByRole("button", { name: "Remove Organizers filter" })).toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Apply filter" })).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Remove Organizers filter" }));
+	expect(
+		screen.queryByRole("button", { name: "Remove Organizers filter" }),
+	).not.toBeInTheDocument();
 	expect(screen.getByRole("button", { name: "Add filter" })).toBeEnabled();
 });
 
-it("supports option keyboard navigation, Escape, outside dismissal and disabling", () => {
-	const { rerender } = renderWithMessages(
-		<MapLayersProvider>
-			<GameDepartmentFilter enabled />
-		</MapLayersProvider>,
-	);
-	addDepartment();
-	const magic = screen.getByRole("option", { name: "Magic" });
+it("supports option keyboard navigation, Escape, and disabling", () => {
+	const { rerender } = renderDepartmentFilters();
+	openDepartment();
+	const magic = screen.getByRole("checkbox", { name: "Magic" });
 	fireEvent.keyDown(magic, { key: "ArrowDown" });
-	const organizers = screen.getByRole("option", { name: "Organizers" });
+	const organizers = screen.getByRole("checkbox", { name: "Organizers" });
 	expect(organizers).toHaveFocus();
 	fireEvent.keyDown(organizers, { key: "ArrowUp" });
 	expect(magic).toHaveFocus();
 	fireEvent.keyDown(magic, { key: "End" });
-	const partnerships = screen.getByRole("option", { name: "Partnerships" });
+	const partnerships = screen.getByRole("checkbox", { name: "Partnerships" });
 	expect(partnerships).toHaveFocus();
 	fireEvent.keyDown(partnerships, { key: "Home" });
 	expect(magic).toHaveFocus();
-	fireEvent.keyDown(magic, { key: "Tab" });
 	fireEvent.keyDown(magic, { key: "Escape" });
-	fireEvent.click(screen.getByRole("button", { name: "Department" }));
-	fireEvent.pointerDown(document.body);
-	expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Department" }));
+	expect(screen.getByRole("button", { name: "Department" })).toHaveAttribute(
+		"aria-expanded",
+		"false",
+	);
+	fireEvent.keyDown(screen.getByRole("button", { name: "Add filter" }), { key: "Escape" });
+	expect(screen.getByRole("button", { name: "Add filter" })).toHaveAttribute(
+		"aria-expanded",
+		"false",
+	);
+	openDepartment();
 	rerender(
 		<MapLayersProvider>
-			<GameDepartmentFilter enabled={false} />
+			<GameDepartmentFilters enabled={false}>
+				<GameDepartmentFilterAdd />
+			</GameDepartmentFilters>
 		</MapLayersProvider>,
 	);
-	expect(screen.getByRole("button", { name: "Department" })).toBeDisabled();
-	expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Add filter" })).not.toBeInTheDocument();
+});
+
+it("closes the add menu from Escape when the department list is already closed", () => {
+	renderDepartmentFilters();
+	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+	const add = screen.getByRole("button", { name: "Add filter" });
+	fireEvent.keyDown(add, { key: "Escape" });
+	expect(add).toHaveAttribute("aria-expanded", "false");
+	expect(add).toHaveFocus();
+});
+
+it("ignores department arrow keys when focus is outside the checkbox group", () => {
+	renderDepartmentFilters();
+	openDepartment();
+	const magic = screen.getByRole("checkbox", { name: "Magic" });
+	magic.blur();
+	fireEvent.keyDown(document.body, { key: "ArrowDown" });
+	expect(document.activeElement).not.toBe(screen.getByRole("checkbox", { name: "Organizers" }));
+});
+
+it("collapses the department submenu when Add filter closes", () => {
+	renderDepartmentFilters();
+	openDepartment();
+	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
 });

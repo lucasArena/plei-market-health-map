@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+	type KeyboardEvent,
+	type RefObject,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { layersPanelPreference } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import {
@@ -11,6 +18,25 @@ import {
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
+
+function useRadiogroupKeys(rootRef: RefObject<HTMLElement | null>) {
+	return (event: KeyboardEvent<HTMLElement>) => {
+		if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+		event.preventDefault();
+		event.stopPropagation();
+		const options = Array.from(
+			rootRef.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]') ?? [],
+		);
+		if (!options.length) return;
+		const index = options.indexOf(document.activeElement as HTMLInputElement);
+		let next = (index + 1) % options.length;
+		if (event.key === "ArrowUp") next = (index - 1 + options.length) % options.length;
+		if (event.key === "Home") next = 0;
+		if (event.key === "End") next = options.length - 1;
+		options[next]?.focus();
+		options[next]?.click();
+	};
+}
 
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
@@ -26,46 +52,19 @@ export function useMapLayersPanelRules() {
 	}, [showGamesTrendToggle, setShowGamesTrend]);
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const setSessionFilters = layers?.setSessionFilters;
+	const setDemandMetric = layers?.setDemandMetric;
 	useEffect(() => {
-		if (!showDemographics) setSessionFilters?.({});
-	}, [showDemographics, setSessionFilters]);
-	const [isDemandOpen, setIsDemandOpen] = useState(false);
-	const demandRootRef = useRef<HTMLDivElement>(null);
-	const demandTriggerRef = useRef<HTMLButtonElement>(null);
-	const demandListId = useId();
-	const closeDemand = () => {
-		setIsDemandOpen(false);
-		demandTriggerRef.current?.focus();
-	};
-	const toggleDemand = () => setIsDemandOpen((current) => !current);
-	const demandKeys = (event: KeyboardEvent<HTMLElement>) => {
-		if (event.key === "Escape" && isDemandOpen) {
-			event.preventDefault();
-			event.stopPropagation();
-			closeDemand();
-			return;
+		if (!showDemographics) {
+			setSessionFilters?.({});
+			setDemandMetric?.("sessions");
 		}
-		if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-		event.preventDefault();
-		event.stopPropagation();
-		if (!isDemandOpen) {
-			setIsDemandOpen(true);
-			return;
-		}
-		const options = Array.from(
-			demandRootRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [],
-		);
-		const index = options.indexOf(document.activeElement as HTMLButtonElement);
-		let next = (index + 1) % options.length;
-		if (event.key === "ArrowUp") next = (index - 1 + options.length) % options.length;
-		if (event.key === "Home") next = 0;
-		if (event.key === "End") next = options.length - 1;
-		options[next]?.focus();
-	};
-	useEffect(() => {
-		if (isDemandOpen)
-			demandRootRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
-	}, [isDemandOpen]);
+	}, [showDemographics, setSessionFilters, setDemandMetric]);
+
+	const demandGroupRef = useRef<HTMLDivElement>(null);
+	const supplyGroupRef = useRef<HTMLDivElement>(null);
+	const demandKeys = useRadiogroupKeys(demandGroupRef);
+	const supplyKeys = useRadiogroupKeys(supplyGroupRef);
+
 	const isOnMap = usePathname() === "/";
 	const [isExpanded, setIsExpanded] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isExpanded);
@@ -86,13 +85,12 @@ export function useMapLayersPanelRules() {
 	const showSessions = layers?.showSessions ?? localShowSessions;
 	const showGamesTrend = layers?.showGamesTrend ?? localShowGamesTrend;
 	const demandMetric = showDemographics ? (layers?.demandMetric ?? "sessions") : "sessions";
-	const selectDemandMetric = (metric: "sessions" | "registrations") => {
-		layers?.setDemandMetric?.(metric);
-		closeDemand();
+	const selectDemandMetric = (value: string) => {
+		layers?.setDemandMetric?.(value === "registrations" ? "registrations" : "sessions");
 	};
 	const isCustomized =
-		Boolean(layers?.demandFiltersPresent || layers?.supplyFiltersPresent) ||
-		demandMetric !== "sessions" ||
+		Boolean((showDemographics && layers?.demandFiltersPresent) || layers?.supplyFiltersPresent) ||
+		(showDemographics && demandMetric !== "sessions") ||
 		(showGamesSelector && supplyMetric !== "games") ||
 		(showGamesSelector && Boolean(layers?.gameDepartments?.length)) ||
 		isMapLayersCustomized({
@@ -100,11 +98,12 @@ export function useMapLayersPanelRules() {
 			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
 			showGamesTrend: showGamesTrendToggle && supplyMetric === "games" ? showGamesTrend : false,
 			showSessions,
-			sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
+			sessionFilters: showDemographics
+				? (layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters)
+				: MAP_LAYERS_DEFAULTS.sessionFilters,
 		});
 
 	const expand = useCallback((next: boolean) => {
-		if (!next) setIsDemandOpen(false);
 		layersPanelPreference.remember(next);
 		setIsExpanded(next);
 	}, []);
@@ -145,7 +144,6 @@ export function useMapLayersPanelRules() {
 	}, [layers]);
 
 	const resetLayers = useCallback(() => {
-		setIsDemandOpen(false);
 		layers?.resetLayers();
 		setLocalShowActiveFacilities(MAP_LAYERS_DEFAULTS.showActiveFacilities);
 		setLocalShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
@@ -163,21 +161,18 @@ export function useMapLayersPanelRules() {
 		const closeWhenOutside = (event: PointerEvent) => {
 			if (!rootRef.current) return;
 			if (!rootRef.current.contains(event.target as Node)) expand(false);
-			if (!demandRootRef.current?.contains(event.target as Node)) setIsDemandOpen(false);
 		};
 		document.addEventListener("pointerdown", closeWhenOutside);
 		return () => document.removeEventListener("pointerdown", closeWhenOutside);
 	}, [expand]);
 
 	return {
-		isDemandOpen,
-		demandRootRef,
-		demandTriggerRef,
-		demandListId,
-		toggleDemand,
+		demandGroupRef,
 		demandKeys,
 		demandMetric,
 		selectDemandMetric,
+		supplyGroupRef,
+		supplyKeys,
 		showGamesSelector,
 		showGamesTrendToggle,
 		supplyMetric,
@@ -199,6 +194,7 @@ export function useMapLayersPanelRules() {
 		showGamesTrend,
 		showSessions,
 		toggleExpanded,
+		closePanel: () => expand(false),
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
 		toggleGamesTrend,

@@ -12,6 +12,11 @@ export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 export const MAP_CENTER: [number, number] = [-96.5, 38.5];
 export const MAP_ZOOM = 3.4;
+export const MAP_CURSOR = {
+	navigate: "default",
+	dragging: "grabbing",
+	interactive: "pointer",
+} as const;
 export const FACILITIES_SOURCE_ID = "facilities";
 export const FACILITIES_LAYER_ID = "facilities-dots";
 export const FACILITIES_LOGO_LAYER_ID = "facilities-logos";
@@ -148,7 +153,7 @@ export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 };
 
 export const SESSION_HEATMAP_LEGEND_CLASS = [
-	"map-glass min-w-56 rounded-[var(--map-radius)]",
+	"pointer-events-auto map-glass w-56 rounded-[var(--map-radius)]",
 	"border border-border/60 px-3 py-2.5 shadow-[var(--map-shadow)]",
 ].join(" ");
 

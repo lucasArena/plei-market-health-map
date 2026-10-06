@@ -12,6 +12,7 @@ import {
 	formatGamesChange,
 	formatGamesCount,
 	formatGamesTrend,
+	formatHoverGamesBadge,
 	HOVER_TREND_LINE_HEIGHT,
 	trendWindowDays,
 } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
@@ -67,6 +68,10 @@ function clusterHover(trend?: GamesTrend, games?: number, facilities = [POINT]) 
 const games = (current: number, previous: number) => gamesTrend(current, previous);
 
 describe("hover trend copy", () => {
+	it("formats compact games badges like the map markers", () => {
+		expect(formatHoverGamesBadge(658)).toBe("658");
+		expect(formatHoverGamesBadge(1300)).toBe("1.3K");
+	});
 	it("describes games by the change in games over the window", () => {
 		expect(formatGamesTrend(gamesTrend(42, 51), TREND)).toBe(
 			"42 games, down 9 from the previous 28 days",
@@ -95,14 +100,15 @@ describe("hover trend copy", () => {
 });
 
 describe("hover card trend line", () => {
-	it("shows only the games line under a facility name with Games selected", () => {
+	it("shows the games count on the right and the change under a facility name with trend on", () => {
 		render(
 			<FacilityHoverCard hover={facilityHover(games(42, 51), 42)} messages={EN_MESSAGES.map} />,
 		);
 
 		expect(screen.getByText("Eastside Futsal Arena")).toBeInTheDocument();
+		expect(screen.getByText("42")).toBeInTheDocument();
 		expect(screen.getByTestId("facility-hover-trend")).toHaveTextContent(
-			"42 games, down 9 from the previous 28 days",
+			"Down 9 from the previous 28 days",
 		);
 		expect(screen.queryByTestId(/trend-swatch/)).not.toBeInTheDocument();
 	});
@@ -126,6 +132,7 @@ describe("hover card trend line", () => {
 		expect(screen.getAllByText(/games/)).toHaveLength(1);
 		expect(screen.queryByText(/facilit/)).not.toBeInTheDocument();
 		expect(screen.getByText("Eastside Futsal Arena")).toBeInTheDocument();
+		expect(screen.getByText("0")).toBeInTheDocument();
 	});
 
 	it("shows only the games count in Games mode with trend off, and no facility count", () => {
@@ -140,19 +147,21 @@ describe("hover card trend line", () => {
 		expect(screen.getByText("Westside Courts")).toBeInTheDocument();
 	});
 
-	it("shows the facility's games count, then the count with its change while trend is on", () => {
+	it("shows the games count on the right and the change below while trend is on", () => {
 		const { rerender } = render(
 			<FacilityHoverCard hover={facilityHover(undefined, 1)} messages={EN_MESSAGES.map} />,
 		);
-		expect(screen.getByTestId("facility-hover-trend")).toHaveTextContent(/^1 game$/);
+		expect(screen.getByText("1")).toBeInTheDocument();
+		expect(screen.queryByTestId("facility-hover-trend")).not.toBeInTheDocument();
 
 		rerender(
 			<FacilityHoverCard hover={facilityHover(games(6, 0), 6)} messages={EN_MESSAGES.map} />,
 		);
+		expect(screen.getByText("6")).toBeInTheDocument();
 		expect(screen.getByTestId("facility-hover-trend")).toHaveTextContent(
-			/^6 games, up 6 from the previous 28 days$/,
+			"Up 6 from the previous 28 days",
 		);
-		expect(screen.getAllByText(/games/)).toHaveLength(1);
+		expect(screen.getByTestId("facility-hover-trend").textContent).not.toMatch(/games/i);
 	});
 
 	it("keeps the cluster heading as a plain count while trend is off", () => {
@@ -171,7 +180,7 @@ describe("hover card trend line", () => {
 		expect(facilityTrendLine(clusterHover(games(1, 1)), EN_MESSAGES.map)).toBeNull();
 		expect(facilityTrendLine(facilityHover(games(6, 0)), EN_MESSAGES.map)).toBeNull();
 		expect(facilityTrendLine(facilityHover(games(6, 0), 6), EN_MESSAGES.map)).toBe(
-			"6 games, up 6 from the previous 28 days",
+			"Up 6 from the previous 28 days",
 		);
 	});
 
@@ -192,7 +201,7 @@ describe("hover card trend line", () => {
 			<FacilityHoverCard hover={facilityHover(games(42, 51), 42)} messages={EN_MESSAGES.map} />,
 		);
 		expect(screen.getByTestId("facility-hover-trend")).toHaveTextContent(
-			"42 games, down 9 from the previous 7 days",
+			"Down 9 from the previous 7 days",
 		);
 
 		rerender(
@@ -208,9 +217,7 @@ describe("hover card trend line", () => {
 		expect(facilityHoverCardHeight(true) - facilityHoverCardHeight()).toBe(
 			FACILITY_HOVER_TREND_HEIGHT,
 		);
-		expect(facilityHoverCardHeight(false, true) - facilityHoverCardHeight()).toBe(
-			HOVER_TREND_LINE_HEIGHT,
-		);
+		expect(facilityHoverCardHeight(false) - facilityHoverCardHeight()).toBe(0);
 		expect(clusterHoverCardHeight(0, false, true) - clusterHoverCardHeight(0, false)).toBe(
 			HOVER_TREND_LINE_HEIGHT,
 		);

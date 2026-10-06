@@ -293,7 +293,10 @@ describe("FacilityHoverCard", () => {
 		expect(clusterHoverListMaxHeight()).toBe(270);
 		expect(list).toHaveStyle({ maxHeight: "270px" });
 		expect(screen.getAllByRole("button")).toHaveLength(9);
-		expect(screen.getAllByRole("button")[0]).toHaveClass("hover:bg-muted");
+		expect(screen.getAllByRole("button")[0]).toHaveClass(
+			"hover:bg-foreground/[0.07]",
+			"focus:bg-foreground/[0.07]",
+		);
 		expect(screen.queryByText(/more/)).not.toBeInTheDocument();
 	});
 

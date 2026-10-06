@@ -54,10 +54,20 @@ export interface Messages {
 			close: string;
 			heading: string;
 			gender: string;
+			female: string;
+			male: string;
+			other: string;
+			preferNotToSay: string;
 			skill: string;
+			beginner: string;
+			intermediate: string;
+			advanced: string;
+			expert: string;
 			age: string;
 			minimumAge: string;
 			maximumAge: string;
+			increaseAge: string;
+			decreaseAge: string;
 			ageRangeHelp: string;
 			invalidAge: string;
 			allGenders: string;
@@ -80,6 +90,8 @@ export interface Messages {
 			retry: string;
 			applied: string;
 			pending: string;
+			expandFilters: string;
+			collapseFilters: string;
 		};
 		layersGames: string;
 		trend: {

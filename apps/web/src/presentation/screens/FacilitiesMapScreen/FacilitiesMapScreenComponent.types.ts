@@ -159,3 +159,21 @@ export interface FacilityGlassBadge {
 	/** Games layer only: no games in the current window, drawn in the inactive marker style. */
 	noGames?: boolean;
 }
+
+export type SessionLegendFilterField = "gender" | "skill" | "age";
+
+export interface SessionLegendFilterChip {
+	field: SessionLegendFilterField;
+	id: string;
+	label: string;
+}
+
+export interface SessionLegendFiltersProps {
+	chips: readonly SessionLegendFilterChip[];
+	context: string;
+	expandLabel: string;
+	collapseLabel: string;
+	removeLabel: string;
+	canRemove: boolean;
+	onRemove: (field: SessionLegendFilterField, id: string) => void;
+}

@@ -16,9 +16,11 @@ import {
 	applyFacilityGlassActivity,
 	applyFacilityLayerMotion,
 	applyGlassTrend,
+	applyInactiveGamesMarker,
 	appSessionHeatmapAreas,
 	appSessionHeatmapScale,
 	bindFacilityGlass,
+	clusterHoverPlacement,
 	clusterListZoom,
 	clusterTrend,
 	createClusterGlassNode,
@@ -30,6 +32,7 @@ import {
 	facilitiesForPeriod,
 	facilityTrend,
 	marketBounds,
+	nearestGlassPosition,
 	placeHover,
 	readClusterGlassBadges,
 	readFacilityGlassBadges,
@@ -59,21 +62,27 @@ import {
 	FACILITY_GLASS_SELECTED_SHADOW,
 	FACILITY_GLASS_SHADOW,
 	INACTIVE_GAMES_MARKER_STYLE,
+	MAP_CURSOR,
 	REGISTRATION_HEATMAP_PAINT,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 import type { ClusterTreeSource } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
-const mapState = vi.hoisted(() => ({
-	instances: [] as Array<Record<string, ReturnType<typeof vi.fn>>>,
-	handlers: new Map<string, (...args: unknown[]) => unknown>(),
-	canvas: { style: { cursor: "" } },
-	setData: vi.fn(),
-	getClusterLeaves: vi.fn(),
-	getClusterExpansionZoom: vi.fn(),
-	getClusterChildren: vi.fn(),
-	setWorkerUrl: vi.fn(),
-}));
+const mapState = vi.hoisted(() => {
+	const canvasContainer = document.createElement("div");
+	const canvas = document.createElement("canvas");
+	canvasContainer.appendChild(canvas);
+	return {
+		instances: [] as Array<Record<string, ReturnType<typeof vi.fn>>>,
+		handlers: new Map<string, (...args: unknown[]) => unknown>(),
+		canvas,
+		setData: vi.fn(),
+		getClusterLeaves: vi.fn(),
+		getClusterExpansionZoom: vi.fn(),
+		getClusterChildren: vi.fn(),
+		setWorkerUrl: vi.fn(),
+	};
+});
 const queryClient = vi.hoisted(() => ({}));
 const mockPrefetchFacilityStats = vi.hoisted(() => vi.fn());
 
@@ -96,11 +105,17 @@ vi.mock("maplibre-gl", () => {
 		fitBounds = vi.fn();
 		setPaintProperty = vi.fn();
 		triggerRepaint = vi.fn();
+		stop = vi.fn();
 		project = vi.fn(() => ({ x: 200, y: 80 }));
 		getCanvas = vi.fn(() => mapState.canvas);
+		getCanvasContainer = vi.fn(() => mapState.canvas.parentElement ?? mapState.canvas);
+		getCenter = vi.fn(() => ({ lng: -98, lat: 39 }));
 		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
 		getZoom = vi.fn(() => 4);
 		getBounds = vi.fn(() => ({ contains: () => true }));
+		getLayer = vi.fn((layerId: string) => ({ id: layerId }));
+		setLayoutProperty = vi.fn();
+		queryRenderedFeatures = vi.fn(() => []);
 		getSource = vi.fn(() => ({
 			setData: mapState.setData,
 			getClusterLeaves: mapState.getClusterLeaves,
@@ -144,6 +159,7 @@ const layersState = vi.hoisted(() => ({
 	gameDepartments: [] as ("magic" | "organizers" | "partnerships")[],
 	showGamesTrend: false,
 	sessionFilters: {} as AppSessionFilters,
+	setSessionFilters: vi.fn(),
 }));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
@@ -160,6 +176,7 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					gameDepartments: layersState.gameDepartments,
 					showGamesTrend: layersState.showGamesTrend,
 					sessionFilters: layersState.sessionFilters,
+					setSessionFilters: layersState.setSessionFilters,
 					setShowSessions: vi.fn(),
 				}
 			: null,
@@ -388,13 +405,41 @@ describe("facility glass", () => {
 		expect(badges).toEqual([{ id: "quiet", x: 4, y: 5, active: false }]);
 	});
 
+	it("styles inactive games markers on the disc, ring, and label", () => {
+		const node = document.createElement("div");
+		const label = document.createElement("span");
+		label.dataset.testid = "cluster-glass-label";
+		node.appendChild(label);
+		const ring = document.createElement("span");
+		applyInactiveGamesMarker(node, true, ring);
+		expect(node.dataset.inactive).toBe("true");
+		expect(ring.style.borderStyle).not.toBe("solid");
+		applyInactiveGamesMarker(node, false, ring);
+		expect(node.dataset.inactive).toBeUndefined();
+		expect(ring.style.borderStyle).toBe("solid");
+		applyInactiveGamesMarker(node, true);
+		expect(node.style.border).toContain("dashed");
+		applyInactiveGamesMarker(node, false);
+		expect(node.style.opacity).toBe("");
+	});
+
+	it("places cluster hovers at the cluster center", () => {
+		expect(clusterHoverPlacement({ x: 12, y: 34 }, { width: 800, height: 600 })).toEqual({
+			x: 12,
+			y: 34,
+			flipX: false,
+			flipY: false,
+			viewport: { width: 800, height: 600 },
+		});
+	});
+
 	it("draws a 41px glass cluster and a gray stroke and count when no facility inside is active", () => {
 		const node = createClusterGlassNode();
 		const ring = node.querySelector("[data-testid='cluster-glass-stroke']");
 		const label = node.querySelector("[data-testid='cluster-glass-label']");
 		expect(node.style.width).toBe("41px");
 		expect(node.style.pointerEvents).toBe("none");
-		expect(ring).toHaveStyle({ width: "35px", height: "35px", border: "2px solid #86EFAC" });
+		expect(ring).toHaveStyle({ inset: "3px", border: "2px solid #86EFAC" });
 		applyClusterGlassActivity(node, false);
 		expect(node.style.backgroundColor).toBe("rgba(255, 255, 255, 0.28)");
 		expect(node.style.backdropFilter).toBe("blur(18px) saturate(1.8)");
@@ -447,6 +492,73 @@ describe("facility glass", () => {
 		);
 		syncClusterGlass(host, badges, nodes, null);
 		expect(hovered?.style.transform).toBe("translate(-50%, -50%) scale(1)");
+	});
+
+	it("anchors glass markers when no projected positions exist", () => {
+		expect(nearestGlassPosition([], { x: 5, y: 5 })).toEqual({ x: 5, y: 5 });
+	});
+
+	it("keeps the facility copy nearest the map center when the same id repeats", () => {
+		const project = (coordinates: [number, number]) => ({
+			x: coordinates[0] === 1 ? 40 : 900,
+			y: 50,
+		});
+		expect(
+			readFacilityGlassBadges(
+				[
+					{ properties: { id: "a" }, geometry: { coordinates: [1, 2] } },
+					{ properties: { id: "a" }, geometry: { coordinates: [2, 2] } },
+				],
+				project,
+				false,
+				false,
+				{ x: 45, y: 50 },
+			),
+		).toEqual([{ id: "a", x: 40, y: 50, active: true }]);
+	});
+
+	it("flags clusters with no games when games mode and trend are on", () => {
+		const badges = readClusterGlassBadges(
+			[
+				{
+					properties: {
+						cluster_id: 1,
+						point_count: 2,
+						gameCount: 0,
+						gamePreviousCount: 4,
+					},
+					geometry: { coordinates: [0, 0] },
+				},
+			],
+			() => ({ x: 1, y: 2 }),
+			true,
+			false,
+		);
+		expect(badges[0]?.noGames).toBe(true);
+	});
+
+	it("keeps the cluster copy nearest the map center when tiles repeat the same id", () => {
+		const project = (coordinates: [number, number]) => ({
+			x: coordinates[0] === 1 ? 40 : 900,
+			y: coordinates[1] === 2 ? 50 : 50,
+		});
+		const badges = readClusterGlassBadges(
+			[
+				{
+					properties: { cluster_id: 3, point_count: 4, activeCount: 4 },
+					geometry: { coordinates: [1, 2] },
+				},
+				{
+					properties: { cluster_id: 3, point_count: 4, activeCount: 4 },
+					geometry: { coordinates: [2, 2] },
+				},
+			],
+			project,
+			false,
+			false,
+			{ x: 45, y: 50 },
+		);
+		expect(badges).toEqual([{ id: 3, label: "4", x: 40, y: 50, active: true }]);
 	});
 
 	it("keeps one badge per cluster and marks a cluster inactive when it has no active facility", () => {
@@ -531,7 +643,9 @@ describe("facility glass", () => {
 		const handlers = new Map<string, () => void>();
 		const layers = new Set(["facilities-clusters", "facilities-dots"]);
 		const map = {
+			getCanvasContainer: () => container,
 			getContainer: () => container,
+			getCenter: () => ({ lng: 0, lat: 0 }),
 			getLayer: (id: string) => (layers.has(id) ? {} : undefined),
 			queryRenderedFeatures: ({ layers: requested }: { layers: string[] }) => {
 				if (requested[0] === "facilities-clusters") {
@@ -604,11 +718,90 @@ describe("facility glass", () => {
 		requestFrame.mockRestore();
 		expect(
 			bindFacilityGlass(
-				{ getContainer: () => ({}) } as never,
+				{ getCanvasContainer: () => ({}), getContainer: () => ({}) } as never,
 				showFacilitiesRef,
 				selectedFacilityIdRef,
 			),
 		).toBeUndefined();
+	});
+
+	it("falls back to the map container when the canvas parent is not an element", () => {
+		const container = document.createElement("div");
+		const showFacilitiesRef = { current: true };
+		const selectedFacilityIdRef = { current: null as string | null };
+		const map = {
+			getCanvasContainer: () => ({}),
+			getContainer: () => container,
+			getLayer: () => undefined,
+			getCenter: () => ({ lng: 0, lat: 0 }),
+			queryRenderedFeatures: () => [],
+			project: () => ({ x: 0, y: 0 }),
+			on: vi.fn(),
+			off: vi.fn(),
+		};
+		const unbind = bindFacilityGlass(map as never, showFacilitiesRef, selectedFacilityIdRef);
+		expect(container.querySelector("[data-testid='facility-glass']")).toBeTruthy();
+		unbind?.();
+	});
+
+	it("draws games totals and trend rings when games mode is on", () => {
+		const container = document.createElement("div");
+		const handlers = new Map<string, () => void>();
+		const layers = new Set(["facilities-clusters", "facilities-dots"]);
+		const map = {
+			getCanvasContainer: () => container,
+			getContainer: () => container,
+			getLayer: (id: string) => (layers.has(id) ? { id } : undefined),
+			getCenter: () => ({ lng: -97, lat: 30 }),
+			queryRenderedFeatures: ({ layers: requested }: { layers: string[] }) => {
+				if (requested[0] === "facilities-clusters") {
+					return [
+						{
+							geometry: { coordinates: [1, 2] },
+							properties: {
+								cluster_id: 2,
+								point_count: 3,
+								activeCount: 3,
+								gameCount: 120,
+								gamePreviousCount: 100,
+							},
+						},
+					];
+				}
+				return [
+					{
+						geometry: { coordinates: [3, 4] },
+						properties: {
+							id: "f1",
+							isActive: true,
+							gamesLast28Days: 40,
+							gamesPrevious28Days: 50,
+						},
+					},
+				];
+			},
+			project: () => ({ x: 12, y: 34 }),
+			on: (_event: string, handler: () => void) => {
+				handlers.set("render", handler);
+			},
+			off: vi.fn(),
+		};
+		const showFacilitiesRef = { current: true };
+		const showGamesRef = { current: true };
+		const showTrendRef = { current: true };
+		const unbind = bindFacilityGlass(
+			map as never,
+			showFacilitiesRef,
+			{ current: "f1" },
+			{ current: null },
+			{ current: () => undefined },
+			showGamesRef,
+			showTrendRef,
+		);
+		handlers.get("render")?.();
+		expect(container.querySelector("[data-testid='cluster-glass-label']")?.textContent).toBe("120");
+		expect(container.querySelector("[data-testid='facility-glass-label']")?.textContent).toBe("40");
+		unbind?.();
 	});
 });
 
@@ -686,6 +879,11 @@ describe("toAppSessionHeatmapFeatureCollection", () => {
 		expect(features[0]?.properties.intensity).toBeLessThan(features[1]?.properties.intensity ?? 0);
 		expect(features[1]?.properties.intensity).toBe(1);
 	});
+
+	it("uses a default ceiling when every session weight is zero", () => {
+		const result = toAppSessionHeatmapFeatureCollection([{ lat: 29, lng: -95, sessionWeight: 0 }]);
+		expect(result.features[0]?.properties.intensity).toBe(0.01);
+	});
 });
 
 describe("appSessionHeatmapScale", () => {
@@ -728,6 +926,33 @@ describe("appSessionHeatmapScale", () => {
 		expect(appSessionHeatmapScale(cells, zoomedOut)).toEqual({ low: 300, high: 300 });
 		expect(appSessionHeatmapAreas(cells, zoomedIn)).toHaveLength(2);
 		expect(appSessionHeatmapScale(cells, zoomedIn)).toEqual({ low: 100, high: 200 });
+	});
+
+	it("skips area bucketing when bounds edges are invalid", () => {
+		const cells = [{ lat: 29.75, lng: -95.35, sessionWeight: 100 }];
+		const invalid = {
+			contains: () => true,
+			getWest: () => -90,
+			getEast: () => -100,
+			getSouth: () => 25,
+			getNorth: () => 35,
+		};
+		expect(appSessionHeatmapAreas(cells, invalid)).toEqual(cells);
+	});
+
+	it("builds the scale from raw cells when area aggregation is off", () => {
+		const cells = [
+			{ lat: 29.75, lng: -95.35, sessionWeight: 100 },
+			{ lat: 29.75, lng: -95.34, sessionWeight: 200 },
+		];
+		const bounds = {
+			contains: () => true,
+			getWest: () => -100,
+			getEast: () => -90,
+			getSouth: () => 25,
+			getNorth: () => 35,
+		};
+		expect(appSessionHeatmapScale(cells, bounds, false)).toEqual({ low: 100, high: 200 });
 	});
 });
 
@@ -808,6 +1033,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.gameDepartments = [];
 		layersState.showGamesTrend = false;
 		mockSupplyFlag.mockReturnValue(false);
+		layersState.setSessionFilters = vi.fn();
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -1086,13 +1312,16 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("opens the detail panel on facility click and closes it with an animation", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		const map = mapState.instances[0];
+		if (!map) throw new Error("map was not created");
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.navigate);
+		expect(map?.options).toMatchObject({ dragPan: true });
 		act(() => mapState.handlers.get("load")?.());
 		await waitFor(() => expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(true));
-		const map = mapState.instances[0];
 		const event = (id: unknown) => ({ features: [{ properties: { id } }], point: { x: 1, y: 1 } });
 
 		act(() => mapState.handlers.get(`mouseenter:${FACILITIES_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("pointer");
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.interactive);
 
 		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("missing")));
 		expect(result.current.selectedFacilityId).toBeNull();
@@ -1113,7 +1342,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			selectedRingWidth("f1"),
 		);
 
-		act(() => result.current.closePanel());
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("f1")));
 		expect(result.current.isPanelClosing).toBe(true);
 		expect(result.current.selectedFacilityId).toBe("f1");
 		expect(map?.easeTo).toHaveBeenLastCalledWith({
@@ -1130,8 +1359,32 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.selectedFacilityId).toBeNull();
 		expect(result.current.isPanelClosing).toBe(false);
 
+		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event("f1")));
+		expect(result.current.selectedFacilityId).toBe("f1");
+		map.queryRenderedFeatures = vi.fn(() => [{ properties: { id: "f1" } }]);
+		act(() => mapState.handlers.get("click")?.({ point: { x: 10, y: 10 } }));
+		expect(result.current.isPanelClosing).toBe(false);
+		map.queryRenderedFeatures = vi.fn(() => []);
+		act(() => mapState.handlers.get("click")?.({ point: { x: 10, y: 10 } }));
+		expect(result.current.isPanelClosing).toBe(true);
+
+		act(() => result.current.handlePanelClosed());
 		act(() => mapState.handlers.get(`mouseleave:${FACILITIES_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("");
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.navigate);
+
+		act(() => mapState.handlers.get("dragstart")?.());
+		expect(map?.stop).not.toHaveBeenCalled();
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.dragging);
+		act(() =>
+			mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.({
+				features: [{ properties: { id: "f1" } }],
+				point: { x: 1, y: 1 },
+			}),
+		);
+		expect(result.current.hovered).toBeNull();
+		act(() => mapState.handlers.get("dragend")?.());
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.navigate);
 	});
 
 	it("zooms to facilities and fits markets selected from search", async () => {
@@ -1283,9 +1536,9 @@ describe("useFacilitiesMapScreenRules", () => {
 		mapState.getClusterExpansionZoom.mockResolvedValue(9);
 
 		act(() => mapState.handlers.get(`mouseenter:${CLUSTER_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("pointer");
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.interactive);
 		act(() => mapState.handlers.get(`mouseleave:${CLUSTER_LAYER_ID}`)?.());
-		expect(mapState.canvas.style.cursor).toBe("");
+		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.navigate);
 
 		await act(async () => {
 			mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent(10));
@@ -1460,6 +1713,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		if (!map) throw new Error("map was not created");
 		const container = document.createElement("div");
 		map.getContainer = vi.fn(() => container);
+		map.getCanvasContainer = vi.fn(() => container);
 		map.getLayer = vi.fn(() => ({ id: "facilities" }));
 		map.setLayoutProperty = vi.fn();
 		map.queryRenderedFeatures = vi.fn(() => []);
@@ -1606,7 +1860,7 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		unmount();
 
-		expect(map?.off).toHaveBeenCalledTimes(10);
+		expect(map?.off).toHaveBeenCalledTimes(14);
 		expect(map?.remove).toHaveBeenCalled();
 	});
 
@@ -1637,6 +1891,20 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(mapState.handlers.has(`click:${APP_SESSION_HEATMAP_LAYER_ID}`)).toBe(false);
 	});
 
+	it("refetches the heatmap when retry is requested", async () => {
+		const refetch = vi.fn();
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: undefined,
+			isPending: false,
+			isError: true,
+			refetch,
+		});
+		const { result } = renderRules();
+		expect(result.current.sessionQueryFailed).toBe(true);
+		act(() => result.current.retrySessionHeatmap());
+		expect(refetch).toHaveBeenCalled();
+	});
+
 	it("reports loading with no facilities yet", () => {
 		mockUseFacilities.mockReturnValue({ data: undefined, isPending: true, isError: false });
 		const { result } = renderRules();
@@ -1650,7 +1918,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it.each([
 		[
 			{ gender: ["male", "female"], skill: ["Beginner", "Expert"], ageMin: 18, ageMax: 35 },
-			"Male, Female · Beginner, Expert · 18–35",
+			"Male · Female · Beginner · Expert · 18–35",
 		],
 		[{ gender: "other", skill: "Advanced", ageMin: 21 }, "Other · Advanced · 21+"],
 		[{ ageMax: 17 }, "≤ 17"],
@@ -1658,11 +1926,36 @@ describe("useFacilitiesMapScreenRules", () => {
 	] satisfies [AppSessionFilters, string][])(
 		"names the applied demographic cohort %j",
 		(filters, summary) => {
+			mockDemandFlag.mockReturnValue(true);
 			layersState.sessionFilters = filters;
 			const { result } = renderRules();
 			expect(result.current.sessionFilterSummary).toBe(summary);
+			expect(result.current.sessionFilterChips.map((chip) => chip.label).join(" · ")).toBe(summary);
 		},
 	);
+
+	it("ignores stored session filters when demographics are disabled", () => {
+		layersState.sessionFilters = { gender: "Female", skill: "Advanced" };
+		mockDemandFlag.mockReturnValue(false);
+		const { result } = renderRules();
+		expect(result.current.sessionFilterChips).toEqual([]);
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith({}, "week", true);
+	});
+
+	it("removes a demographic chip from the applied cohort", () => {
+		mockDemandFlag.mockReturnValue(true);
+		const setSessionFilters = vi.fn();
+		layersState.setSessionFilters = setSessionFilters;
+		layersState.sessionFilters = { gender: ["Female", "Male"], ageMin: 18, ageMax: 34 };
+		const { result, rerender } = renderRules();
+		act(() => result.current.removeSessionFilter("gender", "female"));
+		expect(setSessionFilters).toHaveBeenCalledWith({ gender: ["Male"], ageMin: 18, ageMax: 34 });
+		layersState.sessionFilters = { gender: ["Female", "Male"], ageMin: 18, ageMax: 34 };
+		rerender();
+		act(() => result.current.removeSessionFilter("age", "age"));
+		expect(setSessionFilters).toHaveBeenLastCalledWith({ gender: ["Female", "Male"] });
+	});
+
 	it("shows the session legend as loading while app sessions are pending", async () => {
 		mockUseAppSessionHeatmap.mockReturnValue({ data: undefined, isPending: true, isError: false });
 		const { result } = renderRules();
@@ -1735,11 +2028,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.isLegendShown).toBe(true);
 		mockDemandFlag.mockReturnValue(false);
 		rerender();
-		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
-			layersState.sessionFilters,
-			"week",
-			true,
-		);
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith({}, "week", true);
 		expect(result.current.messages.sessionHeatmapLegend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
 		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
 			APP_SESSION_HEATMAP_LAYER_ID,
@@ -2398,6 +2687,90 @@ describe("period-aware map data", () => {
 			"week",
 			expect.any(Boolean),
 		);
-		expect(result.current.sessionHeatmapLegend).toBe("Sessions per shaded area · last week");
+		expect(result.current.sessionHeatmapLegend).toBe("App session density · last week");
+	});
+
+	it("leaves the session reference status empty while demand data is ready", () => {
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [{ lat: 29, lng: -95, sessionWeight: 2 }],
+			isPending: false,
+			isFetching: false,
+			isError: false,
+			isSuccess: true,
+		});
+		layersState.showSessions = true;
+		layersState.sessionFilters = {};
+		const { result } = renderRules();
+		expect(result.current.sessionQueryStatus).toBe("");
+	});
+
+	it("names the updating state while sessions reload", () => {
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [{ lat: 29, lng: -95, sessionWeight: 2 }],
+			isPending: true,
+			isFetching: true,
+			isError: false,
+			isSuccess: false,
+		});
+		layersState.showSessions = true;
+		const { result } = renderRules();
+		expect(result.current.sessionQueryStatus).toBe("Updating demand…");
+	});
+
+	it("keeps the legend visible when filters are applied and the heatmap fails", () => {
+		mockDemandFlag.mockReturnValue(true);
+		layersState.sessionFilters = { gender: ["Female"] };
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [],
+			isPending: false,
+			isFetching: false,
+			isError: true,
+			isSuccess: false,
+		});
+		const { result } = renderRules();
+		expect(result.current.isLegendShown).toBe(true);
+		expect(result.current.sessionFilterChips).toHaveLength(1);
+	});
+
+	it("clears a pending hover dismiss timer on unmount", async () => {
+		const { unmount } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		act(() =>
+			mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.({
+				features: [{ properties: { id: "f1" } }],
+				point: { x: 1, y: 1 },
+			}),
+		);
+		unmount();
+	});
+
+	it("names a heatmap failure for the session reference panel", () => {
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: undefined,
+			isPending: false,
+			isFetching: false,
+			isError: true,
+			isSuccess: false,
+		});
+		layersState.showSessions = true;
+		const { result } = renderRules();
+		expect(result.current.sessionQueryStatus).toBe("Couldn’t load sessions. Try again.");
+	});
+
+	it("names an empty filtered result for the session reference panel", () => {
+		mockDemandFlag.mockReturnValue(true);
+		layersState.sessionFilters = { gender: ["Female"] };
+		mockUseAppSessionHeatmap.mockReturnValue({
+			data: [],
+			isError: false,
+			isPending: false,
+			isSuccess: true,
+			isFetching: false,
+		});
+		const { result } = renderRules();
+		expect(result.current.sessionQueryStatus).toBe("No sessions match these filters.");
+		expect(result.current.hasSessionHeatmap).toBe(false);
+		expect(result.current.isLegendShown).toBe(true);
 	});
 });

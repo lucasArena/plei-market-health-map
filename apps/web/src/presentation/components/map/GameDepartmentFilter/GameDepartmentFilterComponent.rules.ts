@@ -2,87 +2,108 @@
 
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import type { GameDepartmentMenu } from "@/presentation/components/map/GameDepartmentFilter/GameDepartmentFilterComponent.types";
+import type { GameDepartmentFilterProps } from "@/presentation/components/map/GameDepartmentFilter/GameDepartmentFilterComponent.types";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const EMPTY_DEPARTMENTS: GameDepartment[] = [];
+
+function departmentKey(departments: GameDepartment[]) {
+	return [...departments].sort((left, right) => left.localeCompare(right)).join(",");
+}
+
 export function useGameDepartmentFilterRules(enabled: boolean) {
 	const layers = useMapLayers();
 	const { messages } = useMessages();
 	const copy = messages.map;
+	const filters = copy.sessionFilters;
 	const applied = layers?.gameDepartments ?? EMPTY_DEPARTMENTS;
 	const [draft, setDraft] = useState(applied);
-	const [hasField, setHasField] = useState(applied.length > 0);
-	const [menu, setMenu] = useState<GameDepartmentMenu>(null);
+	const [addOpen, setAddOpen] = useState(false);
+	const [departmentOpen, setDepartmentOpen] = useState(false);
 	const rootRef = useRef<HTMLElement>(null);
-	const triggerRef = useRef<HTMLButtonElement | null>(null);
+	const addRef = useRef<HTMLButtonElement>(null);
+	const departmentRef = useRef<HTMLButtonElement>(null);
+	const departmentGroupRef = useRef<HTMLFieldSetElement>(null);
 	const options = [
 		{ value: "magic" as GameDepartment, label: copy.gameDepartmentMagic },
 		{ value: "organizers" as GameDepartment, label: copy.gameDepartmentOrganizers },
 		{ value: "partnerships" as GameDepartment, label: copy.gameDepartmentPartnerships },
 	];
-	const labels = (departments: GameDepartment[]) =>
-		options
-			.filter((option) => departments.includes(option.value))
-			.map((option) => option.label)
-			.join(", ");
-	const summary = labels(applied);
-	const draftSummary = labels(draft);
-	const dirty = options.some(
-		(option) => applied.includes(option.value) !== draft.includes(option.value),
-	);
-	const openMenu = (next: GameDepartmentMenu, trigger: HTMLButtonElement) => {
-		triggerRef.current = trigger;
-		setMenu(next);
+	const appliedChips = options.filter((option) => applied.includes(option.value));
+	const pending = departmentKey(draft) !== departmentKey(applied);
+	const reportFields = layers?.setSupplyFiltersPresent;
+	const hasFields = addOpen || departmentOpen || applied.length > 0 || draft.length > 0;
+
+	const toggleAdd = () => {
+		setAddOpen((current) => {
+			if (current) setDepartmentOpen(false);
+			return !current;
+		});
 	};
-	const closeMenu = () => {
-		setMenu(null);
-		triggerRef.current?.focus();
-	};
-	const addDepartment = () => {
-		setHasField(true);
-		setMenu("department");
-	};
-	const toggleDepartment = (department: GameDepartment) =>
+
+	const toggleDepartment = () => setDepartmentOpen((current) => !current);
+
+	const isSelected = (department: GameDepartment) => draft.includes(department);
+
+	const toggleOption = (department: GameDepartment) => {
+		if (!enabled) return;
 		setDraft((current) =>
 			current.includes(department)
 				? current.filter((value) => value !== department)
 				: [...current, department],
 		);
-	const reset = () => {
-		setDraft([]);
-		setHasField(false);
-		layers?.setGameDepartments?.([]);
-		closeMenu();
 	};
+
+	const removeDepartment = (department: GameDepartment) => {
+		const next = applied.filter((value) => value !== department);
+		setDraft(next);
+		layers?.setGameDepartments?.(next);
+	};
+
 	const apply = () => {
+		if (!pending) return;
 		layers?.setGameDepartments?.(draft);
-		closeMenu();
 	};
+
 	const handleKeys = (event: KeyboardEvent<HTMLElement>) => {
-		if (!menu) return;
 		if (event.key === "Escape") {
-			event.preventDefault();
+			if (!addOpen) return;
 			event.stopPropagation();
-			closeMenu();
+			event.preventDefault();
+			const active = document.activeElement;
+			if (
+				departmentOpen &&
+				(departmentGroupRef.current?.contains(active) || active === departmentRef.current)
+			) {
+				setDepartmentOpen(false);
+				departmentRef.current?.focus();
+				return;
+			}
+			setDepartmentOpen(false);
+			setAddOpen(false);
+			addRef.current?.focus();
 			return;
 		}
-		if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+		const group = departmentGroupRef.current;
+		if (
+			!group?.contains(document.activeElement) ||
+			!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+		)
+			return;
+		const inputs = Array.from(group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+		if (!inputs.length) return;
 		event.preventDefault();
-		event.stopPropagation();
-		const buttons = Array.from(
-			rootRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [],
-		);
-		const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
-		let next = (index + 1) % buttons.length;
-		if (event.key === "ArrowUp") next = (index - 1 + buttons.length) % buttons.length;
-		if (event.key === "Home") next = 0;
-		if (event.key === "End") next = buttons.length - 1;
-		buttons[next]?.focus();
+		const current = inputs.indexOf(document.activeElement as HTMLInputElement);
+		const direction = event.key === "ArrowUp" ? -1 : 1;
+		const next = {
+			[`${true}`]: (current + direction + inputs.length) % inputs.length,
+			[`${event.key === "Home"}`]: 0,
+			[`${event.key === "End"}`]: inputs.length - 1,
+		}.true;
+		inputs[next ?? 0]?.focus();
 	};
-	const reportFields = layers?.setSupplyFiltersPresent;
-	const hasFields = hasField;
+
 	useEffect(() => {
 		reportFields?.(hasFields);
 		return () => reportFields?.(false);
@@ -90,41 +111,44 @@ export function useGameDepartmentFilterRules(enabled: boolean) {
 
 	useEffect(() => {
 		setDraft(applied);
-		if (applied.length) setHasField(true);
 	}, [applied]);
+
 	useEffect(() => {
-		if (!menu) return;
-		if (menu === "department")
-			triggerRef.current =
-				rootRef.current?.querySelector<HTMLButtonElement>(
-					'button[aria-label][aria-haspopup="listbox"]',
-				) ?? null;
-		rootRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
-		const dismiss = (event: PointerEvent) => {
-			if (!rootRef.current?.contains(event.target as Node)) setMenu(null);
-		};
-		document.addEventListener("pointerdown", dismiss);
-		return () => document.removeEventListener("pointerdown", dismiss);
-	}, [menu]);
-	useEffect(() => {
-		if (!enabled) setMenu(null);
+		if (!enabled) {
+			setAddOpen(false);
+			setDepartmentOpen(false);
+		}
 	}, [enabled]);
+
+	useEffect(() => {
+		if (!departmentOpen) return;
+		departmentGroupRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();
+	}, [departmentOpen]);
+
 	return {
 		copy,
-		menu,
+		filters,
 		rootRef,
+		addOpen,
+		addRef,
+		departmentOpen,
+		departmentRef,
+		departmentGroupRef,
 		draft,
-		hasField,
-		dirty,
+		pending,
 		options,
-		summary,
-		draftSummary,
-		openMenu,
-		closeMenu,
-		addDepartment,
+		appliedChips,
+		enabled,
+		toggleAdd,
 		toggleDepartment,
-		reset,
+		isSelected,
+		toggleOption,
+		removeDepartment,
 		apply,
 		handleKeys,
 	};
+}
+
+export function useGameDepartmentFiltersRules(props: Readonly<GameDepartmentFilterProps>) {
+	return useGameDepartmentFilterRules(props.enabled);
 }
