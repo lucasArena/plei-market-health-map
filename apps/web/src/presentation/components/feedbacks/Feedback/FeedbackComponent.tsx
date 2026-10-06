@@ -209,7 +209,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 										key={candidate.type}
 										type="button"
 										onClick={() => chooseType(candidate.type)}
-										className={`${FEEDBACK_MENU_ITEM_CLASS} items-start gap-3 py-2`}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
 									>
 										<span className={FEEDBACK_ICON_WELL_CLASS}>
 											<TypeIcon type={candidate.type} />
@@ -226,7 +226,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 									<Link
 										href={{ pathname: "/admin/metrics" }}
 										onClick={close}
-										className={`${FEEDBACK_MENU_ITEM_CLASS} items-start gap-3 py-2`}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
 									>
 										<span className={FEEDBACK_ICON_WELL_CLASS}>
 											<AdminControlsIcon />
