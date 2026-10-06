@@ -210,5 +210,8 @@ describe("facility game comparison batch", () => {
 		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [[889]]);
 		expect(query.mock.calls[0]?.[0]).toContain("r.confirmed and r.status <> 'cancelled'");
 		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.today");
+		expect(query.mock.calls[0]?.[0]).toContain(
+			"date_trunc('week', (now() at time zone 'Pacific/Honolulu')::date)::date as this_week",
+		);
 	});
 });

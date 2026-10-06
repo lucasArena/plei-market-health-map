@@ -29,6 +29,7 @@ export function FacilitiesMapScreen() {
 		messages,
 		releaseClusterHover,
 		selectedFacilityId,
+		selectedTrend,
 		selectFacility,
 		selectSearchFacility,
 		selectSearchMarket,
@@ -165,6 +166,7 @@ export function FacilitiesMapScreen() {
 					isClosing={isPanelClosing}
 					onClose={closePanel}
 					onClosed={handlePanelClosed}
+					trend={selectedTrend}
 				/>
 			)}
 		</section>

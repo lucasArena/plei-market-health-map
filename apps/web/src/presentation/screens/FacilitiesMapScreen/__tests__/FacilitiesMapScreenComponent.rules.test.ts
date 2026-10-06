@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { AppSessionFilters } from "@market-health-map/core/application";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
+import { GAMES_TREND_COLORS } from "@/application/constants/games-trend-colors";
 import { EN_MESSAGES } from "@/application/test/messages";
 import {
 	MapScopeProvider,
@@ -14,16 +15,20 @@ import {
 	applyClusterGlassActivity,
 	applyFacilityGlassActivity,
 	applyFacilityLayerMotion,
+	applyGlassTrend,
 	appSessionHeatmapAreas,
 	appSessionHeatmapScale,
 	bindFacilityGlass,
 	clusterListZoom,
+	clusterTrend,
 	createClusterGlassNode,
 	createFacilityGlassNode,
 	FACILITY_LAYER_ENTER_MS,
 	FACILITY_LAYER_EXIT_MS,
 	facilitiesForIds,
+	facilitiesForMap,
 	facilitiesForPeriod,
+	facilityTrend,
 	marketBounds,
 	placeHover,
 	readClusterGlassBadges,
@@ -41,6 +46,7 @@ import {
 	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_ACTIVE_COUNT_EXPRESSION,
 	CLUSTER_ACTIVE_COUNT_KEY,
+	CLUSTER_GLASS_SHADOW,
 	CLUSTER_HOVER_DISMISS_MS,
 	CLUSTER_LAYER_ID,
 	CLUSTER_MARKER_CLASS,
@@ -50,6 +56,9 @@ import {
 	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
 	FACILITY_DOT_ZOOM,
+	FACILITY_GLASS_SELECTED_SHADOW,
+	FACILITY_GLASS_SHADOW,
+	INACTIVE_GAMES_MARKER_STYLE,
 	REGISTRATION_HEATMAP_PAINT,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
@@ -133,6 +142,7 @@ const layersState = vi.hoisted(() => ({
 	demandMetric: "sessions" as "sessions" | "registrations",
 	supplyMetric: "facilities" as "facilities" | "games",
 	gameDepartments: [] as ("magic" | "organizers" | "partnerships")[],
+	showGamesTrend: false,
 	sessionFilters: {} as AppSessionFilters,
 }));
 
@@ -148,6 +158,7 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					demandMetric: layersState.demandMetric,
 					supplyMetric: layersState.supplyMetric,
 					gameDepartments: layersState.gameDepartments,
+					showGamesTrend: layersState.showGamesTrend,
 					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
@@ -156,9 +167,14 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 
 const mockDemandFlag = vi.fn(() => false);
 const mockSupplyFlag = vi.fn(() => false);
+const mockTrendFlag = vi.fn(() => true);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 	useFeatureFlag: (key: string) =>
-		key === "facility-games-layer" ? mockSupplyFlag() : mockDemandFlag(),
+		key === "facility-games-trend"
+			? mockTrendFlag()
+			: key === "facility-games-layer"
+				? mockSupplyFlag()
+				: mockDemandFlag(),
 }));
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
@@ -601,6 +617,7 @@ describe("toFacilityFeatureCollection", () => {
 						name: "Eastside Futsal Arena",
 						isActive: true,
 						gamesLast28Days: 0,
+						gamesPrevious28Days: 0,
 					},
 				},
 			],
@@ -779,6 +796,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockDemandFlag.mockReturnValue(false);
 		layersState.supplyMetric = "facilities";
 		layersState.gameDepartments = [];
+		layersState.showGamesTrend = false;
 		mockSupplyFlag.mockReturnValue(false);
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
@@ -928,6 +946,7 @@ describe("useFacilitiesMapScreenRules", () => {
 				clusterProperties: {
 					[CLUSTER_ACTIVE_COUNT_KEY]: CLUSTER_ACTIVE_COUNT_EXPRESSION,
 					gameCount: ["+", ["get", "gamesLast28Days"]],
+					gamePreviousCount: ["+", ["get", "gamesPrevious28Days"]],
 				},
 			}),
 		);
@@ -1797,6 +1816,528 @@ it.each([
 			true,
 		)[0]?.label,
 	).toBe(label);
+});
+
+describe("games trend", () => {
+	const growing = {
+		...FACILITY,
+		gamesLast28Days: 46,
+		gamesPrevious28Days: 40,
+		gamesByDepartment: { magic: 40, organizers: 6, partnerships: 0 },
+		gamesPreviousByDepartment: { magic: 20, organizers: 20, partnerships: 0 },
+	};
+	const stopped = {
+		...FACILITY,
+		id: "stopped",
+		gamesLast28Days: 0,
+		gamesPrevious28Days: 9,
+		gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+		gamesPreviousByDepartment: { magic: 0, organizers: 9, partnerships: 0 },
+	};
+	const neverPlayed = { ...FACILITY, id: "never", gamesLast28Days: 0, gamesPrevious28Days: 0 };
+	const base = {
+		showGames: true,
+		showTrend: false,
+		showActiveFacilities: true,
+		showInactiveFacilities: true,
+	};
+
+	it("keeps the Games map unchanged while trend is off", () => {
+		expect(facilitiesForMap([growing, stopped, neverPlayed], base)).toEqual([growing]);
+	});
+
+	it("keeps facilities that dropped to zero on the map while trend is on", () => {
+		expect(facilitiesForMap([growing, stopped, neverPlayed], { ...base, showTrend: true })).toEqual(
+			[growing, stopped],
+		);
+		expect(
+			facilitiesForMap([growing, stopped], {
+				...base,
+				showTrend: true,
+				showActiveFacilities: false,
+			}),
+		).toEqual([]);
+	});
+
+	it("applies selected departments to both windows", () => {
+		const options = { ...base, showTrend: true, gameDepartments: ["organizers"] as const };
+		expect(facilitiesForMap([growing, stopped, neverPlayed], options)).toEqual([
+			{ ...growing, gamesLast28Days: 6, gamesPrevious28Days: 20 },
+			{ ...stopped, gamesLast28Days: 0, gamesPrevious28Days: 9 },
+		]);
+		expect(
+			facilitiesForMap([growing, stopped], { ...options, showTrend: false }).map((f) => f.id),
+		).toEqual(["f1"]);
+		expect(
+			facilitiesForMap([growing, stopped], { ...options, gameDepartments: ["partnerships"] }),
+		).toEqual([]);
+		expect(
+			facilitiesForMap([{ ...FACILITY, gamesLast28Days: 3 }], {
+				...options,
+				gameDepartments: ["magic"],
+			}),
+		).toEqual([]);
+	});
+
+	it("leaves the Facilities map to the active and inactive toggles", () => {
+		const inactive = { ...neverPlayed, id: "inactive", isActive: false };
+		const options = { ...base, showGames: false, showTrend: false };
+		expect(facilitiesForMap([growing, inactive], options)).toEqual([growing, inactive]);
+		expect(
+			facilitiesForMap([growing, inactive], { ...options, showInactiveFacilities: false }),
+		).toEqual([growing]);
+	});
+
+	it("builds hover trends from facility counts and cluster sums", () => {
+		expect(facilityTrend(42, 51)).toEqual({
+			level: "down",
+			current: 42,
+			previous: 51,
+			change: -9,
+			percentChange: -18,
+		});
+		expect(facilityTrend(undefined, undefined).level).toBe("stable");
+		expect(clusterTrend({ gameCount: 130, gamePreviousCount: 100 } as never)).toMatchObject({
+			level: "up",
+			change: 30,
+		});
+		expect(clusterTrend({ gameCount: "7", gamePreviousCount: "bad" } as never)).toMatchObject({
+			current: 7,
+			previous: 0,
+			level: "up",
+		});
+		expect(clusterTrend(undefined).level).toBe("stable");
+	});
+
+	describe("on the map", () => {
+		beforeEach(() => {
+			vi.clearAllMocks();
+			Object.assign(layersState, {
+				showActiveFacilities: true,
+				showInactiveFacilities: true,
+				showSessions: true,
+				hasProvider: true,
+				demandMetric: "sessions",
+				supplyMetric: "games",
+				gameDepartments: [],
+				showGamesTrend: false,
+				sessionFilters: {},
+			});
+			mockSupplyFlag.mockReturnValue(true);
+			mockDemandFlag.mockReturnValue(false);
+			mapState.instances.length = 0;
+			mapState.handlers.clear();
+			mockUseFacilities.mockReturnValue({
+				data: [growing, stopped, neverPlayed],
+				isPending: false,
+				isError: false,
+			});
+			mockUseAppSessionHeatmap.mockReturnValue({ data: [], isPending: false, isError: false });
+			mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
+		});
+
+		async function loadMap() {
+			const rendered = renderRules();
+			await waitFor(() => expect(mapState.instances).toHaveLength(1));
+			const instance = mapState.instances[0];
+			if (!instance) throw new Error("Expected a map");
+			const map = instance as Record<"addLayer" | "setLayoutProperty", ReturnType<typeof vi.fn>>;
+			map.setLayoutProperty = vi.fn();
+			act(() => mapState.handlers.get("load")?.());
+			await waitFor(() =>
+				expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
+			);
+			return { ...rendered, map };
+		}
+
+		it("adds no map layers for the trend", async () => {
+			const { map, result } = await loadMap();
+
+			expect(map.addLayer).toHaveBeenCalledTimes(5);
+			expect(result.current.showTrend).toBe(false);
+			expect(result.current.selectedTrend).toBeNull();
+		});
+
+		it("turns trend on with one setData and no layer changes, and back off", async () => {
+			const { map, rerender, result } = await loadMap();
+			mapState.setData.mockClear();
+			map.setLayoutProperty.mockClear();
+
+			layersState.showGamesTrend = true;
+			rerender();
+
+			expect(result.current.showTrend).toBe(true);
+			expect(mapState.setData).toHaveBeenCalledTimes(1);
+			expect(mapState.setData).toHaveBeenCalledWith(
+				toFacilityFeatureCollection([growing, stopped]),
+			);
+			expect(map.setLayoutProperty).not.toHaveBeenCalled();
+
+			layersState.showGamesTrend = false;
+			rerender();
+			expect(result.current.showTrend).toBe(false);
+			expect(map.setLayoutProperty).not.toHaveBeenCalled();
+		});
+
+		it("shows the trend only with Games selected, never in Facilities mode", async () => {
+			layersState.showGamesTrend = true;
+			const { rerender, result } = await loadMap();
+			expect(result.current.showTrend).toBe(true);
+
+			layersState.supplyMetric = "facilities";
+			rerender();
+			expect(result.current.showTrend).toBe(false);
+			expect(mapState.setData).toHaveBeenLastCalledWith(
+				toFacilityFeatureCollection([growing, stopped, neverPlayed]),
+			);
+
+			layersState.supplyMetric = "games";
+			mockSupplyFlag.mockReturnValue(false);
+			rerender();
+			expect(result.current.showTrend).toBe(false);
+		});
+
+		it("keeps the trend off while its flag or the games flag is off", async () => {
+			onTestFinished(() => {
+				mockTrendFlag.mockReturnValue(true);
+			});
+			layersState.showGamesTrend = true;
+			mockTrendFlag.mockReturnValue(false);
+			const { rerender, result } = await loadMap();
+
+			expect(result.current.showTrend).toBe(false);
+			expect(result.current.selectedTrend).toBeNull();
+
+			mockTrendFlag.mockReturnValue(true);
+			mockSupplyFlag.mockReturnValue(false);
+			rerender();
+			expect(result.current.showTrend).toBe(false);
+
+			mockSupplyFlag.mockReturnValue(true);
+			rerender();
+			expect(result.current.showTrend).toBe(true);
+		});
+
+		it("keeps trend hovers off with the trend flag off, even with Show trend saved on", async () => {
+			onTestFinished(() => {
+				mockTrendFlag.mockReturnValue(true);
+			});
+			layersState.showGamesTrend = true;
+			mockTrendFlag.mockReturnValue(false);
+			const { rerender, result } = await loadMap();
+			mapState.getClusterLeaves.mockResolvedValue([]);
+
+			expect(result.current.showTrend).toBe(false);
+			await act(async () => {
+				mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.({
+					features: [
+						{
+							properties: { cluster_id: 11, point_count: 2, gameCount: 9, gamePreviousCount: 2 },
+							geometry: { type: "Point", coordinates: [-97.7, 30.3] },
+						},
+					],
+					point: { x: 10, y: 40 },
+				});
+			});
+			expect(result.current.hovered).toMatchObject({ kind: "cluster" });
+			expect(result.current.hovered).not.toHaveProperty("trend");
+
+			mockTrendFlag.mockReturnValue(true);
+			rerender();
+			expect(result.current.showTrend).toBe(true);
+		});
+
+		it("adds the trend to hovers and the detail panel only while trend is on", async () => {
+			const { rerender, result } = await loadMap();
+			const hover = (id: string) =>
+				act(() =>
+					mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.({
+						features: [{ properties: { id } }],
+						point: { x: 120, y: 80 },
+					}),
+				);
+			const clusterEvent = {
+				features: [
+					{
+						properties: {
+							cluster_id: 7,
+							point_count: 2,
+							gameCount: 46,
+							gamePreviousCount: 52,
+						},
+						geometry: { type: "Point", coordinates: [-97.7, 30.3] },
+					},
+				],
+				point: { x: 10, y: 40 },
+			};
+			mapState.getClusterLeaves.mockResolvedValue([]);
+
+			hover("f1");
+			expect(result.current.hovered).not.toHaveProperty("trend");
+			expect(result.current.hovered).toMatchObject({ kind: "facility", games: 46 });
+			await act(async () => {
+				mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.(clusterEvent);
+			});
+			expect(result.current.hovered).not.toHaveProperty("trend");
+
+			layersState.showGamesTrend = true;
+			rerender();
+			hover("stopped");
+			expect(result.current.hovered).toMatchObject({
+				kind: "facility",
+				trend: { level: "down", current: 0, previous: 9, change: -9 },
+			});
+			const otherCluster = clusterEvent.features[0];
+			await act(async () => {
+				mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.({
+					...clusterEvent,
+					features: [
+						{ ...otherCluster, properties: { ...otherCluster?.properties, cluster_id: 8 } },
+					],
+				});
+			});
+			expect(result.current.hovered).toMatchObject({
+				kind: "cluster",
+				games: 46,
+				trend: { level: "down", current: 46, previous: 52 },
+			});
+
+			act(() => result.current.selectFacility(growing));
+			expect(result.current.selectedTrend).toMatchObject({
+				level: "up",
+				current: 46,
+				previous: 40,
+			});
+		});
+
+		it("adds no trend to Facilities mode hovers, even with Show trend saved on", async () => {
+			layersState.showGamesTrend = true;
+			layersState.supplyMetric = "facilities";
+			const { result } = await loadMap();
+			expect(result.current.showTrend).toBe(false);
+			mapState.getClusterLeaves.mockResolvedValue([]);
+
+			act(() =>
+				mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.({
+					features: [{ properties: { id: "stopped" } }],
+					point: { x: 120, y: 80 },
+				}),
+			);
+			expect(result.current.hovered).toMatchObject({ kind: "facility" });
+			expect(result.current.hovered).not.toHaveProperty("trend");
+			expect(result.current.hovered).not.toHaveProperty("games");
+
+			await act(async () => {
+				mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.({
+					features: [
+						{
+							properties: { cluster_id: 9, point_count: 2, gameCount: 1, gamePreviousCount: 4 },
+							geometry: { type: "Point", coordinates: [-97.7, 30.3] },
+						},
+					],
+					point: { x: 10, y: 40 },
+				});
+			});
+			expect(result.current.hovered).toMatchObject({ kind: "cluster" });
+			expect(result.current.hovered).not.toHaveProperty("trend");
+			act(() => result.current.selectFacility(growing));
+			expect(result.current.selectedTrend).toBeNull();
+		});
+	});
+});
+
+describe("games trend on the glass ring", () => {
+	const project = () => ({ x: 100, y: 50 });
+	const point = { type: "Point" as const, coordinates: [-97.7, 30.3] };
+
+	function clusterFeature(gameCount: number, gamePreviousCount: number, clusterId = 1) {
+		return {
+			properties: {
+				cluster_id: clusterId,
+				point_count: 3,
+				activeCount: 1,
+				gameCount,
+				gamePreviousCount,
+			},
+			geometry: point,
+		};
+	}
+
+	function facilityFeature(id: string, gamesLast28Days: number, gamesPrevious28Days: number) {
+		return {
+			properties: { id, isActive: true, gamesLast28Days, gamesPrevious28Days },
+			geometry: point,
+		};
+	}
+
+	it("classifies clusters and facilities while trend is on, and not with trend off", () => {
+		const clusters = [
+			clusterFeature(110, 100, 1),
+			clusterFeature(90, 100, 2),
+			clusterFeature(109, 100, 3),
+		];
+		expect(
+			readClusterGlassBadges(clusters as never, project, true, true).map((b) => b.trend),
+		).toEqual(["up", "down", "up"]);
+		expect(readClusterGlassBadges(clusters as never, project, true, false)[0]).not.toHaveProperty(
+			"trend",
+		);
+
+		const facilities = [
+			facilityFeature("a", 6, 0),
+			facilityFeature("b", 5, 9),
+			facilityFeature("c", 4, 4),
+		];
+		expect(
+			readFacilityGlassBadges(facilities as never, project, true, true).map((b) => b.trend),
+		).toEqual(["up", "down", "stable"]);
+		expect(
+			readFacilityGlassBadges(facilities as never, project, true, false)[0],
+		).not.toHaveProperty("trend");
+		expect(
+			readClusterGlassBadges(
+				[{ properties: { cluster_id: 4, gameCount: "x" }, geometry: point }] as never,
+				project,
+				true,
+				true,
+			)[0],
+		).toMatchObject({ noGames: true });
+	});
+
+	it("shows facilities and clusters that dropped to zero as declining", () => {
+		const dropped = [facilityFeature("gone", 0, 9), facilityFeature("live", 5, 9)];
+		expect(readFacilityGlassBadges(dropped as never, project, true, true)).toEqual([
+			expect.objectContaining({ id: "gone", label: "0", trend: "down" }),
+			expect.objectContaining({ id: "live", trend: "down" }),
+		]);
+		expect(readFacilityGlassBadges(dropped as never, project, true, true)[0]).not.toHaveProperty(
+			"noGames",
+		);
+		expect(readFacilityGlassBadges(dropped as never, project, false, false)[0]).not.toHaveProperty(
+			"noGames",
+		);
+		const [empty, busy] = readClusterGlassBadges(
+			[clusterFeature(0, 12, 1), clusterFeature(9, 12, 2)] as never,
+			project,
+			true,
+			true,
+		);
+		expect(empty).toMatchObject({ id: 1, label: "0", trend: "down" });
+		expect(empty).not.toHaveProperty("noGames");
+		expect(busy).toMatchObject({ id: 2, trend: "down" });
+		expect(busy).not.toHaveProperty("noGames");
+		expect(
+			readClusterGlassBadges([clusterFeature(0, 12, 3)] as never, project, false, false)[0],
+		).not.toHaveProperty("noGames");
+	});
+
+	it("fades an inactive facility with a dashed ring and no ring shadow, and restores it", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<string, HTMLElement>();
+		const badge = { id: "f1", label: "0", x: 10, y: 20, active: false };
+
+		syncFacilityGlass(host, [{ ...badge, noGames: true }], nodes);
+		const node = nodes.get("f1");
+		const label = node?.querySelector<HTMLElement>("[data-testid='facility-glass-label']");
+		expect(node?.dataset.inactive).toBe("true");
+		expect(node?.dataset.trendTip).toBeUndefined();
+		expect(node?.style.opacity).toBe(String(INACTIVE_GAMES_MARKER_STYLE.opacity));
+		expect(node?.style.border).toBe("1.5px dashed rgb(107, 114, 128)");
+		expect(node?.style.boxShadow).toBe(CLUSTER_GLASS_SHADOW);
+		expect(label?.style.color).toBe("rgb(75, 85, 99)");
+
+		syncFacilityGlass(host, [{ ...badge, noGames: true }], nodes, "f1");
+		expect(node?.style.boxShadow).toBe(FACILITY_GLASS_SELECTED_SHADOW);
+
+		syncFacilityGlass(host, [{ ...badge, label: "8", active: true, trend: "stable" }], nodes);
+		expect(node?.dataset.inactive).toBeUndefined();
+		expect(node?.dataset.trendTip).toBe("stable");
+		expect(node?.style.opacity).toBe("");
+		expect(node?.style.border).toBe("1px solid rgba(255, 255, 255, 0.78)");
+	});
+
+	it("dashes an inactive cluster's ring and restores the solid ring", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<number, HTMLElement>();
+		const badge = { id: 1, label: "0", x: 10, y: 20, active: false };
+
+		syncClusterGlass(host, [{ ...badge, noGames: true }], nodes);
+		const node = nodes.get(1);
+		const ring = node?.querySelector<HTMLElement>("[data-testid='cluster-glass-stroke']");
+		expect(node?.dataset.inactive).toBe("true");
+		expect(node?.dataset.trendTip).toBeUndefined();
+		expect(node?.style.opacity).toBe("0.6");
+		expect(ring?.style.borderStyle).toBe("dashed");
+		expect(ring?.style.borderWidth).toBe("1.5px");
+		expect(ring?.style.borderColor).toBe("rgb(107, 114, 128)");
+
+		syncClusterGlass(host, [{ ...badge, label: "12", active: true, trend: "up" }], nodes);
+		expect(node?.dataset.inactive).toBeUndefined();
+		expect(node?.style.opacity).toBe("");
+		expect(ring?.style.borderStyle).toBe("solid");
+		expect(ring?.style.borderWidth).toBe("2px");
+		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
+	});
+
+	it("colors the existing cluster ring, paints the glass ring, and adds a tip for up and down only", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<number, HTMLElement>();
+		const badge = { id: 1, label: "12", x: 10, y: 20, active: true };
+
+		syncClusterGlass(host, [{ ...badge, trend: "up" }], nodes);
+		const node = nodes.get(1);
+		const ring = node?.querySelector<HTMLElement>("[data-testid='cluster-glass-stroke']");
+		expect(node?.classList.contains("games-trend-tip")).toBe(true);
+		expect(node?.dataset.trendTip).toBe("up");
+		expect(node?.style.getPropertyValue("--games-trend-color")).toBe(GAMES_TREND_COLORS.up);
+		expect(node?.style.getPropertyValue("--games-trend-tip-box")).toBe("58px");
+		expect(node?.style.getPropertyValue("--games-trend-inner")).toBe("19.5px");
+		for (const level of ["up", "down", "stable"]) {
+			expect(node?.style.getPropertyValue(`--games-trend-shape-${level}`)).toMatch(
+				/^path\(evenodd, /,
+			);
+		}
+		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
+
+		syncClusterGlass(host, [{ ...badge, trend: "down" }], nodes);
+		expect(node?.dataset.trendTip).toBe("down");
+		expect(ring?.style.borderColor).toBe("rgb(248, 113, 113)");
+
+		syncClusterGlass(host, [{ ...badge, trend: "stable" }], nodes);
+		expect(node?.dataset.trendTip).toBe("stable");
+		expect(ring?.style.borderColor).toBe("rgb(107, 114, 128)");
+
+		syncClusterGlass(host, [badge], nodes);
+		expect(node?.dataset.trendTip).toBeUndefined();
+		expect(node?.style.getPropertyValue("--games-trend-color")).toBe("");
+		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
+	});
+
+	it("colors the facility ring shadow, keeps selection thicker, and restores it with trend off", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<string, HTMLElement>();
+		const badge = { id: "f1", label: "8", x: 10, y: 20, active: true };
+
+		syncFacilityGlass(host, [{ ...badge, trend: "down" }], nodes);
+		const node = nodes.get("f1");
+		expect(node?.style.boxShadow).toContain("inset 0 0 0 2px #F87171");
+		expect(node?.dataset.trendTip).toBe("down");
+
+		syncFacilityGlass(host, [{ ...badge, trend: "up" }], nodes, "f1");
+		expect(node?.style.boxShadow).toContain("inset 0 0 0 3px #86EFAC");
+
+		syncFacilityGlass(host, [badge], nodes);
+		expect(node?.style.boxShadow).toBe(FACILITY_GLASS_SHADOW);
+		expect(node?.dataset.trendTip).toBeUndefined();
+	});
+
+	it("clears the glass ring, tip and color for no trend", () => {
+		const node = document.createElement("div");
+		applyGlassTrend(node, "up");
+		applyGlassTrend(node, undefined);
+		expect(node.dataset.trendTip).toBeUndefined();
+		expect(node.style.getPropertyValue("--games-trend-color")).toBe("");
+	});
 });
 
 describe("facilitiesForPeriod", () => {

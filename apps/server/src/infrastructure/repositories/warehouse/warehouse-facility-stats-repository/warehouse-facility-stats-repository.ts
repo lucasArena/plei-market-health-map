@@ -5,6 +5,7 @@ import type {
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
+import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseFacilityGameComparisonRow,
 	WarehouseFacilityPlayerStatsRow,
@@ -14,7 +15,7 @@ import type {
 
 export const FACILITY_GAME_COMPARISONS_SQL = `
 with bounds as (
-  select current_date as today, date_trunc('week', current_date)::date as this_week
+  select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
 )
 select r.location_id,
  count(distinct r.reservation_id) filter (

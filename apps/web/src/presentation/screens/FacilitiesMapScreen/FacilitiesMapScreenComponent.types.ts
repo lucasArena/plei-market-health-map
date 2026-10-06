@@ -1,4 +1,5 @@
 import type { FacilityPointView } from "@market-health-map/core/application";
+import type { GamesTrend, GamesTrendLevel } from "@market-health-map/core/domain";
 import type { Feature, FeatureCollection, Point } from "geojson";
 
 export interface HoverPlacement {
@@ -13,10 +14,19 @@ export interface ClusterHoverViewport {
 	height: number;
 }
 
+export interface FacilityTrendCounts {
+	current: number;
+	previous: number;
+}
+
 export interface FacilityHover extends HoverPlacement {
 	kind: "facility";
 	facility: FacilityPointView;
 	viewport: ClusterHoverViewport;
+	/** Games mode only: the games count the hover reads instead of facilities. */
+	games?: number;
+	/** Games mode with Show trend on only, so hover stays unchanged with the trend off. */
+	trend?: GamesTrend;
 }
 
 export interface ClusterHover extends HoverPlacement {
@@ -25,6 +35,10 @@ export interface ClusterHover extends HoverPlacement {
 	total: number;
 	facilities: FacilityPointView[];
 	viewport: ClusterHoverViewport;
+	/** Games mode only: the cluster's games count, read instead of its facility count. */
+	games?: number;
+	/** Games mode with Show trend on only, so hover stays unchanged with the trend off. */
+	trend?: GamesTrend;
 }
 
 export type MapHover = FacilityHover | ClusterHover;
@@ -41,6 +55,8 @@ export interface FacilityFeatureProperties {
 	marketName: string;
 	name: string;
 	isActive: boolean;
+	gamesLast28Days?: number;
+	gamesPrevious28Days?: number;
 }
 
 export type FacilityFeature = Feature<Point, FacilityFeatureProperties>;
@@ -86,7 +102,9 @@ export interface ClusterGlassFeature {
 		point_count_abbreviated?: string | number;
 		activeCount?: number;
 		gameCount?: number;
+		gamePreviousCount?: number;
 		gamesLast28Days?: number;
+		gamesPrevious28Days?: number;
 		id?: string | number;
 		isActive?: boolean | number | string;
 	};
@@ -124,6 +142,10 @@ export interface ClusterGlassBadge {
 	x: number;
 	y: number;
 	active: boolean;
+	/** Only while Show trend is on with the Games layer, and never on a no games marker. */
+	trend?: GamesTrendLevel;
+	/** Games layer only: no games in the current window, drawn in the inactive marker style. */
+	noGames?: boolean;
 }
 
 export interface FacilityGlassBadge {
@@ -132,4 +154,8 @@ export interface FacilityGlassBadge {
 	x: number;
 	y: number;
 	active: boolean;
+	/** Only while Show trend is on with the Games layer, and never on a no games marker. */
+	trend?: GamesTrendLevel;
+	/** Games layer only: no games in the current window, drawn in the inactive marker style. */
+	noGames?: boolean;
 }

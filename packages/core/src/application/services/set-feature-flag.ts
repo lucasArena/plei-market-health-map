@@ -1,4 +1,8 @@
-import { FEATURE_FLAG_KEYS, setFeatureFlagSchema } from "@core/application/dtos/feature-flags-dto";
+import {
+	FEATURE_FLAG_KEYS,
+	FEATURE_FLAG_REQUIREMENTS,
+	setFeatureFlagSchema,
+} from "@core/application/dtos/feature-flags-dto";
 import type {
 	FeatureFlagView,
 	SetFeatureFlagInput,
@@ -13,6 +17,7 @@ export function makeSetFeatureFlag({
 	featureFlags,
 	clock,
 	keys = FEATURE_FLAG_KEYS,
+	requirements = FEATURE_FLAG_REQUIREMENTS,
 }: SetFeatureFlagDeps) {
 	return async function setFeatureFlag(input: SetFeatureFlagInput): Promise<FeatureFlagView> {
 		const parsed = setFeatureFlagSchema.safeParse(input);
@@ -21,6 +26,6 @@ export function makeSetFeatureFlag({
 		if (!keys.includes(key)) throw new NotFoundError("Feature flag");
 		const record = { key, enabled, updatedBy: normalizeEmail(updatedBy), updatedAt: clock.now() };
 		await featureFlags.save(record);
-		return toFeatureFlagView(key, record);
+		return toFeatureFlagView(key, record, requirements[key]);
 	};
 }

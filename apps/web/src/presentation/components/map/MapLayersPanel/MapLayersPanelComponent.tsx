@@ -50,6 +50,7 @@ export function MapLayersPanel() {
 		demandMetric,
 		selectDemandMetric,
 		showGamesSelector,
+		showGamesTrendToggle,
 		supplyMetric,
 		selectSupplyMetric,
 		cardMotion,
@@ -65,10 +66,12 @@ export function MapLayersPanel() {
 		rootRef,
 		showActiveFacilities,
 		showInactiveFacilities,
+		showGamesTrend,
 		showSessions,
 		toggleExpanded,
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
+		toggleGamesTrend,
 		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
@@ -235,6 +238,16 @@ export function MapLayersPanel() {
 							key={`game-departments-${resetCount}`}
 							enabled={showActiveFacilities}
 						/>
+					)}
+					{showGamesTrendToggle && showActiveFacilities && supplyMetric === "games" && (
+						<div className="flex w-full items-center justify-between gap-2 rounded-sm pl-5 pr-2 py-1.5">
+							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.trend.toggle}</p>
+							<LayerSwitch
+								checked={showGamesTrend}
+								label={messages.trend.toggle}
+								onToggle={toggleGamesTrend}
+							/>
+						</div>
 					)}
 					{showActiveFacilities && supplyMetric === "facilities" && (
 						<div className="flex w-full items-center justify-between gap-2 rounded-sm pl-5 pr-2 py-1.5">
