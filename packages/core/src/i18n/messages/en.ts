@@ -93,6 +93,21 @@ export const en: Messages = {
 			applied: "Applied: {filters}",
 			pending: "Pending changes",
 		},
+		trend: {
+			toggle: "Show trend",
+			gamesOne: "{count} game",
+			gamesOther: "{count} games",
+			gamesUp: "{games}, up {change} from the previous {days} days",
+			gamesDown: "{games}, down {change} from the previous {days} days",
+			gamesStable: "{games}, unchanged from the past {days} days",
+			changeUp: "Up {change} from the previous {days} days",
+			changeDown: "Down {change} from the previous {days} days",
+			changeStable: "Unchanged from the past {days} days",
+			panelTitle: "Games trend",
+			panelCompare: "{current} now vs {previous} in the previous {days} days",
+			panelChange: "{change}% vs previous {days} days",
+			panelNoPrevious: "No games in the previous {days} days",
+		},
 		layersSessions: "App sessions",
 		layersCollapse: "Hide layers",
 		layersExpand: "Show layers",
@@ -283,9 +298,13 @@ export const en: Messages = {
 		neverChanged: "Never switched",
 		lastChange: "{who} · {date}",
 		saveFailed: "We couldn't switch {flag}. Please try again.",
+		requires: "Only takes effect while {flag} is on.",
+		waiting: "On, waiting for {flag}",
 		descriptions: {
 			"facility-games-layer":
 				"Show a Games supply selector with game counts in clusters and at each facility.",
+			"facility-games-trend":
+				"Show the games trend against the previous {days} days, with a Show trend switch under Games.",
 			"player-demographic-filters":
 				"Select app sessions or user registrations and filter demand by gender, skill level and age.",
 		},

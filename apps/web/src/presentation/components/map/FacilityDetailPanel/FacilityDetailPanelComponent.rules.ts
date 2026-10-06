@@ -11,8 +11,12 @@ import {
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@market-health-map/core/application";
-import { weekEndOf } from "@market-health-map/core/domain";
-import { formatMessage, type StatsPeriodMessages } from "@market-health-map/core/i18n";
+import { GAMES_WINDOW_DAYS, type GamesTrend, weekEndOf } from "@market-health-map/core/domain";
+import {
+	formatMessage,
+	type Messages,
+	type StatsPeriodMessages,
+} from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import {
@@ -314,11 +318,35 @@ export function resolveDetailStatus(isPending: boolean, isError: boolean): Facil
 	return (status ?? "loading") as FacilityDetailStatus;
 }
 
+/** Side panel trend copy: current and previous games and the percent change. */
+export function formatGamesTrendPanel(
+	trend: GamesTrend,
+	messages: Messages["map"]["trend"],
+	days = GAMES_WINDOW_DAYS,
+) {
+	const percent = trend.percentChange;
+	const current = formatMessage(trend.current === 1 ? messages.gamesOne : messages.gamesOther, {
+		count: trend.current,
+	});
+	return {
+		title: messages.panelTitle,
+		compare: formatMessage(messages.panelCompare, { current, previous: trend.previous, days }),
+		change:
+			percent === null
+				? formatMessage(messages.panelNoPrevious, { days })
+				: formatMessage(messages.panelChange, {
+						change: `${percent > 0 ? "+" : ""}${percent}`,
+						days,
+					}),
+	};
+}
+
 export function useFacilityDetailPanelRules({
 	facilityId,
 	isClosing,
 	onClose,
 	onClosed,
+	trend,
 }: FacilityDetailPanelProps) {
 	const { locale, messages } = useMessages();
 	const { period } = useMapScope();
@@ -388,6 +416,9 @@ export function useFacilityDetailPanelRules({
 		messages: messages.facilityDetail,
 		onClose,
 		status,
+		trend: trend
+			? { level: trend.level, ...formatGamesTrendPanel(trend, messages.map.trend) }
+			: null,
 		view,
 	};
 }
