@@ -1,3 +1,5 @@
+import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
+
 const HOVER_CARD_SURFACE_CLASS = [
 	"w-full overflow-hidden",
 	"rounded-[var(--map-radius)] border border-[rgba(255,255,255,0.78)]",
@@ -18,11 +20,16 @@ export const CLUSTER_HOVER_LIST_CLASS =
 
 export const CLUSTER_HOVER_LIST_FADE_CLASS = "cluster-hover-list-fade";
 
-export const CLUSTER_HOVER_ITEM_CLASS =
-	"flex w-full cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted";
+export const CLUSTER_HOVER_ITEM_CLASS = [
+	"flex w-full cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-left",
+	MAP_SEARCH_OPTION_HOVER_CLASS,
+].join(" ");
 
 export const CLUSTER_HOVER_NAME_CLASS =
 	"min-w-0 flex-1 truncate text-[14px] leading-5 font-normal text-foreground";
+
+export const CLUSTER_HOVER_GAMES_COUNT_CLASS =
+	"shrink-0 text-[12px] font-medium tabular-nums leading-4 text-muted-foreground";
 
 export const CLUSTER_HOVER_FOOTER_CLASS =
 	"px-2 py-1 text-[12px] font-medium leading-4 text-muted-foreground";

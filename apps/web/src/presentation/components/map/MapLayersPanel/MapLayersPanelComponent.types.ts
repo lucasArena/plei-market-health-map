@@ -43,3 +43,11 @@ export interface LayerSwitchProps {
 	label: string;
 	onToggle: () => void;
 }
+
+export interface LayerMetricRadioProps {
+	label: string;
+	name: string;
+	value: string;
+	selected: boolean;
+	onSelect: () => void;
+}

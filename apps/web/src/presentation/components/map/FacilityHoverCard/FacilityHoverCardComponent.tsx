@@ -1,8 +1,12 @@
 import { Avatar } from "@/presentation/components/displays/Avatar/AvatarComponent";
-import { useFacilityHoverCardRules } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
+import {
+	formatHoverGamesBadge,
+	useFacilityHoverCardRules,
+} from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.rules";
 import {
 	CLUSTER_HOVER_DIVIDER_CLASS,
 	CLUSTER_HOVER_FOOTER_CLASS,
+	CLUSTER_HOVER_GAMES_COUNT_CLASS,
 	CLUSTER_HOVER_HEADING_CLASS,
 	CLUSTER_HOVER_ITEM_CLASS,
 	CLUSTER_HOVER_LIST_CLASS,
@@ -35,6 +39,7 @@ export function FacilityHoverCard({
 		motionClass,
 		placement,
 		selectListedFacility,
+		showFacilityGames,
 		surfaceClass,
 		syncClusterListFade,
 	} = useFacilityHoverCardRules(hover, messages, onFacilitySelect);
@@ -96,6 +101,11 @@ export function FacilityHoverCard({
 															appearance="muted"
 														/>
 														<span className={CLUSTER_HOVER_NAME_CLASS}>{facility.name}</span>
+														{showFacilityGames && (
+															<span className={CLUSTER_HOVER_GAMES_COUNT_CLASS}>
+																{formatHoverGamesBadge(facility.gamesLast28Days ?? 0)}
+															</span>
+														)}
 													</button>
 												</li>
 											))}
@@ -116,12 +126,21 @@ export function FacilityHoverCard({
 									avatarUrl={facilityCard.facility.avatarUrl}
 									appearance="muted"
 								/>
-								{facilityTrend ? (
+								{facilityCard.games !== undefined || facilityTrend ? (
 									<span className={FACILITY_HOVER_TEXT_CLASS}>
-										<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>
-										<span data-testid="facility-hover-trend" className={HOVER_TREND_LINE_CLASS}>
-											{facilityTrend}
+										<span className="flex min-w-0 items-center gap-2">
+											<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>
+											{facilityCard.games !== undefined && (
+												<span className={CLUSTER_HOVER_GAMES_COUNT_CLASS}>
+													{formatHoverGamesBadge(facilityCard.games)}
+												</span>
+											)}
 										</span>
+										{facilityTrend && (
+											<span data-testid="facility-hover-trend" className={HOVER_TREND_LINE_CLASS}>
+												{facilityTrend}
+											</span>
+										)}
 									</span>
 								) : (
 									<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>

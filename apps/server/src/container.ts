@@ -91,7 +91,14 @@ function buildFeatureFlags() {
 				new PrismaFeatureFlagRepository(getPrismaClient(databaseUrl)),
 				clock,
 			)
-		: new MemoryFeatureFlagRepository();
+		: new MemoryFeatureFlagRepository(
+				FEATURE_FLAG_KEYS.map((key) => ({
+					key,
+					enabled: true,
+					updatedBy: "local",
+					updatedAt: new Date(0),
+				})),
+			);
 	return {
 		listEnabledFeatureFlags: makeListEnabledFeatureFlags({ featureFlags }),
 		listFeatureFlags: makeListFeatureFlags({ featureFlags }),
@@ -179,8 +186,14 @@ function buildAppSessionHeatmapRepository() {
 
 function buildAppSessionHeatmap() {
 	const appSessionHeatmap = buildAppSessionHeatmapRepository();
-	const listAppSessionHeatmap = makeListAppSessionHeatmap({ appSessionHeatmap });
-	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({ appSessionHeatmap });
+	const listAppSessionHeatmap = makeListAppSessionHeatmap({
+		appSessionHeatmap,
+		enabledFeatureFlags,
+	});
+	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({
+		appSessionHeatmap,
+		enabledFeatureFlags,
+	});
 	return {
 		listAppSessionFilterOptions,
 		listAppSessionHeatmap: async (filters: AppSessionFilters = {}, period?: StatsPeriod) => {

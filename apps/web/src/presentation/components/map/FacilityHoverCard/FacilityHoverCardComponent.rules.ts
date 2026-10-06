@@ -81,6 +81,16 @@ function changeTemplate(trend: GamesTrend, templates: Record<GamesTrend["level"]
 	return templates.stable;
 }
 
+const hoverGamesBadgeFormatter = new Intl.NumberFormat("en", {
+	notation: "compact",
+	maximumFractionDigits: 1,
+});
+
+/** Compact games count for hover rows, matching map badge notation. */
+export function formatHoverGamesBadge(count: number) {
+	return count >= 1000 ? hoverGamesBadgeFormatter.format(count) : String(count);
+}
+
 /** "42 games": what Games mode hovers read in place of a facility count. */
 export function formatGamesCount(count: number, messages: TrendMessages) {
 	return formatMessage(count === 1 ? messages.gamesOne : messages.gamesOther, { count });
@@ -210,22 +220,20 @@ export function clusterHoverMotionClass(motion: RevealMotion, retarget: boolean)
 	return { true: "", false: settled }[`${retarget}`];
 }
 
-export function facilityHoverCardHeight(hasTrend = false, hasGamesCount = false) {
-	const line = hasTrend ? FACILITY_HOVER_TREND_HEIGHT : hasGamesCount ? HOVER_TREND_LINE_HEIGHT : 0;
+export function facilityHoverCardHeight(hasTrend = false) {
+	const line = hasTrend ? FACILITY_HOVER_TREND_HEIGHT : 0;
 	return 12 + 32 + line;
 }
 
-/** The line under a facility name: games (with the change while trend is on) in Games mode. */
+/** The line under a facility name: games change while trend is on in Games mode. */
 export function facilityTrendLine(
 	hover: MapHover | null,
 	messages: Messages["map"],
 	days = GAMES_WINDOW_DAYS,
 ) {
 	if (hover?.kind !== "facility") return null;
-	if (hover.games === undefined) return null;
-	return hover.trend
-		? formatGamesTrend(hover.trend, messages.trend, days)
-		: formatGamesCount(hover.games, messages.trend);
+	if (hover.games === undefined || !hover.trend) return null;
+	return formatGamesChange(hover.trend, messages.trend, days);
 }
 
 export function hoverCardSurfaceClass(kind: MapHover["kind"]) {
@@ -288,6 +296,7 @@ export function useFacilityHoverCardRules(
 	const card = hover ?? resting;
 	const clusterCard = card?.kind === "cluster" ? card : null;
 	const facilityCard = card?.kind === "facility" ? card : null;
+	const showFacilityGames = clusterCard?.games !== undefined || facilityCard?.games !== undefined;
 	const facilities = clusterFacilitiesByName(clusterCard?.facilities ?? []);
 	const listed = facilities.length;
 	const hasMore =
@@ -323,10 +332,7 @@ export function useFacilityHoverCardRules(
 					width: HOVER_CARD_WIDTH,
 					height: {
 						cluster: clusterHoverCardHeight(visibleRows, hasMore, Boolean(card.trend)),
-						facility: facilityHoverCardHeight(
-							Boolean(card.trend),
-							card.kind === "facility" && card.games !== undefined,
-						),
+						facility: facilityHoverCardHeight(Boolean(card.trend)),
 					}[card.kind],
 				},
 				viewport: card.viewport,
@@ -349,6 +355,7 @@ export function useFacilityHoverCardRules(
 		motionClass: clusterHoverMotionClass(motion, skipEnter.current),
 		placement,
 		selectListedFacility,
+		showFacilityGames,
 		surfaceClass: card ? hoverCardSurfaceClass(card.kind) : "",
 		syncClusterListFade,
 	};

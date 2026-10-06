@@ -1,5 +1,6 @@
 import { getMessages } from "@market-health-map/core/i18n";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach } from "vitest";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { LAYERS_PANEL_OPEN_KEY } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
@@ -15,7 +16,14 @@ vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 	useFeatureFlag: (key: string) => mockFeatureFlag(key),
 }));
 vi.mock("@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent", () => ({
-	AppSessionFilters: () => <div>Player filters</div>,
+	AppSessionFilters: ({ children }: { children?: React.ReactNode }) => children ?? null,
+	SessionFilterChips: () => <div>Player filters</div>,
+	SessionFilterAdd: () => {
+		const layers = useMapLayers();
+		if (layers && !layers.showSessions) return null;
+		return <button type="button">Add session filter</button>;
+	},
+	SessionFilterApply: () => null,
 }));
 
 const mockPathname = vi.fn(() => "/");
@@ -47,7 +55,7 @@ describe("MapLayersPanel", () => {
 			"z-50",
 			"w-[32px]",
 		);
-		const layersCard = screen.getByRole("heading", { name: "Demand" }).parentElement;
+		const layersCard = screen.getByRole("region", { name: "Demand" }).parentElement;
 		expect(layersCard).toHaveClass(
 			"map-glass",
 			"right-0",
@@ -81,31 +89,14 @@ describe("MapLayersPanel", () => {
 		expect(screen.queryByRole("button", { name: "Active users" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Active players" })).not.toBeInTheDocument();
 		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
-		expect(screen.getByText("Demand")).toHaveClass(
-			"px-2",
-			"pt-1.5",
-			"pb-1",
-			"text-[10px]",
-			"font-semibold",
-			"tracking-wider",
-			"text-muted-foreground",
-			"uppercase",
+		expect(screen.getByText("Demand")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Supply")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByRole("region", { name: "Demand" }).nextElementSibling).toHaveClass(
+			"border-t",
+			"border-border",
 		);
-		expect(screen.getByText("Demand")).not.toHaveClass("font-medium", "text-sm");
-		expect(screen.getByText("Supply")).toHaveClass(
-			"text-[10px]",
-			"font-semibold",
-			"tracking-wider",
-			"text-muted-foreground",
-			"uppercase",
-		);
-		expect(screen.getByText("App sessions")).toHaveClass("text-sm", "font-medium");
-		expect(screen.getByText("Facilities")).toHaveClass("text-sm", "font-medium");
 		expect(screen.getByText("Show inactive facilities")).toHaveClass("text-sm", "font-medium");
-		expect(screen.getByText("App sessions").parentElement).toHaveClass("px-2", "py-1.5", "gap-2");
-		expect(screen.getByText("App sessions").parentElement).not.toHaveClass("text-sm");
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
-		expect(screen.getByText("Facilities").previousElementSibling).toBeNull();
 		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
@@ -382,7 +373,7 @@ describe("MapLayersPanel reset", () => {
 
 	it("appears in a right-aligned footer inside the glass card when a setting differs", () => {
 		renderWithProvider();
-		const card = screen.getByRole("heading", { name: "Demand" }).parentElement;
+		const card = screen.getByRole("region", { name: "Demand" }).parentElement;
 
 		for (const name of ["App sessions", "Facilities", "Show inactive facilities"]) {
 			fireEvent.click(switchByName(name));
@@ -524,58 +515,50 @@ it("selects one demand metric behind the demographic flag and resets it", () => 
 			<MapLayersPanel />
 		</MapLayersProvider>,
 	);
-	const selector = screen.getByRole("button", { name: "Demand" });
-	expect(selector).toHaveTextContent("App sessions");
-	fireEvent.click(selector);
-	expect(screen.getByRole("listbox", { name: "Demand" })).toHaveClass("map-glass", "border-border");
-	fireEvent.click(screen.getByRole("option", { name: "User registrations" }));
-	expect(selector).toHaveTextContent("User registrations");
-	expect(selector).toHaveFocus();
+	expect(screen.getByRole("radio", { name: "App sessions" })).toBeChecked();
+	fireEvent.click(screen.getByRole("radio", { name: "User registrations" }));
+	expect(screen.getByRole("radio", { name: "User registrations" })).toBeChecked();
 	expect(switchByName("User registrations")).toHaveAttribute("aria-checked", "true");
 	fireEvent.click(switchByName("User registrations"));
 	expect(switchByName("User registrations")).toHaveAttribute("aria-checked", "false");
+	expect(screen.queryByRole("radiogroup", { name: "Demand" })).not.toBeInTheDocument();
+	fireEvent.click(switchByName("User registrations"));
 	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-	expect(selector).toHaveTextContent("App sessions");
+	expect(screen.getByRole("radio", { name: "App sessions" })).toBeChecked();
 	expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	mockFeatureFlag.mockReturnValue(false);
 });
-it("hides the demand selector when the flag is off", () => {
+
+it("hides the demand metrics when the flag is off", () => {
 	mockFeatureFlag.mockReturnValue(false);
 	renderWithMessages(
 		<MapLayersProvider>
 			<MapLayersPanel />
 		</MapLayersProvider>,
 	);
-	expect(screen.queryByRole("button", { name: "Demand" })).not.toBeInTheDocument();
+	expect(screen.queryByRole("radiogroup", { name: "Demand" })).not.toBeInTheDocument();
+	expect(screen.queryByRole("radio", { name: "User registrations" })).not.toBeInTheDocument();
 });
 
-it("navigates demand options with the keyboard and closes on Escape and outside clicks", () => {
+it("navigates demand options with the keyboard", () => {
 	mockFeatureFlag.mockReturnValue(true);
 	renderWithMessages(
 		<MapLayersProvider>
 			<MapLayersPanel />
 		</MapLayersProvider>,
 	);
-	const trigger = screen.getByRole("button", { name: "Demand" });
-	fireEvent.keyDown(trigger, { key: "ArrowDown" });
-	const sessions = screen.getByRole("option", { name: "App sessions" });
-	const registrations = screen.getByRole("option", { name: "User registrations" });
-	expect(sessions).toHaveFocus();
-	fireEvent.keyDown(sessions, { key: "ArrowDown" });
+	const group = screen.getByRole("radiogroup", { name: "Demand" });
+	const sessions = screen.getByRole("radio", { name: "App sessions" });
+	const registrations = screen.getByRole("radio", { name: "User registrations" });
+	sessions.focus();
+	fireEvent.keyDown(group, { key: "ArrowDown" });
 	expect(registrations).toHaveFocus();
-	fireEvent.keyDown(registrations, { key: "ArrowUp" });
+	fireEvent.keyDown(group, { key: "ArrowUp" });
 	expect(sessions).toHaveFocus();
-	fireEvent.keyDown(sessions, { key: "End" });
+	fireEvent.keyDown(group, { key: "End" });
 	expect(registrations).toHaveFocus();
-	fireEvent.keyDown(registrations, { key: "Home" });
+	fireEvent.keyDown(group, { key: "Home" });
 	expect(sessions).toHaveFocus();
-	fireEvent.keyDown(sessions, { key: "Escape" });
-	expect(screen.queryByRole("listbox", { name: "Demand" })).not.toBeInTheDocument();
-	expect(trigger).toHaveFocus();
-	expect(screen.getByRole("button", { name: "Hide layers" })).toBeInTheDocument();
-	fireEvent.click(trigger);
-	fireEvent.pointerDown(document.body);
-	expect(screen.queryByRole("listbox", { name: "Demand" })).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
 
@@ -586,32 +569,23 @@ it("defaults to Games and resets supply back to Games", () => {
 			<MapLayersPanel />
 		</MapLayersProvider>,
 	);
-	const trigger = screen.getByRole("button", { name: "Supply" });
-	expect(trigger).toHaveTextContent("Games");
-	fireEvent.keyDown(trigger, { key: "ArrowDown" });
-	const active = screen.getByRole("option", { name: "Facilities" });
-	const games = screen.getByRole("option", { name: "Games" });
-	expect(games).toHaveFocus();
-	expect(screen.getAllByRole("option")).toEqual([games, active]);
-	fireEvent.keyDown(games, { key: "End" });
+	expect(screen.getByRole("radio", { name: "Games" })).toBeChecked();
+	const group = screen.getByRole("radiogroup", { name: "Supply" });
+	const active = screen.getByRole("radio", { name: "Facilities" });
+	const games = screen.getByRole("radio", { name: "Games" });
+	expect(group.querySelectorAll('input[type="radio"]')).toHaveLength(2);
+	games.focus();
+	fireEvent.keyDown(group, { key: "End" });
 	expect(active).toHaveFocus();
-	fireEvent.keyDown(active, { key: "ArrowUp" });
+	fireEvent.keyDown(group, { key: "ArrowUp" });
 	expect(games).toHaveFocus();
-	fireEvent.keyDown(games, { key: "Home" });
+	fireEvent.keyDown(group, { key: "Home" });
 	expect(games).toHaveFocus();
-	fireEvent.keyDown(games, { key: "Escape" });
-	expect(trigger).toHaveFocus();
-	fireEvent.click(trigger);
-	fireEvent.pointerDown(document.body);
-	expect(screen.queryByRole("listbox", { name: "Supply" })).not.toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
-	fireEvent.click(trigger);
-	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
-	expect(trigger).toHaveTextContent("Facilities");
-	expect(trigger).toHaveFocus();
+	fireEvent.click(active);
+	expect(screen.getByRole("radio", { name: "Facilities" })).toBeChecked();
 	expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Games");
+	expect(screen.getByRole("radio", { name: "Games" })).toBeChecked();
 	mockFeatureFlag.mockReturnValue(false);
 });
 
@@ -625,13 +599,11 @@ it("shows the inactive sub-filter only for Facilities and defaults it off", () =
 	expect(
 		screen.queryByRole("switch", { name: "Show inactive facilities" }),
 	).not.toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+	fireEvent.click(screen.getByRole("radio", { name: "Facilities" }));
 	expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
 	fireEvent.click(switchByName("Show inactive facilities"));
 	expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "true");
-	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-	fireEvent.click(screen.getByRole("option", { name: "Games" }));
+	fireEvent.click(screen.getByRole("radio", { name: "Games" }));
 	expect(
 		screen.queryByRole("switch", { name: "Show inactive facilities" }),
 	).not.toBeInTheDocument();
@@ -646,19 +618,16 @@ it("preserves Department across supply modes and clears it with the layer Reset"
 		</MapLayersProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
-	fireEvent.click(screen.getByRole("option", { name: "Department" }));
-	fireEvent.click(screen.getByRole("option", { name: "Magic" }));
-	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
-	const department = screen.getByRole("button", { name: "Department" });
-	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
-	expect(department).toHaveTextContent("Magic");
-	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-	fireEvent.click(screen.getByRole("option", { name: "Games" }));
-	expect(department).toHaveTextContent("Magic");
+	fireEvent.click(screen.getByRole("button", { name: "Department" }));
+	fireEvent.click(screen.getByRole("checkbox", { name: "Magic" }));
+	fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+	expect(screen.getByRole("button", { name: "Remove Magic filter" })).toBeInTheDocument();
+	fireEvent.click(screen.getByRole("radio", { name: "Facilities" }));
+	expect(screen.getByRole("button", { name: "Remove Magic filter" })).toBeInTheDocument();
+	fireEvent.click(screen.getByRole("radio", { name: "Games" }));
+	expect(screen.getByRole("button", { name: "Remove Magic filter" })).toBeInTheDocument();
 	fireEvent.click(screen.getAllByRole("button", { name: "Reset" }).at(-1) as HTMLElement);
-	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
-	expect(screen.queryByText("All games")).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Remove Magic filter" })).not.toBeInTheDocument();
 	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
@@ -671,11 +640,51 @@ it("offers only the footer Reset for pending filter pills", () => {
 		</MapLayersProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
-	fireEvent.click(screen.getByRole("option", { name: "Department" }));
+	fireEvent.click(screen.getByRole("button", { name: "Department" }));
 	expect(screen.getAllByRole("button", { name: "Reset" })).toHaveLength(1);
 	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
 	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("shows Reset while demand filter controls are open", () => {
+	mockFeatureFlag.mockImplementation(
+		(key: string) => key === "player-demographic-filters" || key === "facility-games-layer",
+	);
+	function MarkDemandFilters() {
+		const layers = useMapLayers();
+		useEffect(() => {
+			layers?.setDemandFiltersPresent?.(true);
+		}, [layers]);
+		return null;
+	}
+	renderWithMessages(
+		<MapLayersProvider>
+			<MarkDemandFilters />
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("shows Reset while supply filter controls are open", () => {
+	mockFeatureFlag.mockImplementation((key: string) => key === "facility-games-layer");
+	function MarkSupplyFilters() {
+		const layers = useMapLayers();
+		useEffect(() => {
+			layers?.setSupplyFiltersPresent?.(true);
+		}, [layers]);
+		return null;
+	}
+	renderWithMessages(
+		<MapLayersProvider>
+			<MarkSupplyFilters />
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
 
@@ -705,8 +714,8 @@ describe("Show trend", () => {
 		const trend = switchByName("Show trend");
 		expect(trend).toHaveAttribute("aria-checked", "false");
 		expect(trend).toHaveClass("bg-[#e5e5e5]", "h-[13px]", "w-[22px]", "p-[1px]");
-		expect(trend.parentElement).toHaveClass("pl-5", "pr-2", "py-1.5");
-		expect(screen.getByText("Show trend")).toHaveClass("text-sm", "font-medium");
+		expect(trend.parentElement).toHaveClass("px-2", "py-1.5");
+		expect(screen.getByText("Show trend")).toHaveClass("text-xs");
 		expect(screen.getByTestId("trend-state")).toHaveTextContent("false");
 
 		fireEvent.click(trend);
@@ -719,11 +728,9 @@ describe("Show trend", () => {
 		mockFeatureFlag.mockReturnValue(true);
 		renderTrendPanel();
 
-		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-		fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+		fireEvent.click(screen.getByRole("radio", { name: "Facilities" }));
 		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-		fireEvent.click(screen.getByRole("option", { name: "Games" }));
+		fireEvent.click(screen.getByRole("radio", { name: "Games" }));
 		expect(switchByName("Show trend")).toBeInTheDocument();
 	});
 
@@ -732,13 +739,11 @@ describe("Show trend", () => {
 		renderTrendPanel();
 		fireEvent.click(switchByName("Show trend"));
 
-		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-		fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+		fireEvent.click(screen.getByRole("radio", { name: "Facilities" }));
 		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
 		expect(screen.getByTestId("trend-state")).toHaveTextContent("true");
 
-		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
-		fireEvent.click(screen.getByRole("option", { name: "Games" }));
+		fireEvent.click(screen.getByRole("radio", { name: "Games" }));
 		expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "true");
 	});
 
@@ -779,7 +784,7 @@ describe("Show trend", () => {
 			</MapLayersProvider>,
 		);
 
-		expect(screen.getByRole("button", { name: "Supply" })).toBeInTheDocument();
+		expect(screen.getByRole("region", { name: "Supply" })).toBeInTheDocument();
 		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 	});
@@ -843,8 +848,10 @@ it("hides sub-filters when their parent layer is off and restores them when on",
 	expect(screen.getByRole("region", { name: "Department" })).toBeInTheDocument();
 	fireEvent.click(switchByName("App sessions"));
 	expect(screen.queryByText("Player filters")).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Add session filter" })).not.toBeInTheDocument();
 	expect(switchByName("Show trend")).toBeInTheDocument();
 	fireEvent.click(switchByName("App sessions"));
 	expect(screen.getByText("Player filters")).toBeInTheDocument();
+	expect(screen.getByRole("button", { name: "Add session filter" })).toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });

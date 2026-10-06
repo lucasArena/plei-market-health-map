@@ -58,4 +58,32 @@ describe("useRevealMotion", () => {
 		});
 		expect(result.current.motion).toBe("shown");
 	});
+
+	it("enters immediately when it mounts visible and ignores duplicate visibility", () => {
+		const { result, rerender } = renderHook(({ visible }) => useRevealMotion(visible), {
+			initialProps: { visible: true },
+		});
+		expect(result.current.motion).toBe("enter");
+		act(() => {
+			vi.advanceTimersByTime(REVEAL_MOTION_MS.enter);
+		});
+		expect(result.current.motion).toBe("shown");
+		rerender({ visible: true });
+		expect(result.current.motion).toBe("shown");
+	});
+
+	it("settles an exit animation from the element callback", () => {
+		const { result, rerender } = renderHook(({ visible }) => useRevealMotion(visible), {
+			initialProps: { visible: true },
+		});
+		act(() => {
+			vi.advanceTimersByTime(REVEAL_MOTION_MS.enter);
+		});
+		rerender({ visible: false });
+		expect(result.current.motion).toBe("exit");
+		act(() => {
+			result.current.finishReveal(animationEnd(true));
+		});
+		expect(result.current.motion).toBe("hidden");
+	});
 });
