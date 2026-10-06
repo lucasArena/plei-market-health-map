@@ -54,6 +54,9 @@ Gender and skill menus support multiple checked choices and remain open while se
 
 Skill choices follow Beginner, Intermediate, Advanced, Expert progression while retaining warehouse-backed values.
 
+Cluster circles follow map projection immediately during camera movement. Only hover scale animates; geographic positions must never ease behind a drag.
+
+Glass circles synchronize inside the map render callback, without scheduling another animation frame, so overlays and the map paint together.
 Games trend markers use a translucent glass center with blur, saturation and a gentle top highlight, one flat colored ring with a continuous directional tip, without a separate shadow around the center. Growing counts point up; declining counts point down. Exactly unchanged counts use a gray ring with a rightward tip. The glass center meets the colored outline directly, without an extra white rim or overlapping ring strokes.
 
 Trend-enabled clusters and individual games markers share a 45px marker box and identical ring geometry, giving abbreviated counts more space and avoiding size changes between grouped and individual markers.

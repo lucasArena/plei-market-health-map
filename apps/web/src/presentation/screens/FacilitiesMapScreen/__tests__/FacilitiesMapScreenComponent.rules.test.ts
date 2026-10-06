@@ -395,7 +395,7 @@ describe("facility glass", () => {
 		expect((ring as HTMLElement).style.borderColor).toBe("rgb(137, 142, 153)");
 	});
 
-	it("scales a hovered cluster marker and eases the transform back", () => {
+	it("updates cluster positions immediately while easing hover scale", () => {
 		const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 		const markerStart = css.indexOf(".cluster-marker {");
 		const marker = css.slice(markerStart, markerStart + 120);
@@ -418,11 +418,25 @@ describe("facility glass", () => {
 		expect(resting?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
 		expect(createFacilityGlassNode().classList.contains(CLUSTER_MARKER_CLASS)).toBe(false);
 		expect(hovered?.style.transform).toBe(
-			`translate(40px, 420px) translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
+			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
 		);
-		expect(resting?.style.transform).toBe("translate(200px, 300px) translate(-50%, -50%) scale(1)");
+		expect(resting?.style.transform).toBe("translate(-50%, -50%) scale(1)");
+		expect(hovered?.style.left).toBe("40px");
+		expect(hovered?.style.top).toBe("420px");
+		syncClusterGlass(
+			host,
+			badges.map((badge) => ({ ...badge, x: 120, y: 240 })),
+			nodes,
+			62,
+		);
+		expect(nodes.get(62)).toBe(hovered);
+		expect(hovered?.style.left).toBe("120px");
+		expect(hovered?.style.top).toBe("240px");
+		expect(hovered?.style.transform).toBe(
+			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
+		);
 		syncClusterGlass(host, badges, nodes, null);
-		expect(hovered?.style.transform).toBe("translate(40px, 420px) translate(-50%, -50%) scale(1)");
+		expect(hovered?.style.transform).toBe("translate(-50%, -50%) scale(1)");
 	});
 
 	it("keeps one badge per cluster and marks a cluster inactive when it has no active facility", () => {
@@ -502,19 +516,8 @@ describe("facility glass", () => {
 
 	it("projects glass discs on each map render and removes them when facilities are hidden", () => {
 		const container = document.createElement("div");
-		const frames = new Map<number, FrameRequestCallback>();
-		let nextFrame = 1;
-		const requestFrame = vi
-			.spyOn(window, "requestAnimationFrame")
-			.mockImplementation((callback) => {
-				const id = nextFrame;
-				nextFrame += 1;
-				frames.set(id, callback);
-				return id;
-			});
-		const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-			frames.delete(id);
-		});
+		const requestFrame = vi.spyOn(window, "requestAnimationFrame");
+		let projectedPoint = { x: 10, y: 20 };
 		const handlers = new Map<string, () => void>();
 		const layers = new Set(["facilities-clusters", "facilities-dots"]);
 		const map = {
@@ -540,7 +543,7 @@ describe("facility glass", () => {
 					},
 				];
 			},
-			project: () => ({ x: 10, y: 20 }),
+			project: () => projectedPoint,
 			on: (_event: string, handler: () => void) => {
 				handlers.set("render", handler);
 			},
@@ -549,18 +552,19 @@ describe("facility glass", () => {
 		const showFacilitiesRef = { current: true };
 		const selectedFacilityIdRef = { current: "f1" as string | null };
 		const unbind = bindFacilityGlass(map as never, showFacilitiesRef, selectedFacilityIdRef);
-		const flush = () => {
-			const id = [...frames.keys()][0];
-			const callback = id === undefined ? undefined : frames.get(id);
-			if (id !== undefined) frames.delete(id);
-			callback?.(0);
-		};
 		expect(container.querySelector("[data-testid='cluster-glass']")).toHaveStyle({
 			pointerEvents: "none",
 		});
 		handlers.get("render")?.();
-		expect(frames.size).toBe(1);
-		flush();
+		expect(requestFrame).not.toHaveBeenCalled();
+		const cluster = container.querySelector("[data-testid='cluster-glass'] > div");
+		expect((cluster as HTMLElement).style.left).toBe("10px");
+		expect((cluster as HTMLElement).style.top).toBe("20px");
+		projectedPoint = { x: 80, y: 90 };
+		handlers.get("render")?.();
+		expect((cluster as HTMLElement).style.left).toBe("80px");
+		expect((cluster as HTMLElement).style.top).toBe("90px");
+		expect(requestFrame).not.toHaveBeenCalled();
 		expect(container.querySelector("[data-testid='cluster-glass-label']")?.textContent).toBe("12");
 		expect(container.querySelector("[data-testid='cluster-glass'] > div")).toHaveStyle({
 			pointerEvents: "none",
@@ -580,17 +584,14 @@ describe("facility glass", () => {
 		);
 		layers.clear();
 		handlers.get("render")?.();
-		flush();
 		expect(container.querySelector("[data-testid='cluster-glass-label']")).toBeNull();
 		showFacilitiesRef.current = false;
 		handlers.get("render")?.();
-		flush();
 		handlers.get("render")?.();
 		unbind?.();
-		expect(cancelFrame).toHaveBeenCalled();
+		expect(map.off).toHaveBeenCalledWith("render", handlers.get("render"));
 		expect(container.childElementCount).toBe(0);
 		requestFrame.mockRestore();
-		cancelFrame.mockRestore();
 		expect(
 			bindFacilityGlass(
 				{ getContainer: () => ({}) } as never,
