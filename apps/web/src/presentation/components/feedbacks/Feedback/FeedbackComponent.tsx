@@ -37,7 +37,7 @@ function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 				stroke="currentColor"
 				strokeWidth="1.8"
 				aria-hidden="true"
-				className="size-5"
+				className="size-4"
 			>
 				<path d="M8 8a4 4 0 0 1 8 0v1H8V8Z" />
 				<rect x="7" y="9" width="10" height="11" rx="5" />
@@ -52,7 +52,7 @@ function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 			stroke="currentColor"
 			strokeWidth="1.8"
 			aria-hidden="true"
-			className="size-5"
+			className="size-4"
 		>
 			<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3Z" />
 		</svg>
