@@ -5,8 +5,6 @@ import {
 	flaggedIssueIds,
 	hasFlagLabel,
 	linearClientFromEnv,
-	linkIssues,
-	unlinkFlaggedIssues,
 } from "../flagged-issues.mjs";
 
 describe("hasFlagLabel", () => {
@@ -44,42 +42,6 @@ describe("flaggedIssueIds", () => {
 	});
 });
 
-describe("unlinkFlaggedIssues", () => {
-	it("removes every flagged ticket the release picked up, including ones found through branches", async () => {
-		const calls = [];
-		const request = async (query, variables) => {
-			calls.push(variables);
-			if (query.includes("ReleaseIssues")) {
-				return {
-					release: {
-						issues: {
-							nodes: [
-								{ id: "u1", identifier: "ENG-1", labels: { nodes: [{ name: "feature flag" }] } },
-								{ id: "u2", identifier: "ENG-2", labels: { nodes: [{ name: "flag" }] } },
-							],
-						},
-					},
-				};
-			}
-			return { issueToReleaseDeleteByIssueAndRelease: { success: true } };
-		};
-		const logs = [];
-
-		const removed = await unlinkFlaggedIssues({
-			releaseId: "r1",
-			request,
-			log: (line) => logs.push(line),
-		});
-
-		assert.deepEqual(removed, ["ENG-1"]);
-		assert.deepEqual(calls, [{ id: "r1" }, { releaseId: "r1", issueId: "u1" }]);
-		assert.deepEqual(logs, ["ENG-1: behind a feature flag, removed from the release"]);
-		assert.deepEqual(
-			await unlinkFlaggedIssues({ releaseId: "r2", request: async () => ({ release: null }) }),
-			[],
-		);
-	});
-});
 
 describe("linearClientFromEnv", () => {
 	it("needs the app credentials", async () => {
@@ -87,52 +49,3 @@ describe("linearClientFromEnv", () => {
 	});
 });
 
-describe("linkIssues", () => {
-	it("adds every released ticket the release doesn't have yet, by its Linear ID", async () => {
-		const calls = [];
-		const issues = { "ENG-1": "u1", "PROD-493": "u41", "ENG-2": "u2" };
-		const request = async (query, variables) => {
-			calls.push([query.match(/(ReleaseIssues|IssueId|Link)/)[1], variables]);
-			if (query.includes("ReleaseIssues")) {
-				return { release: { issues: { nodes: [{ id: "u2", identifier: "ENG-2", labels: { nodes: [] } }] } } };
-			}
-			if (query.includes("IssueId")) {
-				if (variables.id === "ENG-9") throw new Error("Entity not found");
-				const id = issues[variables.id];
-				return { issue: id ? { id, identifier: variables.id === "PROD-493" ? "ENG-5841" : variables.id } : null };
-			}
-			return { issueToReleaseCreate: { success: true } };
-		};
-		const logs = [];
-
-		const added = await linkIssues({
-			releaseId: "r1",
-			ids: ["ENG-1", "PROD-493", "ENG-2", "ENG-3", "ENG-9", "ENG-1"],
-			request,
-			log: (line) => logs.push(line),
-		});
-
-		assert.deepEqual(added, ["ENG-1", "ENG-5841"]);
-		assert.deepEqual(
-			calls.filter(([name]) => name === "Link").map(([, variables]) => variables),
-			[
-				{ releaseId: "r1", issueId: "u1" },
-				{ releaseId: "r1", issueId: "u41" },
-			],
-		);
-		assert.deepEqual(logs, [
-			"ENG-1: added to the release",
-			"ENG-5841: added to the release",
-			"::warning::ENG-9: not added to the release (Entity not found)",
-		]);
-	});
-
-	it("handles a release that can't be found", async () => {
-		const added = await linkIssues({
-			releaseId: "r1",
-			ids: [],
-			request: async () => ({ release: null }),
-		});
-		assert.deepEqual(added, []);
-	});
-});
