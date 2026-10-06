@@ -111,3 +111,5 @@ App sessions demographic filtering is gated by `player-demographic-filters` (off
 With `player-demographic-filters` enabled, Demand selects App sessions or User registrations with one shared visibility switch. Registrations count distinct confirmed `pleiapp_player` accounts over the last 28 completed days, grouped by region and placed at median facility coordinates. Regions without valid facility coordinates are omitted; the legend describes market placement rather than precise registration locations. Demographic filters apply to both metrics, and cache keys include the metric. Reset restores App sessions; disabling the flag restores the existing sessions path.
 
 Registration rendering uses a stronger heatmap intensity and wider radius for isolated market points. Its legend uses individual visible market counts, rather than summing nearby markets into session viewport areas. Switching back restores the session paint settings.
+
+The Demand picker uses a custom glass listbox matching the demographic filter option menus, with selected checkmarks, arrow/Home/End navigation, Escape dismissal, outside-click dismissal, and focus restoration on selection.
