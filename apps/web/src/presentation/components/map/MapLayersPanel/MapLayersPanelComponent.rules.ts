@@ -35,12 +35,18 @@ export function useMapLayersPanelRules() {
 	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
-	const isCustomized = isMapLayersCustomized({
-		showActiveFacilities,
-		showInactiveFacilities,
-		showSessions,
-		sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
-	});
+	const demandMetric = showDemographics ? (layers?.demandMetric ?? "sessions") : "sessions";
+	const selectDemandMetric = (metric: "sessions" | "registrations") => {
+		layers?.setDemandMetric?.(metric);
+	};
+	const isCustomized =
+		demandMetric !== "sessions" ||
+		isMapLayersCustomized({
+			showActiveFacilities,
+			showInactiveFacilities,
+			showSessions,
+			sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
+		});
 
 	const expand = useCallback((next: boolean) => {
 		layersPanelPreference.remember(next);
@@ -98,6 +104,8 @@ export function useMapLayersPanelRules() {
 	}, [expand]);
 
 	return {
+		demandMetric,
+		selectDemandMetric,
 		showDemographics,
 		cardMotion: motion,
 		closeOnEscape,

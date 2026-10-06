@@ -39,6 +39,8 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 export function MapLayersPanel() {
 	const {
 		showDemographics,
+		demandMetric,
+		selectDemandMetric,
 		cardMotion,
 		closeOnEscape,
 		finishCardMotion,
@@ -118,10 +120,28 @@ export function MapLayersPanel() {
 						{messages.layersDemand}
 					</h2>
 					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
-						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersSessions}</p>
+						{showDemographics ? (
+							<select
+								aria-label={messages.layersDemand}
+								value={demandMetric}
+								onChange={(event) =>
+									selectDemandMetric(event.target.value as "sessions" | "registrations")
+								}
+								className="cursor-pointer rounded-sm bg-transparent text-sm font-medium text-foreground"
+							>
+								<option value="sessions">{messages.layersSessions}</option>
+								<option value="registrations">{messages.layersRegistrations}</option>
+							</select>
+						) : (
+							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersSessions}</p>
+						)}
 						<LayerSwitch
 							checked={showSessions}
-							label={messages.layersSessions}
+							label={
+								demandMetric === "registrations"
+									? messages.layersRegistrations
+									: messages.layersSessions
+							}
 							onToggle={toggleSessions}
 						/>
 					</div>

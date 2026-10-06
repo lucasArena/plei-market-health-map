@@ -20,6 +20,14 @@ export const en: Messages = {
 		featureFlags: "Feature flags",
 	},
 	map: {
+		layersRegistrations: "User registrations",
+		registrationHeatmapLegend: "Registrations per market · last 28 days",
+		registrationHeatmapContext: "Market totals placed at the median facility location",
+		registrationHeatmapLoading: "Loading user registrations…",
+		registrationHeatmapNoActivity: "No registrations in the current map view",
+		registrationHeatmapValue: "{count} registrations in a shaded area",
+		registrationHeatmapHighValue: "{count}+ registrations in a shaded area",
+
 		title: "Facilities map",
 		loading: "Loading facilities…",
 		failed: "Could not load facilities.",
@@ -71,9 +79,9 @@ export const en: Messages = {
 			help: "Current profile · last 28 completed days. Filters apply together; players with missing values are excluded only for selected fields.",
 			loading: "Loading player filters…",
 			optionsError: "Couldn’t load player filters.",
-			updating: "Updating sessions…",
-			sessionsError: "Couldn’t load sessions. Try again.",
-			empty: "No sessions match these filters.",
+			updating: "Updating demand…",
+			sessionsError: "Couldn’t load demand. Try again.",
+			empty: "No demand matches these filters.",
 			retry: "Retry",
 			applied: "Applied: {filters}",
 			pending: "Pending changes",
@@ -253,7 +261,7 @@ export const en: Messages = {
 		saveFailed: "We couldn't switch {flag}. Please try again.",
 		descriptions: {
 			"player-demographic-filters":
-				"Player demographic filters: filter App sessions by gender, skill level and age.",
+				"Select app sessions or user registrations and filter demand by gender, skill level and age.",
 		},
 	},
 	offline: {

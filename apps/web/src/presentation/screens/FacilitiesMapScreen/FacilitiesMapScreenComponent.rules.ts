@@ -19,6 +19,7 @@ import {
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
@@ -740,8 +741,12 @@ export function useFacilitiesMapScreenRules() {
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
 	const mapLayers = useMapLayers();
+	const showDemographics = useFeatureFlag("player-demographic-filters");
+	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
 	const heatmapQuery = useAppSessionHeatmap(
-		mapLayers?.sessionFilters,
+		isRegistrations
+			? { ...mapLayers?.sessionFilters, metric: "registrations" }
+			: mapLayers?.sessionFilters,
 		mapLayers?.showSessions ?? true,
 	);
 	const [isMapReady, setIsMapReady] = useState(false);
@@ -1340,7 +1345,12 @@ export function useFacilitiesMapScreenRules() {
 		finishReveal: finishLegendMotion,
 		isShown: isLegendShown,
 		motion: legendMotion,
-	} = useRevealMotion(hasSessionHeatmap || isSessionHeatmapLoading, PANEL_SLIDE_MS);
+	} = useRevealMotion(
+		hasSessionHeatmap ||
+			isSessionHeatmapLoading ||
+			(isRegistrations && showSessions && !heatmapQuery.isError && !!heatmapQuery.data),
+		PANEL_SLIDE_MS,
+	);
 
 	const legendMotionClass = {
 		hidden: "",
@@ -1364,7 +1374,18 @@ export function useFacilitiesMapScreenRules() {
 		legendMotionClass,
 		hovered,
 		isPanelClosing,
-		messages: messages.map,
+		messages: isRegistrations
+			? {
+					...messages.map,
+					sessionHeatmapLegend: messages.map.registrationHeatmapLegend,
+					sessionHeatmapContext: messages.map.registrationHeatmapContext,
+					sessionHeatmapLoading: messages.map.registrationHeatmapLoading,
+					sessionHeatmapNoActivity: messages.map.registrationHeatmapNoActivity,
+					sessionHeatmapLowValue: messages.map.registrationHeatmapValue,
+					sessionHeatmapMidValue: messages.map.registrationHeatmapValue,
+					sessionHeatmapHighValue: messages.map.registrationHeatmapHighValue,
+				}
+			: messages.map,
 		releaseClusterHover: scheduleHoverDismiss,
 		selectFacility,
 		sessionScale,

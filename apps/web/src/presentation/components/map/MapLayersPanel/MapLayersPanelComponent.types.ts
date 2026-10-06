@@ -9,6 +9,8 @@ export interface MapLayersSettings {
 }
 
 export interface MapLayersValue {
+	demandMetric?: "sessions" | "registrations";
+	setDemandMetric?: (metric: "sessions" | "registrations") => void;
 	sessionFilters: AppSessionFilters;
 	setSessionFilters: (filters: AppSessionFilters) => void;
 	showActiveFacilities: boolean;

@@ -104,3 +104,19 @@ it("caches filter options and retries failures", async () => {
 	await repository.listFilterOptions();
 	expect(listFilterOptions).toHaveBeenCalledTimes(3);
 });
+
+it("keeps sessions and registrations in separate cache entries", async () => {
+	const { listLast28Days, repository } = setup();
+	listLast28Days
+		.mockResolvedValueOnce([CELL])
+		.mockResolvedValueOnce([{ ...CELL, sessionWeight: 9 }]);
+	expect(await repository.listLast28Days()).toEqual([CELL]);
+	expect(await repository.listLast28Days({ metric: "registrations" })).toEqual([
+		{ ...CELL, sessionWeight: 9 },
+	]);
+	expect(await repository.listLast28Days()).toEqual([CELL]);
+	expect(await repository.listLast28Days({ metric: "registrations" })).toEqual([
+		{ ...CELL, sessionWeight: 9 },
+	]);
+	expect(listLast28Days).toHaveBeenCalledTimes(2);
+});

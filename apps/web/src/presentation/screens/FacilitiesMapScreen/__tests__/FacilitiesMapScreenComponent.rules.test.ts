@@ -126,6 +126,7 @@ const layersState = vi.hoisted(() => ({
 	showInactiveFacilities: true,
 	showSessions: true,
 	hasProvider: true,
+	demandMetric: "sessions" as "sessions" | "registrations",
 	sessionFilters: {} as AppSessionFilters,
 }));
 
@@ -138,15 +139,21 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					setShowActiveFacilities: vi.fn(),
 					setShowInactiveFacilities: vi.fn(),
 					showSessions: layersState.showSessions,
+					demandMetric: layersState.demandMetric,
 					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
 			: null,
 }));
 
+const mockDemandFlag = vi.fn(() => false);
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockDemandFlag(),
+}));
+
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
-	useAppSessionHeatmap: () => mockUseAppSessionHeatmap(),
+	useAppSessionHeatmap: (...args: unknown[]) => mockUseAppSessionHeatmap(...args),
 }));
 
 const FACILITY = {
@@ -747,6 +754,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.showSessions = true;
 		layersState.hasProvider = true;
 		layersState.sessionFilters = {};
+		layersState.demandMetric = "sessions";
+		mockDemandFlag.mockReturnValue(false);
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -1558,5 +1567,28 @@ describe("useFacilitiesMapScreenRules", () => {
 		const { result } = renderRules();
 		expect(result.current.sessionLegendState).not.toBe("loading");
 		expect(result.current.isLegendShown).toBe(false);
+	});
+	it("loads registrations with the applied cohort and changes all legend labels", async () => {
+		mockDemandFlag.mockReturnValue(true);
+		layersState.demandMetric = "registrations";
+		layersState.sessionFilters = { gender: "Female", ageMin: 18 };
+		const { result, rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
+			{ gender: "Female", ageMin: 18, metric: "registrations" },
+			true,
+		);
+		expect(result.current.messages.sessionHeatmapLegend).toContain("Registrations per market");
+		expect(result.current.messages.sessionHeatmapLoading).toBe("Loading user registrations…");
+		expect(result.current.messages.sessionHeatmapLowValue).toContain("registrations");
+		mockUseAppSessionHeatmap.mockReturnValue({ data: [], isPending: false, isError: false });
+		rerender();
+		expect(result.current.sessionLegendState).toBe("empty");
+		expect(result.current.isLegendShown).toBe(true);
+		mockDemandFlag.mockReturnValue(false);
+		rerender();
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(layersState.sessionFilters, true);
+		expect(result.current.messages.sessionHeatmapLegend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
 	});
 });

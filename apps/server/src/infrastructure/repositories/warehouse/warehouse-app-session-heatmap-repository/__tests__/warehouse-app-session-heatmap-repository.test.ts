@@ -107,3 +107,30 @@ it("matches any selected value per field while combining fields", async () => {
 		"NULLIF(TRIM(p.gender::text), '') = ANY($1::text[]) AND NULLIF(TRIM(p.skill_description::text), '') = ANY($2::text[])",
 	);
 });
+
+it("counts confirmed app registrations once per region over completed days", async () => {
+	const query = vi.fn().mockResolvedValue({ rows: [row()] });
+	const repository = new WarehouseAppSessionHeatmapRepository({ query });
+	expect(await repository.listLast28Days({ metric: "registrations" })).toEqual([
+		{ lat: 29.746, lng: -95.352, sessionWeight: 1134 },
+	]);
+	const sql = query.mock.calls[0]?.[0];
+	expect(sql).toContain("COUNT(DISTINCT p.player_id)");
+	expect(sql).toContain("p.confirmed_at >= CURRENT_DATE - 28");
+	expect(sql).toContain("p.confirmed_at < CURRENT_DATE");
+	expect(sql).toContain("p.players_type = 'pleiapp_player'");
+	expect(sql).toContain("GROUP BY region_id");
+	expect(sql).toContain("percentile_cont(0.5)");
+	expect(sql).not.toContain("players_behaviour");
+	await repository.listLast28Days({
+		metric: "registrations",
+		gender: ["Female", "Male"],
+		skill: "Advanced",
+		ageMin: 18,
+		ageMax: 40,
+	});
+	expect(query.mock.calls[1]?.[1]).toEqual([["Female", "Male"], "Advanced", 18, 40]);
+	expect(query.mock.calls[1]?.[0]).toContain(
+		"AND NULLIF(TRIM(p.gender::text), '') = ANY($1::text[])",
+	);
+});

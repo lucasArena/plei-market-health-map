@@ -138,7 +138,7 @@ it("supports option keyboard navigation and Escape without closing the outer pan
 it("shows empty results", async () => {
 	setup("empty");
 	await waitFor(() =>
-		expect(screen.getByText("No sessions match these filters.")).toBeInTheDocument(),
+		expect(screen.getByText("No demand matches these filters.")).toBeInTheDocument(),
 	);
 });
 it.each(["options-fail", "sessions-fail"])("shows and retries %s", async (mode) => {
@@ -148,9 +148,7 @@ it.each(["options-fail", "sessions-fail"])("shows and retries %s", async (mode) 
 		fireEvent.click(screen.getByRole("option", { name: "Gender" }));
 	}
 	const error =
-		mode === "options-fail"
-			? "Couldn’t load player filters."
-			: "Couldn’t load sessions. Try again.";
+		mode === "options-fail" ? "Couldn’t load player filters." : "Couldn’t load demand. Try again.";
 	await waitFor(() => expect(screen.getByText(error)).toBeInTheDocument());
 	fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 	await waitFor(() => expect(fetchMock.mock.calls.length).toBe(mode === "options-fail" ? 3 : 2));

@@ -512,3 +512,32 @@ it("clears the applied cohort when its feature flag is disabled", () => {
 	);
 	expect(screen.getByTestId("cohort")).toHaveTextContent("{}");
 });
+
+it("selects one demand metric behind the demographic flag and resets it", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	const selector = screen.getByRole("combobox", { name: "Demand" });
+	expect(selector).toHaveValue("sessions");
+	fireEvent.change(selector, { target: { value: "registrations" } });
+	expect(selector).toHaveValue("registrations");
+	expect(switchByName("User registrations")).toHaveAttribute("aria-checked", "true");
+	fireEvent.click(switchByName("User registrations"));
+	expect(switchByName("User registrations")).toHaveAttribute("aria-checked", "false");
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(selector).toHaveValue("sessions");
+	expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+	mockFeatureFlag.mockReturnValue(false);
+});
+it("hides the demand selector when the flag is off", () => {
+	mockFeatureFlag.mockReturnValue(false);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+});
