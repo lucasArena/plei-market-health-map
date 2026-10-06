@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMessage } from "@market-health-map/core/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +9,7 @@ import type {
 	MapSearchProps,
 	MarketSearchResult,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
@@ -37,10 +39,13 @@ export function buildMarketSearchResults(
 export function useMapSearchRules({
 	facilities,
 	shownFacilities,
+	messages,
 	onFacilitySelect,
 	onMarketSelect,
 	onClear,
 }: MapSearchProps) {
+	const { locale } = useMessages();
+	const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
 	const [query, setQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isOpen);
@@ -102,6 +107,13 @@ export function useMapSearchRules({
 			void prefetchFacilityStats(queryClient, facility.id).catch(() => undefined);
 		});
 
+	const facilityCountLabel = (market: MarketSearchResult) => {
+		const count = market.facilities.length;
+		const template =
+			plural.select(count) === "one" ? messages.facilityCountOne : messages.facilityCount;
+		return formatMessage(template, { count });
+	};
+
 	const clear = () => {
 		setQuery("");
 		setIsOpen(true);
@@ -111,6 +123,7 @@ export function useMapSearchRules({
 	return {
 		cancelPrefetch: intent.cancel,
 		clear,
+		facilityCountLabel,
 		finishResultsMotion: finishReveal,
 		handleChange,
 		handleKeyDown,

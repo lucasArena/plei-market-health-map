@@ -30,6 +30,7 @@ export const es: Messages = {
 		markets: "Mercados",
 		facilities: "Sedes",
 		facilityCount: "{count} sedes",
+		facilityCountOne: "{count} sede",
 		noSearchResults: "No se encontraron mercados ni sedes",
 		clusterCount: "{count} sedes",
 		moreFacilities: "+{count} más",

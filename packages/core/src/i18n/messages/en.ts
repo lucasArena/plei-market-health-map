@@ -28,6 +28,7 @@ export const en: Messages = {
 		markets: "Markets",
 		facilities: "Facilities",
 		facilityCount: "{count} facilities",
+		facilityCountOne: "{count} facility",
 		noSearchResults: "No markets or facilities found",
 		clusterCount: "{count} facilities",
 		moreFacilities: "+{count} more",
