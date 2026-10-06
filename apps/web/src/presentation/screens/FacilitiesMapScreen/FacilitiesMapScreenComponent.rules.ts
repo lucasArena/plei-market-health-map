@@ -698,13 +698,11 @@ export function bindFacilityGlass(
 	}
 	const nodes = new Map<number, HTMLElement>();
 	const facilityNodes = new Map<string, HTMLElement>();
-	let frame = 0;
 	const project = (coordinates: [number, number]) => {
 		const point = map.project(coordinates);
 		return { x: point.x, y: point.y };
 	};
 	const sync = () => {
-		frame = 0;
 		const hidden = !showFacilitiesRef.current;
 		const badges =
 			hidden || !map.getLayer(CLUSTER_LAYER_ID)
@@ -725,17 +723,12 @@ export function bindFacilityGlass(
 		syncClusterGlass(host, badges, nodes, hoveredClusterIdRef.current);
 		syncFacilityGlass(facilityHost, facilities, facilityNodes, selectedFacilityIdRef.current);
 	};
-	const schedule = () => {
-		if (frame) return;
-		frame = requestAnimationFrame(sync);
-	};
-	refreshClusterMarkersRef.current = schedule;
-	map.on("render", schedule);
-	schedule();
+	refreshClusterMarkersRef.current = sync;
+	map.on("render", sync);
+	sync();
 	return () => {
 		refreshClusterMarkersRef.current = () => undefined;
-		map.off("render", schedule);
-		if (frame) cancelAnimationFrame(frame);
+		map.off("render", sync);
 		host.remove();
 		facilityHost.remove();
 	};

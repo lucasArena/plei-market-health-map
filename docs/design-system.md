@@ -55,3 +55,5 @@ Gender and skill menus support multiple checked choices and remain open while se
 Skill choices follow Beginner, Intermediate, Advanced, Expert progression while retaining warehouse-backed values.
 
 Cluster circles follow map projection immediately during camera movement. Only hover scale animates; geographic positions must never ease behind a drag.
+
+Glass circles synchronize inside the map render callback, without scheduling another animation frame, so overlays and the map paint together.
