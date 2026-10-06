@@ -42,7 +42,7 @@ with the regular border and no blur.
 MapLibre's zoom control is styled through its own classes (`.maplibregl-ctrl-group`) in `globals.css`,
 so MapLibre still wires the buttons.
 
-The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. All switches start enabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities. When any setting differs from its default, a footer inside the same glass card, under a thin `border-border` divider, shows a right-aligned Reset text button (`text-xs`, muted, no fill) that restores the defaults. The footer is not rendered with the defaults.
+The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. App sessions and Active facilities start enabled; Inactive facilities starts disabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities. When any setting differs from its default, a footer inside the same glass card, under a thin `border-border` divider, shows a right-aligned Reset text button (`text-xs`, muted, no fill) that restores the defaults. The footer is not rendered with the defaults.
 
 While app sessions load, the session legend shows the heatmap gradient at 40% opacity, pulsing (`motion-safe` only), above "Loading app sessions…" in 10px muted text. It replaces the scale until data arrives, so the empty map never reads as "no sessions".
 

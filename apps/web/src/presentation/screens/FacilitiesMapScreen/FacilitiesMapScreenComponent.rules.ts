@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLEI_LOGO_URL, PLEI_LOGO_WHITE_URL } from "@/application/constants/plei-logo";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type { MarketSearchResult } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 import {
 	ALL_MARKETS_SCOPE,
@@ -756,10 +757,12 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
-	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
-	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
+	const showActiveFacilities =
+		mapLayers?.showActiveFacilities ?? MAP_LAYERS_DEFAULTS.showActiveFacilities;
+	const showInactiveFacilities =
+		mapLayers?.showInactiveFacilities ?? MAP_LAYERS_DEFAULTS.showInactiveFacilities;
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
-	const showSessions = mapLayers?.showSessions ?? true;
+	const showSessions = mapLayers?.showSessions ?? MAP_LAYERS_DEFAULTS.showSessions;
 	const filters = mapLayers?.sessionFilters;
 	const ageLabel =
 		filters?.ageMin === filters?.ageMax
