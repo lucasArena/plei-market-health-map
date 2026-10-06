@@ -106,7 +106,7 @@ describe("MapLayersPanel", () => {
 		expect(screen.getByText("App sessions").parentElement).not.toHaveClass("text-sm");
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 		expect(screen.getByText("Active facilities").previousElementSibling).toBeNull();
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
@@ -117,18 +117,18 @@ describe("MapLayersPanel", () => {
 			</MapLayersProvider>,
 		);
 		fireEvent.click(switchByName("Inactive facilities"));
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 		fireEvent.click(switchByName("Active facilities"));
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "false");
 		fireEvent.click(switchByName("Inactive facilities"));
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
 	});
 
 	it("toggles inactive facilities without a provider", () => {
 		renderWithMessages(<MapLayersPanel />);
 		fireEvent.click(switchByName("Inactive facilities"));
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("toggles the facilities layer", () => {
@@ -355,7 +355,7 @@ describe("MapLayersPanel reset", () => {
 
 	const DEFAULT_STATE = JSON.stringify({
 		showActiveFacilities: true,
-		showInactiveFacilities: true,
+		showInactiveFacilities: false,
 		showSessions: true,
 		sessionFilters: {},
 	});
@@ -412,7 +412,7 @@ describe("MapLayersPanel reset", () => {
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(
 			JSON.stringify({
 				showActiveFacilities: false,
-				showInactiveFacilities: false,
+				showInactiveFacilities: true,
 				showSessions: false,
 				sessionFilters: { gender: "Female" },
 			}),
@@ -424,7 +424,7 @@ describe("MapLayersPanel reset", () => {
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
 		expect(toggle).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();

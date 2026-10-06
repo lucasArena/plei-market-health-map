@@ -769,7 +769,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
 	});
 
-	it("shows both facility statuses when there is no layers provider", async () => {
+	it("shows only active facilities when there is no layers provider", async () => {
 		layersState.hasProvider = false;
 		const inactive = { ...FACILITY, id: "inactive", isActive: false, isActiveLastWeek: false };
 		mockUseFacilities.mockReturnValue({
@@ -780,9 +780,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
-		expect(mapState.setData).toHaveBeenCalledWith(
-			toFacilityFeatureCollection([FACILITY, inactive]),
-		);
+		expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([FACILITY]));
 	});
 
 	it("filters facilities before clustering for each supply selection", async () => {

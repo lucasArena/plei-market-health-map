@@ -4,10 +4,10 @@ import {
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 
 describe("MAP_LAYERS_DEFAULTS", () => {
-	it("starts with every layer on and no player filter", () => {
+	it("starts with inactive facilities hidden, every other layer on and no player filter", () => {
 		expect(MAP_LAYERS_DEFAULTS).toEqual({
 			showActiveFacilities: true,
-			showInactiveFacilities: true,
+			showInactiveFacilities: false,
 			showSessions: true,
 			sessionFilters: {},
 		});
