@@ -9,6 +9,7 @@ import type {
 	ListRecentLoginsInput,
 	RecordDailyActivityInput,
 	RecordLoginInput,
+	SearchPlacesInput,
 	SetFeatureFlagInput,
 	StatsPeriod,
 	SubmitFeedbackInput,
@@ -32,6 +33,7 @@ import {
 	makeListRecentLogins,
 	makeRecordDailyActivity,
 	makeRecordLogin,
+	makeSearchPlaces,
 	makeSetFeatureFlag,
 	makeSubmitFeedback,
 } from "@market-health-map/core/application";
@@ -48,6 +50,8 @@ import {
 	LinearAppAuth,
 } from "@server/infrastructure/providers/linear/linear-auth/linear-auth";
 import { LinearIssueTracker } from "@server/infrastructure/providers/linear/linear-issue-tracker/linear-issue-tracker";
+import { CachedPlaceSearch } from "@server/infrastructure/providers/photon/cached-place-search/cached-place-search";
+import { PhotonPlaceSearch } from "@server/infrastructure/providers/photon/photon-place-search/photon-place-search";
 import { SystemClock } from "@server/infrastructure/providers/system/system-clock/system-clock";
 import { UuidGenerator } from "@server/infrastructure/providers/system/uuid-generator/uuid-generator";
 import { CachedDailyActivityRepository } from "@server/infrastructure/repositories/database/cached-daily-activity-repository/cached-daily-activity-repository";
@@ -193,6 +197,14 @@ function buildAppSessionHeatmap() {
 	};
 }
 
+function buildPlaces() {
+	return {
+		searchPlaces: makeSearchPlaces({
+			places: new CachedPlaceSearch(new PhotonPlaceSearch(), new SystemClock()),
+		}),
+	};
+}
+
 function buildIssueTracker(): IssueTracker | null {
 	if (getFeedbackMode() === "dry-run") {
 		console.warn("[feedback] FEEDBACK_DRY_RUN is on: feedback is logged, not sent to Linear.");
@@ -225,6 +237,7 @@ let logins: ReturnType<typeof buildLogins> | undefined;
 let facilities: ReturnType<typeof buildFacilities> | undefined;
 let appSessionHeatmap: ReturnType<typeof buildAppSessionHeatmap> | undefined;
 let feedback: ReturnType<typeof buildFeedback> | undefined;
+let places: ReturnType<typeof buildPlaces> | undefined;
 let appMetrics: ReturnType<typeof buildAppMetrics> | undefined;
 let featureFlags: ReturnType<typeof buildFeatureFlags> | undefined;
 
@@ -251,6 +264,11 @@ function appMetricsModule() {
 function featureFlagModule() {
 	featureFlags ??= buildFeatureFlags();
 	return featureFlags;
+}
+
+function placeModule() {
+	places ??= buildPlaces();
+	return places;
 }
 
 function feedbackModule() {
@@ -284,6 +302,7 @@ const container = {
 	listEnabledFeatureFlags: () => featureFlagModule().listEnabledFeatureFlags(),
 	listFeatureFlags: () => featureFlagModule().listFeatureFlags(),
 	setFeatureFlag: (input: SetFeatureFlagInput) => featureFlagModule().setFeatureFlag(input),
+	searchPlaces: (input: SearchPlacesInput) => placeModule().searchPlaces(input),
 };
 
 export function getContainer() {

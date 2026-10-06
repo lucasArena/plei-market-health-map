@@ -111,7 +111,7 @@ describe("FacilitiesMapScreen", () => {
 		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(slot).toContainElement(
-			screen.getByRole("combobox", { name: "Search markets or facilities" }),
+			screen.getByRole("combobox", { name: "Search markets, facilities or cities" }),
 		);
 		vi.mocked(useHeaderSlot).mockReturnValue({
 			searchSlot: null,
