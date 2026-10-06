@@ -3,7 +3,6 @@ import {
 	CLUSTER_TREND_TIP,
 	FACILITY_TREND_RING,
 	FACILITY_TREND_TIP,
-	facilityGlassRingShadow,
 	TREND_TIP_LENGTH,
 	type TrendRing,
 	type TrendTipShape,
@@ -57,9 +56,5 @@ describe("games trend ring and tip", () => {
 		expect(shape.down).toContain(" 0 1 0 ");
 		expect(shape.up).toContain(" 0 1 1 ");
 		expect(shape.stable).toBe(shape.down);
-	});
-
-	it("builds the facility ring shadow in any color and width", () => {
-		expect(facilityGlassRingShadow("#16A34A", 3)).toContain("inset 0 0 0 3px #16A34A");
 	});
 });

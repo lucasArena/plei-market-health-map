@@ -101,6 +101,7 @@ import {
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
 	REGISTRATION_HEATMAP_PAINT,
+	SELECTED_RING_COLOR,
 	selectedRingColor,
 	selectedRingWidth,
 	TREND_TIP_CLASS,
@@ -821,7 +822,17 @@ export function readFacilityGlassBadges(
 
 export function createFacilityGlassNode() {
 	const node = document.createElement("div");
+	node.classList.add(CLUSTER_MARKER_CLASS);
 	applyGlassDisc(node, FACILITY_GLASS_DIAMETER, FACILITY_GLASS_SHADOW);
+	const ring = document.createElement("span");
+	ring.dataset.testid = "facility-glass-stroke";
+	ring.style.position = "absolute";
+	ring.style.boxSizing = "border-box";
+	ring.style.inset = `${CLUSTER_GLASS_STROKE_INSET}px`;
+	ring.style.borderRadius = "999px";
+	ring.style.border = `${CLUSTER_GLASS_STROKE}px solid ${CLUSTER_BORDER_COLOR}`;
+	ring.style.display = "none";
+	ignorePointer(ring);
 	const logo = document.createElement("img");
 	logo.dataset.testid = "facility-glass-core";
 	logo.alt = "";
@@ -840,7 +851,7 @@ export function createFacilityGlassNode() {
 	label.style.display = "none";
 	applyGlassCountLabel(label);
 	ignorePointer(label);
-	node.append(logo, label);
+	node.append(ring, logo, label);
 	node.style.backgroundColor = FACILITY_GLASS_FILL;
 	return node;
 }
@@ -870,6 +881,7 @@ export function syncFacilityGlass(
 	badges: readonly FacilityGlassBadge[],
 	nodes: Map<string, HTMLElement>,
 	selectedId: string | null = null,
+	engagedFacilityId: string | null = null,
 ) {
 	const seen = new Set<string>();
 	for (const badge of badges) {
@@ -879,11 +891,12 @@ export function syncFacilityGlass(
 			nodes.set(badge.id, current);
 			host.appendChild(current);
 		}
+		const isSelected = badge.id === selectedId;
+		const showCount = badge.label !== undefined;
 		const restingShadow = {
 			[`${badge.active}`]: FACILITY_GLASS_SHADOW,
 			[`${!badge.active}`]: FACILITY_GLASS_INACTIVE_SHADOW,
 		}.true as string;
-		const isSelected = badge.id === selectedId;
 		const untrendedShadow = {
 			[`${true}`]: restingShadow,
 			[`${isSelected}`]: FACILITY_GLASS_SELECTED_SHADOW,
@@ -894,25 +907,53 @@ export function syncFacilityGlass(
 					FACILITY_GLASS_STROKE + (isSelected ? 1 : 0),
 				)
 			: untrendedShadow;
-		// The inactive marker draws its ring as the disc border, so its shadow carries no ring.
-		current.style.boxShadow = badge.noGames && !isSelected ? CLUSTER_GLASS_SHADOW : trendedShadow;
+		// Count badges match cluster rings (DOM stroke). Logo markers keep the inset shadow ring.
+		current.style.boxShadow = showCount
+			? CLUSTER_GLASS_SHADOW
+			: badge.noGames && !isSelected
+				? CLUSTER_GLASS_SHADOW
+				: trendedShadow;
 		applyGlassTrend(current, badge.trend);
 		applyFacilityGlassActivity(current, badge.active);
 		const logo = current.querySelector("[data-testid='facility-glass-core']");
 		const label = current.querySelector("[data-testid='facility-glass-label']");
-		const showCount = badge.label !== undefined;
 		current.classList.toggle("games-count-circle", showCount);
+		const ring = current.querySelector("[data-testid='facility-glass-stroke']");
 		if (logo instanceof HTMLElement) logo.style.display = showCount ? "none" : "";
 		if (label instanceof HTMLElement) {
 			label.textContent = badge.label ?? "";
 			label.style.display = showCount ? "flex" : "none";
 			label.style.color = badge.active ? CLUSTER_GLASS_LABEL : CLUSTER_GLASS_INACTIVE_LABEL;
 		}
+		if (ring instanceof HTMLElement) {
+			ring.style.display = showCount ? "" : "none";
+			if (showCount) {
+				const width = CLUSTER_GLASS_STROKE + (isSelected ? 1 : 0);
+				const color = badge.trend
+					? GAMES_TREND_COLORS[badge.trend]
+					: isSelected
+						? SELECTED_RING_COLOR
+						: badge.active
+							? CLUSTER_BORDER_COLOR
+							: CLUSTER_GLASS_INACTIVE_STROKE;
+				ring.style.border = `${width}px solid ${color}`;
+				ring.style.inset = `${CLUSTER_GLASS_STROKE_INSET}px`;
+			}
+		}
 		applyTrendTipShape(current, FACILITY_TREND_TIP);
 		current.style.width = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
 		current.style.height = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
-		applyInactiveGamesMarker(current, badge.noGames === true);
-		positionGlassMarker(current, badge.x, badge.y, "translate(-50%, -50%)");
+		applyInactiveGamesMarker(
+			current,
+			badge.noGames === true,
+			showCount && badge.noGames === true && ring instanceof HTMLElement ? ring : null,
+		);
+		positionGlassMarker(
+			current,
+			badge.x,
+			badge.y,
+			clusterMarkerTransform(badge.id === engagedFacilityId),
+		);
 	}
 	for (const [id, node] of nodes) {
 		if (seen.has(id)) continue;
@@ -966,6 +1007,7 @@ export function bindFacilityGlass(
 	refreshClusterMarkersRef: { current: () => void } = { current: () => undefined },
 	showGamesRef: { current: boolean } = { current: false },
 	showTrendRef: { current: boolean } = { current: false },
+	hoveredFacilityIdRef: { current: string | null } = { current: null },
 ) {
 	const container = mapOverlayParent(map);
 	if (!container) return;
@@ -1013,7 +1055,13 @@ export function bindFacilityGlass(
 						anchor,
 					);
 		syncClusterGlass(host, badges, nodes, hoveredClusterIdRef.current);
-		syncFacilityGlass(facilityHost, facilities, facilityNodes, selectedFacilityIdRef.current);
+		syncFacilityGlass(
+			facilityHost,
+			facilities,
+			facilityNodes,
+			selectedFacilityIdRef.current,
+			hoveredFacilityIdRef.current,
+		);
 	};
 	refreshClusterMarkersRef.current = sync;
 	map.on("render", sync);
@@ -1799,6 +1847,7 @@ export function useFacilitiesMapScreenRules() {
 			refreshClusterMarkersRef,
 			showGamesRef,
 			showTrendRef,
+			hoveredFacilityIdRef,
 		);
 	}, [isMapReady]);
 

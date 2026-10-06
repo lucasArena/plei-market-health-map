@@ -670,7 +670,8 @@ button.map-icon-button[aria-expanded="true"],
   -webkit-backdrop-filter: none !important;
 }
 
-.games-count-circle [data-testid="cluster-glass-stroke"] {
+.games-count-circle [data-testid="cluster-glass-stroke"],
+.games-count-circle [data-testid="facility-glass-stroke"] {
   visibility: hidden;
 }
 

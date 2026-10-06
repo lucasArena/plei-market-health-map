@@ -99,7 +99,7 @@ describe("FacilityHoverCard", () => {
 		expect(surface).not.toHaveClass("pt-2");
 		expect(screen.getByText("EF")).toHaveAttribute("data-appearance", "muted");
 		expect(screen.getByText("EF")).not.toHaveClass("border-2", "border-pleiful-pitch-green-80");
-		expect(screen.getByText("Eastside Futsal Arena")).toHaveClass("text-[14px]", "text-foreground");
+		expect(screen.getByText("Eastside Futsal Arena")).toHaveClass("text-sm", "font-medium");
 		expect(screen.queryByText(/facilities/)).not.toBeInTheDocument();
 		expect(screen.queryByTestId("cluster-hover-list")).not.toBeInTheDocument();
 
@@ -220,13 +220,15 @@ describe("FacilityHoverCard", () => {
 
 		expect(screen.getByText("12 facilities")).toHaveClass(
 			"text-[12px]",
-			"font-medium",
-			"text-muted-foreground",
+			"font-semibold",
+			"tracking-normal",
+			"text-muted-foreground/90",
 		);
+		expect(screen.getByText("12 facilities")).not.toHaveClass("uppercase");
 		expect(screen.getByTestId("cluster-hover-divider")).toHaveClass("bg-black/8");
 		expect(screen.getAllByRole("listitem")).toHaveLength(2);
 		expect(screen.getAllByText("EF")[0]).toHaveAttribute("data-appearance", "muted");
-		expect(screen.getByText("Harbor Sports Dome")).toHaveClass("text-[14px]", "text-foreground");
+		expect(screen.getByText("Harbor Sports Dome")).toHaveClass("text-sm", "font-medium");
 		expect(screen.getByText("+10 more")).toHaveClass("text-[12px]", "font-medium");
 	});
 
