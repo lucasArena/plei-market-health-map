@@ -146,5 +146,6 @@ describe("issueSubjectPattern", () => {
 		assert.equal(pattern.test("feat(map): demographics (ENG-1)"), false);
 		assert.equal(pattern.test("Merge pull request #96 from acme/feature/eng-2-panel"), false);
 		assert.equal(new RegExp(issueSubjectPattern([])).test("feat: anything (ENG-1)"), false);
+		assert.match(issueSubjectPattern([]), /\(.*\)/, "Linear's CLI requires capture group 1");
 	});
 });

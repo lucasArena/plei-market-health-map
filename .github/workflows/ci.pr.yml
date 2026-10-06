@@ -17,15 +17,19 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           BASE_REF: ${{ github.base_ref }}
         run: |
-          if [ "$HEAD_REF" = "staging" ] && [ "$BASE_REF" = "main" ]; then
-            echo "Promotion from staging to main."
+          if [[ "$HEAD_REF" =~ ^release/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+$ ]] && [ "$BASE_REF" = "main" ]; then
+            echo "Promotion of $HEAD_REF to main."
+            exit 0
+          fi
+          if [ "$HEAD_REF" = "main" ] && [ "$BASE_REF" = "staging" ]; then
+            echo "Back-merge from main to staging."
             exit 0
           fi
           if [[ "$HEAD_REF" =~ ^(hotfix|feature|refactor|chore)/[a-z0-9._-]+$ ]]; then
             echo "Branch $HEAD_REF follows the naming pattern."
             exit 0
           fi
-          echo "::error::Branch '$HEAD_REF' must match hotfix/*, feature/*, refactor/* or chore/* (lowercase, digits, . _ -)."
+          echo "::error::Branch '$HEAD_REF' must match hotfix/*, feature/*, refactor/* or chore/* (lowercase, digits, . _ -), or release/YYYY-MM-DD-N into main."
           exit 1
 
   linear-issue:
