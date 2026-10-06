@@ -54,4 +54,16 @@ Gender and skill menus support multiple checked choices and remain open while se
 
 Skill choices follow Beginner, Intermediate, Advanced, Expert progression while retaining warehouse-backed values.
 
-Layer sub-controls are visible only while their parent toggle is on: player filters follow Demand, and Department and Show inactive facilities follow Supply. Applied settings are retained when controls are hidden.
+Games trend markers use a translucent glass center with blur, saturation and a gentle top highlight, one flat colored ring with a continuous directional tip, without a separate shadow around the center. Growing counts point up; declining counts point down. Exactly unchanged counts use a gray ring with a rightward tip. The glass center meets the colored outline directly, without an extra white rim or overlapping ring strokes.
+
+Trend-enabled clusters and individual games markers share a 45px marker box and identical ring geometry, giving abbreviated counts more space and avoiding size changes between grouped and individual markers.
+
+Games trends use the same vivid pastel green as the default outline (`success[30]`) for growth, paired with coral red (`negative[40]`) for decline. Directional tips distinguish them beyond color. A facility or cluster with games in the previous period and zero now remains visible as declining, rather than a neutral dotted zero.
+
+Hover cards always report the actual game-count change, including small increases and decreases. Equal counts say unchanged, with the comparison period, instead of about the same.
+
+Games trend direction follows every count change without percentage or minimum-game thresholds: any increase is green/up, any decrease is red/down, and exactly equal counts are gray/rightward. Hover text reports the count difference.
+
+Games trend information appears on map markers and hover cards. The facility detail panel does not display a separate games trend card.
+
+Layer sub-controls are visible only while their parent toggle is on: player filters follow Demand, and Department, Show trend and Show inactive facilities follow Supply. Applied settings are retained when controls are hidden.

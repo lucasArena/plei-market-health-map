@@ -1,4 +1,5 @@
 import {
+	FEATURE_FLAG_KEYS,
 	makeGetFacilityDetail,
 	makeGetMarketGameInsights,
 	makeGetMarketPlayerStats,
@@ -13,6 +14,8 @@ import {
 	toFacility,
 	WarehouseFacilityRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
+
+const allFlagsOn = async () => ({ enabled: [...FEATURE_FLAG_KEYS] });
 
 function row(overrides: object = {}) {
 	return {
@@ -92,8 +95,12 @@ describe("WarehouseFacilityRepository", () => {
 
 		expect(query).toHaveBeenCalledWith(ACTIVE_LOCATIONS_SQL);
 		expect(ACTIVE_LOCATIONS_SQL).toContain("deleted_at is null");
-		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date >= b.today - 28");
-		expect(ACTIVE_LOCATIONS_SQL).toContain("r.date_with_time::date < b.today");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date >= b.today - 28 as in_current");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date < b.today");
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"select (now() at time zone 'Pacific/Honolulu')::date as today",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).not.toContain("current_date");
 		expect(facilities.map((facility) => facility.id)).toEqual(["1042"]);
 	});
 
@@ -219,7 +226,10 @@ describe("ignored facilities downstream", () => {
 	});
 
 	it("leaves them out of the map list and search source", async () => {
-		const list = await makeListFacilities({ facilities: ignoredRepository() })();
+		const list = await makeListFacilities({
+			facilities: ignoredRepository(),
+			enabledFeatureFlags: allFlagsOn,
+		})();
 
 		expect(list.map((facility) => facility.name)).toEqual(["Phield House", "Ignite Sports Center"]);
 	});
@@ -300,7 +310,88 @@ it("exposes department counts through the facility map DTO", async () => {
 			rows: [row({ magic_games: 6, organizer_games: 4, partnership_games: 2 })],
 		}),
 	});
-	const points = await makeListFacilities({ facilities: repository })();
+	const points = await makeListFacilities({
+		facilities: repository,
+		enabledFeatureFlags: allFlagsOn,
+	})();
 	expect(points[0]?.gamesByDepartment).toEqual({ magic: 6, organizers: 4, partnerships: 2 });
 	expect(points[0]?.gamesLast28Days).toBe(12);
+});
+
+describe("previous window games for the trend", () => {
+	it("reads both windows in one query with one widened date filter", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [row()] });
+
+		await new WarehouseFacilityRepository({ query }).listAll();
+
+		expect(query).toHaveBeenCalledTimes(1);
+		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date >= b.today - 56");
+		expect(ACTIVE_LOCATIONS_SQL.match(/from classified_games/g)).toHaveLength(1);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"count(distinct r.reservation_id) filter (where r.in_current) as played_last_28_days",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"count(distinct r.reservation_id) filter (where not r.in_current) as played_previous_28_days",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"filter (where r.in_current and r.department = 'magic') as magic_games",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"filter (where not r.in_current and r.department = 'magic') as magic_games_previous",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"coalesce(a.played_previous_28_days, 0) as played_previous_28_days",
+		);
+	});
+
+	it("keeps the previous window games on the facility, including zero games now", () => {
+		const facility = toFacility(
+			row({
+				played_last_28_days: "0",
+				played_previous_28_days: "9",
+				magic_games: "0",
+				organizer_games: "0",
+				partnership_games: "0",
+				magic_games_previous: "1",
+				organizer_games_previous: "3",
+				partnership_games_previous: "5",
+			}),
+		);
+
+		expect(facility?.toJSON().metrics).toMatchObject({
+			gamesLast28Days: 0,
+			gamesPrevious28Days: 9,
+			gamesPreviousByDepartment: { magic: 1, organizers: 3, partnerships: 5 },
+		});
+	});
+
+	it("exposes previous window games through the facility map DTO", async () => {
+		const listFacilities = makeListFacilities({
+			enabledFeatureFlags: allFlagsOn,
+			facilities: new WarehouseFacilityRepository({
+				query: vi.fn().mockResolvedValue({
+					rows: [
+						row({
+							played_last_28_days: 42,
+							played_previous_28_days: 51,
+							magic_games: 2,
+							organizer_games: 10,
+							partnership_games: 30,
+							magic_games_previous: 1,
+							organizer_games_previous: 20,
+							partnership_games_previous: 30,
+						}),
+					],
+				}),
+			}),
+		});
+
+		const [point] = await listFacilities();
+
+		expect(point).toMatchObject({
+			gamesLast28Days: 42,
+			gamesPrevious28Days: 51,
+			gamesPreviousByDepartment: { magic: 1, organizers: 20, partnerships: 30 },
+		});
+	});
 });

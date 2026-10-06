@@ -1,10 +1,11 @@
 import type { FacilityRepository } from "@market-health-map/core/application";
-import { asEntityId, Facility } from "@market-health-map/core/domain";
+import { asEntityId, Facility, GAMES_WINDOW_DAYS } from "@market-health-map/core/domain";
 import { companyLogoUrl } from "@server/infrastructure/repositories/warehouse/company-logo-url/company-logo-url";
 import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse/is-ignored-facility/is-ignored-facility";
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
 import { isWithinServiceArea } from "@server/infrastructure/repositories/warehouse/service-area/service-area";
+import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseLocationRow,
 	WarehouseQueryable,
@@ -12,7 +13,7 @@ import type {
 
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
-  select current_date as today
+  select ${WAREHOUSE_TODAY_SQL} as today
 ),
 organizer_partners as (
   select distinct partner_id from plei_gold.fct_terms
@@ -27,17 +28,28 @@ classified_games as (
   left join organizer_partners op on op.partner_id = r.partner_id
 ),
 facility_activity as (
-  select r.location_id, count(distinct r.reservation_id) as played_last_28_days,
-         count(distinct r.reservation_id) filter (where r.department = 'magic') as magic_games,
-         count(distinct r.reservation_id) filter (where r.department = 'organizers') as organizer_games,
-         count(distinct r.reservation_id) filter (where r.department = 'partnerships') as partnership_games
-  from classified_games r
-  cross join bounds b
-  where r.reservation_type = 'OpenReservation'
-    and r.confirmed
-    and r.status <> 'cancelled'
-    and r.date_with_time::date >= b.today - 28
-    and r.date_with_time::date < b.today
+  /* One pass over both windows: the last ${GAMES_WINDOW_DAYS} full days and the equal length window
+     just before them, split with conditional aggregates so the trend needs no second query. */
+  select r.location_id,
+         count(distinct r.reservation_id) filter (where r.in_current) as played_last_28_days,
+         count(distinct r.reservation_id) filter (where not r.in_current) as played_previous_28_days,
+         count(distinct r.reservation_id) filter (where r.in_current and r.department = 'magic') as magic_games,
+         count(distinct r.reservation_id) filter (where r.in_current and r.department = 'organizers') as organizer_games,
+         count(distinct r.reservation_id) filter (where r.in_current and r.department = 'partnerships') as partnership_games,
+         count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'magic') as magic_games_previous,
+         count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'organizers') as organizer_games_previous,
+         count(distinct r.reservation_id) filter (where not r.in_current and r.department = 'partnerships') as partnership_games_previous
+  from (
+    select g.location_id, g.reservation_id, g.department,
+           g.date_with_time::date >= b.today - ${GAMES_WINDOW_DAYS} as in_current
+    from classified_games g
+    cross join bounds b
+    where g.reservation_type = 'OpenReservation'
+      and g.confirmed
+      and g.status <> 'cancelled'
+      and g.date_with_time::date >= b.today - ${GAMES_WINDOW_DAYS * 2}
+      and g.date_with_time::date < b.today
+  ) r
   group by r.location_id
 )
 select l.location_id, l.location_name, l.address, l.city, l.state,
@@ -46,6 +58,10 @@ select l.location_id, l.location_name, l.address, l.city, l.state,
        coalesce(a.magic_games, 0) as magic_games,
        coalesce(a.organizer_games, 0) as organizer_games,
        coalesce(a.partnership_games, 0) as partnership_games,
+       coalesce(a.played_previous_28_days, 0) as played_previous_28_days,
+       coalesce(a.magic_games_previous, 0) as magic_games_previous,
+       coalesce(a.organizer_games_previous, 0) as organizer_games_previous,
+       coalesce(a.partnership_games_previous, 0) as partnership_games_previous,
        c.id as company_id, c.logo as company_logo
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
@@ -92,12 +108,24 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 				activePlayers: 0,
 				gamesLastWeek: 0,
 				gamesLast28Days: Number(row.played_last_28_days),
+				...(row.played_previous_28_days !== undefined
+					? { gamesPrevious28Days: Number(row.played_previous_28_days) }
+					: {}),
 				...(row.magic_games !== undefined
 					? {
 							gamesByDepartment: {
 								magic: Number(row.magic_games),
 								organizers: Number(row.organizer_games),
 								partnerships: Number(row.partnership_games),
+							},
+						}
+					: {}),
+				...(row.magic_games_previous !== undefined
+					? {
+							gamesPreviousByDepartment: {
+								magic: Number(row.magic_games_previous),
+								organizers: Number(row.organizer_games_previous),
+								partnerships: Number(row.partnership_games_previous),
 							},
 						}
 					: {}),

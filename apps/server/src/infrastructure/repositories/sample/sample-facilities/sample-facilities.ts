@@ -62,6 +62,14 @@ export function scatterAround(center: GeoPoint, random: () => number): GeoPoint 
 	};
 }
 
+/** Previous window games for the trend, from its own seed so the other sample values stay put. */
+export function samplePreviousGames(current: number, random: () => number): number {
+	const roll = random();
+	if (current === 0) return roll < 0.5 ? 0 : Math.ceil(roll * 12);
+	if (roll < 0.04) return 0;
+	return Math.round(current * (0.6 + random() * 0.8));
+}
+
 export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 	const random = createSeededRandom(market.id);
 	const count = market.metrics.facilities;
@@ -69,6 +77,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 	const games = distribute(market.metrics.gamesLastWeek, weights);
 	const players = distribute(market.metrics.activePlayers, weights);
 	const names = buildFacilityNames(count, random);
+	const trendRandom = createSeededRandom(`${market.id}-trend`);
 
 	return weights.map((_, index) => ({
 		id: asEntityId(`${market.id}-facility-${index + 1}`),
@@ -82,6 +91,7 @@ export function buildSampleFacilities(market: MarketProps): FacilityProps[] {
 			activePlayers: players[index] as number,
 			gamesLastWeek: games[index] as number,
 			gamesLast28Days: (games[index] as number) * 4,
+			gamesPrevious28Days: samplePreviousGames((games[index] as number) * 4, trendRandom),
 			utilization: Math.round(35 + random() * 63),
 		},
 	}));

@@ -1,4 +1,5 @@
 import type { FacilityDetailView, FacilityStatsView } from "@market-health-map/core/application";
+import { gamesTrend } from "@market-health-map/core/domain";
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
@@ -13,6 +14,7 @@ import {
 	createDetailFormatters,
 	directionOf,
 	formatGames,
+	formatGamesTrendPanel,
 	resolveDetailStatus,
 	useFacilityDetailPanelRules,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
@@ -339,6 +341,28 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(result.current.messages).toBe(messages);
 	});
 
+	it("formats the games trend only when the map passes one", () => {
+		expect(renderRules().result.current.trend).toBeNull();
+
+		const { result } = renderHook(
+			() =>
+				useFacilityDetailPanelRules({
+					facilityId: "889",
+					isClosing: false,
+					onClose: vi.fn(),
+					onClosed: vi.fn(),
+					trend: gamesTrend(42, 51),
+				}),
+			{ wrapper },
+		);
+		expect(result.current.trend).toEqual({
+			level: "down",
+			title: "Games trend",
+			compare: "42 games now vs 51 in the previous 28 days",
+			change: "-18% vs previous 28 days",
+		});
+	});
+
 	it("has no view while loading", () => {
 		mockUseFacilityReservationStats.mockReturnValue({
 			data: undefined,
@@ -384,5 +408,20 @@ describe("useFacilityDetailPanelRules", () => {
 		rerender({ isClosing: true });
 		act(() => result.current.handleAnimationEnd());
 		expect(onClosed).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("formatGamesTrendPanel", () => {
+	it("shows current, previous and the signed percent change", () => {
+		const trend = EN_MESSAGES.map.trend;
+		expect(formatGamesTrendPanel(gamesTrend(46, 40), trend).change).toBe(
+			"+15% vs previous 28 days",
+		);
+		expect(formatGamesTrendPanel(gamesTrend(1, 3), trend).compare).toBe(
+			"1 game now vs 3 in the previous 28 days",
+		);
+		expect(formatGamesTrendPanel(gamesTrend(6, 0), trend).change).toBe(
+			"No games in the previous 28 days",
+		);
 	});
 });

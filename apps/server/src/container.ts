@@ -13,6 +13,7 @@ import type {
 } from "@market-health-map/core/application";
 import {
 	type AppSessionFilters,
+	FEATURE_FLAG_KEYS,
 	makeGetAppMetrics,
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
@@ -134,10 +135,24 @@ function buildFacilityRepositories() {
 	};
 }
 
+/**
+ * The flags server code honors. Under `next dev` every flag is on, matching `useFeatureFlag`, so
+ * local UI and data agree; other builds read the saved flags.
+ */
+function enabledFeatureFlags() {
+	if (process.env.NODE_ENV === "development") {
+		return Promise.resolve({ enabled: [...FEATURE_FLAG_KEYS] });
+	}
+	return featureFlagModule().listEnabledFeatureFlags();
+}
+
 function buildFacilities() {
 	const repositories = buildFacilityRepositories();
 	return {
-		listFacilities: makeListFacilities({ facilities: repositories.facilities }),
+		listFacilities: makeListFacilities({
+			facilities: repositories.facilities,
+			enabledFeatureFlags,
+		}),
 		getFacilityDetail: makeGetFacilityDetail(repositories),
 		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
 		getFacilityPlayerStats: makeGetFacilityPlayerStats(repositories),
