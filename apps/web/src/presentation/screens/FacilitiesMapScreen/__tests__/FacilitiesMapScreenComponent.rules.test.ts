@@ -59,8 +59,6 @@ import {
 	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
 	FACILITY_DOT_ZOOM,
-	FACILITY_GLASS_SELECTED_SHADOW,
-	FACILITY_GLASS_SHADOW,
 	INACTIVE_GAMES_MARKER_STYLE,
 	MAP_CURSOR,
 	REGISTRATION_HEATMAP_PAINT,
@@ -471,7 +469,7 @@ describe("facility glass", () => {
 		const resting = nodes.get(8);
 		expect(hovered?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
 		expect(resting?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
-		expect(createFacilityGlassNode().classList.contains(CLUSTER_MARKER_CLASS)).toBe(false);
+		expect(createFacilityGlassNode().classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
 		expect(hovered?.style.transform).toBe(
 			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
 		);
@@ -491,6 +489,26 @@ describe("facility glass", () => {
 			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
 		);
 		syncClusterGlass(host, badges, nodes, null);
+		expect(hovered?.style.transform).toBe("translate(-50%, -50%) scale(1)");
+	});
+
+	it("scales unclustered facility count badges on hover", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<string, HTMLElement>();
+		const badges = [
+			{ id: "a", label: "40", x: 40, y: 420, active: true },
+			{ id: "b", label: "8", x: 200, y: 300, active: true },
+		];
+		syncFacilityGlass(host, badges, nodes, null, "a");
+		const hovered = nodes.get("a");
+		const resting = nodes.get("b");
+		expect(hovered?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
+		expect(resting?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
+		expect(hovered?.style.transform).toBe(
+			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
+		);
+		expect(resting?.style.transform).toBe("translate(-50%, -50%) scale(1)");
+		syncFacilityGlass(host, badges, nodes, null, null);
 		expect(hovered?.style.transform).toBe("translate(-50%, -50%) scale(1)");
 	});
 
@@ -2575,15 +2593,21 @@ describe("games trend on the glass ring", () => {
 		syncFacilityGlass(host, [{ ...badge, noGames: true }], nodes);
 		const node = nodes.get("f1");
 		const label = node?.querySelector<HTMLElement>("[data-testid='facility-glass-label']");
+		const ring = node?.querySelector<HTMLElement>("[data-testid='facility-glass-stroke']");
 		expect(node?.dataset.inactive).toBe("true");
 		expect(node?.dataset.trendTip).toBeUndefined();
 		expect(node?.style.opacity).toBe(String(INACTIVE_GAMES_MARKER_STYLE.opacity));
-		expect(node?.style.border).toBe("1.5px dashed rgb(107, 114, 128)");
 		expect(node?.style.boxShadow).toBe(CLUSTER_GLASS_SHADOW);
+		expect(ring?.style.display).not.toBe("none");
+		expect(ring?.style.borderStyle).toBe("dashed");
+		expect(ring?.style.borderWidth).toBe("1.5px");
+		expect(ring?.style.borderColor).toBe("rgb(107, 114, 128)");
 		expect(label?.style.color).toBe("rgb(75, 85, 99)");
 
 		syncFacilityGlass(host, [{ ...badge, noGames: true }], nodes, "f1");
-		expect(node?.style.boxShadow).toBe(FACILITY_GLASS_SELECTED_SHADOW);
+		expect(node?.style.boxShadow).toBe(CLUSTER_GLASS_SHADOW);
+		expect(ring?.style.borderStyle).toBe("dashed");
+		expect(ring?.style.borderWidth).toBe("1.5px");
 
 		syncFacilityGlass(host, [{ ...badge, label: "8", active: true, trend: "stable" }], nodes);
 		expect(node?.dataset.inactive).toBeUndefined();
@@ -2649,21 +2673,27 @@ describe("games trend on the glass ring", () => {
 		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
 	});
 
-	it("colors the facility ring shadow, keeps selection thicker, and restores it with trend off", () => {
+	it("colors the facility count ring like clusters, keeps selection thicker, and restores it with trend off", () => {
 		const host = document.createElement("div");
 		const nodes = new Map<string, HTMLElement>();
 		const badge = { id: "f1", label: "8", x: 10, y: 20, active: true };
 
 		syncFacilityGlass(host, [{ ...badge, trend: "down" }], nodes);
 		const node = nodes.get("f1");
-		expect(node?.style.boxShadow).toContain("inset 0 0 0 2px #F87171");
+		const ring = node?.querySelector<HTMLElement>("[data-testid='facility-glass-stroke']");
+		expect(node?.style.boxShadow).toBe(CLUSTER_GLASS_SHADOW);
+		expect(ring?.style.borderColor).toBe("rgb(248, 113, 113)");
+		expect(ring?.style.borderWidth).toBe("2px");
 		expect(node?.dataset.trendTip).toBe("down");
 
 		syncFacilityGlass(host, [{ ...badge, trend: "up" }], nodes, "f1");
-		expect(node?.style.boxShadow).toContain("inset 0 0 0 3px #86EFAC");
+		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
+		expect(ring?.style.borderWidth).toBe("3px");
 
 		syncFacilityGlass(host, [badge], nodes);
-		expect(node?.style.boxShadow).toBe(FACILITY_GLASS_SHADOW);
+		expect(node?.style.boxShadow).toBe(CLUSTER_GLASS_SHADOW);
+		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
+		expect(ring?.style.borderWidth).toBe("2px");
 		expect(node?.dataset.trendTip).toBeUndefined();
 	});
 

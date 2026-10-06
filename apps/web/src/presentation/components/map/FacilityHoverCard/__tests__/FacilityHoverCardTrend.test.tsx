@@ -106,7 +106,13 @@ describe("hover card trend line", () => {
 		);
 
 		expect(screen.getByText("Eastside Futsal Arena")).toBeInTheDocument();
-		expect(screen.getByText("42")).toBeInTheDocument();
+		expect(screen.getByText("42")).toHaveClass(
+			"ml-3",
+			"text-xs",
+			"font-medium",
+			"text-muted-foreground",
+		);
+		expect(screen.getByText("42")).not.toHaveClass("tabular-nums");
 		expect(screen.getByTestId("facility-hover-trend")).toHaveTextContent(
 			"Down 9 from the previous 28 days",
 		);

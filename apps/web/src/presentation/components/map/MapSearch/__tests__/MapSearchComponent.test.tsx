@@ -101,19 +101,19 @@ describe("MapSearch", () => {
 
 		fireEvent.focus(input);
 		expect(screen.getByText("Markets")).toHaveClass(
-			"text-[10px]",
+			"text-[12px]",
 			"font-semibold",
-			"tracking-wider",
-			"text-muted-foreground",
-			"uppercase",
+			"tracking-normal",
+			"text-muted-foreground/90",
 		);
+		expect(screen.getByText("Markets")).not.toHaveClass("uppercase");
 		expect(screen.getByText("Facilities")).toHaveClass(
-			"text-[10px]",
+			"text-[12px]",
 			"font-semibold",
-			"tracking-wider",
-			"text-muted-foreground",
-			"uppercase",
+			"tracking-normal",
+			"text-muted-foreground/90",
 		);
+		expect(screen.getByText("Facilities")).not.toHaveClass("uppercase");
 		expect(
 			screen.getByRole("option", { name: /Austin.*2 facilities/ }).querySelector("span"),
 		).toHaveClass("text-sm", "font-medium");
