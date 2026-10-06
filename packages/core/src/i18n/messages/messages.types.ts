@@ -32,6 +32,13 @@ export interface Messages {
 		facilityCount: string;
 		facilityCountOne: string;
 		noSearchResults: string;
+		places: string;
+		placesAttribution: string;
+		placeKinds: {
+			county: string;
+			state: string;
+			country: string;
+		};
 		clusterCount: string;
 		moreFacilities: string;
 		sessionHeatmapLegend: string;

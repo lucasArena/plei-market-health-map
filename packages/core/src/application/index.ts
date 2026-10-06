@@ -102,6 +102,17 @@ export type {
 	MarketSummaryScopeView,
 	MarketSummaryView,
 } from "@core/application/dtos/market-summary-dto.types";
+export {
+	MIN_PLACE_QUERY_LENGTH,
+	PLACE_RESULT_LIMIT,
+	searchPlacesSchema,
+} from "@core/application/dtos/place-dto";
+export type {
+	PlaceBounds,
+	PlaceKind,
+	PlaceView,
+	SearchPlacesInput,
+} from "@core/application/dtos/place-dto.types";
 export { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
 export { ForbiddenError } from "@core/application/errors/forbidden-error";
 export { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -142,6 +153,7 @@ export type {
 	IssueAttachment,
 	IssueTracker,
 } from "@core/application/providers/issue-tracker.types";
+export type { PlaceSearch } from "@core/application/providers/place-search.types";
 export type { AppSessionHeatmapRepository } from "@core/application/repositories/app-session-heatmap-repository.types";
 export type { DailyActivityRepository } from "@core/application/repositories/daily-activity-repository.types";
 export type { FacilityRepository } from "@core/application/repositories/facility-repository.types";
@@ -173,5 +185,6 @@ export { makeListFeatureFlags } from "@core/application/services/list-feature-fl
 export { makeListRecentLogins } from "@core/application/services/list-recent-logins";
 export { makeRecordDailyActivity } from "@core/application/services/record-daily-activity";
 export { makeRecordLogin } from "@core/application/services/record-login";
+export { makeSearchPlaces } from "@core/application/services/search-places";
 export { makeSetFeatureFlag } from "@core/application/services/set-feature-flag";
 export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

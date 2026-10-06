@@ -33,6 +33,7 @@ export function FacilitiesMapScreen() {
 		selectFacility,
 		selectSearchFacility,
 		selectSearchMarket,
+		selectSearchPlace,
 		sessionScale,
 		sessionFilterSummary,
 		sessionLegendState,
@@ -63,6 +64,7 @@ export function FacilitiesMapScreen() {
 						messages={messages}
 						onFacilitySelect={selectSearchFacility}
 						onMarketSelect={selectSearchMarket}
+						onPlaceSelect={selectSearchPlace}
 						onClear={clearSearchScope}
 					/>,
 					searchSlot,

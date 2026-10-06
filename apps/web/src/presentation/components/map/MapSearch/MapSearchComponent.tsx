@@ -30,9 +30,13 @@ export function MapSearch(props: MapSearchProps) {
 		rootRef,
 		selectFacility,
 		selectMarket,
+		placeDetail,
+		selectPlace,
 		setIsOpen,
+		showNoResults,
 		visibleFacilities,
 		visibleMarkets,
+		visiblePlaces,
 	} = useMapSearchRules(props);
 	const resultsMotionClass = {
 		hidden: "",
@@ -40,7 +44,6 @@ export function MapSearch(props: MapSearchProps) {
 		shown: "",
 		exit: "search-results-out",
 	}[resultsMotion];
-	const hasResults = visibleMarkets.length > 0 || visibleFacilities.length > 0;
 
 	return (
 		<div ref={rootRef} className={MAP_SEARCH_ROOT_CLASS}>
@@ -147,7 +150,44 @@ export function MapSearch(props: MapSearchProps) {
 							))}
 						</section>
 					)}
-					{!hasResults && (
+					{visiblePlaces.length > 0 && (
+						<section
+							aria-labelledby="map-search-places"
+							className={
+								visibleMarkets.length + visibleFacilities.length > 0
+									? "mt-1 border-t border-foreground/10 pt-1"
+									: ""
+							}
+						>
+							<p
+								id="map-search-places"
+								className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
+							>
+								{messages.places}
+							</p>
+							{visiblePlaces.map((place) => (
+								<button
+									key={place.id}
+									type="button"
+									role="option"
+									aria-selected="false"
+									className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+									onClick={() => selectPlace(place)}
+								>
+									<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{place.name}</span>
+									{placeDetail(place) && (
+										<span className="block truncate text-xs text-muted-foreground">
+											{placeDetail(place)}
+										</span>
+									)}
+								</button>
+							))}
+							<p className="px-2.5 pt-1 pb-1.5 text-[10px] text-muted-foreground">
+								{messages.placesAttribution}
+							</p>
+						</section>
+					)}
+					{showNoResults && (
 						<p className="px-3 py-4 text-center text-sm text-muted-foreground">
 							{messages.noSearchResults}
 						</p>
