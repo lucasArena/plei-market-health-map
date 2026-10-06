@@ -2,7 +2,11 @@ import type {
 	AppSessionFilters,
 	AppSessionHeatmapCellView,
 	AppSessionHeatmapRepository,
+	Clock,
+	StatsPeriod,
 } from "@market-health-map/core/application";
+import { lastCompletedWeekStart } from "@market-health-map/core/domain";
+import { SystemClock } from "@server/infrastructure/providers/system/system-clock/system-clock";
 import type {
 	WarehouseAppSessionFilterRow,
 	WarehouseAppSessionHeatmapRow,
@@ -13,20 +17,55 @@ export const APP_SESSION_FILTER_OPTIONS_SQL = `
 SELECT DISTINCT NULLIF(TRIM(gender::text), '') AS gender,
   NULLIF(TRIM(skill_description::text), '') AS skill, age_integer AS age
 FROM plei_gold.dim_player
-WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)`;
+WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)
+  OR (confirmed_at >= CURRENT_DATE - 28 AND confirmed_at < CURRENT_DATE AND players_type = 'pleiapp_player')`;
 
-export const APP_SESSION_HEATMAP_LAST_28D_SQL = `
+const DAY_MS = 86_400_000;
+
+function shiftDays(isoDate: string, days: number): string {
+	return new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+export function sessionWindow(period: StatsPeriod, now: Date): [start: string, end: string] {
+	if (period === "week") {
+		const start = lastCompletedWeekStart(now);
+		return [start, shiftDays(start, 7)];
+	}
+	const today = now.toISOString().slice(0, 10);
+	return [shiftDays(today, -28), today];
+}
+
+export const APP_SESSION_HEATMAP_SQL = `
 SELECT
   ROUND(lat::numeric, 3) AS lat,
   ROUND(lng::numeric, 3) AS lng,
   SUM(q_sessions)::bigint AS session_weight
 FROM plei_gold.players_behaviour
-WHERE date >= CURRENT_DATE - 28
-  AND date < CURRENT_DATE
+WHERE date >= $1::date
+  AND date < $2::date
   AND lat IS NOT NULL
   AND lng IS NOT NULL
   AND NOT (ABS(lat) < 0.01 AND ABS(lng) < 0.01)
 GROUP BY 1, 2`;
+
+export const REGISTRATION_HEATMAP_LAST_28D_SQL = `
+WITH region_coordinates AS (
+  SELECT region_id,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY location_latitude) AS lat,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY location_longitude) AS lng
+  FROM plei_gold.dim_location
+  WHERE location_latitude BETWEEN -90 AND 90
+    AND location_longitude BETWEEN -180 AND 180
+    AND NOT (ABS(location_latitude) < 0.01 AND ABS(location_longitude) < 0.01)
+  GROUP BY region_id
+)
+SELECT c.lat, c.lng, COUNT(DISTINCT p.player_id)::bigint AS session_weight
+FROM plei_gold.dim_player p
+JOIN region_coordinates c ON c.region_id = p.region_id
+WHERE p.confirmed_at >= CURRENT_DATE - 28
+  AND p.confirmed_at < CURRENT_DATE
+  AND p.players_type = 'pleiapp_player'
+GROUP BY c.lat, c.lng`;
 
 export function toAppSessionHeatmapCell(
 	row: WarehouseAppSessionHeatmapRow,
@@ -43,7 +82,10 @@ export function toAppSessionHeatmapCell(
 }
 
 export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
-	constructor(private readonly warehouse: WarehouseQueryable) {}
+	constructor(
+		private readonly warehouse: WarehouseQueryable,
+		private readonly clock: Clock = new SystemClock(),
+	) {}
 
 	async listFilterOptions() {
 		const { rows } = await this.warehouse.query<WarehouseAppSessionFilterRow>(
@@ -63,9 +105,13 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 		};
 	}
 
-	async listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
+	async listSessions(
+		period: StatsPeriod,
+		filters: AppSessionFilters = {},
+	): Promise<AppSessionHeatmapCellView[]> {
+		const isRegistrations = filters.metric === "registrations";
 		const predicates: string[] = [];
-		const values: unknown[] = [];
+		const values: unknown[] = isRegistrations ? [] : sessionWindow(period, this.clock.now());
 		for (const [column, value, operator] of [
 			["NULLIF(TRIM(p.gender::text), '')", filters.gender, "="],
 			["NULLIF(TRIM(p.skill_description::text), '')", filters.skill, "="],
@@ -80,12 +126,19 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 					: `${column} ${operator} $${values.length}`,
 			);
 		}
-		let sql = APP_SESSION_HEATMAP_LAST_28D_SQL;
+		let sql = isRegistrations ? REGISTRATION_HEATMAP_LAST_28D_SQL : APP_SESSION_HEATMAP_SQL;
 		if (predicates.length) {
-			sql = sql.replace(
-				"GROUP BY 1, 2",
-				`AND EXISTS (SELECT 1 FROM plei_gold.dim_player p WHERE p.player_id = players_behaviour.player_id AND ${predicates.join(" AND ")})\nGROUP BY 1, 2`,
-			);
+			if (isRegistrations) {
+				sql = sql.replace(
+					"GROUP BY c.lat, c.lng",
+					`AND ${predicates.join(" AND ")}\nGROUP BY c.lat, c.lng`,
+				);
+			} else {
+				sql = sql.replace(
+					"GROUP BY 1, 2",
+					`AND EXISTS (SELECT 1 FROM plei_gold.dim_player p WHERE p.player_id = players_behaviour.player_id AND ${predicates.join(" AND ")})\nGROUP BY 1, 2`,
+				);
+			}
 		}
 		const result = values.length
 			? await this.warehouse.query<WarehouseAppSessionHeatmapRow>(sql, values)

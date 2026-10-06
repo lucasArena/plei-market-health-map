@@ -13,10 +13,15 @@ export interface Messages {
 		accountMenu: string;
 		version: string;
 		signOut: string;
-		appMetrics: string;
-		featureFlags: string;
+		adminControls: string;
+		adminControlsDescription: string;
 	};
 	map: {
+		gameDepartment: string;
+		gameDepartmentMagic: string;
+		gameDepartmentOrganizers: string;
+		gameDepartmentPartnerships: string;
+		gameDepartmentsAll: string;
 		title: string;
 		loading: string;
 		failed: string;
@@ -25,7 +30,16 @@ export interface Messages {
 		markets: string;
 		facilities: string;
 		facilityCount: string;
+		facilityCountOne: string;
 		noSearchResults: string;
+		places: string;
+		placesAttribution: string;
+		searchingPlaces: string;
+		placeKinds: {
+			county: string;
+			state: string;
+			country: string;
+		};
 		clusterCount: string;
 		moreFacilities: string;
 		sessionHeatmapLegend: string;
@@ -48,10 +62,20 @@ export interface Messages {
 			close: string;
 			heading: string;
 			gender: string;
+			female: string;
+			male: string;
+			other: string;
+			preferNotToSay: string;
 			skill: string;
+			beginner: string;
+			intermediate: string;
+			advanced: string;
+			expert: string;
 			age: string;
 			minimumAge: string;
 			maximumAge: string;
+			increaseAge: string;
+			decreaseAge: string;
 			ageRangeHelp: string;
 			invalidAge: string;
 			allGenders: string;
@@ -74,8 +98,33 @@ export interface Messages {
 			retry: string;
 			applied: string;
 			pending: string;
+			expandFilters: string;
+			collapseFilters: string;
+		};
+		layersGames: string;
+		trend: {
+			toggle: string;
+			gamesOne: string;
+			gamesOther: string;
+			gamesUp: string;
+			gamesDown: string;
+			gamesStable: string;
+			changeUp: string;
+			changeDown: string;
+			changeStable: string;
+			panelTitle: string;
+			panelCompare: string;
+			panelChange: string;
+			panelNoPrevious: string;
 		};
 		layersSessions: string;
+		layersRegistrations: string;
+		registrationHeatmapLegend: string;
+		registrationHeatmapContext: string;
+		registrationHeatmapLoading: string;
+		registrationHeatmapNoActivity: string;
+		registrationHeatmapValue: string;
+		registrationHeatmapHighValue: string;
 		layersCollapse: string;
 		layersExpand: string;
 		layersReset: string;
@@ -89,6 +138,11 @@ export interface Messages {
 		failed: string;
 		showMore: string;
 		showLess: string;
+	};
+	statsPeriods: {
+		switchLabel: string;
+		week: StatsPeriodMessages;
+		month: StatsPeriodMessages;
 	};
 	facilityDetail: {
 		label: string;
@@ -239,6 +293,8 @@ export interface Messages {
 		neverChanged: string;
 		lastChange: string;
 		saveFailed: string;
+		requires: string;
+		waiting: string;
 		descriptions: Record<string, string>;
 	};
 	offline: {
@@ -255,4 +311,12 @@ export interface Messages {
 		payloadTooLarge: string;
 		feedbackDeliveryFailed: string;
 	};
+}
+
+export interface StatsPeriodMessages {
+	short: string;
+	title: string;
+	span: string;
+	within: string;
+	comparison: string;
 }

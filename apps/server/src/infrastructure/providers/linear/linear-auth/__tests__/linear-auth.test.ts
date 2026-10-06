@@ -60,7 +60,7 @@ describe("LinearAppAuth", () => {
 			client_secret: "client-secret",
 			scope: LINEAR_APP_SCOPE,
 		});
-		expect(LINEAR_APP_SCOPE).toBe("read,write");
+		expect(LINEAR_APP_SCOPE).toBe("read,write,customer:write");
 	});
 
 	it("caches the token until shortly before it expires", async () => {

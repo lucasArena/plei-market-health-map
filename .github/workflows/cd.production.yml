@@ -54,12 +54,12 @@ jobs:
       - name: Write the release notes from the commits since the last tag
         id: notes
         run: |
-          summary=$(node .github/scripts/release/release-notes.mjs "$TAG" release-notes.md)
+          summary=$(node .github/scripts/release/release-notes.mjs "$TAG" release-notes.md changelog.md)
           echo "$summary"
           echo "previous-tag=$(echo "$summary" | jq -r '.previousTag // empty')" >> "$GITHUB_OUTPUT"
           echo "issues=$(echo "$summary" | jq -r '.issues | join(" ")')" >> "$GITHUB_OUTPUT"
           echo "flagged=$(echo "$summary" | jq -r '.flagged | join(" ")')" >> "$GITHUB_OUTPUT"
-          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
+          cat release-notes.md changelog.md >> "$GITHUB_STEP_SUMMARY"
       - name: Warn when Linear is not configured
         if: env.LINEAR_ACCESS_KEY == ''
         run: echo "::warning::LINEAR_ACCESS_KEY is not set, so $TAG was not sent to Linear."
@@ -73,11 +73,13 @@ jobs:
           version: ${{ env.TAG }}
           base_ref: ${{ steps.notes.outputs.previous-tag }}
           release_notes: release-notes.md
-          documents: Changelog ${{ env.TAG }}=release-notes.md
+          documents: Changelog ${{ env.TAG }}=changelog.md
           links: ${{ github.server_url }}/${{ github.repository }}/tree/${{ env.TAG }}
-      - name: Remove feature-flagged tickets from the Linear release
+      - name: Link the released tickets and drop feature-flagged ones
         if: steps.linear.outputs.release-id != ''
-        run: node .github/scripts/linear/flagged-issues.mjs unlink "${{ steps.linear.outputs.release-id }}"
+        env:
+          ISSUES: ${{ steps.notes.outputs.issues }}
+        run: node .github/scripts/linear/flagged-issues.mjs sync "${{ steps.linear.outputs.release-id }}" "$ISSUES"
       - name: Link the Linear release
         if: steps.linear.outputs.release-url != ''
         env:

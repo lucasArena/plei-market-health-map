@@ -1,3 +1,4 @@
+import type { StatsPeriod } from "@market-health-map/core/application";
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { FACILITY_DETAIL } from "@/application/test/facility-detail";
@@ -13,6 +14,7 @@ import {
 	buildMarketSummaryViewModel,
 	buildScopeHeading,
 	buildScopeTiles,
+	contributorFactsFrom,
 	useMarketSummaryPanelRules,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
@@ -29,6 +31,7 @@ const mockUseMarketPlayerStats = vi.fn();
 const mockUseFacilityReservationStats = vi.fn();
 const mockUseFacilityPlayerStats = vi.fn();
 let mockScope: MapScope = { kind: "all" };
+let mockPeriod: StatsPeriod = "month";
 
 vi.mock("@/presentation/hooks/use-market/use-market-summary", () => ({
 	useMarketSummary: (...args: unknown[]) => mockUseMarketSummary(...args),
@@ -47,11 +50,15 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-player-stats", () => ({
 }));
 
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
-	useMapScope: () => ({ scope: mockScope, setScope: vi.fn() }),
+	useMapScope: () => ({ scope: mockScope, setScope: vi.fn(), period: mockPeriod }),
 }));
 
 const IDLE_QUERY = { data: undefined, isPending: true, isError: false };
 const {
+	uniquePlayersLastWeek,
+	uniquePlayersPreviousWeek,
+	activatedPlayersLastWeek,
+	activatedPlayersPreviousWeek,
 	uniquePlayersLast28Days,
 	uniquePlayersPrevious28Days,
 	activatedPlayersLast28Days,
@@ -67,6 +74,8 @@ const FACILITY_REPORT = {
 
 const messages = EN_MESSAGES.marketSummary;
 const detailMessages = EN_MESSAGES.facilityDetail;
+const MONTH = EN_MESSAGES.statsPeriods.month;
+const WEEK = EN_MESSAGES.statsPeriods.week;
 const formatters = createDetailFormatters("en");
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -75,7 +84,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe("market summary builders", () => {
 	it("shows active facilities and markets out of the visible totals", () => {
-		expect(buildScopeTiles(MARKET_SUMMARY.scope, messages, formatters)).toEqual([
+		expect(buildScopeTiles(MARKET_SUMMARY.periods.month.scope, messages, formatters)).toEqual([
 			{
 				key: "facilities",
 				label: "Active facilities",
@@ -97,14 +106,24 @@ describe("market summary builders", () => {
 
 	it("writes the network-wide sentence once player analytics arrive", () => {
 		expect(
-			buildMarketSummaryText(MARKET_SUMMARY, undefined, messages, detailMessages, formatters),
+			buildMarketSummaryText(
+				MARKET_SUMMARY,
+				undefined,
+				"month",
+				messages,
+				detailMessages,
+				MONTH,
+				formatters,
+			),
 		).toBeNull();
 		expect(
 			buildMarketSummaryText(
 				MARKET_SUMMARY,
 				MARKET_PLAYER_STATS,
+				"month",
 				messages,
 				detailMessages,
+				MONTH,
 				formatters,
 			),
 		).toBe(
@@ -114,16 +133,23 @@ describe("market summary builders", () => {
 			buildMarketSummaryText(
 				{ ...MARKET_SUMMARY, stats: { ...MARKET_SUMMARY.stats, playedLast28Days: 0 } },
 				MARKET_PLAYER_STATS,
+				"month",
 				messages,
 				detailMessages,
+				MONTH,
 				formatters,
 			),
-		).toBe(messages.summaryNone);
+		).toBe("No games were played in any market in the last 28 days.");
 	});
 
 	it("ranks markets and facilities with localized game counts", () => {
 		expect(
-			buildMarketRows(MARKET_SUMMARY.topMarkets, messages, detailMessages, formatters),
+			buildMarketRows(
+				MARKET_SUMMARY.periods.month.topMarkets,
+				messages,
+				detailMessages,
+				formatters,
+			),
 		).toEqual([
 			{
 				key: "houston",
@@ -134,7 +160,7 @@ describe("market summary builders", () => {
 			},
 		]);
 		expect(
-			buildFacilityRows(MARKET_SUMMARY.topFacilities, detailMessages, formatters).map(
+			buildFacilityRows(MARKET_SUMMARY.periods.month.topFacilities, detailMessages, formatters).map(
 				(row) => `${row.rank}. ${row.name} (${row.detail}): ${row.value}`,
 			),
 		).toEqual(["1. Pegaso HTX (Houston): 41 games", "2. Phield House (Philadelphia): 1 game"]);
@@ -145,8 +171,10 @@ describe("market summary builders", () => {
 			MARKET_SUMMARY,
 			MARKET_PLAYER_STATS,
 			false,
+			"month",
 			messages,
 			detailMessages,
+			MONTH,
 			formatters,
 		);
 		expect(view.tiles.map((tile) => tile.value)).toEqual(["212", "84.8%", "126", "24"]);
@@ -158,8 +186,10 @@ describe("market summary builders", () => {
 			{ ...MARKET_SUMMARY, stats: { ...MARKET_SUMMARY.stats, lastPlayedDate: null } },
 			undefined,
 			true,
+			"month",
 			messages,
 			detailMessages,
+			MONTH,
 			formatters,
 		);
 		expect(empty.lastPlayedLabel).toBe(detailMessages.neverPlayed);
@@ -173,8 +203,10 @@ describe("market summary builders", () => {
 			{ ...MARKET_SUMMARY, stats: { ...MARKET_SUMMARY.stats, playedLast28Days: 0 } },
 			MARKET_PLAYER_STATS,
 			false,
+			"month",
 			messages,
 			detailMessages,
+			MONTH,
 			formatters,
 			true,
 		);
@@ -182,7 +214,7 @@ describe("market summary builders", () => {
 		expect(view.topMarkets).toBeNull();
 		expect(view.topFacilities).toHaveLength(2);
 		expect(view.scopeTiles).toEqual([]);
-		expect(view.summary).toBe(messages.marketSummaryNone);
+		expect(view.summary).toBe("No games were played in this market in the last 28 days.");
 	});
 
 	it("builds a facility view without scope tiles or rankings", () => {
@@ -190,7 +222,9 @@ describe("market summary builders", () => {
 			FACILITY_RESERVATION_STATS,
 			MARKET_PLAYER_STATS,
 			false,
+			"month",
 			detailMessages,
+			MONTH,
 			formatters,
 		);
 
@@ -204,24 +238,30 @@ describe("market summary builders", () => {
 				FACILITY_RESERVATION_STATS,
 				undefined,
 				true,
+				"month",
 				detailMessages,
+				MONTH,
 				formatters,
 			).summary,
 		).toBeNull();
 	});
 
 	it("titles the drawer after its scope", () => {
-		expect(buildScopeHeading({ kind: "all" }, messages)).toEqual({
+		expect(buildScopeHeading({ kind: "all" }, messages, MONTH)).toEqual({
 			title: "All markets",
-			subtitle: messages.subtitle,
+			subtitle: "All facilities and markets, last 28 days",
 		});
-		expect(buildScopeHeading({ kind: "market", id: "houston", name: "Houston" }, messages)).toEqual(
-			{ title: "Houston", subtitle: "Market summary, last 28 days" },
-		);
+		expect(
+			buildScopeHeading({ kind: "market", id: "houston", name: "Houston" }, messages, WEEK),
+		).toEqual({ title: "Houston", subtitle: "Market summary, last week" });
+		expect(
+			buildScopeHeading({ kind: "market", id: "houston", name: "Houston" }, messages, MONTH),
+		).toEqual({ title: "Houston", subtitle: "Market summary, last 28 days" });
 		expect(
 			buildScopeHeading(
 				{ kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" },
 				messages,
+				MONTH,
 			),
 		).toEqual({ title: "Pegaso HTX", subtitle: "Facility in Houston, last 28 days" });
 	});
@@ -230,6 +270,7 @@ describe("market summary builders", () => {
 describe("useMarketSummaryPanelRules", () => {
 	beforeEach(() => {
 		mockScope = { kind: "all" };
+		mockPeriod = "month";
 		mockUseMarketGameInsights.mockReturnValue({ data: [], isPending: false, isError: false });
 		mockUseFacilityReservationStats.mockReturnValue(IDLE_QUERY);
 		mockUseFacilityPlayerStats.mockReturnValue(IDLE_QUERY);
@@ -273,17 +314,17 @@ describe("useMarketSummaryPanelRules", () => {
 	it("defers insights until the main report arrives and disables them for facility scope", () => {
 		mockUseMarketSummary.mockReturnValue(IDLE_QUERY);
 		const { rerender } = renderRules();
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, false);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", false);
 		mockUseMarketSummary.mockReturnValue({
 			data: MARKET_SUMMARY,
 			isPending: false,
 			isError: false,
 		});
 		rerender({ isClosing: false });
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true);
 		mockScope = { kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" };
 		rerender({ isClosing: false });
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, false);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", false);
 	});
 	it("builds the market-wide view", () => {
 		const { result } = renderRules();
@@ -297,6 +338,21 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, true);
 		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true);
 		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith(null);
+	});
+
+	it("shows last week against the week before when the week is selected", () => {
+		mockPeriod = "week";
+		const { result } = renderRules();
+
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "week", true);
+		expect(result.current.heading.subtitle).toBe("All facilities and markets, last week");
+		expect(result.current.view?.tiles.map((tile) => tile.value)[0]).toBe("55");
+		expect(result.current.view?.summary).toContain("versus the previous week");
+		expect(result.current.aiContext?.cacheKey).toContain("all-markets-all-week");
+		expect(result.current.view?.scopeTiles.map((tile) => tile.value)).toEqual(["51", "8"]);
+		expect(result.current.view?.topMarkets?.map((row) => row.value)).toEqual(["30 games"]);
+		expect(result.current.view?.topFacilities?.map((row) => row.value)).toEqual(["12 games"]);
+		expect(result.current.rankingsEmptyLabel).toBe("No games played last week.");
 	});
 
 	it("follows a market scope and updates when the filter changes while open", () => {
@@ -364,7 +420,7 @@ describe("useMarketSummaryPanelRules", () => {
 
 		const { result } = renderRules();
 
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true);
 		expect(result.current.aiContext).toBeNull();
 		expect(result.current.isSummaryPending).toBe(true);
 	});
@@ -402,24 +458,24 @@ describe("scope-specific game contributors", () => {
 			{
 				id: "houston",
 				name: "Houston",
-				playedLast28Days: 100,
-				playedPrevious28Days: 200,
+				played: 100,
+				playedPrevious: 200,
 				change: -100,
 				changePercent: -50,
 				facilities: [
 					{
 						id: "1",
 						name: "Arena A",
-						playedLast28Days: 20,
-						playedPrevious28Days: 140,
+						played: 20,
+						playedPrevious: 140,
 						change: -120,
 						changePercent: -85.7,
 					},
 					{
 						id: "2",
 						name: "Arena B",
-						playedLast28Days: 80,
-						playedPrevious28Days: 60,
+						played: 80,
+						playedPrevious: 60,
 						change: 20,
 						changePercent: 33.3,
 					},
@@ -428,16 +484,69 @@ describe("scope-specific game contributors", () => {
 			{
 				id: "philly",
 				name: "Philadelphia",
-				playedLast28Days: 80,
-				playedPrevious28Days: 0,
+				played: 80,
+				playedPrevious: 0,
 				change: 80,
 				changePercent: null,
 				facilities: [],
 			},
 		],
 	};
+	it("states the overall change as a signed number of games, so it can't be read as a percentage", () => {
+		const grew = buildMarketSummaryText(
+			{ ...summary, stats: { ...summary.stats, playedPrevious28Days: 24, playedLast28Days: 33 } },
+			undefined,
+			"month",
+			messages,
+			detailMessages,
+			MONTH,
+			formatters,
+		);
+		const fell = buildMarketSummaryText(
+			{ ...summary, stats: { ...summary.stats, playedPrevious28Days: 33, playedLast28Days: 24 } },
+			undefined,
+			"month",
+			messages,
+			detailMessages,
+			MONTH,
+			formatters,
+		);
+
+		expect(grew).toContain(
+			"Overall games: 24 → 33, a net change of +9 games versus the previous 28 days.",
+		);
+		expect(fell).toContain(
+			"Overall games: 33 → 24, a net change of -9 games versus the previous 28 days.",
+		);
+	});
+	it("gives the AI only the contributor lines, never the overall total", () => {
+		const text = buildMarketSummaryText(
+			summary,
+			undefined,
+			"month",
+			messages,
+			detailMessages,
+			MONTH,
+			formatters,
+		);
+		const facts = contributorFactsFrom(text) ?? "";
+
+		expect(facts).not.toContain("Overall games");
+		expect(facts).toContain("Houston: games declined");
+		expect(facts).toContain("contribution to the overall change: +80 games");
+		expect(contributorFactsFrom("Only one paragraph.")).toBeUndefined();
+		expect(contributorFactsFrom(null)).toBeUndefined();
+	});
 	it("names markets and their contributions without facilities in all-markets scope", () => {
-		const text = buildMarketSummaryText(summary, undefined, messages, detailMessages, formatters);
+		const text = buildMarketSummaryText(
+			summary,
+			undefined,
+			"month",
+			messages,
+			detailMessages,
+			MONTH,
+			formatters,
+		);
 		expect(text).toContain("Houston: games declined");
 		expect(text).toContain("contribution to the overall change: -100 games");
 		expect(text).toContain("Philadelphia: games increased");
@@ -453,8 +562,10 @@ describe("scope-specific game contributors", () => {
 			},
 			undefined,
 			true,
+			"month",
 			messages,
 			detailMessages,
+			MONTH,
 			formatters,
 			true,
 		);
@@ -469,10 +580,17 @@ describe("AI subject readiness", () => {
 	it("does not start AI while required analytics are absent", () => {
 		const heading = { title: "All markets", subtitle: "" };
 		expect(
-			buildMarketAiSubject({ kind: "all" }, heading, MARKET_SUMMARY, undefined, undefined),
+			buildMarketAiSubject({ kind: "all" }, heading, MARKET_SUMMARY, undefined, undefined, "month"),
 		).toBeNull();
 		expect(
-			buildMarketAiSubject({ kind: "all" }, heading, undefined, undefined, MARKET_PLAYER_STATS),
+			buildMarketAiSubject(
+				{ kind: "all" },
+				heading,
+				undefined,
+				undefined,
+				MARKET_PLAYER_STATS,
+				"month",
+			),
 		).toBeNull();
 		expect(
 			buildMarketAiSubject(
@@ -481,14 +599,21 @@ describe("AI subject readiness", () => {
 				undefined,
 				undefined,
 				MARKET_PLAYER_STATS,
+				"month",
 			),
 		).toBeNull();
 	});
 	it("identifies all markets, one market and one facility", () => {
 		const heading = { title: "Houston", subtitle: "" };
 		expect(
-			buildMarketAiSubject({ kind: "all" }, heading, MARKET_SUMMARY, undefined, MARKET_PLAYER_STATS)
-				?.kind,
+			buildMarketAiSubject(
+				{ kind: "all" },
+				heading,
+				MARKET_SUMMARY,
+				undefined,
+				MARKET_PLAYER_STATS,
+				"month",
+			)?.kind,
 		).toBe("all-markets");
 		expect(
 			buildMarketAiSubject(
@@ -497,6 +622,7 @@ describe("AI subject readiness", () => {
 				MARKET_SUMMARY,
 				undefined,
 				MARKET_PLAYER_STATS,
+				"month",
 			)?.kind,
 		).toBe("market");
 		expect(
@@ -506,6 +632,7 @@ describe("AI subject readiness", () => {
 				undefined,
 				FACILITY_REPORT,
 				MARKET_PLAYER_STATS,
+				"month",
 			)?.kind,
 		).toBe("facility");
 	});

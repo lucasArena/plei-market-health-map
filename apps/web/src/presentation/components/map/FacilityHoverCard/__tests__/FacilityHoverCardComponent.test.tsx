@@ -24,6 +24,7 @@ function facility(id: string, name: string) {
 		name,
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 30.27, longitude: -97.74 },
 	};
 }
@@ -292,7 +293,10 @@ describe("FacilityHoverCard", () => {
 		expect(clusterHoverListMaxHeight()).toBe(270);
 		expect(list).toHaveStyle({ maxHeight: "270px" });
 		expect(screen.getAllByRole("button")).toHaveLength(9);
-		expect(screen.getAllByRole("button")[0]).toHaveClass("hover:bg-muted");
+		expect(screen.getAllByRole("button")[0]).toHaveClass(
+			"hover:bg-foreground/[0.07]",
+			"focus:bg-foreground/[0.07]",
+		);
 		expect(screen.queryByText(/more/)).not.toBeInTheDocument();
 	});
 
@@ -340,7 +344,7 @@ describe("FacilityHoverCard", () => {
 					...clusterHover(7, 640, 2),
 					facilities: [
 						facility("a", "Active Dome"),
-						{ ...facility("b", "Quiet Dome"), isActive: false },
+						{ ...facility("b", "Quiet Dome"), isActive: false, isActiveLastWeek: false },
 					],
 				}}
 				messages={EN_MESSAGES.map}

@@ -28,6 +28,7 @@ export function toFeedbackCustomerRequestBody(
 		`- **Submitted by:** ${name ? `${name} (${email})` : email}`,
 		...(feedback.pageUrl ? [`- **Page:** ${feedback.pageUrl}`] : []),
 		...(feedback.view ? [`- **View:** ${feedback.view}`] : []),
+		...(feedback.appVersion ? [`- **App version:** ${feedback.appVersion}`] : []),
 		`- **Submitted at:** ${submittedAt.toISOString()}`,
 	];
 	const screenshots = assetUrls.length

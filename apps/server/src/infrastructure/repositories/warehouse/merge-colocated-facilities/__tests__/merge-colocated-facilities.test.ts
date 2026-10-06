@@ -157,3 +157,77 @@ describe("mergeColocatedFacilities", () => {
 		expect(summary(merged).map((item) => item.id)).toEqual(["100", "889"]);
 	});
 });
+
+it("sums department counts across colocated facility members", () => {
+	const a = facility("1", "Shared pitch", 7).toJSON();
+	const b = facility("2", "Shared pitch | Other", 5).toJSON();
+	const merged = mergeColocatedFacilities([
+		Facility.create({
+			...a,
+			metrics: { ...a.metrics, gamesByDepartment: { magic: 4, organizers: 2, partnerships: 1 } },
+		}),
+		Facility.create({
+			...b,
+			metrics: { ...b.metrics, gamesByDepartment: { magic: 1, organizers: 1, partnerships: 3 } },
+		}),
+	]);
+	expect(merged[0]?.toJSON().metrics.gamesByDepartment).toEqual({
+		magic: 5,
+		organizers: 3,
+		partnerships: 4,
+	});
+	expect(merged[0]?.toJSON().metrics.gamesLast28Days).toBe(12);
+});
+
+it("sums previous window games across colocated facility members", () => {
+	const a = facility("1", "Shared pitch", 7).toJSON();
+	const b = facility("2", "Shared pitch | Other", 5).toJSON();
+	const merged = mergeColocatedFacilities([
+		Facility.create({
+			...a,
+			metrics: {
+				...a.metrics,
+				gamesPrevious28Days: 9,
+				gamesPreviousByDepartment: { magic: 4, organizers: 3, partnerships: 2 },
+			},
+		}),
+		Facility.create({
+			...b,
+			metrics: { ...b.metrics, gamesPrevious28Days: 2 },
+		}),
+	]);
+	expect(merged[0]?.toJSON().metrics).toMatchObject({
+		gamesLast28Days: 12,
+		gamesPrevious28Days: 11,
+		gamesPreviousByDepartment: { magic: 4, organizers: 3, partnerships: 2 },
+	});
+});
+
+it("sums both weekly windows across colocated facility members", () => {
+	const a = facility("1", "Shared pitch", 7).toJSON();
+	const b = facility("2", "Shared pitch | Other", 5).toJSON();
+	const merged = mergeColocatedFacilities([
+		Facility.create({
+			...a,
+			metrics: {
+				...a.metrics,
+				gamesLastWeekByDepartment: { magic: 2, organizers: 1, partnerships: 0 },
+				gamesPreviousWeek: 4,
+				gamesPreviousWeekByDepartment: { magic: 1, organizers: 2, partnerships: 1 },
+			},
+		}),
+		Facility.create({
+			...b,
+			metrics: {
+				...b.metrics,
+				gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 3 },
+				gamesPreviousWeek: 1,
+			},
+		}),
+	]);
+	expect(merged[0]?.toJSON().metrics).toMatchObject({
+		gamesLastWeekByDepartment: { magic: 2, organizers: 1, partnerships: 3 },
+		gamesPreviousWeek: 5,
+		gamesPreviousWeekByDepartment: { magic: 1, organizers: 2, partnerships: 1 },
+	});
+});

@@ -1,4 +1,4 @@
-import { Facility, type GeoPoint } from "@market-health-map/core/domain";
+import { Facility, type GameDepartmentCounts, type GeoPoint } from "@market-health-map/core/domain";
 
 export const COLOCATED_RADIUS_METERS = 50;
 const EARTH_RADIUS_METERS = 6_371_000;
@@ -55,6 +55,17 @@ function clusterColocated(facilities: Facility[]): Facility[][] {
 	}, []);
 }
 
+function departmentTotals(counts: (GameDepartmentCounts | undefined)[]): GameDepartmentCounts {
+	return counts.reduce<GameDepartmentCounts>(
+		(sum, current) => ({
+			magic: sum.magic + (current?.magic ?? 0),
+			organizers: sum.organizers + (current?.organizers ?? 0),
+			partnerships: sum.partnerships + (current?.partnerships ?? 0),
+		}),
+		{ magic: 0, organizers: 0, partnerships: 0 },
+	);
+}
+
 function mergeCluster(cluster: Facility[]): Facility {
 	const members = [...cluster].sort((a, b) => hasSuffix(a) - hasSuffix(b) || byId(a, b));
 	const representative = members[0] as Facility;
@@ -75,6 +86,54 @@ function mergeCluster(cluster: Facility[]): Facility {
 			gamesLastWeek: total((facility) => facility.toJSON().metrics.gamesLastWeek),
 			gamesLast28Days: total((facility) => facility.toJSON().metrics.gamesLast28Days),
 			utilization: props.metrics.utilization,
+			...(members.some((facility) => facility.toJSON().metrics.gamesPrevious28Days !== undefined)
+				? {
+						gamesPrevious28Days: total(
+							(facility) => facility.toJSON().metrics.gamesPrevious28Days ?? 0,
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesPreviousByDepartment)
+				? {
+						gamesPreviousByDepartment: departmentTotals(
+							members.map((facility) => facility.toJSON().metrics.gamesPreviousByDepartment),
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesLastWeekByDepartment)
+				? {
+						gamesLastWeekByDepartment: departmentTotals(
+							members.map((facility) => facility.toJSON().metrics.gamesLastWeekByDepartment),
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesPreviousWeek !== undefined)
+				? {
+						gamesPreviousWeek: total(
+							(facility) => facility.toJSON().metrics.gamesPreviousWeek ?? 0,
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesPreviousWeekByDepartment)
+				? {
+						gamesPreviousWeekByDepartment: departmentTotals(
+							members.map((facility) => facility.toJSON().metrics.gamesPreviousWeekByDepartment),
+						),
+					}
+				: {}),
+			...(members.some((facility) => facility.toJSON().metrics.gamesByDepartment)
+				? {
+						gamesByDepartment: {
+							magic: total((facility) => facility.toJSON().metrics.gamesByDepartment?.magic ?? 0),
+							organizers: total(
+								(facility) => facility.toJSON().metrics.gamesByDepartment?.organizers ?? 0,
+							),
+							partnerships: total(
+								(facility) => facility.toJSON().metrics.gamesByDepartment?.partnerships ?? 0,
+							),
+						},
+					}
+				: {}),
 		},
 	});
 }

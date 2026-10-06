@@ -42,14 +42,30 @@ with the regular border and no blur.
 MapLibre's zoom control is styled through its own classes (`.maplibregl-ctrl-group`) in `globals.css`,
 so MapLibre still wires the buttons.
 
-The map layers control groups App sessions under Demand and independent Active facilities and Inactive facilities switches under Supply. All switches start enabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities. When any setting differs from its default, a footer inside the same glass card, under a thin `border-border` divider, shows a right-aligned Reset text button (`text-xs`, muted, no fill) that restores the defaults. The footer is not rendered with the defaults.
+The map layers menu is a Demand / Supply tree divided by a thin border. Each section is a label with a visibility switch; turning the switch on reveals nested radio options, Add filter trees, and Show trend / Show inactive facilities below that row. App sessions and Active facilities start enabled; Inactive facilities starts disabled. Supply filtering uses the existing facility `isActive` value before clustering, so cluster counts and previews reflect visible facilities. When any setting differs from its default, a footer inside the same glass card, under a thin `border-border` divider, shows a right-aligned Reset text button (`text-xs`, muted, no fill) that restores the defaults. The footer is not rendered with the defaults.
 
 While app sessions load, the session legend shows the heatmap gradient at 40% opacity, pulsing (`motion-safe` only), above "Loading app sessions…" in 10px muted text. It replaces the scale until data arrives, so the empty map never reads as "no sessions".
-
-When `player-demographic-filters` is enabled, the layers menu is 280px wide and scrolls within the available viewport. Player filters under Demand start with an Add filter button. A custom glass menu offers Gender, Player skill level and Player age; only added fields appear as compact removable chips. Each chip opens a styled option list with a selected checkmark, keyboard navigation and Escape support. Apply submits the draft together; Reset restores All immediately. An applied-cohort summary also appears in the map legend. Pending edits, loading, failures with Retry, and empty results have separate messages. Supply switches remain below the Demand controls.
+When `player-demographic-filters` is enabled, the layers menu is 280px wide and scrolls within the available viewport. Applied filters appear as removable chips under the Demand metrics. Add filter stays under that list and is shown only while the Demand layer is on. It opens Gender, Player skill level, and Player age as submenus. Player age takes an optional minimum and maximum. Apply filter is a 5% black button with a black label at the bottom once a choice is selected; it commits the choice and closes the panel. Empty results, loading, and failures for those filters appear in the session reference panel.
 
 Age filters offer optional minimum and maximum whole-year inputs (0–120) without preset shortcuts. Blank bounds are unlimited; reversed ranges block Apply.
 
 Gender and skill menus support multiple checked choices and remain open while selecting. Values within each field match with OR; separate fields combine with AND.
 
 Skill choices follow Beginner, Intermediate, Advanced, Expert progression while retaining warehouse-backed values.
+
+Cluster circles follow map projection immediately during camera movement. Only hover scale animates; geographic positions must never ease behind a drag.
+
+Glass circles synchronize inside the map render callback, without scheduling another animation frame, so overlays and the map paint together.
+Games trend markers use a translucent glass center with blur, saturation and a gentle top highlight, one flat colored ring with a continuous directional tip, without a separate shadow around the center. Growing counts point up; declining counts point down. Exactly unchanged counts use a gray ring with a rightward tip. The glass center meets the colored outline directly, without an extra white rim or overlapping ring strokes.
+
+Trend-enabled clusters and individual games markers share a 45px marker box and identical ring geometry, giving abbreviated counts more space and avoiding size changes between grouped and individual markers.
+
+Games trends use the same vivid pastel green as the default outline (`success[30]`) for growth, paired with coral red (`negative[40]`) for decline. Directional tips distinguish them beyond color. A facility or cluster with games in the previous period and zero now remains visible as declining, rather than a neutral dotted zero.
+
+Hover cards always report the actual game-count change, including small increases and decreases. Equal counts say unchanged, with the comparison period, instead of about the same.
+
+Games trend direction follows every count change without percentage or minimum-game thresholds: any increase is green/up, any decrease is red/down, and exactly equal counts are gray/rightward. Hover text reports the count difference.
+
+Games trend information appears on map markers and hover cards. The facility detail panel does not display a separate games trend card.
+
+Layer sub-controls are visible only while their parent toggle is on: player filters follow Demand, and Department, Show trend and Show inactive facilities follow Supply. Applied settings are retained when controls are hidden.

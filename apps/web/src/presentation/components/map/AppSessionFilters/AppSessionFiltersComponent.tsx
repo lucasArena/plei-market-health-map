@@ -1,223 +1,287 @@
 "use client";
 
+import { createContext, useContext } from "react";
 import { useAppSessionFiltersRules } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.rules";
-import type { AppSessionFiltersProps } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.types";
+import type {
+	AgeFieldProps,
+	AppSessionFiltersProps,
+	CheckMarkProps,
+	FilterChevronProps,
+	StepChevronProps,
+} from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.types";
+import { MapFilterAddButton } from "@/presentation/components/map/MapFilterAdd/MapFilterAddComponent";
 import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
-export function AppSessionFilters({ showSessions }: Readonly<AppSessionFiltersProps>) {
-	const {
-		copy,
-		draft,
-		setAgeBound,
-		invalidAge,
-		options,
-		sessions,
-		summary,
-		hasFilters,
-		dirty,
-		apply,
-		reset,
-		status,
-		menu,
-		menuRef,
-		fields,
-		fieldLabels,
-		fieldValues,
-		availableFields,
-		isSelected,
-		choices,
-		openMenu,
-		closeMenu,
-		selectChoice,
-		removeField,
-		handleKeys,
-	} = useAppSessionFiltersRules(showSessions);
-	const profileMenu = menu === "gender" || menu === "skill";
+type SessionFilterRules = ReturnType<typeof useAppSessionFiltersRules>;
+
+const SessionFiltersContext = createContext<SessionFilterRules | null>(null);
+
+export function AppSessionFilters({
+	showSessions,
+	onApplied,
+	children,
+}: Readonly<AppSessionFiltersProps>) {
+	const rules = useAppSessionFiltersRules(showSessions, onApplied);
 	return (
-		<section
-			aria-label={copy.heading}
-			onKeyDown={handleKeys}
-			className="mx-2 mb-2 border-b border-border pb-3 pt-1"
-		>
-			<div className="flex items-center justify-between gap-2">
-				<button
-					type="button"
-					disabled={!showSessions || !availableFields.length}
-					aria-expanded={menu === "add"}
-					aria-haspopup="listbox"
-					onClick={(event) => openMenu("add", event.currentTarget)}
-					className={`flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-foreground disabled:cursor-default disabled:opacity-40 ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
-				>
-					<span aria-hidden="true" className="text-base leading-none">
-						+
-					</span>
-					{copy.add}
-				</button>
-				{(hasFilters || dirty || fields.length > 0) && (
-					<button
-						type="button"
-						onClick={reset}
-						className="cursor-pointer rounded-md px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-					>
-						{copy.reset}
-					</button>
-				)}
-			</div>
-			{fields.length > 0 && (
-				<div className="mt-2 flex flex-wrap gap-1.5">
-					{fields.map((field) => (
-						<div
-							key={field}
-							className="flex max-w-full items-center rounded-md border border-border bg-foreground/[0.03] text-xs"
+		<SessionFiltersContext.Provider value={rules}>
+			{children ?? (
+				<>
+					<SessionFilterChips />
+					<SessionFilterAdd />
+					<SessionFilterApply />
+				</>
+			)}
+		</SessionFiltersContext.Provider>
+	);
+}
+
+export function SessionFilterChips() {
+	const rules = useContext(SessionFiltersContext);
+	if (!rules) return null;
+	const { copy, selected, removeOption, showSessions } = rules;
+	if (selected.length === 0) return null;
+	return (
+		<div className="px-2 pb-1">
+			{selected.length > 0 && (
+				<div className="flex flex-wrap gap-1.5">
+					{selected.map((option) => (
+						<span
+							key={`${option.field}-${option.id}`}
+							className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-foreground/[0.03] py-1 pr-1 pl-2 text-xs"
 						>
+							<span className="truncate">{option.label}</span>
 							<button
 								type="button"
 								disabled={!showSessions}
-								aria-expanded={menu === field}
-								aria-haspopup="listbox"
-								aria-label={fieldLabels[field]}
-								onClick={(event) => openMenu(field, event.currentTarget)}
-								className={`flex min-w-0 cursor-pointer items-center gap-1 rounded-l-md py-1.5 pl-2 pr-1 disabled:opacity-50 ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
-							>
-								<span className="truncate">
-									{fieldLabels[field]}
-									{fieldValues[field] && (
-										<span className="font-medium">: {fieldValues[field]}</span>
-									)}
-								</span>
-								<svg
-									aria-hidden="true"
-									viewBox="0 0 16 16"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									className={`size-3 shrink-0 text-muted-foreground transition-transform ${menu === field ? "rotate-180" : ""}`}
-								>
-									<path d="m4 6 4 4 4-4" />
-								</svg>
-							</button>
-							<button
-								type="button"
-								disabled={!showSessions}
-								aria-label={copy.remove.replace("{filter}", fieldLabels[field])}
-								onClick={() => removeField(field)}
-								className={`cursor-pointer rounded-r-md px-1.5 py-1.5 text-muted-foreground disabled:opacity-50 ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+								aria-label={copy.remove.replace("{filter}", option.label)}
+								onClick={() => removeOption(option.field, option.id)}
+								className={`cursor-pointer rounded-full px-1 text-muted-foreground disabled:opacity-50 ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 							>
 								<span aria-hidden="true">×</span>
 							</button>
-						</div>
+						</span>
 					))}
 				</div>
 			)}
-			{menu && (
-				<div
-					ref={menuRef}
-					className="map-glass mt-2 rounded-[var(--map-radius)] border border-border p-1 shadow-[var(--map-shadow)]"
-				>
-					<div className="flex items-center justify-between px-2 py-1.5">
-						<p className="text-[10px] font-medium uppercase text-muted-foreground">
-							{menu === "add" ? copy.add : fieldLabels[menu]}
-						</p>
-						<button
-							type="button"
-							aria-label={copy.close}
-							onClick={closeMenu}
-							className="cursor-pointer px-1 text-muted-foreground hover:text-foreground"
-						>
-							<span aria-hidden="true">×</span>
-						</button>
-					</div>
-					{menu === "age" && (
-						<div className="px-2 py-2">
-							<div className="flex gap-2">
-								{(["ageMin", "ageMax"] as const).map((field) => (
-									<label key={field} className="min-w-0 flex-1 text-[11px] text-muted-foreground">
-										{field === "ageMin" ? copy.minimumAge : copy.maximumAge}
-										<input
-											type="number"
-											min={0}
-											max={120}
-											step={1}
-											value={draft[field] ?? ""}
-											onChange={(event) => setAgeBound(field, event.currentTarget.value)}
-											className="mt-1 w-full rounded-md border border-border bg-transparent px-2 py-2 text-xs text-foreground outline-none focus:border-pleiful-pitch-green-80"
-										/>
-									</label>
-								))}
-							</div>
-							<p className="mt-2 text-[11px] text-muted-foreground">{copy.ageRangeHelp}</p>
-							{invalidAge && (
-								<p role="alert" className="mt-2 text-xs text-red-600">
-									{copy.invalidAge}
-								</p>
+		</div>
+	);
+}
+
+export function SessionFilterAdd() {
+	const rules = useContext(SessionFiltersContext);
+	if (!rules?.showSessions) return null;
+	const {
+		copy,
+		addOpen,
+		addRef,
+		sections,
+		toggleAdd,
+		toggleOption,
+		handleKeys,
+		isSelected,
+		ageOpen,
+		toggleAge,
+		ageRef,
+		ageGroupRef,
+		ageText,
+		changeAge,
+		stepAge,
+		ageError,
+	} = rules;
+	return (
+		<section aria-label={copy.heading} onKeyDown={handleKeys}>
+			<MapFilterAddButton buttonRef={addRef} label={copy.add} open={addOpen} onClick={toggleAdd} />
+			{addOpen && (
+				<div className="mt-1 ml-3 border-l border-border pl-1">
+					{sections.map((section) => (
+						<div key={section.id}>
+							<button
+								ref={section.buttonRef}
+								type="button"
+								aria-expanded={section.open}
+								onClick={section.toggle}
+								className="flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-xs hover:bg-foreground/[0.07]"
+							>
+								{section.label}
+								<Chevron open={section.open} pointsRight />
+							</button>
+							{section.open && (
+								<fieldset ref={section.groupRef} className="mt-0.5 border-0 p-0 pl-3">
+									<legend className="sr-only">{section.label}</legend>
+									{section.options.map((option) => (
+										<label
+											key={option.id}
+											className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs has-checked:bg-foreground/[0.05] ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+										>
+											<input
+												type="checkbox"
+												checked={isSelected(section.id, option.id)}
+												onChange={() => toggleOption(section.id, option.id)}
+												className="sr-only"
+											/>
+											{option.label}
+											<CheckMark selected={isSelected(section.id, option.id)} />
+										</label>
+									))}
+								</fieldset>
 							)}
 						</div>
-					)}
-					{profileMenu && options.isPending && (
-						<p role="status" className="px-2 py-2 text-xs text-muted-foreground">
-							{copy.loading}
-						</p>
-					)}
-					{profileMenu && options.isError && (
-						<p role="status" className="px-2 py-2 text-xs text-muted-foreground">
-							{copy.optionsError}{" "}
-							<button type="button" onClick={() => options.refetch()} className="underline">
-								{copy.retry}
-							</button>
-						</p>
-					)}
-					{menu !== "age" && (!profileMenu || options.data) && (
-						<div
-							role="listbox"
-							aria-multiselectable={profileMenu || undefined}
-							aria-label={menu === "add" ? copy.add : fieldLabels[menu]}
-							className="max-h-48 overflow-y-auto"
+					))}
+					<div>
+						<button
+							ref={ageRef}
+							type="button"
+							aria-expanded={ageOpen}
+							onClick={toggleAge}
+							className="flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-xs hover:bg-foreground/[0.07]"
 						>
-							{choices[menu].map((choice) => (
-								<button
-									key={choice.value}
-									type="button"
-									role="option"
-									aria-selected={isSelected(choice.value)}
-									onClick={() => selectChoice(choice.value)}
-									className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm px-2 py-2 text-left text-xs aria-selected:bg-foreground/[0.05] ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
-								>
-									{choice.label}
-									<span aria-hidden="true">{isSelected(choice.value) ? "✓" : ""}</span>
-								</button>
-							))}
-						</div>
-					)}
-				</div>
-			)}
-			{dirty && (
-				<div className="mt-3 flex items-center justify-between gap-2 px-1">
-					<span className="text-[11px] text-muted-foreground">{copy.pending}</span>
-					<button
-						type="button"
-						disabled={!showSessions || invalidAge}
-						onClick={apply}
-						className="cursor-pointer rounded-md bg-pleiful-pitch-green-80 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
-					>
-						{copy.apply}
-					</button>
-				</div>
-			)}
-			<p aria-live="polite" className="mt-2 px-2 text-[11px] text-muted-foreground">
-				{summary ? copy.applied.replace("{filters}", summary) : copy.allPlayers}
-			</p>
-			{showSessions && status && (
-				<div role="status" className="mt-2 px-2 text-xs text-muted-foreground">
-					<p>{status}</p>
-					{sessions.isError && (
-						<button type="button" onClick={() => sessions.refetch()} className="underline">
-							{copy.retry}
+							{copy.age}
+							<Chevron open={ageOpen} pointsRight />
 						</button>
-					)}
+						{ageOpen && (
+							<div ref={ageGroupRef} className="mt-0.5 grid gap-1.5 py-1 pr-2 pl-3">
+								<div className="grid grid-cols-2 gap-1.5">
+									<AgeField
+										label={copy.minimumAge}
+										value={ageText.min}
+										increaseLabel={copy.increaseAge.replace("{age}", copy.minimumAge.toLowerCase())}
+										decreaseLabel={copy.decreaseAge.replace("{age}", copy.minimumAge.toLowerCase())}
+										onChange={(value) => changeAge("min", value)}
+										onStep={(direction) => stepAge("min", direction)}
+									/>
+									<AgeField
+										label={copy.maximumAge}
+										value={ageText.max}
+										increaseLabel={copy.increaseAge.replace("{age}", copy.maximumAge.toLowerCase())}
+										decreaseLabel={copy.decreaseAge.replace("{age}", copy.maximumAge.toLowerCase())}
+										onChange={(value) => changeAge("max", value)}
+										onStep={(direction) => stepAge("max", direction)}
+									/>
+								</div>
+								<p className="text-[11px] text-muted-foreground">{copy.ageRangeHelp}</p>
+								{ageError && <p className="text-[11px] text-foreground">{ageError}</p>}
+							</div>
+						)}
+					</div>
 				</div>
 			)}
 		</section>
+	);
+}
+
+export function SessionFilterApply() {
+	const rules = useContext(SessionFiltersContext);
+	if (!rules?.showSessions || !rules.pending) return null;
+	return (
+		<div className="border-t border-border p-2">
+			<button
+				type="button"
+				onClick={rules.applyFilters}
+				className="w-full cursor-pointer rounded-md bg-black/5 px-2 py-1.5 text-xs font-medium text-black hover:bg-black/10"
+			>
+				{rules.copy.apply}
+			</button>
+		</div>
+	);
+}
+
+function AgeField({
+	label,
+	value,
+	increaseLabel,
+	decreaseLabel,
+	onChange,
+	onStep,
+}: Readonly<AgeFieldProps>) {
+	return (
+		<label className="grid min-w-0 gap-1 text-xs">
+			{label}
+			<span className="group relative block">
+				<input
+					type="text"
+					inputMode="numeric"
+					value={value}
+					onChange={(event) => onChange(event.target.value)}
+					className="w-full rounded-md border border-border bg-transparent px-2 py-1 pr-5 transition-colors hover:border-foreground/25 hover:bg-foreground/[0.07] focus:border-foreground/30 focus:bg-foreground/[0.07] focus:outline-none"
+				/>
+				<span className="absolute inset-y-px right-px hidden w-4 flex-col group-hover:flex group-focus-within:flex">
+					<button
+						type="button"
+						aria-label={increaseLabel}
+						onMouseDown={(event) => event.preventDefault()}
+						onClick={() => onStep(1)}
+						className="flex flex-1 cursor-pointer items-center justify-center rounded-tr-[5px] text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+					>
+						<StepChevron direction="up" />
+					</button>
+					<button
+						type="button"
+						aria-label={decreaseLabel}
+						onMouseDown={(event) => event.preventDefault()}
+						onClick={() => onStep(-1)}
+						className="flex flex-1 cursor-pointer items-center justify-center rounded-br-[5px] text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+					>
+						<StepChevron direction="down" />
+					</button>
+				</span>
+			</span>
+		</label>
+	);
+}
+
+function StepChevron({ direction }: Readonly<StepChevronProps>) {
+	const rotation = { up: "rotate-180", down: "" }[direction];
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 16 16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={`size-2.5 ${rotation}`}
+		>
+			<path d="m4 6 4 4 4-4" />
+		</svg>
+	);
+}
+
+function CheckMark({ selected }: Readonly<CheckMarkProps>) {
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 16 16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={`size-3 shrink-0 text-muted-foreground ${selected ? "" : "opacity-0"}`}
+		>
+			<path d="m3.5 8.5 3 3 6-6.5" />
+		</svg>
+	);
+}
+
+function Chevron({ open, pointsRight = false }: Readonly<FilterChevronProps>) {
+	const rotation = {
+		[`${true}`]: "",
+		[`${pointsRight && !open}`]: "-rotate-90",
+		[`${!pointsRight && open}`]: "rotate-180",
+	}.true;
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 16 16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={`size-3 shrink-0 text-muted-foreground transition-transform ${rotation}`}
+		>
+			<path d="m4 6 4 4 4-4" />
+		</svg>
 	);
 }

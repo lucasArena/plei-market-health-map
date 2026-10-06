@@ -12,6 +12,11 @@ export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 export const MAP_CENTER: [number, number] = [-96.5, 38.5];
 export const MAP_ZOOM = 3.4;
+export const MAP_CURSOR = {
+	navigate: "default",
+	dragging: "grabbing",
+	interactive: "pointer",
+} as const;
 export const FACILITIES_SOURCE_ID = "facilities";
 export const FACILITIES_LAYER_ID = "facilities-dots";
 export const FACILITIES_LOGO_LAYER_ID = "facilities-logos";
@@ -60,6 +65,28 @@ export const FACILITY_GLASS_STROKE = 2;
 export const FACILITY_GLASS_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE}px ${CLUSTER_BORDER_COLOR}, 0 10px 24px rgba(0,0,0,0.12)`;
 export const FACILITY_GLASS_INACTIVE_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE}px ${PLEIFUL_COLORS.neutral[50]}, 0 10px 24px rgba(0,0,0,0.12)`;
 export const FACILITY_GLASS_SELECTED_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE + 1}px ${SELECTED_RING_COLOR}, 0 10px 24px rgba(0,0,0,0.12)`;
+
+/**
+ * Games layer marker with no games in the current window (it is only on the map while Show
+ * trend is on, because it had games before). One style set on the existing glass disc: faded,
+ * with a dashed ring, so it never reads as a stable trend, and no trend color or pointer.
+ */
+export interface InactiveGamesMarkerStyle {
+	opacity: number;
+	ringWidth: number;
+	ringStyle: "solid" | "dashed";
+	ringColor: string;
+	label: string;
+}
+
+export const INACTIVE_GAMES_MARKER_STYLE: Readonly<InactiveGamesMarkerStyle> = {
+	opacity: 0.6,
+	ringWidth: 1.5,
+	ringStyle: "dashed",
+	ringColor: PLEIFUL_COLORS.neutral[50],
+	label: PLEIFUL_COLORS.neutral[60],
+};
+
 export const APP_SESSION_HEATMAP_SOURCE_ID = "app-session-heatmap";
 export const APP_SESSION_HEATMAP_LAYER_ID = "app-session-density";
 
@@ -126,7 +153,7 @@ export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 };
 
 export const SESSION_HEATMAP_LEGEND_CLASS = [
-	"map-glass min-w-56 rounded-[var(--map-radius)]",
+	"pointer-events-auto map-glass w-56 rounded-[var(--map-radius)]",
 	"border border-border/60 px-3 py-2.5 shadow-[var(--map-shadow)]",
 ].join(" ");
 
@@ -163,6 +190,12 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 	],
 };
 
+export const REGISTRATION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
+	...APP_SESSION_HEATMAP_PAINT,
+	"heatmap-intensity": 3,
+	"heatmap-radius": ["interpolate", ["linear"], ["zoom"], 3, 24, 8, 32, 12, 40, 16, 48],
+};
+
 export function selectedRingColor(facilityId: string | null): ExpressionSpecification {
 	return ["case", ["==", ["get", "id"], facilityId ?? ""], SELECTED_RING_COLOR, MARKER_RING_COLOR];
 }
@@ -178,4 +211,87 @@ export function selectedRingWidth(facilityId: string | null): ExpressionSpecific
 		8,
 		["case", isSelected, 3, 1.5],
 	];
+}
+
+export const CLUSTER_GAME_COUNT_KEY = "gameCount";
+export const CLUSTER_PREVIOUS_GAME_COUNT_KEY = "gamePreviousCount";
+
+/**
+ * Cluster sums for the games layer and its trend. Both windows are summed, so a cluster's
+ * trend comes from its totals, never from averaged percents.
+ */
+export const GAMES_CLUSTER_PROPERTIES: Record<string, ExpressionSpecification> = {
+	[CLUSTER_GAME_COUNT_KEY]: ["+", ["get", "gamesLast28Days"]],
+	[CLUSTER_PREVIOUS_GAME_COUNT_KEY]: ["+", ["get", "gamesPrevious28Days"]],
+};
+
+/**
+ * Trend ring and pointer: a CSS pseudo element on the existing glass disc (no extra DOM, no
+ * map layers) paints the ring and, for up and down, a tip bounded by the two tangents from the
+ * apex to the ring's outer edge, so ring and tip read as one pin shape. The paint is a glass
+ * gradient over the trend color; the hole keeps it off the count.
+ */
+export const TREND_TIP_CLASS = "games-trend-tip";
+/** The tip apex sits this far past the glass disc edge. */
+export const TREND_TIP_LENGTH = 5;
+
+export interface TrendRing {
+	/** Disc diameter the ring belongs to. */
+	disc: number;
+	outer: number;
+	inner: number;
+}
+
+export const GAMES_TREND_DIAMETER = 45;
+
+export const CLUSTER_TREND_RING: TrendRing = {
+	disc: GAMES_TREND_DIAMETER,
+	outer: GAMES_TREND_DIAMETER / 2 - CLUSTER_BORDER_WIDTH,
+	inner: GAMES_TREND_DIAMETER / 2 - CLUSTER_BORDER_WIDTH - CLUSTER_GLASS_STROKE,
+};
+export const FACILITY_TREND_RING: TrendRing = { ...CLUSTER_TREND_RING };
+
+function num(value: number) {
+	return String(Math.round(value * 100) / 100);
+}
+
+function circlePath(center: number, radius: number) {
+	const r = num(radius);
+	return `M ${num(center + radius)} ${num(center)} A ${r} ${r} 0 1 0 ${num(center - radius)} ${num(center)} A ${r} ${r} 0 1 0 ${num(center + radius)} ${num(center)} Z`;
+}
+
+/**
+ * Ring and tip as one even odd path in a square box centered on the disc: the outer edge runs
+ * around the ring and out along the two tangents to the apex, and the inner circle is the hole,
+ * so the glass paint covers ring and tip as a single shape with no seam.
+ */
+export function trendTipShape(ring: TrendRing) {
+	const apex = ring.disc / 2 + TREND_TIP_LENGTH;
+	const box = Math.ceil(apex + 1) * 2;
+	const center = box / 2;
+	const cos = ring.outer / apex;
+	const sin = Math.sqrt(1 - cos * cos);
+	const tangentX = ring.outer * sin;
+	const tangentY = ring.outer * cos;
+	const r = num(ring.outer);
+	const hole = circlePath(center, ring.inner);
+	const tip = (direction: 1 | -1, sweep: 0 | 1) =>
+		`path(evenodd, "M ${num(center + tangentX)} ${num(center + direction * tangentY)} A ${r} ${r} 0 1 ${sweep} ${num(center - tangentX)} ${num(center + direction * tangentY)} L ${num(center)} ${num(center + direction * apex)} Z ${hole}")`;
+	return {
+		apex,
+		box,
+		inner: ring.inner,
+		down: tip(1, 0),
+		up: tip(-1, 1),
+		stable: tip(1, 0),
+	};
+}
+
+export type TrendTipShape = ReturnType<typeof trendTipShape>;
+
+export const CLUSTER_TREND_TIP = trendTipShape(CLUSTER_TREND_RING);
+export const FACILITY_TREND_TIP = trendTipShape(FACILITY_TREND_RING);
+
+export function facilityGlassRingShadow(color: string, width = FACILITY_GLASS_STROKE) {
+	return `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${width}px ${color}, 0 10px 24px rgba(0,0,0,0.12)`;
 }

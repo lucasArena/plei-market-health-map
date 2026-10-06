@@ -5,6 +5,7 @@ import type {
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
+import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseFacilityGameComparisonRow,
 	WarehouseFacilityPlayerStatsRow,
@@ -13,8 +14,16 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository.types";
 
 export const FACILITY_GAME_COMPARISONS_SQL = `
-with bounds as (select current_date as today)
+with bounds as (
+  select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
+)
 select r.location_id,
+ count(distinct r.reservation_id) filter (
+   where r.date_with_time::date >= b.this_week - 7 and r.date_with_time::date < b.this_week
+ ) as played_last_week,
+ count(distinct r.reservation_id) filter (
+   where r.date_with_time::date >= b.this_week - 14 and r.date_with_time::date < b.this_week - 7
+ ) as played_previous_week,
  count(distinct r.reservation_id) filter (where r.date_with_time::date >= b.today - 28) as played_last_28_days,
  count(distinct r.reservation_id) filter (where r.date_with_time::date < b.today - 28) as played_previous_28_days
 from plei_gold.dim_reservation r
@@ -128,6 +137,9 @@ select
     where g.game_date >= b.this_week - 7 and g.game_date < b.this_week
   ) as scheduled_last_week,
   count(distinct g.reservation_id) filter (
+    where g.game_date >= b.this_week - 14 and g.game_date < b.this_week - 7
+  ) as scheduled_previous_week,
+  count(distinct g.reservation_id) filter (
     where g.status = 'cancelled'
       and g.game_date >= b.this_week - 7 and g.game_date < b.this_week
   ) as cancelled_last_week,
@@ -150,7 +162,7 @@ group by b.this_week, b.today`;
 
 export const FACILITY_PLAYER_STATS_SQL = `
 with bounds as (
-  select current_date as today
+  select current_date as today, date_trunc('week', current_date)::date as this_week
 ),
 facility_players as (
   select f.player_id, f.player_lifecycle, f.date_played
@@ -169,6 +181,20 @@ facility_players as (
 )
 select
   count(distinct player_id) filter (
+    where date_played >= b.this_week - 7 and date_played < b.this_week
+  ) as unique_players_last_week,
+  count(distinct player_id) filter (
+    where date_played >= b.this_week - 14 and date_played < b.this_week - 7
+  ) as unique_players_previous_week,
+  count(distinct player_id) filter (
+    where player_lifecycle = 'Activated'
+      and date_played >= b.this_week - 7 and date_played < b.this_week
+  ) as activated_players_last_week,
+  count(distinct player_id) filter (
+    where player_lifecycle = 'Activated'
+      and date_played >= b.this_week - 14 and date_played < b.this_week - 7
+  ) as activated_players_previous_week,
+  count(distinct player_id) filter (
     where date_played >= b.today - 28
   ) as unique_players_last_28_days,
   count(distinct player_id) filter (
@@ -182,7 +208,7 @@ select
   ) as activated_players_previous_28_days
 from bounds b
 left join facility_players f on true
-group by b.today`;
+group by b.today, b.this_week`;
 
 export function toReservationStats(
 	row: WarehouseFacilityReservationStatsRow,
@@ -198,6 +224,7 @@ export function toReservationStats(
 		scheduledLast28Days: Number(row.scheduled_last_28_days),
 		scheduledPrevious28Days: Number(row.scheduled_previous_28_days),
 		scheduledLastWeek: Number(row.scheduled_last_week),
+		scheduledPreviousWeek: Number(row.scheduled_previous_week),
 		cancelledLastWeek: Number(row.cancelled_last_week),
 		upcomingNextSevenDays: Number(row.upcoming_next_seven_days),
 		lastPlayedDate: row.last_played_date,
@@ -215,8 +242,12 @@ export function toReservationStats(
 
 export function toPlayerStats(row: WarehouseFacilityPlayerStatsRow): FacilityPlayerStats {
 	return {
+		uniquePlayersLastWeek: Number(row.unique_players_last_week),
+		uniquePlayersPreviousWeek: Number(row.unique_players_previous_week),
 		uniquePlayersLast28Days: Number(row.unique_players_last_28_days),
 		uniquePlayersPrevious28Days: Number(row.unique_players_previous_28_days),
+		activatedPlayersLastWeek: Number(row.activated_players_last_week),
+		activatedPlayersPreviousWeek: Number(row.activated_players_previous_week),
 		activatedPlayersLast28Days: Number(row.activated_players_last_28_days),
 		activatedPlayersPrevious28Days: Number(row.activated_players_previous_28_days),
 	};
@@ -244,6 +275,8 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 		);
 		return rows.map((row) => ({
 			facilityId: String(row.location_id) as EntityId,
+			playedLastWeek: Number(row.played_last_week),
+			playedPreviousWeek: Number(row.played_previous_week),
 			playedLast28Days: Number(row.played_last_28_days),
 			playedPrevious28Days: Number(row.played_previous_28_days),
 		}));

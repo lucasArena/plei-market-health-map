@@ -26,8 +26,13 @@ export type {
 	AppSessionFilters,
 } from "@core/application/dtos/app-session-filters-dto.types";
 export type { AppSessionHeatmapCellView } from "@core/application/dtos/app-session-heatmap-dto.types";
-export { getFacilityDetailSchema } from "@core/application/dtos/facility-detail-dto";
+export {
+	DEFAULT_STATS_PERIOD,
+	getFacilityDetailSchema,
+	STATS_PERIODS,
+} from "@core/application/dtos/facility-detail-dto";
 export type {
+	ActivityPeriodView,
 	FacilityDetailView,
 	FacilityPlayerStatsView,
 	FacilityReservationDetailView,
@@ -36,9 +41,16 @@ export type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	PlayerPeriodView,
+	ReservationPeriodView,
+	StatsPeriod,
 } from "@core/application/dtos/facility-detail-dto.types";
 export type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
-export { FEATURE_FLAG_KEYS, setFeatureFlagSchema } from "@core/application/dtos/feature-flags-dto";
+export {
+	FEATURE_FLAG_KEYS,
+	FEATURE_FLAG_REQUIREMENTS,
+	setFeatureFlagSchema,
+} from "@core/application/dtos/feature-flags-dto";
 export type {
 	EnabledFeatureFlagsView,
 	FeatureFlagKey,
@@ -74,17 +86,33 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
-export { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
+export {
+	getMarketGameInsightsSchema,
+	getMarketSummarySchema,
+} from "@core/application/dtos/market-summary-dto";
 export type {
 	FacilityGameChangeView,
+	GetMarketGameInsightsInput,
 	GetMarketSummaryInput,
 	MarketGameChangeView,
 	MarketPlayerStatsView,
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
+	MarketSummaryPeriodView,
 	MarketSummaryScopeView,
 	MarketSummaryView,
 } from "@core/application/dtos/market-summary-dto.types";
+export {
+	MIN_PLACE_QUERY_LENGTH,
+	PLACE_RESULT_LIMIT,
+	searchPlacesSchema,
+} from "@core/application/dtos/place-dto";
+export type {
+	PlaceBounds,
+	PlaceKind,
+	PlaceView,
+	SearchPlacesInput,
+} from "@core/application/dtos/place-dto.types";
 export { FeedbackNotConfiguredError } from "@core/application/errors/feedback-not-configured-error";
 export { ForbiddenError } from "@core/application/errors/forbidden-error";
 export { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -97,6 +125,8 @@ export {
 	toFacilityPlayerStatsView,
 	toFacilityReservationStatsView,
 	toFacilityStatsView,
+	toPlayerPeriodView,
+	toReservationPeriodView,
 } from "@core/application/mappers/facility-stats-mapper";
 export {
 	FEEDBACK_TITLES,
@@ -110,6 +140,7 @@ export {
 	MARKET_SUMMARY_RANK_LIMIT,
 	selectMarketFacilities,
 	toMarketMemberIds,
+	toMarketSummaryPeriod,
 	toMarketSummaryScope,
 	toTopFacilities,
 	toTopMarkets,
@@ -122,6 +153,7 @@ export type {
 	IssueAttachment,
 	IssueTracker,
 } from "@core/application/providers/issue-tracker.types";
+export type { PlaceSearch } from "@core/application/providers/place-search.types";
 export type { AppSessionHeatmapRepository } from "@core/application/repositories/app-session-heatmap-repository.types";
 export type { DailyActivityRepository } from "@core/application/repositories/daily-activity-repository.types";
 export type { FacilityRepository } from "@core/application/repositories/facility-repository.types";
@@ -153,5 +185,6 @@ export { makeListFeatureFlags } from "@core/application/services/list-feature-fl
 export { makeListRecentLogins } from "@core/application/services/list-recent-logins";
 export { makeRecordDailyActivity } from "@core/application/services/record-daily-activity";
 export { makeRecordLogin } from "@core/application/services/record-login";
+export { makeSearchPlaces } from "@core/application/services/search-places";
 export { makeSetFeatureFlag } from "@core/application/services/set-feature-flag";
 export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

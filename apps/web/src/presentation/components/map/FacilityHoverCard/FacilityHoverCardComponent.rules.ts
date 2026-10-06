@@ -1,6 +1,7 @@
 "use client";
 
-import type { FacilityPointView } from "@market-health-map/core/application";
+import type { FacilityPointView, StatsPeriod } from "@market-health-map/core/application";
+import { GAMES_WINDOW_DAYS, type GamesTrend } from "@market-health-map/core/domain";
 import { formatMessage, type Messages } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -15,6 +16,7 @@ import type {
 	ClusterHoverCardPlacementInput,
 	ClusterHoverSide,
 } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import type { RevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion.types";
 import {
@@ -49,8 +51,8 @@ function clusterListContentHeight(rows: number) {
 	return 6 + 6 + items;
 }
 
-export function clusterHoverCardHeight(facilityCount: number, hasMore: boolean) {
-	const header = 8 + 28;
+export function clusterHoverCardHeight(facilityCount: number, hasMore: boolean, hasTrend = false) {
+	const header = 8 + 28 + (hasTrend ? HOVER_TREND_LINE_HEIGHT : 0);
 	if (facilityCount === 0) return header;
 	const footer = { true: 24, false: 0 }[`${hasMore}`];
 	const listHeight = Math.min(clusterListContentHeight(facilityCount), clusterHoverListMaxHeight());
@@ -67,10 +69,82 @@ export function clusterFacilitiesByName(facilities: readonly FacilityPointView[]
 	);
 }
 
-export function clusterLabels(hover: ClusterHover, messages: Messages["map"]) {
+export const HOVER_TREND_LINE_HEIGHT = 16;
+/** The facility card trend line usually wraps to two lines beside the avatar. */
+export const FACILITY_HOVER_TREND_HEIGHT = 32;
+
+type TrendMessages = Messages["map"]["trend"];
+
+function changeTemplate(trend: GamesTrend, templates: Record<GamesTrend["level"], string>) {
+	if (trend.change > 0) return templates.up;
+	if (trend.change < 0) return templates.down;
+	return templates.stable;
+}
+
+const hoverGamesBadgeFormatter = new Intl.NumberFormat("en", {
+	notation: "compact",
+	maximumFractionDigits: 1,
+});
+
+/** Compact games count for hover rows, matching map badge notation. */
+export function formatHoverGamesBadge(count: number) {
+	return count >= 1000 ? hoverGamesBadgeFormatter.format(count) : String(count);
+}
+
+/** "42 games": what Games mode hovers read in place of a facility count. */
+export function formatGamesCount(count: number, messages: TrendMessages) {
+	return formatMessage(count === 1 ? messages.gamesOne : messages.gamesOther, { count });
+}
+
+/** "Down 9 from the previous 28 days": the games change alone, for right under a games count. */
+export function formatGamesChange(
+	trend: GamesTrend,
+	messages: TrendMessages,
+	days = GAMES_WINDOW_DAYS,
+) {
+	const template = changeTemplate(trend, {
+		up: messages.changeUp,
+		down: messages.changeDown,
+		stable: messages.changeStable,
+	});
+	return formatMessage(template, { change: Math.abs(trend.change), days });
+}
+
+export function formatGamesTrend(
+	trend: GamesTrend,
+	messages: TrendMessages,
+	days = GAMES_WINDOW_DAYS,
+) {
+	const games = formatGamesCount(trend.current, messages);
+	const template = changeTemplate(trend, {
+		up: messages.gamesUp,
+		down: messages.gamesDown,
+		stable: messages.gamesStable,
+	});
+	return formatMessage(template, { games, change: Math.abs(trend.change), days });
+}
+
+export function trendWindowDays(period: StatsPeriod) {
+	return { week: 7, month: GAMES_WINDOW_DAYS }[period];
+}
+
+export function clusterLabels(
+	hover: ClusterHover,
+	messages: Messages["map"],
+	days = GAMES_WINDOW_DAYS,
+) {
+	if (hover.games !== undefined) {
+		// Games mode reads in games only: the count, then the change under it while trend is on.
+		return {
+			title: formatGamesCount(hover.games, messages.trend),
+			trend: hover.trend ? formatGamesChange(hover.trend, messages.trend, days) : null,
+			more: null,
+		};
+	}
 	const remaining = hover.total - hover.facilities.length;
 	return {
 		title: formatMessage(messages.clusterCount, { count: hover.total }),
+		trend: null,
 		more:
 			hover.facilities.length > 0 && remaining > 0
 				? formatMessage(messages.moreFacilities, { count: remaining })
@@ -146,8 +220,20 @@ export function clusterHoverMotionClass(motion: RevealMotion, retarget: boolean)
 	return { true: "", false: settled }[`${retarget}`];
 }
 
-export function facilityHoverCardHeight() {
-	return 12 + 32;
+export function facilityHoverCardHeight(hasTrend = false) {
+	const line = hasTrend ? FACILITY_HOVER_TREND_HEIGHT : 0;
+	return 12 + 32 + line;
+}
+
+/** The line under a facility name: games change while trend is on in Games mode. */
+export function facilityTrendLine(
+	hover: MapHover | null,
+	messages: Messages["map"],
+	days = GAMES_WINDOW_DAYS,
+) {
+	if (hover?.kind !== "facility") return null;
+	if (hover.games === undefined || !hover.trend) return null;
+	return formatGamesChange(hover.trend, messages.trend, days);
 }
 
 export function hoverCardSurfaceClass(kind: MapHover["kind"]) {
@@ -188,6 +274,8 @@ export function useFacilityHoverCardRules(
 	messages: Messages["map"],
 	onFacilitySelect?: (facility: FacilityPointView) => void,
 ) {
+	const { period } = useMapScope();
+	const days = trendWindowDays(period);
 	const { finishReveal, isShown, motion } = useRevealMotion(hover !== null);
 	const held = useRef<MapHover | null>(null);
 	const previousKey = useRef<string | null>(null);
@@ -208,9 +296,11 @@ export function useFacilityHoverCardRules(
 	const card = hover ?? resting;
 	const clusterCard = card?.kind === "cluster" ? card : null;
 	const facilityCard = card?.kind === "facility" ? card : null;
+	const showFacilityGames = clusterCard?.games !== undefined || facilityCard?.games !== undefined;
 	const facilities = clusterFacilitiesByName(clusterCard?.facilities ?? []);
 	const listed = facilities.length;
-	const hasMore = listed > 0 && (clusterCard?.total ?? 0) > listed;
+	const hasMore =
+		listed > 0 && clusterCard?.games === undefined && (clusterCard?.total ?? 0) > listed;
 	const visibleRows = Math.min(listed, CLUSTER_PREVIEW_LIMIT);
 	const listRef = useRef<HTMLUListElement>(null);
 	const [showsBottomFade, setShowsBottomFade] = useState(false);
@@ -241,8 +331,8 @@ export function useFacilityHoverCardRules(
 				card: {
 					width: HOVER_CARD_WIDTH,
 					height: {
-						cluster: clusterHoverCardHeight(visibleRows, hasMore),
-						facility: facilityHoverCardHeight(),
+						cluster: clusterHoverCardHeight(visibleRows, hasMore, Boolean(card.trend)),
+						facility: facilityHoverCardHeight(Boolean(card.trend)),
 					}[card.kind],
 				},
 				viewport: card.viewport,
@@ -256,14 +346,16 @@ export function useFacilityHoverCardRules(
 		clusterCard,
 		facilities,
 		facilityCard,
+		facilityTrend: facilityTrendLine(facilityCard, messages, days),
 		finishReveal,
-		labels: clusterCard ? clusterLabels(clusterCard, messages) : null,
+		labels: clusterCard ? clusterLabels(clusterCard, messages, days) : null,
 		listFadeClass: clusterListFadeClass(showsBottomFade),
 		listMaxHeight: clusterHoverListMaxHeight(),
 		listRef,
 		motionClass: clusterHoverMotionClass(motion, skipEnter.current),
 		placement,
 		selectListedFacility,
+		showFacilityGames,
 		surfaceClass: card ? hoverCardSurfaceClass(card.kind) : "",
 		syncClusterListFade,
 	};

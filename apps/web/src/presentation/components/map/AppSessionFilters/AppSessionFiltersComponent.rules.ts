@@ -3,192 +3,253 @@
 import type { AppSessionFilters } from "@market-health-map/core/application";
 import { useEffect, useRef, useState } from "react";
 import type {
+	AgeBound,
+	AgeText,
+	FilterChoice,
 	FilterKeyboardEvent,
+	FilterSection,
+	SelectedFilterChip,
+	SessionFilterChipField,
 	SessionFilterField,
-	SessionFilterMenu,
 } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.types";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
-import {
-	useAppSessionFilterOptions,
-	useAppSessionHeatmap,
-} from "@/presentation/hooks/use-app/use-app-session-heatmap";
+import { useAppSessionFilterOptions } from "@/presentation/hooks/use-app/use-app-session-heatmap";
 
-export function useAppSessionFiltersRules(showSessions: boolean) {
+const EMPTY_FILTERS: AppSessionFilters = {};
+const GENDER_IDS = ["female", "male", "other", "prefer not to say"] as const;
+const SKILL_IDS = ["beginner", "intermediate", "advanced", "expert"] as const;
+const SKILL_VALUES: Record<(typeof SKILL_IDS)[number], string> = {
+	beginner: "Beginner",
+	intermediate: "Intermediate",
+	advanced: "Advanced",
+	expert: "Expert",
+};
+
+export function useAppSessionFiltersRules(showSessions: boolean, onApplied?: () => void) {
 	const layers = useMapLayers();
 	const { messages } = useMessages();
 	const copy = messages.map.sessionFilters;
-	const applied = layers?.sessionFilters ?? {};
-	const [draft, setDraft] = useState<AppSessionFilters>(applied);
-	const [fields, setFields] = useState<SessionFilterField[]>(() => {
-		const initial: SessionFilterField[] = [];
-		if (applied.gender) initial.push("gender");
-		if (applied.skill) initial.push("skill");
-		if (applied.ageMin !== undefined || applied.ageMax !== undefined) initial.push("age");
-		return initial;
+	const applied = layers?.sessionFilters ?? EMPTY_FILTERS;
+	const [draft, setDraft] = useState(applied);
+	const [addOpen, setAddOpen] = useState(false);
+	const [genderOpen, setGenderOpen] = useState(false);
+	const [skillOpen, setSkillOpen] = useState(false);
+	const [ageOpen, setAgeOpen] = useState(false);
+	const [ageText, setAgeText] = useState<AgeText>({
+		min: ageInput(applied.ageMin),
+		max: ageInput(applied.ageMax),
 	});
-	const [menu, setMenu] = useState<SessionFilterMenu>(null);
-	const menuRef = useRef<HTMLDivElement>(null);
-	const triggerRef = useRef<HTMLButtonElement | null>(null);
-	const options = useAppSessionFilterOptions(
-		showSessions && (menu === "gender" || menu === "skill"),
-	);
+	const addRef = useRef<HTMLButtonElement>(null);
+	const genderRef = useRef<HTMLButtonElement>(null);
+	const skillRef = useRef<HTMLButtonElement>(null);
+	const ageRef = useRef<HTMLButtonElement>(null);
+	const genderGroupRef = useRef<HTMLFieldSetElement>(null);
+	const skillGroupRef = useRef<HTMLFieldSetElement>(null);
+	const ageGroupRef = useRef<HTMLDivElement>(null);
+	const options = useAppSessionFilterOptions(showSessions);
+	const genderLabels: Record<(typeof GENDER_IDS)[number], string> = {
+		female: copy.female,
+		male: copy.male,
+		other: copy.other,
+		"prefer not to say": copy.preferNotToSay,
+	};
+	const skillLabels: Record<(typeof SKILL_IDS)[number], string> = {
+		beginner: copy.beginner,
+		intermediate: copy.intermediate,
+		advanced: copy.advanced,
+		expert: copy.expert,
+	};
+	const genderOptions = choicesFor(GENDER_IDS, genderLabels, options.data?.genders);
+	const skillOptions = choicesFor(SKILL_IDS, skillLabels, options.data?.skills, SKILL_VALUES);
+	const appliedGenders = profileValues(applied.gender);
+	const appliedSkills = profileValues(applied.skill);
+	const selected: SelectedFilterChip[] = [
+		...matched(genderOptions, appliedGenders).map((option) => ({
+			field: "gender" as const,
+			...option,
+		})),
+		...matched(skillOptions, appliedSkills).map((option) => ({
+			field: "skill" as const,
+			...option,
+		})),
+	];
+	const ageLabel = ageRangeLabel(applied.ageMin, applied.ageMax);
+	if (ageLabel) selected.push({ field: "age", id: "age", label: ageLabel });
+	const parsedAge = parseAgeRange(ageText);
+	const sections: FilterSection[] = [
+		{
+			id: "gender",
+			label: copy.gender,
+			open: genderOpen,
+			toggle: () => setGenderOpen((current) => !current),
+			buttonRef: genderRef,
+			groupRef: genderGroupRef,
+			options: genderOptions,
+		},
+		{
+			id: "skill",
+			label: copy.skill,
+			open: skillOpen,
+			toggle: () => setSkillOpen((current) => !current),
+			buttonRef: skillRef,
+			groupRef: skillGroupRef,
+			options: skillOptions,
+		},
+	];
+
 	useEffect(() => {
-		if (!menu) return;
-		const selector =
-			menu === "age"
-				? "input"
-				: menu === "add" || options.data
-					? '[role="option"]'
-					: "button:not(:disabled)";
-		const selected = menuRef.current?.querySelector<HTMLButtonElement>(
-			'[role="option"][aria-selected="true"]',
-		);
-		(selected ?? menuRef.current?.querySelector<HTMLButtonElement>(selector))?.focus();
-	}, [menu, options.data]);
+		setDraft(applied);
+		setAgeText({ min: ageInput(applied.ageMin), max: ageInput(applied.ageMax) });
+	}, [applied]);
+
 	useEffect(() => {
-		if (!showSessions) setMenu(null);
+		if (showSessions) return;
+		setAddOpen(false);
+		setGenderOpen(false);
+		setSkillOpen(false);
+		setAgeOpen(false);
 	}, [showSessions]);
-	const sessions = useAppSessionHeatmap(applied, showSessions);
-	function ageLabel(filters: AppSessionFilters) {
-		if (filters.ageMin !== undefined && filters.ageMax !== undefined)
-			return `${filters.ageMin}–${filters.ageMax}`;
-		if (filters.ageMin !== undefined) return `${filters.ageMin}+`;
-		if (filters.ageMax !== undefined) return `≤ ${filters.ageMax}`;
-		return undefined;
-	}
-	const summary = [
-		profileValues(applied.gender).map(genderLabel).join(", "),
-		profileValues(applied.skill).join(", "),
-		ageLabel(applied),
-	]
-		.filter(Boolean)
-		.join(" · ");
-	const invalidAge =
-		(draft.ageMin !== undefined &&
-			(!Number.isInteger(draft.ageMin) || draft.ageMin < 0 || draft.ageMin > 120)) ||
-		(draft.ageMax !== undefined &&
-			(!Number.isInteger(draft.ageMax) || draft.ageMax < 0 || draft.ageMax > 120)) ||
-		(draft.ageMin !== undefined && draft.ageMax !== undefined && draft.ageMin > draft.ageMax);
-	function setAgeBound(field: "ageMin" | "ageMax", value: string) {
-		setDraft((current) => ({ ...current, [field]: value === "" ? undefined : Number(value) }));
-	}
-	const hasFilters = Boolean(summary);
-	function genderLabel(value: string) {
-		return value.charAt(0).toUpperCase() + value.slice(1);
-	}
-	function profileValues(value: string | string[] | undefined): string[] {
-		return value === undefined ? [] : Array.isArray(value) ? value : [value];
-	}
-	const dirty = ["gender", "skill", "ageMin", "ageMax"].some(
-		(key) =>
-			JSON.stringify(draft[key as keyof AppSessionFilters]) !==
-			JSON.stringify(applied[key as keyof AppSessionFilters]),
-	);
-	function setField(field: "gender" | "skill", value: string) {
-		setDraft((current) => {
-			const selected = profileValues(current[field]);
-			const next =
-				value === ""
-					? []
-					: selected.includes(value)
-						? selected.filter((item) => item !== value)
-						: [...selected, value].sort();
-			return { ...current, [field]: next.length ? next : undefined };
+
+	useEffect(() => {
+		if (!genderOpen) return;
+		genderGroupRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();
+	}, [genderOpen]);
+
+	useEffect(() => {
+		if (!skillOpen) return;
+		skillGroupRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();
+	}, [skillOpen]);
+
+	useEffect(() => {
+		if (!ageOpen) return;
+		ageGroupRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+	}, [ageOpen]);
+
+	const pending = hasSelection(draft) && selectionKey(draft) !== selectionKey(applied);
+	const reportFields = layers?.setDemandFiltersPresent;
+	const hasFields = hasSelection(draft) || hasSelection(applied);
+	useEffect(() => {
+		reportFields?.(hasFields);
+		return () => reportFields?.(false);
+	}, [reportFields, hasFields]);
+
+	function toggleAdd() {
+		setAddOpen((current) => {
+			if (current) {
+				setGenderOpen(false);
+				setSkillOpen(false);
+				setAgeOpen(false);
+			}
+			return !current;
 		});
 	}
-	function apply() {
-		if (invalidAge) return;
-		layers?.setSessionFilters(
-			Object.fromEntries(Object.entries(draft).filter(([, value]) => value !== undefined)),
-		);
-	}
-	function reset() {
-		setFields([]);
-		setMenu(null);
-		setDraft({});
-		layers?.setSessionFilters({});
-	}
-	const fieldLabels = { gender: copy.gender, skill: copy.skill, age: copy.age };
-	const availableFields = (["gender", "skill", "age"] as const).filter(
-		(field) => !fields.includes(field),
-	);
-	const values = {
-		gender: profileValues(draft.gender),
-		skill: profileValues(draft.skill),
-		age: "",
-	};
-	const fieldValues = {
-		gender: profileValues(draft.gender).map(genderLabel).join(", "),
-		skill: profileValues(draft.skill).join(", "),
-		age: ageLabel(draft),
-	};
-	const choices = {
-		add: availableFields.map((field) => ({ value: field, label: fieldLabels[field] })),
-		gender: [
-			{ value: "", label: copy.allGenders },
-			...(options.data?.genders ?? []).map((value) => ({ value, label: genderLabel(value) })),
-		],
-		skill: [
-			{ value: "", label: copy.allSkills },
-			...[...(options.data?.skills ?? [])]
-				.sort((a, b) => {
-					const order = ["Beginner", "Intermediate", "Advanced", "Expert"];
-					const rank = (value: string) => {
-						const index = order.indexOf(value);
-						return index < 0 ? order.length : index;
-					};
-					return rank(a) - rank(b) || a.localeCompare(b);
-				})
-				.map((value) => ({ value, label: value })),
-		],
-		age: [],
-	};
-	function openMenu(next: SessionFilterMenu, trigger: HTMLButtonElement) {
-		triggerRef.current = trigger;
-		setMenu((current) => (current === next ? null : next));
-	}
-	function closeMenu() {
-		setMenu(null);
-		triggerRef.current?.focus();
-	}
-	function selectChoice(value: string) {
-		if (menu === "add") {
-			const field = value as SessionFilterField;
-			setFields((current) => [...current, field]);
-			setMenu(field);
-			return;
-		}
 
-		if (menu === "gender" || menu === "skill") {
-			setField(menu, value);
+	function replaceField(source: AppSessionFilters, field: SessionFilterField, next: string[]) {
+		const filters: AppSessionFilters = { ...source };
+		if (next.length) filters[field] = next;
+		else delete filters[field];
+		return filters;
+	}
+
+	function toggleOption(field: SessionFilterField, id: string) {
+		if (!showSessions) return;
+		const list = field === "gender" ? genderOptions : skillOptions;
+		const current = profileValues(draft[field]);
+		const option = list.find((item) => item.id === id);
+		if (!option) return;
+		const exists = current.some((value) => value.toLowerCase() === id);
+		const next = exists
+			? current.filter((value) => value.toLowerCase() !== id)
+			: [...current, option.value].sort((left, right) => left.localeCompare(right));
+		setDraft(replaceField(draft, field, next));
+	}
+
+	function removeOption(field: SessionFilterChipField, id: string) {
+		if (field === "age") {
+			const filters: AppSessionFilters = { ...applied };
+			delete filters.ageMin;
+			delete filters.ageMax;
+			setDraft(filters);
+			setAgeText({ min: "", max: "" });
+			layers?.setSessionFilters(filters);
 			return;
 		}
-		closeMenu();
+		const next = profileValues(applied[field]).filter((value) => value.toLowerCase() !== id);
+		const filters = replaceField(applied, field, next);
+		setDraft(filters);
+		layers?.setSessionFilters(filters);
 	}
-	function removeField(field: SessionFilterField) {
-		setFields((current) => current.filter((item) => item !== field));
-		if (field === "age")
-			setDraft((current) => ({ ...current, ageMin: undefined, ageMax: undefined }));
-		if (field === "gender" || field === "skill") setField(field, "");
-		if (menu === field) setMenu(null);
+
+	function changeAge(bound: AgeBound, value: string) {
+		const nextText = { ...ageText, [bound]: value };
+		setAgeText(nextText);
+		const parsed = parseAgeRange(nextText);
+		if (!parsed.valid) return;
+		const filters: AppSessionFilters = { ...draft };
+		if (parsed.min === undefined) delete filters.ageMin;
+		else filters.ageMin = parsed.min;
+		if (parsed.max === undefined) delete filters.ageMax;
+		else filters.ageMax = parsed.max;
+		setDraft(filters);
 	}
+
+	function stepAge(bound: AgeBound, direction: 1 | -1) {
+		const parsed = parseAgeBound(ageText[bound]);
+		if (!parsed.ok) return;
+		if (parsed.age === undefined && direction === -1) return;
+		const next = (parsed.age ?? -1) + direction;
+		if (next < 0 || next > 120) return;
+		changeAge(bound, String(next));
+	}
+
+	function applyFilters() {
+		if (!pending) return;
+		layers?.setSessionFilters(draft);
+		onApplied?.();
+	}
+
 	function handleKeys(event: FilterKeyboardEvent) {
-		if (!menu) return;
 		if (event.key === "Escape") {
+			if (!addOpen) return;
 			event.stopPropagation();
 			event.preventDefault();
-			closeMenu();
+			const active = document.activeElement;
+			if (ageOpen && (ageGroupRef.current?.contains(active) || active === ageRef.current)) {
+				setAgeOpen(false);
+				ageRef.current?.focus();
+				return;
+			}
+			if (skillOpen && (skillGroupRef.current?.contains(active) || active === skillRef.current)) {
+				setSkillOpen(false);
+				skillRef.current?.focus();
+				return;
+			}
+			if (
+				genderOpen &&
+				(genderGroupRef.current?.contains(active) || active === genderRef.current)
+			) {
+				setGenderOpen(false);
+				genderRef.current?.focus();
+				return;
+			}
+			setGenderOpen(false);
+			setSkillOpen(false);
+			setAgeOpen(false);
+			setAddOpen(false);
+			addRef.current?.focus();
 			return;
 		}
-		if ((event.target as HTMLElement).tagName === "INPUT") return;
-		if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+		const group = [genderGroupRef, skillGroupRef].find((ref) =>
+			ref.current?.contains(document.activeElement),
+		)?.current;
+		if (!group || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
 		const buttons = Array.from(
-			menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]:not(:disabled)') ?? [],
+			group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:not(:disabled)'),
 		);
 		if (!buttons.length) return;
 		event.preventDefault();
-		const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+		const current = buttons.indexOf(document.activeElement as HTMLInputElement);
 		const direction = event.key === "ArrowUp" ? -1 : 1;
 		const next = {
 			[`${true}`]: (current + direction + buttons.length) % buttons.length,
@@ -198,46 +259,106 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 		buttons[next ?? 0]?.focus();
 	}
 
-	const status =
-		{
-			[`${sessions.isSuccess && sessions.data.length === 0}`]: copy.empty,
-			[`${sessions.isError}`]: copy.sessionsError,
-			[`${sessions.isFetching}`]: copy.updating,
-		}.true ?? "";
 	return {
-		invalidAge,
-		setAgeBound,
-		menu,
-		menuRef,
-		fields,
-		fieldLabels,
-		fieldValues,
-		availableFields,
-		isSelected: (value: string) =>
-			menu === "gender" || menu === "skill"
-				? value === ""
-					? values[menu].length === 0
-					: values[menu].includes(value)
-				: false,
-		values,
-		choices,
-		openMenu,
-		closeMenu,
-		selectChoice,
-		removeField,
-		handleKeys,
 		copy,
-		draft,
-		options,
-		sessions,
-
-		summary,
-		hasFilters,
-		dirty,
-		setField,
-
-		apply,
-		reset,
-		status,
+		showSessions,
+		addOpen,
+		addRef,
+		sections,
+		selected,
+		toggleAdd,
+		toggleOption,
+		removeOption,
+		applyFilters,
+		pending: parsedAge.valid && pending,
+		handleKeys,
+		isSelected: (field: SessionFilterField, id: string) =>
+			profileValues(draft[field]).some((value) => value.toLowerCase() === id),
+		ageOpen,
+		toggleAge: () => setAgeOpen((current) => !current),
+		ageRef,
+		ageGroupRef,
+		ageText,
+		changeAge,
+		stepAge,
+		ageError: parsedAge.valid ? "" : copy.invalidAge,
 	};
+}
+
+function choicesFor(
+	ids: readonly string[],
+	labels: Record<string, string>,
+	warehouse: string[] | undefined,
+	fallback: Record<string, string> = {},
+): FilterChoice[] {
+	return ids.map((id) => ({
+		id,
+		label: labels[id] ?? id,
+		value: warehouse?.find((item) => item.toLowerCase() === id) ?? fallback[id] ?? id,
+	}));
+}
+
+function matched(options: FilterChoice[], applied: string[]): FilterChoice[] {
+	return options.filter((option) => applied.some((value) => value.toLowerCase() === option.id));
+}
+
+function profileValues(value: string | string[] | undefined): string[] {
+	if (value === undefined) return [];
+	if (Array.isArray(value)) return value;
+	return [value];
+}
+
+function hasSelection(filters: AppSessionFilters) {
+	return (
+		profileValues(filters.gender).length + profileValues(filters.skill).length > 0 ||
+		filters.ageMin !== undefined ||
+		filters.ageMax !== undefined
+	);
+}
+
+function selectionKey(filters: AppSessionFilters) {
+	const fields = (["gender", "skill"] as const)
+		.map((field) =>
+			profileValues(filters[field])
+				.map((value) => value.toLowerCase())
+				.sort((left, right) => left.localeCompare(right))
+				.join(","),
+		)
+		.join(";");
+	return `${fields};${filters.ageMin ?? ""}:${filters.ageMax ?? ""}`;
+}
+
+function ageInput(value: number | undefined) {
+	return value === undefined ? "" : String(value);
+}
+
+function ageRangeLabel(min: number | undefined, max: number | undefined) {
+	if (min === undefined && max === undefined) return "";
+	return {
+		[`${true}`]: `${min}–${max}`,
+		[`${min === undefined}`]: `≤ ${max}`,
+		[`${max === undefined}`]: `${min}+`,
+		[`${min === max}`]: String(min),
+	}.true;
+}
+
+function parseAgeRange(text: AgeText) {
+	const min = parseAgeBound(text.min);
+	const max = parseAgeBound(text.max);
+	const ordered =
+		min.ok && max.ok && (min.age === undefined || max.age === undefined || min.age <= max.age);
+	return {
+		valid: min.ok && max.ok && ordered,
+		min: min.age,
+		max: max.age,
+	};
+}
+
+function parseAgeBound(value: string) {
+	const trimmed = value.trim();
+	if (!trimmed) return { ok: true as const };
+	if (!/^\d+$/.test(trimmed)) return { ok: false as const };
+	const age = Number(trimmed);
+	if (age > 120) return { ok: false as const };
+	return { ok: true as const, age };
 }

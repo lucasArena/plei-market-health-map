@@ -18,5 +18,5 @@ export function useFeatureFlags() {
 
 export function useFeatureFlag(key: FeatureFlagKey): boolean {
 	const { data } = useFeatureFlags();
-	return data?.enabled.includes(key) ?? false;
+	return process.env.NODE_ENV === "development" || (data?.enabled.includes(key) ?? false);
 }

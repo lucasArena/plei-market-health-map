@@ -120,7 +120,7 @@ Merge commits are skipped, so a squashed PR counts once and a merged PR counts i
 
 On a push to `main`, `_release.yml` sets `version` in the root `package.json`, commits it as `ci: bump new version vX.Y.Z [skip ci]`, creates an annotated tag, and pushes both. `_deploy-vercel.yml` then deploys **that tag**. If nothing needs a bump, nothing is tagged and `main`'s head is deployed. `staging` never bumps or tags. Never edit `version` by hand.
 
-After a tagged deploy, the `linear-release` job writes release notes with `.github/scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`). The notes cover the commits since the previous stable tag, grouped into Breaking changes, Features, Fixes and Other changes, plus every Linear issue ID they mention. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, the notes are attached as the release notes and as a `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns. It then moves every `ENG`/`PROD` ticket the notes mention to **Released**. A promotion squash-merged into `main` still bumps the version, because `next-version.mjs` reads the commit list in its body.
+After a tagged deploy, the `linear-release` job runs `.github/scripts/release/release-notes.mjs` (tests in `release-notes.test.mjs`) over the commits since the previous stable tag and writes two files. `release-notes.md` follows Linear's release notes template (the same shape as the PleiOS pipeline): `## Breaking changes`, `## Features` and `## Fixes`, one sentence per ticket built from its first commit (prefix and references stripped), ending with the ticket link; ci, chore, docs and other internal commits are left out. `changelog.md` is the full record: every commit with its SHA, grouped by type, plus every Linear issue ID. The job then creates a release in the **Market Health Map** Linear pipeline with `linear/linear-release-action`: the version is the tag, `release-notes.md` becomes the release notes, `changelog.md` is attached as the `Changelog vX.Y.Z` document, and the referenced issues are linked. The notes also go to the job summary. Without the `LINEAR_ACCESS_KEY` secret, the job only warns. It then moves every `ENG`/`PROD` ticket the notes mention to **Released**. A promotion squash-merged into `main` still bumps the version, because `next-version.mjs` reads the commit list in its body.
 
 ## Release workflow (step by step)
 
@@ -157,7 +157,7 @@ chore(ci): add a deploy timeout
 ### 3. Open a PR into `staging` and **squash and merge**
 
 - The base is `staging`. The PR title becomes the squashed commit, so it must be a valid conventional message; it's what production counts later.
-- End the title with the Linear issue, e.g. `feat(map): add facility panel (ENG-5758)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none.
+- End the title with the Linear issue, e.g. `feat(map): add facility panel (ENG-5758)`. The production release finds issues in commit messages, and `ci.pr.yml` warns when the title has none. PRs are squash-merged, so only the title survives: when a PR covers more than one ticket, name every one of them in the title, e.g. `(ENG-5805, ENG-5806)`, or the others won't be in the release.
 - `ci.pr.yml` must pass: the branch-name check and the unit tests. The Linear-issue check only warns.
 - Review it in Linear if you like: open `linear.review/lucasArena/plei-market-health-map/pull/<number>` (or the **Reviews** tab). `.gitattributes` groups the diff into implementation, tests, docs, agent guidance, localization, assets and generated files.
 - Merge with **Squash and merge**.
@@ -185,14 +185,14 @@ Start `hotfix/<slug>` from `staging` and follow the same path (steps 2–5). Onl
 
 ## Feature flags
 
-Put user-facing work behind a feature flag when it should reach `staging` or `main` before everyone gets it, or when it might need to be switched off quickly. A flag is on or off for everyone, and admins switch it at `/feature-flags` (account hub → Feature flags) without a deploy.
+Put user-facing work behind a feature flag when it should reach `staging` or `main` before everyone gets it, or when it might need to be switched off quickly. A flag is on or off for everyone, and admins switch it at `/admin/feature-flags` (account hub → Admin controls → Feature flags) without a deploy.
 
 **Adding a flag**
 
 1. Add a kebab-case key to `FEATURE_FLAG_KEYS` in `packages/core/src/application/dtos/feature-flags-dto.ts`. Flags only exist in code; the control panel can switch them but never create them.
 2. Describe it in `featureFlags.descriptions` in `packages/core/src/i18n/messages/en.ts`, `pt-BR.ts` and `es.ts`. `packages/core/src/__tests__/feature-flag-descriptions.test.ts` fails if a key has no description or a description has no key.
 3. Read it in the component's `.rules.ts` hook with `useFeatureFlag("<key>")` from `presentation/hooks/use-feature-flags/use-feature-flags.ts`, and render the new behavior only when it is `true`. Keep the current behavior working when it is `false`, which is also the answer while the flags load. Server code can call `listEnabledFeatureFlags()` from the container.
-4. Test both states by mocking `useFeatureFlag`.
+4. Test both states by mocking `useFeatureFlag`. If the flag only makes sense while another is on, map it to that flag in `FEATURE_FLAG_REQUIREMENTS` in the same file; it then takes effect only while both are on, in the UI and on the server.
 5. A new flag starts **off**. Say in the PR which flag to turn on, and leave turning it on to an admin.
 6. Add the **`feature flag`** label to the Linear ticket. While a ticket has it, production releases leave its commits out of the release notes and the Linear release, and it doesn't move to Released (`release-notes.mjs` and `flagged-issues.mjs` in `cd.production.yml`).
 

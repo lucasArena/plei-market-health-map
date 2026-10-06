@@ -4,6 +4,7 @@ import type {
 	AppSessionHeatmapCellView,
 	AppSessionHeatmapRepository,
 	Clock,
+	StatsPeriod,
 } from "@market-health-map/core/application";
 import {
 	isExpired,
@@ -31,9 +32,14 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 		return remember(this.optionsCache, "options", this.inner.listFilterOptions(), now + this.ttlMs);
 	}
 
-	listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
+	listSessions(
+		period: StatsPeriod,
+		filters: AppSessionFilters = {},
+	): Promise<AppSessionHeatmapCellView[]> {
 		const now = this.clock.now().getTime();
 		const key = JSON.stringify([
+			period,
+			filters.metric,
 			Array.isArray(filters.gender) ? [...filters.gender].sort() : filters.gender,
 			Array.isArray(filters.skill) ? [...filters.skill].sort() : filters.skill,
 			filters.ageMin,
@@ -45,7 +51,7 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 				if (isExpired(entry, now)) this.cache.delete(entryKey);
 			}
 			if (this.cache.size >= 100) this.cache.delete(this.cache.keys().next().value as string);
-			return remember(this.cache, key, this.inner.listLast28Days(filters), now + this.ttlMs);
+			return remember(this.cache, key, this.inner.listSessions(period, filters), now + this.ttlMs);
 		}
 		return cached.value;
 	}

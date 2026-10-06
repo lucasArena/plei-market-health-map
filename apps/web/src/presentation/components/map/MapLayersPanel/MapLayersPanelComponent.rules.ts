@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+	type KeyboardEvent,
+	type RefObject,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { layersPanelPreference } from "@/infrastructure/cache/local-storage/layers-panel/layers-panel-preference";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import {
@@ -12,14 +19,52 @@ import { useMessages } from "@/presentation/components/providers/MessagesProvide
 import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 
+function useRadiogroupKeys(rootRef: RefObject<HTMLElement | null>) {
+	return (event: KeyboardEvent<HTMLElement>) => {
+		if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+		event.preventDefault();
+		event.stopPropagation();
+		const options = Array.from(
+			rootRef.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]') ?? [],
+		);
+		if (!options.length) return;
+		const index = options.indexOf(document.activeElement as HTMLInputElement);
+		let next = (index + 1) % options.length;
+		if (event.key === "ArrowUp") next = (index - 1 + options.length) % options.length;
+		if (event.key === "Home") next = 0;
+		if (event.key === "End") next = options.length - 1;
+		options[next]?.focus();
+		options[next]?.click();
+	};
+}
+
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
+	const showGamesSelector = useFeatureFlag("facility-games-layer");
+	const supplyMetric = showGamesSelector ? (layers?.supplyMetric ?? "games") : "facilities";
+	const selectSupplyMetric = (value: string) =>
+		layers?.setSupplyMetric?.(value === "games" ? "games" : "facilities");
+	const showGamesTrendToggle = useFeatureFlag("facility-games-trend") && showGamesSelector;
+	const setShowGamesTrend = layers?.setShowGamesTrend;
+	useEffect(() => {
+		if (!showGamesTrendToggle) setShowGamesTrend?.(false);
+	}, [showGamesTrendToggle, setShowGamesTrend]);
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const setSessionFilters = layers?.setSessionFilters;
+	const setDemandMetric = layers?.setDemandMetric;
 	useEffect(() => {
-		if (!showDemographics) setSessionFilters?.({});
-	}, [showDemographics, setSessionFilters]);
+		if (!showDemographics) {
+			setSessionFilters?.({});
+			setDemandMetric?.("sessions");
+		}
+	}, [showDemographics, setSessionFilters, setDemandMetric]);
+
+	const demandGroupRef = useRef<HTMLDivElement>(null);
+	const supplyGroupRef = useRef<HTMLDivElement>(null);
+	const demandKeys = useRadiogroupKeys(demandGroupRef);
+	const supplyKeys = useRadiogroupKeys(supplyGroupRef);
+
 	const isOnMap = usePathname() === "/";
 	const [isExpanded, setIsExpanded] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isExpanded);
@@ -30,17 +75,33 @@ export function useMapLayersPanelRules() {
 	const [localShowInactiveFacilities, setLocalShowInactiveFacilities] = useState(
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
+	const [localShowGamesTrend, setLocalShowGamesTrend] = useState(
+		MAP_LAYERS_DEFAULTS.showGamesTrend,
+	);
 	const [localShowSessions, setLocalShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
 	const [resetCount, setResetCount] = useState(0);
 	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
-	const isCustomized = isMapLayersCustomized({
-		showActiveFacilities,
-		showInactiveFacilities,
-		showSessions,
-		sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
-	});
+	const showGamesTrend = layers?.showGamesTrend ?? localShowGamesTrend;
+	const demandMetric = showDemographics ? (layers?.demandMetric ?? "sessions") : "sessions";
+	const selectDemandMetric = (value: string) => {
+		layers?.setDemandMetric?.(value === "registrations" ? "registrations" : "sessions");
+	};
+	const isCustomized =
+		Boolean((showDemographics && layers?.demandFiltersPresent) || layers?.supplyFiltersPresent) ||
+		(showDemographics && demandMetric !== "sessions") ||
+		(showGamesSelector && supplyMetric !== "games") ||
+		(showGamesSelector && Boolean(layers?.gameDepartments?.length)) ||
+		isMapLayersCustomized({
+			showActiveFacilities,
+			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
+			showGamesTrend: showGamesTrendToggle && supplyMetric === "games" ? showGamesTrend : false,
+			showSessions,
+			sessionFilters: showDemographics
+				? (layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters)
+				: MAP_LAYERS_DEFAULTS.sessionFilters,
+		});
 
 	const expand = useCallback((next: boolean) => {
 		layersPanelPreference.remember(next);
@@ -67,6 +128,13 @@ export function useMapLayersPanelRules() {
 		}
 		setLocalShowInactiveFacilities((current) => !current);
 	}, [layers]);
+	const toggleGamesTrend = useCallback(() => {
+		if (layers?.setShowGamesTrend) {
+			layers.setShowGamesTrend(!layers.showGamesTrend);
+			return;
+		}
+		setLocalShowGamesTrend((current) => !current);
+	}, [layers]);
 	const toggleSessions = useCallback(() => {
 		if (layers) {
 			layers.setShowSessions(!layers.showSessions);
@@ -79,6 +147,7 @@ export function useMapLayersPanelRules() {
 		layers?.resetLayers();
 		setLocalShowActiveFacilities(MAP_LAYERS_DEFAULTS.showActiveFacilities);
 		setLocalShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
+		setLocalShowGamesTrend(MAP_LAYERS_DEFAULTS.showGamesTrend);
 		setLocalShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
 		setResetCount((current) => current + 1);
 		rootRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]")?.focus();
@@ -98,6 +167,16 @@ export function useMapLayersPanelRules() {
 	}, [expand]);
 
 	return {
+		demandGroupRef,
+		demandKeys,
+		demandMetric,
+		selectDemandMetric,
+		supplyGroupRef,
+		supplyKeys,
+		showGamesSelector,
+		showGamesTrendToggle,
+		supplyMetric,
+		selectSupplyMetric,
 		showDemographics,
 		cardMotion: motion,
 		closeOnEscape,
@@ -112,10 +191,13 @@ export function useMapLayersPanelRules() {
 		rootRef,
 		showActiveFacilities,
 		showInactiveFacilities,
+		showGamesTrend,
 		showSessions,
 		toggleExpanded,
+		closePanel: () => expand(false),
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
+		toggleGamesTrend,
 		toggleSessions,
 	};
 }

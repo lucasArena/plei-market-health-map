@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import { renderWithMessages } from "@/application/test/render-with-messages";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
 import { FacilitiesMapScreen } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent";
 import { SESSION_HEATMAP_BUCKET_COLORS } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
@@ -72,6 +73,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		closePanel: vi.fn(),
 		containerRef: { current: null },
 		facilities: [],
+		sessionHeatmapLegend: "App session density · last week",
 		finishLegendMotion: vi.fn(),
 		hasSessionHeatmap: false,
 		handlePanelClosed: vi.fn(),
@@ -83,8 +85,16 @@ function rulesWith(status: string, overrides: object = {}) {
 		selectSearchFacility: vi.fn(),
 		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,
+		sessionFilterChips: [],
+		sessionFilterSummary: "",
+		sessionQueryStatus: "",
+		sessionQueryFailed: false,
+		retrySessionHeatmap: vi.fn(),
+		canRemoveSessionFilters: true,
+		removeSessionFilter: vi.fn(),
 		sessionScale: { low: 0, high: 0 },
 		sessionLegendState: "empty",
+		shownFacilities: [],
 		status,
 		...overrides,
 	};
@@ -93,7 +103,7 @@ function rulesWith(status: string, overrides: object = {}) {
 describe("FacilitiesMapScreen", () => {
 	it("renders the search into the header slot once the header provides it", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
-		const { unmount } = render(<FacilitiesMapScreen />);
+		const { unmount } = renderWithMessages(<FacilitiesMapScreen />);
 		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 		unmount();
 
@@ -105,10 +115,10 @@ describe("FacilitiesMapScreen", () => {
 			legendSlot: null,
 			setLegendSlot: vi.fn(),
 		});
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(slot).toContainElement(
-			screen.getByRole("combobox", { name: "Search markets or facilities" }),
+			screen.getByRole("combobox", { name: "Search markets, facilities or cities" }),
 		);
 		vi.mocked(useHeaderSlot).mockReturnValue({
 			searchSlot: null,
@@ -122,7 +132,7 @@ describe("FacilitiesMapScreen", () => {
 	it("renders only the map, without an attribution line", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("region", { name: "Facilities map" })).toBeInTheDocument();
 		expect(screen.getByTestId("facilities-map")).toHaveClass("map-frame");
@@ -144,13 +154,13 @@ describe("FacilitiesMapScreen", () => {
 			}),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		const legend = screen.getByTestId("session-heatmap-legend");
 		expect(slot).toContainElement(legend);
-		expect(legend).toHaveTextContent("Sessions per shaded area · last 28 days");
-		expect(legend).toHaveTextContent("Scale updates for the current map view");
-		expect(screen.getByText("Scale updates for the current map view")).toHaveClass("text-[10px]");
+		expect(legend).toHaveTextContent("App session density · last week");
+		expect(legend).toHaveTextContent("All players · scale follows the map view");
+		expect(screen.getByText("All players · scale follows the map view")).toHaveClass("text-[10px]");
 		expect(legend).toHaveTextContent("12");
 		expect(legend).toHaveTextContent("246");
 		expect(legend).toHaveTextContent("480+");
@@ -170,10 +180,122 @@ describe("FacilitiesMapScreen", () => {
 	it("explains when the current map view has no sessions", () => {
 		mockRules.mockReturnValue(rulesWith("ready", { hasSessionHeatmap: true, isLegendShown: true }));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByText("No sessions in the current map view")).toBeInTheDocument();
 		expect(screen.queryByTestId("session-heatmap-gradient")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+	});
+
+	it("expands the legend filters when they overflow a single line", () => {
+		let notify: ResizeObserverCallback = () => undefined;
+		vi.stubGlobal(
+			"ResizeObserver",
+			class {
+				constructor(callback: ResizeObserverCallback) {
+					notify = callback;
+				}
+				observe() {
+					notify([] as unknown as ResizeObserverEntry[], this as unknown as ResizeObserver);
+				}
+				unobserve() {}
+				disconnect() {}
+			},
+		);
+		const scrollWidth = vi
+			.spyOn(HTMLElement.prototype, "scrollWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 240 : 0;
+			});
+		const clientWidth = vi
+			.spyOn(HTMLElement.prototype, "clientWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 160 : 0;
+			});
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				isLegendShown: true,
+				sessionScale: { low: 1, high: 10 },
+				sessionFilterChips: [
+					{ field: "gender", id: "female", label: "Female" },
+					{ field: "gender", id: "male", label: "Male" },
+					{ field: "skill", id: "beginner", label: "Beginner" },
+					{ field: "age", id: "age", label: "18–64" },
+				],
+				sessionFilterSummary: "Female · Male · Beginner · 18–64",
+				canRemoveSessionFilters: true,
+				removeSessionFilter: vi.fn(),
+			}),
+		);
+
+		renderWithMessages(<FacilitiesMapScreen />);
+		const row = screen.getByTestId("session-legend-filters");
+		act(() => {
+			notify([] as unknown as ResizeObserverEntry[], {} as ResizeObserver);
+		});
+
+		const expand = screen.getByRole("button", { name: "Show all filters" });
+		expect(row).toHaveClass("flex-nowrap", "overflow-hidden");
+		fireEvent.click(expand);
+		expect(screen.getByRole("button", { name: "Show fewer filters" })).toBeInTheDocument();
+		expect(row).toHaveClass("flex-wrap");
+		expect(row).not.toHaveClass("overflow-hidden");
+		scrollWidth.mockRestore();
+		clientWidth.mockRestore();
+		vi.unstubAllGlobals();
+	});
+
+	it("measures legend filter overflow when ResizeObserver is unavailable", () => {
+		vi.stubGlobal("ResizeObserver", undefined);
+		const scrollWidth = vi
+			.spyOn(HTMLElement.prototype, "scrollWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 240 : 0;
+			});
+		const clientWidth = vi
+			.spyOn(HTMLElement.prototype, "clientWidth", "get")
+			.mockImplementation(function (this: HTMLElement) {
+				return this.dataset.testid === "session-legend-filters" ? 160 : 0;
+			});
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				isLegendShown: true,
+				sessionScale: { low: 1, high: 10 },
+				sessionFilterChips: [
+					{ field: "gender", id: "female", label: "Female" },
+					{ field: "gender", id: "male", label: "Male" },
+				],
+				canRemoveSessionFilters: true,
+				removeSessionFilter: vi.fn(),
+			}),
+		);
+		renderWithMessages(<FacilitiesMapScreen />);
+		expect(screen.getByRole("button", { name: "Show all filters" })).toBeInTheDocument();
+		scrollWidth.mockRestore();
+		clientWidth.mockRestore();
+		vi.unstubAllGlobals();
+	});
+
+	it("removes a filter chip from the session reference panel", () => {
+		const removeSessionFilter = vi.fn();
+		mountLegendSlot();
+		mockRules.mockReturnValue(
+			rulesWith("ready", {
+				hasSessionHeatmap: true,
+				isLegendShown: true,
+				sessionScale: { low: 1, high: 10 },
+				sessionFilterChips: [{ field: "gender", id: "female", label: "Female" }],
+				canRemoveSessionFilters: true,
+				removeSessionFilter,
+			}),
+		);
+		renderWithMessages(<FacilitiesMapScreen />);
+		fireEvent.click(screen.getByRole("button", { name: "Remove Female filter" }));
+		expect(removeSessionFilter).toHaveBeenCalledWith("gender", "female");
 	});
 
 	it("shows a loading state instead of an empty legend while sessions load", () => {
@@ -182,7 +304,7 @@ describe("FacilitiesMapScreen", () => {
 			rulesWith("ready", { isLegendShown: true, sessionLegendState: "loading" }),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("status")).toHaveTextContent("Loading app sessions…");
 		expect(screen.getByTestId("session-heatmap-loading")).toHaveClass("motion-safe:animate-pulse");
@@ -208,7 +330,7 @@ describe("FacilitiesMapScreen", () => {
 			}),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		const card = screen.getByRole("tooltip");
 		expect(card).toHaveTextContent("Eastside Futsal Arena");
@@ -219,7 +341,7 @@ describe("FacilitiesMapScreen", () => {
 	it("keeps the map mounted when nothing is hovered", () => {
 		mockRules.mockReturnValue(rulesWith("ready", { hovered: null }));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByTestId("facilities-map")).toBeInTheDocument();
 		expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
@@ -231,7 +353,7 @@ describe("FacilitiesMapScreen", () => {
 	])("shows the %s overlay", (status, text) => {
 		mockRules.mockReturnValue(rulesWith(status));
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByRole("status")).toHaveTextContent(text);
 	});
@@ -241,7 +363,7 @@ describe("FacilitiesMapScreen", () => {
 			rulesWith("ready", { selectedFacilityId: "f1", isPanelClosing: true }),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.getByTestId("detail-panel")).toHaveTextContent("f1");
 		expect(screen.getByTestId("detail-panel")).toHaveAttribute("data-closing", "true");
@@ -260,7 +382,7 @@ describe("FacilitiesMapScreen", () => {
 			}),
 		);
 
-		render(<FacilitiesMapScreen />);
+		renderWithMessages(<FacilitiesMapScreen />);
 
 		expect(screen.queryByTestId("feedback-widget")).not.toBeInTheDocument();
 		const legend = screen.getByTestId("session-heatmap-legend");
@@ -289,7 +411,7 @@ describe("FacilitiesMapScreen", () => {
 				sessionScale: { low: 1, high: 4 },
 			}),
 		);
-		const { rerender } = render(<FacilitiesMapScreen />);
+		const { rerender } = renderWithMessages(<FacilitiesMapScreen />);
 		expect(screen.getByTestId("session-heatmap-legend")).toHaveClass("session-legend-in");
 
 		exiting = true;

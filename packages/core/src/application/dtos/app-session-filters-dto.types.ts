@@ -1,4 +1,5 @@
 export interface AppSessionFilters {
+	metric?: "registrations";
 	gender?: string | string[];
 	skill?: string | string[];
 	ageMin?: number;

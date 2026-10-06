@@ -4,7 +4,17 @@ import { guard } from "@core/domain/shared/guard";
 import type { EntityId } from "@core/domain/shared/id.types";
 
 function assertMetrics(metrics: FacilityMetrics): FacilityMetrics {
-	const counts = [metrics.activePlayers, metrics.gamesLastWeek, metrics.gamesLast28Days];
+	const counts = [
+		metrics.activePlayers,
+		metrics.gamesLastWeek,
+		metrics.gamesLast28Days,
+		...Object.values(metrics.gamesByDepartment ?? {}),
+		...(metrics.gamesPrevious28Days === undefined ? [] : [metrics.gamesPrevious28Days]),
+		...Object.values(metrics.gamesPreviousByDepartment ?? {}),
+		...Object.values(metrics.gamesLastWeekByDepartment ?? {}),
+		...(metrics.gamesPreviousWeek === undefined ? [] : [metrics.gamesPreviousWeek]),
+		...Object.values(metrics.gamesPreviousWeekByDepartment ?? {}),
+	];
 	if (counts.some((value) => !Number.isInteger(value) || value < 0)) {
 		throw new ValidationError("Facility counts must be non-negative integers.");
 	}

@@ -11,6 +11,7 @@ import { feedbackController } from "@server/presentation/http/controllers/feedba
 import { loginController } from "@server/presentation/http/controllers/login-controller";
 import { marketSummaryController } from "@server/presentation/http/controllers/market-summary-controller";
 import { metricsController } from "@server/presentation/http/controllers/metrics-controller";
+import { placesController } from "@server/presentation/http/controllers/places-controller";
 import { toErrorResponse } from "@server/presentation/http/errors";
 import { Hono } from "hono";
 
@@ -31,6 +32,7 @@ export function createApiApp({ resolveAccess, services = getContainer }: CreateA
 		.route("/activity", activityController(services))
 		.route("/metrics", metricsController(services))
 		.route("/feature-flags", featureFlagsController(services))
+		.route("/places", placesController(services))
 		.notFound(() => {
 			throw new NotFoundError("Route");
 		})

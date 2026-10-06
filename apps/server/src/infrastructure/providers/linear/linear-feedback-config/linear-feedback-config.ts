@@ -38,6 +38,7 @@ export function toLinearIssueInput(
 		projectId: config.projectId,
 		labelIds: route.labelIds,
 		title: draft.title,
+		...(draft.type === "bug" ? { description: draft.requestBody } : {}),
 		...actor,
 	};
 }

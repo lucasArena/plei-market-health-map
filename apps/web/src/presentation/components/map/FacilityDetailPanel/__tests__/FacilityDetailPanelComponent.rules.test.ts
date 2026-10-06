@@ -1,21 +1,30 @@
-import type { FacilityDetailView, FacilityStatsView } from "@market-health-map/core/application";
+import type {
+	ActivityPeriodView,
+	FacilityDetailView,
+	FacilityStatsView,
+} from "@market-health-map/core/application";
+import { gamesTrend } from "@market-health-map/core/domain";
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { EN_MESSAGES } from "@/application/test/messages";
 import {
-	buildDetailViewModel,
+	activityPeriodFor,
 	buildPopularTimes,
 	buildProgressiveDetailViewModel,
 	buildProgressiveTiles,
 	buildSummary,
-	buildTiles,
 	buildWeeklyActivity,
 	createDetailFormatters,
 	directionOf,
 	formatGames,
+	formatGamesTrendPanel,
 	resolveDetailStatus,
 	useFacilityDetailPanelRules,
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
+import {
+	MapScopeProvider,
+	useMapScope,
+} from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockUseFacilityReservationStats = vi.fn();
@@ -30,6 +39,8 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-player-stats", () => ({
 }));
 
 const messages = EN_MESSAGES.facilityDetail;
+const MONTH = EN_MESSAGES.statsPeriods.month;
+const WEEK = EN_MESSAGES.statsPeriods.week;
 const formatters = createDetailFormatters("en");
 
 const STATS: FacilityStatsView = {
@@ -46,7 +57,12 @@ const STATS: FacilityStatsView = {
 	uniquePlayersPrevious28Days: 40,
 	activatedPlayersLast28Days: 7,
 	activatedPlayersPrevious28Days: 5,
+	uniquePlayersLastWeek: 30,
+	uniquePlayersPreviousWeek: 25,
+	activatedPlayersLastWeek: 6,
+	activatedPlayersPreviousWeek: 5,
 	scheduledLastWeek: 16,
+	scheduledPreviousWeek: 16,
 	cancelledLastWeek: 4,
 	upcomingNextSevenDays: 1,
 	lastPlayedDate: "2026-09-27",
@@ -69,6 +85,23 @@ const STATS: FacilityStatsView = {
 	],
 };
 
+const MONTH_VIEW: ActivityPeriodView = {
+	period: "month",
+	start: "2026-09-03",
+	end: "2026-09-30",
+	played: 41,
+	playedPrevious: 34,
+	playedChangePercent: 20,
+	confirmationRate: 82,
+	confirmationRateChangePoints: 6,
+	uniquePlayers: 32,
+	uniquePlayersPrevious: 40,
+	uniquePlayersChangePercent: -4,
+	activatedPlayers: 7,
+	activatedPlayersPrevious: 5,
+	activatedPlayersChangePercent: 18,
+};
+
 const DETAIL: FacilityDetailView = {
 	facility: {
 		id: "889",
@@ -77,13 +110,15 @@ const DETAIL: FacilityDetailView = {
 		name: "Pegaso HTX",
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 29.7, longitude: -95.4 },
 		address: "1 Main St, Houston, TX",
 	},
 	stats: STATS,
 };
 
-function wrapper({ children }: { children: ReactNode }) {
+function wrapper(props: { children: ReactNode }) {
+	const children = createElement(MapScopeProvider, null, props.children);
 	return createElement(MessagesProvider, { locale: "en", messages: EN_MESSAGES, children });
 }
 
@@ -103,57 +138,76 @@ describe("directionOf", () => {
 	});
 });
 
+describe("activityPeriodFor", () => {
+	it("joins the reservation and player numbers of one period", () => {
+		expect(activityPeriodFor(STATS, STATS, "week")).toMatchObject({
+			period: "week",
+			start: "2026-09-21",
+			end: "2026-09-27",
+			played: 12,
+			playedPrevious: 10,
+			uniquePlayers: 30,
+			activatedPlayers: 6,
+		});
+		expect(activityPeriodFor(STATS, STATS, "month")).toMatchObject({
+			played: 41,
+			uniquePlayers: 32,
+		});
+	});
+});
+
 describe("buildSummary", () => {
 	it("ranks activation decline ahead of a smaller games decline", () => {
 		expect(
 			buildSummary(
 				{
-					...STATS,
-					activatedPlayersPeriodChangePercent: -29,
-					playedPeriodChangePercent: -9.9,
-					uniquePlayersPeriodChangePercent: -11.4,
+					...MONTH_VIEW,
+					activatedPlayersChangePercent: -29,
+					playedChangePercent: -9.9,
+					uniquePlayersChangePercent: -11.4,
 				},
 				messages,
+				MONTH,
 				formatters,
 			),
 		).toContain("Activated players: -29%");
 		expect(
 			buildSummary(
 				{
-					...STATS,
-					activatedPlayersPeriodChangePercent: 0,
-					playedPeriodChangePercent: null,
-					uniquePlayersPeriodChangePercent: 0,
+					...MONTH_VIEW,
+					activatedPlayersChangePercent: 0,
+					playedChangePercent: null,
+					uniquePlayersChangePercent: 0,
 				},
 				messages,
+				MONTH,
 				formatters,
 			),
 		).toBe(messages.insightsNone);
 	});
 
-	it("says when nothing was played", () => {
-		expect(buildSummary({ ...STATS, playedLast28Days: 0 }, messages, formatters)).toBe(
+	it("says when nothing was played in the selected period", () => {
+		expect(buildSummary({ ...MONTH_VIEW, played: 0 }, messages, MONTH, formatters)).toBe(
 			"No games were played here in the last 28 days.",
+		);
+		expect(buildSummary({ ...MONTH_VIEW, played: 0 }, messages, WEEK, formatters)).toBe(
+			"No games were played here last week.",
 		);
 	});
 
-	it("handles missing rates and labels in the deterministic fallback", () => {
-		const summary = buildSummary(
-			{
-				...STATS,
-				confirmationRate: null,
-				popularTimes: [{ dayOfWeek: 9, timePeriod: 9, gamesPlayed: 12 }],
-			},
-			{ ...messages, dayLabels: [], timePeriodLabels: [] },
-			formatters,
+	it("names the comparison period", () => {
+		expect(
+			buildSummary({ ...MONTH_VIEW, confirmationRate: null }, messages, MONTH, formatters),
+		).toContain("versus the previous 28 days");
+		expect(buildSummary(MONTH_VIEW, messages, WEEK, formatters)).toContain(
+			"versus the previous week",
 		);
-		expect(summary).toContain("versus the previous 28 days");
 	});
 });
 
-describe("buildTiles", () => {
-	it("shows the four 28-day headline metrics", () => {
-		const tiles = buildTiles(STATS, messages, formatters);
+describe("buildProgressiveTiles with every metric", () => {
+	it("shows the four headline metrics of the period", () => {
+		const tiles = buildProgressiveTiles(MONTH_VIEW, MONTH_VIEW, false, messages, formatters);
 		expect(
 			tiles.map((tile) => [tile.key, tile.label, tile.value, tile.hint, tile.hintDirection]),
 		).toEqual([
@@ -165,25 +219,23 @@ describe("buildTiles", () => {
 	});
 
 	it("drops hints without a baseline and keeps the minus sign", () => {
-		const empty = buildTiles(
-			{
-				...STATS,
-				confirmationRate: null,
-				playedPeriodChangePercent: null,
-				confirmationRateChangePoints: null,
-				uniquePlayersPeriodChangePercent: null,
-				activatedPlayersPeriodChangePercent: null,
-			},
-			messages,
-			formatters,
-		);
+		const emptyView = {
+			...MONTH_VIEW,
+			confirmationRate: null,
+			playedChangePercent: null,
+			confirmationRateChangePoints: null,
+			uniquePlayersChangePercent: null,
+			activatedPlayersChangePercent: null,
+		};
+		const empty = buildProgressiveTiles(emptyView, emptyView, false, messages, formatters);
 		expect(empty.every((tile) => tile.hint === null)).toBe(true);
 		expect(empty[1]?.value).toBe("Unavailable");
-		const down = buildTiles(
-			{ ...STATS, playedPeriodChangePercent: -12.5, confirmationRateChangePoints: -3.5 },
-			messages,
-			formatters,
-		);
+		const downView = {
+			...MONTH_VIEW,
+			playedChangePercent: -12.5,
+			confirmationRateChangePoints: -3.5,
+		};
+		const down = buildProgressiveTiles(downView, downView, false, messages, formatters);
 		expect(down[0]).toMatchObject({
 			hint: "-12.5% vs previous period",
 			hintDirection: "down",
@@ -192,25 +244,22 @@ describe("buildTiles", () => {
 			hint: "-3.5 pts vs previous period",
 			hintDirection: "down",
 		});
-		const flat = buildTiles(
-			{ ...STATS, activatedPlayersPeriodChangePercent: 0 },
-			messages,
-			formatters,
-		);
+		const flatView = { ...MONTH_VIEW, activatedPlayersChangePercent: 0 };
+		const flat = buildProgressiveTiles(flatView, flatView, false, messages, formatters);
 		expect(flat[3]).toMatchObject({ hint: "0% vs previous period", hintDirection: "flat" });
 	});
 });
 
 describe("buildProgressiveTiles", () => {
 	it("shows reservation metrics while player metrics load", () => {
-		const tiles = buildProgressiveTiles(STATS, undefined, true, messages, formatters);
+		const tiles = buildProgressiveTiles(MONTH_VIEW, undefined, true, messages, formatters);
 
 		expect(tiles.slice(0, 2).map((tile) => tile.value)).toEqual(["41", "82%"]);
 		expect(tiles.slice(2).every((tile) => tile.isLoading)).toBe(true);
 	});
 
 	it("shows unavailable player metrics after a failed request", () => {
-		const tiles = buildProgressiveTiles(STATS, undefined, false, messages, formatters);
+		const tiles = buildProgressiveTiles(MONTH_VIEW, undefined, false, messages, formatters);
 
 		expect(tiles.slice(2).map((tile) => tile.value)).toEqual(["Unavailable", "Unavailable"]);
 		expect(tiles.slice(2).every((tile) => !tile.isLoading)).toBe(true);
@@ -252,37 +301,62 @@ describe("buildPopularTimes", () => {
 	});
 });
 
-describe("buildDetailViewModel", () => {
-	it("labels the last game", () => {
-		const view = buildDetailViewModel(DETAIL, messages, formatters);
+describe("buildProgressiveDetailViewModel", () => {
+	it("labels the last game and shows the selected period", () => {
+		const view = buildProgressiveDetailViewModel(
+			DETAIL,
+			STATS,
+			false,
+			"month",
+			messages,
+			MONTH,
+			formatters,
+		);
 		expect(view).toMatchObject({
 			name: "Pegaso HTX",
 			address: "1 Main St, Houston, TX",
 			avatarUrl: null,
 			lastPlayedLabel: "Last game played Sep 27, 2026",
 		});
-		expect(view.tiles).toHaveLength(4);
+		expect(view.tiles[0]?.value).toBe("41");
 		expect(view.weeklyActivity).toHaveLength(4);
 		expect(view.popularTimes).toHaveLength(28);
+		expect(view.summary).toContain("versus the previous 28 days");
+
+		const week = buildProgressiveDetailViewModel(
+			DETAIL,
+			STATS,
+			false,
+			"week",
+			messages,
+			WEEK,
+			formatters,
+		);
+		expect(week.tiles.map((tile) => tile.value)).toEqual(["12", "75%", "30", "6"]);
+		expect(week.summary).toContain("versus the previous week");
 	});
 
 	it("says when nothing was ever played", () => {
-		const view = buildDetailViewModel(
+		const view = buildProgressiveDetailViewModel(
 			{ ...DETAIL, stats: { ...STATS, lastPlayedDate: null } },
+			STATS,
+			false,
+			"month",
 			messages,
+			MONTH,
 			formatters,
 		);
 		expect(view.lastPlayedLabel).toBe("No games played yet");
 	});
-});
 
-describe("buildProgressiveDetailViewModel", () => {
 	it("builds charts before the player metrics arrive", () => {
 		const view = buildProgressiveDetailViewModel(
 			{ facility: DETAIL.facility, stats: STATS },
 			undefined,
 			true,
+			"week",
 			messages,
+			WEEK,
 			formatters,
 		);
 
@@ -301,6 +375,27 @@ describe("resolveDetailStatus", () => {
 });
 
 describe("useFacilityDetailPanelRules", () => {
+	it("formats the games trend only when the map passes one", () => {
+		expect(renderRules().result.current.trend).toBeNull();
+
+		const { result } = renderHook(
+			() =>
+				useFacilityDetailPanelRules({
+					facilityId: "889",
+					isClosing: false,
+					onClose: vi.fn(),
+					onClosed: vi.fn(),
+					trend: gamesTrend(42, 51),
+				}),
+			{ wrapper },
+		);
+		expect(result.current.trend).toEqual({
+			level: "down",
+			title: "Games trend",
+			compare: "42 games now vs 51 in the previous 28 days",
+			change: "-18% vs previous 28 days",
+		});
+	});
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockUseFacilityReservationStats.mockReturnValue({
@@ -333,10 +428,32 @@ describe("useFacilityDetailPanelRules", () => {
 		expect(result.current.status).toBe("ready");
 		expect(result.current.view?.name).toBe("Pegaso HTX");
 		expect(result.current.aiContext?.cacheKey).toBe(
-			`v5:facility-${DETAIL.facility.id}:${DETAIL.stats.periodEnd}:en`,
+			`v10:facility-${DETAIL.facility.id}-week:2026-09-27:en`,
 		);
+		expect(result.current.view?.tiles[0]?.value).toBe("12");
 		expect(result.current.aiContext?.prompt.at(-1)?.content).toContain(DETAIL.facility.name);
 		expect(result.current.messages).toBe(messages);
+	});
+
+	it("follows the shared period switch", () => {
+		const { result } = renderHook(
+			() => ({
+				rules: useFacilityDetailPanelRules({
+					facilityId: "889",
+					isClosing: false,
+					onClose: vi.fn(),
+					onClosed: vi.fn(),
+				}),
+				scope: useMapScope(),
+			}),
+			{ wrapper },
+		);
+
+		act(() => result.current.scope.setPeriod("month"));
+
+		expect(result.current.rules.view?.tiles[0]?.value).toBe("41");
+		expect(result.current.rules.view?.summary).toContain("versus the previous 28 days");
+		expect(result.current.rules.aiContext?.cacheKey).toBe("v10:facility-889-month:2026-09-30:en");
 	});
 
 	it("has no view while loading", () => {
@@ -384,5 +501,20 @@ describe("useFacilityDetailPanelRules", () => {
 		rerender({ isClosing: true });
 		act(() => result.current.handleAnimationEnd());
 		expect(onClosed).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("formatGamesTrendPanel", () => {
+	it("shows current, previous and the signed percent change", () => {
+		const trend = EN_MESSAGES.map.trend;
+		expect(formatGamesTrendPanel(gamesTrend(46, 40), trend).change).toBe(
+			"+15% vs previous 28 days",
+		);
+		expect(formatGamesTrendPanel(gamesTrend(1, 3), trend).compare).toBe(
+			"1 game now vs 3 in the previous 28 days",
+		);
+		expect(formatGamesTrendPanel(gamesTrend(6, 0), trend).change).toBe(
+			"No games in the previous 28 days",
+		);
 	});
 });

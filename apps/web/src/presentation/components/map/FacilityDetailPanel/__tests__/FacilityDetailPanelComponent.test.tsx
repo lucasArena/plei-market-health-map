@@ -108,6 +108,31 @@ describe("FacilityDetailPanel", () => {
 		expect(screen.queryByText("Week of Sep 21 – Sep 27, 2026")).not.toBeInTheDocument();
 	});
 
+	it("omits the games trend card even when trend data is supplied", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				trend: {
+					level: "down",
+					title: "Games trend",
+					compare: "42 games now vs 51 in the previous 28 days",
+					change: "-18% vs previous 28 days",
+				},
+			}),
+		);
+
+		render(<FacilityDetailPanel {...PROPS} />);
+
+		expect(screen.queryByTestId("facility-games-trend")).not.toBeInTheDocument();
+	});
+
+	it("leaves the trend out while trend is off", () => {
+		mockRules.mockReturnValue(rulesWith({ trend: null }));
+
+		render(<FacilityDetailPanel {...PROPS} />);
+
+		expect(screen.queryByTestId("facility-games-trend")).not.toBeInTheDocument();
+	});
+
 	it("renders reservation analytics while player stats and AI continue loading", () => {
 		mockRules.mockReturnValue(
 			rulesWith({

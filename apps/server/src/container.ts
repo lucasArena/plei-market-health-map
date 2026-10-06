@@ -2,17 +2,21 @@ import type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	GetMarketGameInsightsInput,
 	GetMarketSummaryInput,
 	IssueTracker,
 	ListAppMetricsPeopleInput,
 	ListRecentLoginsInput,
 	RecordDailyActivityInput,
 	RecordLoginInput,
+	SearchPlacesInput,
 	SetFeatureFlagInput,
+	StatsPeriod,
 	SubmitFeedbackInput,
 } from "@market-health-map/core/application";
 import {
 	type AppSessionFilters,
+	FEATURE_FLAG_KEYS,
 	makeGetAppMetrics,
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
@@ -29,6 +33,7 @@ import {
 	makeListRecentLogins,
 	makeRecordDailyActivity,
 	makeRecordLogin,
+	makeSearchPlaces,
 	makeSetFeatureFlag,
 	makeSubmitFeedback,
 } from "@market-health-map/core/application";
@@ -45,6 +50,8 @@ import {
 	LinearAppAuth,
 } from "@server/infrastructure/providers/linear/linear-auth/linear-auth";
 import { LinearIssueTracker } from "@server/infrastructure/providers/linear/linear-issue-tracker/linear-issue-tracker";
+import { CachedPlaceSearch } from "@server/infrastructure/providers/photon/cached-place-search/cached-place-search";
+import { PhotonPlaceSearch } from "@server/infrastructure/providers/photon/photon-place-search/photon-place-search";
 import { SystemClock } from "@server/infrastructure/providers/system/system-clock/system-clock";
 import { UuidGenerator } from "@server/infrastructure/providers/system/uuid-generator/uuid-generator";
 import { CachedDailyActivityRepository } from "@server/infrastructure/repositories/database/cached-daily-activity-repository/cached-daily-activity-repository";
@@ -84,7 +91,14 @@ function buildFeatureFlags() {
 				new PrismaFeatureFlagRepository(getPrismaClient(databaseUrl)),
 				clock,
 			)
-		: new MemoryFeatureFlagRepository();
+		: new MemoryFeatureFlagRepository(
+				FEATURE_FLAG_KEYS.map((key) => ({
+					key,
+					enabled: true,
+					updatedBy: "local",
+					updatedAt: new Date(0),
+				})),
+			);
 	return {
 		listEnabledFeatureFlags: makeListEnabledFeatureFlags({ featureFlags }),
 		listFeatureFlags: makeListFeatureFlags({ featureFlags }),
@@ -134,10 +148,24 @@ function buildFacilityRepositories() {
 	};
 }
 
+/**
+ * The flags server code honors. Under `next dev` every flag is on, matching `useFeatureFlag`, so
+ * local UI and data agree; other builds read the saved flags.
+ */
+function enabledFeatureFlags() {
+	if (process.env.NODE_ENV === "development") {
+		return Promise.resolve({ enabled: [...FEATURE_FLAG_KEYS] });
+	}
+	return featureFlagModule().listEnabledFeatureFlags();
+}
+
 function buildFacilities() {
 	const repositories = buildFacilityRepositories();
 	return {
-		listFacilities: makeListFacilities({ facilities: repositories.facilities }),
+		listFacilities: makeListFacilities({
+			facilities: repositories.facilities,
+			enabledFeatureFlags,
+		}),
 		getFacilityDetail: makeGetFacilityDetail(repositories),
 		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
 		getFacilityPlayerStats: makeGetFacilityPlayerStats(repositories),
@@ -158,13 +186,19 @@ function buildAppSessionHeatmapRepository() {
 
 function buildAppSessionHeatmap() {
 	const appSessionHeatmap = buildAppSessionHeatmapRepository();
-	const listAppSessionHeatmap = makeListAppSessionHeatmap({ appSessionHeatmap });
-	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({ appSessionHeatmap });
+	const listAppSessionHeatmap = makeListAppSessionHeatmap({
+		appSessionHeatmap,
+		enabledFeatureFlags,
+	});
+	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({
+		appSessionHeatmap,
+		enabledFeatureFlags,
+	});
 	return {
 		listAppSessionFilterOptions,
-		listAppSessionHeatmap: async (filters: AppSessionFilters = {}) => {
+		listAppSessionHeatmap: async (filters: AppSessionFilters = {}, period?: StatsPeriod) => {
 			try {
-				return await listAppSessionHeatmap(filters);
+				return await listAppSessionHeatmap(filters, period);
 			} catch (error) {
 				console.error(
 					"[app-session-heatmap]",
@@ -173,6 +207,14 @@ function buildAppSessionHeatmap() {
 				throw error;
 			}
 		},
+	};
+}
+
+function buildPlaces() {
+	return {
+		searchPlaces: makeSearchPlaces({
+			places: new CachedPlaceSearch(new PhotonPlaceSearch(), new SystemClock()),
+		}),
 	};
 }
 
@@ -208,6 +250,7 @@ let logins: ReturnType<typeof buildLogins> | undefined;
 let facilities: ReturnType<typeof buildFacilities> | undefined;
 let appSessionHeatmap: ReturnType<typeof buildAppSessionHeatmap> | undefined;
 let feedback: ReturnType<typeof buildFeedback> | undefined;
+let places: ReturnType<typeof buildPlaces> | undefined;
 let appMetrics: ReturnType<typeof buildAppMetrics> | undefined;
 let featureFlags: ReturnType<typeof buildFeatureFlags> | undefined;
 
@@ -236,6 +279,11 @@ function featureFlagModule() {
 	return featureFlags;
 }
 
+function placeModule() {
+	places ??= buildPlaces();
+	return places;
+}
+
 function feedbackModule() {
 	feedback ??= buildFeedback();
 	return feedback;
@@ -245,15 +293,15 @@ const container = {
 	recordLogin: (input: RecordLoginInput) => loginModule().recordLogin(input),
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
 	listFacilities: () => facilityModule().listFacilities(),
-	listAppSessionHeatmap: (filters?: AppSessionFilters) =>
-		appSessionHeatmapModule().listAppSessionHeatmap(filters),
+	listAppSessionHeatmap: (filters?: AppSessionFilters, period?: StatsPeriod) =>
+		appSessionHeatmapModule().listAppSessionHeatmap(filters, period),
 	listAppSessionFilterOptions: () => appSessionHeatmapModule().listAppSessionFilterOptions(),
 	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
 	getFacilityReservationStats: (input: GetFacilityReservationStatsInput) =>
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
-	getMarketGameInsights: (input?: GetMarketSummaryInput) =>
+	getMarketGameInsights: (input?: GetMarketGameInsightsInput) =>
 		facilityModule().getMarketGameInsights(input),
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
 	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>
@@ -267,6 +315,7 @@ const container = {
 	listEnabledFeatureFlags: () => featureFlagModule().listEnabledFeatureFlags(),
 	listFeatureFlags: () => featureFlagModule().listFeatureFlags(),
 	setFeatureFlag: (input: SetFeatureFlagInput) => featureFlagModule().setFeatureFlag(input),
+	searchPlaces: (input: SearchPlacesInput) => placeModule().searchPlaces(input),
 };
 
 export function getContainer() {

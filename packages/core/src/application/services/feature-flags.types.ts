@@ -4,6 +4,7 @@ import type { FeatureFlagRepository } from "@core/application/repositories/featu
 export interface FeatureFlagsDeps {
 	featureFlags: FeatureFlagRepository;
 	keys?: readonly string[];
+	requirements?: Readonly<Record<string, string>>;
 }
 
 export interface SetFeatureFlagDeps extends FeatureFlagsDeps {

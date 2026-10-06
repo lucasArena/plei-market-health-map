@@ -8,7 +8,7 @@ export class EmptyAppSessionHeatmapRepository implements AppSessionHeatmapReposi
 		return { genders: [], skills: [], ages: [] };
 	}
 
-	async listLast28Days(): Promise<AppSessionHeatmapCellView[]> {
+	async listSessions(): Promise<AppSessionHeatmapCellView[]> {
 		return [];
 	}
 }

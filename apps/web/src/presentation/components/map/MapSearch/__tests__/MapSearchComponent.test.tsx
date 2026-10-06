@@ -1,9 +1,31 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { PlaceView } from "@market-health-map/core/application";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
+import { renderWithMessages } from "@/application/test/render-with-messages";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { buildMarketSearchResults } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 
 const mockPrefetchQuery = vi.fn().mockResolvedValue(undefined);
+const mockOnPlaceSelect = vi.fn();
+const mockPlaceSearch = vi.fn(
+	(_query: string): { data: PlaceView[] | undefined; isFetching: boolean } => ({
+		data: undefined,
+		isFetching: false,
+	}),
+);
+
+vi.mock("@/presentation/hooks/use-place/use-place-search", () => ({
+	usePlaceSearch: (query: string) => mockPlaceSearch(query),
+}));
+
+const WICHITA = {
+	id: "R123",
+	name: "Wichita",
+	kind: "city" as const,
+	context: "Kansas, United States",
+	location: { latitude: 37.69, longitude: -97.34 },
+	bounds: [-97.73, 37.48, -97.15, 37.84] as [number, number, number, number],
+};
 
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@tanstack/react-query")>()),
@@ -18,6 +40,7 @@ const FACILITIES = [
 		name: "Eastside Futsal Arena",
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 30.27, longitude: -97.74 },
 	},
 	{
@@ -27,6 +50,7 @@ const FACILITIES = [
 		name: "Northside Soccer Center",
 		avatarUrl: null,
 		isActive: false,
+		isActiveLastWeek: false,
 		location: { latitude: 30.4, longitude: -97.7 },
 	},
 	{
@@ -36,15 +60,25 @@ const FACILITIES = [
 		name: "Beach Field House",
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 25.76, longitude: -80.19 },
 	},
 ];
 
 describe("buildMarketSearchResults", () => {
 	it("groups facilities by market and sorts markets by name", () => {
-		const markets = buildMarketSearchResults(FACILITIES);
+		const markets = buildMarketSearchResults(FACILITIES, FACILITIES);
 		expect(markets.map((market) => market.name)).toEqual(["Austin", "Miami"]);
 		expect(markets[0]?.facilities).toHaveLength(2);
+	});
+
+	it("keeps every market but gives each only its shown facilities", () => {
+		const shown = FACILITIES.slice(0, 1);
+		const markets = buildMarketSearchResults(FACILITIES, shown);
+		expect(markets).toEqual([
+			{ id: "austin", name: "Austin", facilities: shown },
+			{ id: "miami", name: "Miami", facilities: [] },
+		]);
 	});
 });
 
@@ -52,16 +86,18 @@ describe("MapSearch", () => {
 	it("searches grouped markets and facilities and selects either kind", () => {
 		const onFacilitySelect = vi.fn();
 		const onMarketSelect = vi.fn();
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={onFacilitySelect}
 				onMarketSelect={onMarketSelect}
+				onPlaceSelect={mockOnPlaceSelect}
 				onClear={vi.fn()}
 			/>,
 		);
-		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 
 		fireEvent.focus(input);
 		expect(screen.getByText("Markets")).toHaveClass(
@@ -100,20 +136,66 @@ describe("MapSearch", () => {
 		expect(input).toHaveValue("Beach Field House");
 	});
 
-	it("clears, closes, and reports an empty result", () => {
-		const onClear = vi.fn();
-		render(
+	it("counts and lists only the facilities the map layers show", () => {
+		const onMarketSelect = vi.fn();
+		const activeFacilities = FACILITIES.filter((facility) => facility.isActive);
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={activeFacilities}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={onMarketSelect}
+				onPlaceSelect={mockOnPlaceSelect}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets, facilities or cities" }));
+
+		expect(screen.getByRole("option", { name: /Austin.*1 facility$/ })).toBeInTheDocument();
+		expect(screen.queryByRole("option", { name: /Northside Soccer Center/ })).toBeNull();
+		fireEvent.click(screen.getByRole("option", { name: /Austin.*1 facility$/ }));
+		expect(onMarketSelect).toHaveBeenCalledWith(
+			expect.objectContaining({ id: "austin", facilities: [FACILITIES[0]] }),
+		);
+	});
+
+	it("still lists a market whose facilities are all hidden", () => {
+		renderWithMessages(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={[]}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets, facilities or cities" }));
+
+		expect(screen.getByRole("option", { name: /Miami.*0 facilities/ })).toBeInTheDocument();
+		expect(screen.queryByText("Facilities")).toBeNull();
+	});
+
+	it("clears, closes, and reports an empty result once the city lookup settles", async () => {
+		const onClear = vi.fn();
+		renderWithMessages(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
 				onClear={onClear}
 			/>,
 		);
-		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 		fireEvent.change(input, { target: { value: "nowhere" } });
-		expect(screen.getByText("No markets or facilities found")).toBeInTheDocument();
+		expect(screen.queryByText("No markets, facilities or cities found")).not.toBeInTheDocument();
+		expect(screen.getByRole("listbox")).toHaveTextContent("Searching cities…");
+		expect(await screen.findByText("No markets, facilities or cities found")).toBeInTheDocument();
 
 		expect(onClear).not.toHaveBeenCalled();
 		fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
@@ -142,16 +224,18 @@ describe("MapSearch", () => {
 	});
 
 	it("stays open for other keys and for pointer events inside the search", () => {
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
 				onClear={vi.fn()}
 			/>,
 		);
-		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 		fireEvent.focus(input);
 		fireEvent.keyDown(input, { key: "ArrowDown" });
 		expect(screen.getByRole("listbox")).toBeInTheDocument();
@@ -161,16 +245,18 @@ describe("MapSearch", () => {
 	});
 
 	it("flows inside the header row instead of floating over it", () => {
-		const { container } = render(
+		const { container } = renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
 				onClear={vi.fn()}
 			/>,
 		);
-		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 		fireEvent.focus(input);
 
 		const root = container.firstElementChild;
@@ -180,16 +266,18 @@ describe("MapSearch", () => {
 	});
 
 	it("draws the field and the results on the shared glass surface", () => {
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
 				onClear={vi.fn()}
 			/>,
 		);
-		const input = screen.getByRole("combobox", { name: "Search markets or facilities" });
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 		fireEvent.focus(input);
 
 		expect(input.parentElement).toHaveClass(
@@ -214,16 +302,18 @@ describe("MapSearch", () => {
 	it("loads a market or facility once the pointer rests on it, not while skimming", () => {
 		vi.useFakeTimers();
 		mockPrefetchQuery.mockClear();
-		render(
+		renderWithMessages(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
 				onClear={vi.fn()}
 			/>,
 		);
-		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets or facilities" }));
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets, facilities or cities" }));
 		const austin = screen.getByRole("option", { name: /Austin.*2 facilities/ });
 		const facility = screen.getByRole("option", { name: /Eastside Futsal Arena/ });
 
@@ -249,5 +339,86 @@ describe("MapSearch", () => {
 			"players",
 		]);
 		vi.useRealTimers();
+	});
+
+	it("looks up cities after a pause, lists them after local results and selects one", () => {
+		vi.useFakeTimers();
+		mockPlaceSearch.mockImplementation((query: string) => ({
+			data: query === "wichita" ? [WICHITA] : undefined,
+			isFetching: false,
+		}));
+		renderWithMessages(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
+				onClear={vi.fn()}
+			/>,
+		);
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
+
+		expect(input).toHaveAttribute("autocomplete", "off");
+		expect(screen.queryByRole("status", { name: "Searching cities…" })).not.toBeInTheDocument();
+		fireEvent.change(input, { target: { value: "wichita" } });
+		expect(screen.queryByText("No markets, facilities or cities found")).not.toBeInTheDocument();
+		expect(screen.queryByText("Cities and places")).not.toBeInTheDocument();
+		expect(screen.getByRole("status", { name: "Searching cities…" })).toContainElement(
+			screen.getByTestId("map-search-spinner"),
+		);
+		act(() => vi.advanceTimersByTime(300));
+		expect(screen.queryByRole("status", { name: "Searching cities…" })).not.toBeInTheDocument();
+
+		expect(screen.getByText("Cities and places")).toBeInTheDocument();
+		expect(
+			screen.getByText("Places from Photon · © OpenStreetMap contributors"),
+		).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("option", { name: /Wichita.*Kansas, United States/ }));
+		expect(mockOnPlaceSelect).toHaveBeenCalledWith(WICHITA);
+		expect(input).toHaveValue("Wichita");
+		vi.useRealTimers();
+		mockPlaceSearch.mockReset();
+		mockPlaceSearch.mockImplementation(() => ({ data: undefined, isFetching: false }));
+	});
+
+	it("separates cities from facilities, shows nameless context gracefully and reports no results", () => {
+		vi.useFakeTimers();
+		mockPlaceSearch.mockImplementation(() => ({
+			data: [
+				{ ...WICHITA, id: "N1", name: "Eastside", context: "" },
+				{ ...WICHITA, id: "R9", kind: "county" as const },
+			],
+			isFetching: false,
+		}));
+		const { container } = renderWithMessages(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onPlaceSelect={mockOnPlaceSelect}
+				onClear={vi.fn()}
+			/>,
+		);
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
+		fireEvent.change(input, { target: { value: "Eastside" } });
+		act(() => vi.advanceTimersByTime(300));
+
+		expect(container.querySelector('[aria-labelledby="map-search-places"]')).toHaveClass(
+			"border-t",
+		);
+		expect(screen.getByRole("option", { name: "Eastside" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("option", { name: /Wichita.*County · Kansas, United States/ }),
+		).toBeInTheDocument();
+		mockPlaceSearch.mockImplementation(() => ({ data: [], isFetching: false }));
+		fireEvent.change(input, { target: { value: "nowhere" } });
+		act(() => vi.advanceTimersByTime(300));
+		expect(screen.getByText("No markets, facilities or cities found")).toBeInTheDocument();
+		vi.useRealTimers();
+		mockPlaceSearch.mockImplementation(() => ({ data: undefined, isFetching: false }));
 	});
 });

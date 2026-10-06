@@ -23,6 +23,7 @@ export type ApiServices = Pick<
 	| "listEnabledFeatureFlags"
 	| "listFeatureFlags"
 	| "setFeatureFlag"
+	| "searchPlaces"
 >;
 
 export type ApiEnv = {
