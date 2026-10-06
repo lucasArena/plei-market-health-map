@@ -153,7 +153,7 @@ export const CLUSTER_COUNT_PAINT: SymbolLayerSpecification["paint"] = {
 };
 
 export const SESSION_HEATMAP_LEGEND_CLASS = [
-	"pointer-events-auto map-glass w-56 rounded-[var(--map-radius)]",
+	"pointer-events-auto map-glass w-[244px] rounded-[var(--map-radius)]",
 	"border border-border/60 px-3 py-2.5 shadow-[var(--map-shadow)]",
 ].join(" ");
 

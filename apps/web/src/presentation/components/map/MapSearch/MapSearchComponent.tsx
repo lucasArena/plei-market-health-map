@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { useMapSearchRules } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 import {
+	MAP_MENU_COUNT_CLASS,
 	MAP_MENU_GROUP_LABEL_CLASS,
 	MAP_MENU_ROW_LABEL_CLASS,
 	MAP_SEARCH_FIELD_CLASS,
 	MAP_SEARCH_OPTION_HOVER_CLASS,
 	MAP_SEARCH_RESULTS_CLASS,
+	MAP_SEARCH_RESULTS_SCROLL_CLASS,
 	MAP_SEARCH_ROOT_CLASS,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 import type { MapSearchProps } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
@@ -120,114 +122,118 @@ export function MapSearch(props: MapSearchProps) {
 					onAnimationEnd={finishResultsMotion}
 					className={`${MAP_SEARCH_RESULTS_CLASS} ${resultsMotionClass}`}
 				>
-					{visibleMarkets.length > 0 && (
-						<section aria-labelledby="map-search-markets">
-							<p
-								id="map-search-markets"
-								className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
-							>
-								{messages.markets}
-							</p>
-							{visibleMarkets.map((market) => (
-								<button
-									key={market.id}
-									type="button"
-									role="option"
-									aria-selected="false"
-									className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
-									onClick={() => selectMarket(market)}
-									onPointerEnter={() => prefetchMarket(market)}
-									onPointerLeave={cancelPrefetch}
-									onFocus={() => prefetchMarket(market)}
+					<div className={MAP_SEARCH_RESULTS_SCROLL_CLASS}>
+						{visibleMarkets.length > 0 && (
+							<section aria-labelledby="map-search-markets">
+								<p
+									id="map-search-markets"
+									className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
 								>
-									<span className={`truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{market.name}</span>
-									<span className="ml-3 shrink-0 text-xs text-muted-foreground">
-										{facilityCountLabel(market)}
-									</span>
-								</button>
-							))}
-						</section>
-					)}
-					{visibleFacilities.length > 0 && (
-						<section
-							aria-labelledby="map-search-facilities"
-							className={visibleMarkets.length > 0 ? "mt-1 border-t border-foreground/10 pt-1" : ""}
-						>
-							<p
-								id="map-search-facilities"
-								className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
+									{messages.markets}
+								</p>
+								{visibleMarkets.map((market) => (
+									<button
+										key={market.id}
+										type="button"
+										role="option"
+										aria-selected="false"
+										className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+										onClick={() => selectMarket(market)}
+										onPointerEnter={() => prefetchMarket(market)}
+										onPointerLeave={cancelPrefetch}
+										onFocus={() => prefetchMarket(market)}
+									>
+										<span className={`truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{market.name}</span>
+										<span className={MAP_MENU_COUNT_CLASS}>{facilityCountLabel(market)}</span>
+									</button>
+								))}
+							</section>
+						)}
+						{visibleFacilities.length > 0 && (
+							<section
+								aria-labelledby="map-search-facilities"
+								className={
+									visibleMarkets.length > 0 ? "mt-1 border-t border-foreground/10 pt-1" : ""
+								}
 							>
-								{messages.facilities}
-							</p>
-							{visibleFacilities.map((facility) => (
-								<button
-									key={facility.id}
-									type="button"
-									role="option"
-									aria-selected="false"
-									className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
-									onClick={() => selectFacility(facility)}
-									onPointerEnter={() => prefetchFacility(facility)}
-									onPointerLeave={cancelPrefetch}
-									onFocus={() => prefetchFacility(facility)}
+								<p
+									id="map-search-facilities"
+									className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
 								>
-									<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>
-										{facility.name}
-									</span>
-									<span className="block truncate text-xs text-muted-foreground">
-										{facility.marketName}
-									</span>
-								</button>
-							))}
-						</section>
-					)}
-					{visiblePlaces.length > 0 && (
-						<section
-							aria-labelledby="map-search-places"
-							className={
-								visibleMarkets.length + visibleFacilities.length > 0
-									? "mt-1 border-t border-foreground/10 pt-1"
-									: ""
-							}
-						>
-							<p
-								id="map-search-places"
-								className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
-							>
-								{messages.places}
-							</p>
-							{visiblePlaces.map((place) => (
-								<button
-									key={place.id}
-									type="button"
-									role="option"
-									aria-selected="false"
-									className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
-									onClick={() => selectPlace(place)}
-								>
-									<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>{place.name}</span>
-									{placeDetail(place) && (
-										<span className="block truncate text-xs text-muted-foreground">
-											{placeDetail(place)}
+									{messages.facilities}
+								</p>
+								{visibleFacilities.map((facility) => (
+									<button
+										key={facility.id}
+										type="button"
+										role="option"
+										aria-selected="false"
+										className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+										onClick={() => selectFacility(facility)}
+										onPointerEnter={() => prefetchFacility(facility)}
+										onPointerLeave={cancelPrefetch}
+										onFocus={() => prefetchFacility(facility)}
+									>
+										<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>
+											{facility.name}
 										</span>
-									)}
-								</button>
-							))}
-							<p className="px-2.5 pt-1 pb-1.5 text-[10px] text-muted-foreground">
-								{messages.placesAttribution}
+										<span className="block truncate text-xs text-muted-foreground">
+											{facility.marketName}
+										</span>
+									</button>
+								))}
+							</section>
+						)}
+						{visiblePlaces.length > 0 && (
+							<section
+								aria-labelledby="map-search-places"
+								className={
+									visibleMarkets.length + visibleFacilities.length > 0
+										? "mt-1 border-t border-foreground/10 pt-1"
+										: ""
+								}
+							>
+								<p
+									id="map-search-places"
+									className={`px-2.5 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}
+								>
+									{messages.places}
+								</p>
+								{visiblePlaces.map((place) => (
+									<button
+										key={place.id}
+										type="button"
+										role="option"
+										aria-selected="false"
+										className={`block w-full rounded-lg px-2.5 py-2 text-left ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+										onClick={() => selectPlace(place)}
+									>
+										<span className={`block truncate ${MAP_MENU_ROW_LABEL_CLASS}`}>
+											{place.name}
+										</span>
+										{placeDetail(place) && (
+											<span className="block truncate text-xs text-muted-foreground">
+												{placeDetail(place)}
+											</span>
+										)}
+									</button>
+								))}
+								<p className="px-2.5 pt-1 pb-1.5 text-[10px] text-muted-foreground">
+									{messages.placesAttribution}
+								</p>
+							</section>
+						)}
+						{showSearching && (
+							<p className="px-3 py-4 text-center text-sm text-muted-foreground">
+								{messages.searchingPlaces}
 							</p>
-						</section>
-					)}
-					{showSearching && (
-						<p className="px-3 py-4 text-center text-sm text-muted-foreground">
-							{messages.searchingPlaces}
-						</p>
-					)}
-					{showNoResults && (
-						<p className="px-3 py-4 text-center text-sm text-muted-foreground">
-							{messages.noSearchResults}
-						</p>
-					)}
+						)}
+						{showNoResults && (
+							<p className="px-3 py-4 text-center text-sm text-muted-foreground">
+								{messages.noSearchResults}
+							</p>
+						)}
+					</div>
 				</div>
 			)}
 		</div>

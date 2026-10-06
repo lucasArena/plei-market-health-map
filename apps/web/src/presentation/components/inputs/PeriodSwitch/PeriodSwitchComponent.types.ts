@@ -1,5 +1,11 @@
 import type { StatsPeriod } from "@market-health-map/core/application";
 
+export interface PeriodThumbStyle {
+	left: number;
+	width: number;
+	ready: boolean;
+}
+
 export interface PeriodSwitchOption {
 	value: StatsPeriod;
 	label: string;

@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
 	buildChangelog,
-	buildReleaseNotes,
-	describeCommit,
+	issueSubjectPattern,
 	linearIssuesIn,
 	parseCommitLog,
 	previousStableTag,
@@ -136,64 +135,16 @@ describe("feature-flagged work", () => {
 		assert.ok(notes.includes("- ENG-3"));
 		assert.ok(!notes.includes("- ENG-1"));
 	});
-
-	it("leaves flagged tickets out of the release notes", () => {
-		const notes = buildReleaseNotes({ commits, flagged: ["ENG-1"] });
-
-		assert.ok(!notes.includes("Demographics"));
-		assert.ok(!notes.includes("ENG-1]"));
-		assert.ok(notes.includes("* Both. ([ENG-3](https://linear.app/plei/issue/ENG-3))"));
-	});
 });
 
-describe("describeCommit", () => {
-	it("turns a conventional commit into a sentence without its prefix or references", () => {
-		assert.equal(
-			describeCommit("feat(map): find cities outside our markets (ENG-5908) (#104)"),
-			"Find cities outside our markets.",
-		);
-		assert.equal(describeCommit("fix!: stop the crash (ENG-1, ENG-2)"), "Stop the crash.");
-		assert.equal(describeCommit("feat: ship it!"), "Ship it!");
-	});
-});
+describe("issueSubjectPattern", () => {
+	it("matches only the released tickets, so flagged ones and merge commits are skipped", () => {
+		const pattern = new RegExp(issueSubjectPattern(["ENG-2", "REQ-9"]));
 
-describe("buildReleaseNotes", () => {
-	it("follows the Linear template with one line per ticket under Features and Fixes", () => {
-		const notes = buildReleaseNotes({
-			commits: [
-				{ sha: "e5", subject: "fix(map): polish the city list (ENG-10)", body: "" },
-				{ sha: "e4", subject: "chore(ci): bump node (ENG-11)", body: "" },
-				{ sha: "e3", subject: "fix(map): keep circles anchored (ENG-12) (#101)", body: "" },
-				{ sha: "e2", subject: "feat(map): show a spinner while cities load (ENG-10)", body: "" },
-				{ sha: "e1", subject: "feat(map): find cities outside our markets (ENG-10)", body: "" },
-				{ sha: "e0", subject: "fix: tooltip", body: "" },
-			],
-		});
-
-		assert.equal(
-			notes,
-			[
-				"## Features",
-				"",
-				"* Find cities outside our markets. ([ENG-10](https://linear.app/plei/issue/ENG-10))",
-				"",
-				"## Fixes",
-				"",
-				"* Tooltip.",
-				"* Keep circles anchored. ([ENG-12](https://linear.app/plei/issue/ENG-12))",
-				"",
-			].join("\n"),
-		);
-	});
-
-	it("lists breaking changes first and says when nothing user-facing shipped", () => {
-		assert.match(
-			buildReleaseNotes({ commits: [{ sha: "a", subject: "feat!: drop v1", body: "" }] }),
-			/^## Breaking changes\n\n\* Drop v1\.\n$/,
-		);
-		assert.equal(
-			buildReleaseNotes({ commits: [{ sha: "b", subject: "chore: deps", body: "" }] }),
-			"No user-facing changes in this release.\n",
-		);
+		assert.equal(issueSubjectPattern(["ENG-2", "REQ-9"]), "\\b(ENG-2|REQ-9)\\b");
+		assert.equal(pattern.exec("fix(map): panel (ENG-2)")?.[1], "ENG-2");
+		assert.equal(pattern.test("feat(map): demographics (ENG-1)"), false);
+		assert.equal(pattern.test("Merge pull request #96 from acme/feature/eng-2-panel"), false);
+		assert.equal(new RegExp(issueSubjectPattern([])).test("feat: anything (ENG-1)"), false);
 	});
 });
