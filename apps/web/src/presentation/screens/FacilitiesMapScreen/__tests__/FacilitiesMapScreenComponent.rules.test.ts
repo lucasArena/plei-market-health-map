@@ -2006,6 +2006,15 @@ describe("useFacilitiesMapScreenRules", () => {
 		act(() => result.current.removeSessionFilter("age", "age"));
 		expect(setSessionFilters).toHaveBeenLastCalledWith({ gender: ["Female", "Male"] });
 	});
+	it("deletes a demographic field when its last chip is removed", () => {
+		mockDemandFlag.mockReturnValue(true);
+		const setSessionFilters = vi.fn();
+		layersState.setSessionFilters = setSessionFilters;
+		layersState.sessionFilters = { gender: ["Female"], skill: ["Advanced"] };
+		const { result } = renderRules();
+		act(() => result.current.removeSessionFilter("gender", "female"));
+		expect(setSessionFilters).toHaveBeenCalledWith({ skill: ["Advanced"] });
+	});
 
 	it("shows the session legend as loading while app sessions are pending", async () => {
 		mockUseAppSessionHeatmap.mockReturnValue({ data: undefined, isPending: true, isError: false });
