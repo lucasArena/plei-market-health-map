@@ -26,7 +26,7 @@ export const es: Messages = {
 		gameDepartmentMagic: "Magic",
 		gameDepartmentOrganizers: "Organizadores",
 		gameDepartmentPartnerships: "Alianzas",
-		gameDepartmentsAll: "Todos los departamentos",
+		gameDepartmentsAll: "Todos los partidos",
 		layersRegistrations: "Registros de usuarios",
 		registrationHeatmapLegend: "Registros por mercado · últimos 28 días",
 		registrationHeatmapContext:

@@ -24,7 +24,7 @@ export const en: Messages = {
 		gameDepartmentMagic: "Magic",
 		gameDepartmentOrganizers: "Organizers",
 		gameDepartmentPartnerships: "Partnerships",
-		gameDepartmentsAll: "All departments",
+		gameDepartmentsAll: "All games",
 		layersRegistrations: "User registrations",
 		registrationHeatmapLegend: "Registrations per market · last 28 days",
 		registrationHeatmapContext: "Market totals placed at the median facility location",

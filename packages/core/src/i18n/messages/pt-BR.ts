@@ -25,7 +25,7 @@ export const ptBR: Messages = {
 		gameDepartmentMagic: "Magic",
 		gameDepartmentOrganizers: "Organizadores",
 		gameDepartmentPartnerships: "Parcerias",
-		gameDepartmentsAll: "Todos os departamentos",
+		gameDepartmentsAll: "Todos os jogos",
 		layersRegistrations: "Cadastros de usuários",
 		registrationHeatmapLegend: "Cadastros por mercado · últimos 28 dias",
 		registrationHeatmapContext:

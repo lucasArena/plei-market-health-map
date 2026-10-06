@@ -15,7 +15,7 @@ it("adds Department, stages multiple choices and applies them with matching filt
 		</MapLayersProvider>,
 	);
 	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
-	expect(screen.getByText("All departments")).toBeInTheDocument();
+	expect(screen.getByText("All games")).toBeInTheDocument();
 	addDepartment();
 	const magic = screen.getByRole("option", { name: "Magic" });
 	expect(magic).toHaveFocus();
@@ -26,7 +26,7 @@ it("adds Department, stages multiple choices and applies them with matching filt
 	fireEvent.click(magic);
 	fireEvent.click(screen.getByRole("option", { name: "Organizers" }));
 	expect(screen.getByRole("button", { name: "Department" })).toHaveTextContent("Magic, Organizers");
-	expect(screen.getByText("All departments")).toBeInTheDocument();
+	expect(screen.getByText("All games")).toBeInTheDocument();
 	fireEvent.click(magic);
 	expect(magic).toHaveAttribute("aria-selected", "false");
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));

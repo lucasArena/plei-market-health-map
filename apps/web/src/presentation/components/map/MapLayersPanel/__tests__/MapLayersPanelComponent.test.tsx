@@ -655,7 +655,7 @@ it("preserves Department across supply modes and clears it with the layer Reset"
 	expect(department).toHaveTextContent("Magic");
 	fireEvent.click(screen.getAllByRole("button", { name: "Reset" }).at(-1) as HTMLElement);
 	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
-	expect(screen.getByText("All departments")).toBeInTheDocument();
+	expect(screen.getByText("All games")).toBeInTheDocument();
 	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
