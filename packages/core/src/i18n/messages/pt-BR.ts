@@ -54,8 +54,8 @@ export const ptBR: Messages = {
 		layersFacilities: "Instalações",
 		layersDemand: "Demanda",
 		layersSupply: "Oferta",
-		layersActiveFacilities: "Instalações ativas",
-		layersInactiveFacilities: "Instalações inativas",
+		layersActiveFacilities: "Instalações",
+		layersInactiveFacilities: "Mostrar instalações inativas",
 		sessionFilters: {
 			add: "Adicionar filtro",
 			remove: "Remover filtro de {filter}",

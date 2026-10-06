@@ -86,7 +86,7 @@ export function useMapLayersPanelRules() {
 		(showGamesSelector && supplyMetric !== "games") ||
 		isMapLayersCustomized({
 			showActiveFacilities,
-			showInactiveFacilities,
+			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
 			showSessions,
 			sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
 		});

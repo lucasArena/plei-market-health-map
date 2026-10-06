@@ -55,8 +55,8 @@ export const es: Messages = {
 		layersFacilities: "Sedes",
 		layersDemand: "Demanda",
 		layersSupply: "Oferta",
-		layersActiveFacilities: "Sedes activas",
-		layersInactiveFacilities: "Sedes inactivas",
+		layersActiveFacilities: "Instalaciones",
+		layersInactiveFacilities: "Mostrar instalaciones inactivas",
 		sessionFilters: {
 			add: "Agregar filtro",
 			remove: "Quitar filtro de {filter}",

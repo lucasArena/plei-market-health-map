@@ -7,7 +7,7 @@ describe("MAP_LAYERS_DEFAULTS", () => {
 	it("starts with every layer on and no player filter", () => {
 		expect(MAP_LAYERS_DEFAULTS).toEqual({
 			showActiveFacilities: true,
-			showInactiveFacilities: true,
+			showInactiveFacilities: false,
 			showSessions: true,
 			sessionFilters: {},
 		});

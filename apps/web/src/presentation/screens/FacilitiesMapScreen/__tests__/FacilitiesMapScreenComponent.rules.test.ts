@@ -776,7 +776,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
 	});
 
-	it("shows both facility statuses when there is no layers provider", async () => {
+	it("hides inactive facilities by default when there is no layers provider", async () => {
 		layersState.hasProvider = false;
 		const inactive = { ...FACILITY, id: "inactive", isActive: false };
 		mockUseFacilities.mockReturnValue({
@@ -787,8 +787,30 @@ describe("useFacilitiesMapScreenRules", () => {
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
+		expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([FACILITY]));
+	});
+
+	it("excludes zero-game facilities from Games even when inactive visibility is enabled", async () => {
+		mockSupplyFlag.mockReturnValue(true);
+		layersState.supplyMetric = "games";
+		layersState.showInactiveFacilities = true;
+		const played = { ...FACILITY, gamesLast28Days: 12 };
+		const inactive = { ...FACILITY, id: "inactive", isActive: false, gamesLast28Days: 0 };
+		const empty = { ...FACILITY, id: "empty", gamesLast28Days: 0 };
+		mockUseFacilities.mockReturnValue({
+			data: [played, inactive, empty],
+			isPending: false,
+			isError: false,
+		});
+		const { rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([played]));
+		mapState.setData.mockClear();
+		layersState.supplyMetric = "facilities";
+		rerender();
 		expect(mapState.setData).toHaveBeenCalledWith(
-			toFacilityFeatureCollection([FACILITY, inactive]),
+			toFacilityFeatureCollection([played, inactive, empty]),
 		);
 	});
 

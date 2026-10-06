@@ -227,14 +227,16 @@ export function MapLayersPanel() {
 							onToggle={toggleActiveFacilities}
 						/>
 					</div>
-					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
-						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
-						<LayerSwitch
-							checked={showInactiveFacilities}
-							label={messages.layersInactiveFacilities}
-							onToggle={toggleInactiveFacilities}
-						/>
-					</div>
+					{supplyMetric === "facilities" && (
+						<div className="flex w-full items-center justify-between gap-2 rounded-sm pl-5 pr-2 py-1.5">
+							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
+							<LayerSwitch
+								checked={showInactiveFacilities}
+								label={messages.layersInactiveFacilities}
+								onToggle={toggleInactiveFacilities}
+							/>
+						</div>
+					)}
 					{isCustomized && (
 						<div className="-mx-1 mt-1 flex justify-end border-t border-border px-1 pt-1">
 							<button

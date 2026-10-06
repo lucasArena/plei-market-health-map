@@ -806,7 +806,7 @@ export function useFacilitiesMapScreenRules() {
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
 	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
-	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
+	const showInactiveFacilities = !showGames && (mapLayers?.showInactiveFacilities ?? false);
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? true;
 	const filters = mapLayers?.sessionFilters;
@@ -841,10 +841,14 @@ export function useFacilitiesMapScreenRules() {
 		() =>
 			toFacilityFeatureCollection(
 				(query.data ?? []).filter((facility) =>
-					facility.isActive ? showActiveFacilities : showInactiveFacilities,
+					showGames
+						? showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0
+						: facility.isActive
+							? showActiveFacilities
+							: showInactiveFacilities,
 				),
 			),
-		[query.data, showActiveFacilities, showInactiveFacilities],
+		[query.data, showActiveFacilities, showInactiveFacilities, showGames],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
