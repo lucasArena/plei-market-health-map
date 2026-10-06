@@ -1,4 +1,7 @@
-import type { getFacilityDetailSchema } from "@core/application/dtos/facility-detail-dto";
+import type {
+	getFacilityDetailSchema,
+	STATS_PERIODS,
+} from "@core/application/dtos/facility-detail-dto";
 import type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
 import type {
 	FacilityPlayerStats,
@@ -8,6 +11,30 @@ import type {
 import type { z } from "zod";
 
 export type GetFacilityDetailInput = z.infer<typeof getFacilityDetailSchema>;
+
+export type StatsPeriod = (typeof STATS_PERIODS)[number];
+
+export interface ReservationPeriodView {
+	period: StatsPeriod;
+	start: string;
+	end: string;
+	played: number;
+	playedPrevious: number;
+	playedChangePercent: number | null;
+	confirmationRate: number | null;
+	confirmationRateChangePoints: number | null;
+}
+
+export interface PlayerPeriodView {
+	uniquePlayers: number;
+	uniquePlayersPrevious: number;
+	uniquePlayersChangePercent: number | null;
+	activatedPlayers: number;
+	activatedPlayersPrevious: number;
+	activatedPlayersChangePercent: number | null;
+}
+
+export interface ActivityPeriodView extends ReservationPeriodView, PlayerPeriodView {}
 
 export interface FacilityReservationStatsView extends FacilityReservationStats {
 	playedChangePercent: number | null;

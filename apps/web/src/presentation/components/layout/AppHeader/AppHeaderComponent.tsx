@@ -1,5 +1,6 @@
 "use client";
 
+import { PeriodSwitch } from "@/presentation/components/inputs/PeriodSwitch/PeriodSwitchComponent";
 import type { AppHeaderProps } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.types";
 import { MapBrand } from "@/presentation/components/layout/MapBrand/MapBrandComponent";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
@@ -17,6 +18,7 @@ export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 				className="pointer-events-none absolute top-[var(--map-frame)] left-1/2 w-[min(24rem,calc(100%-24rem))] -translate-x-1/2"
 			/>
 			<div className="flex items-center justify-end gap-2">
+				<PeriodSwitch />
 				<MarketSummaryToggle />
 			</div>
 			<UserMenu {...user} />

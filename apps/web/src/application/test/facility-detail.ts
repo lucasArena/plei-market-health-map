@@ -1,4 +1,9 @@
-import type { FacilityDetailView } from "@market-health-map/core/application";
+import {
+	type ActivityPeriodView,
+	type FacilityDetailView,
+	toPlayerPeriodView,
+	toReservationPeriodView,
+} from "@market-health-map/core/application";
 
 export const FACILITY_DETAIL: FacilityDetailView = {
 	facility: {
@@ -8,6 +13,7 @@ export const FACILITY_DETAIL: FacilityDetailView = {
 		name: "Pegaso HTX",
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 29.7, longitude: -95.4 },
 		address: "1 Main St, Houston, TX",
 	},
@@ -25,7 +31,12 @@ export const FACILITY_DETAIL: FacilityDetailView = {
 		uniquePlayersPrevious28Days: 120,
 		activatedPlayersLast28Days: 24,
 		activatedPlayersPrevious28Days: 20,
+		uniquePlayersLastWeek: 30,
+		uniquePlayersPreviousWeek: 25,
+		activatedPlayersLastWeek: 6,
+		activatedPlayersPreviousWeek: 5,
 		scheduledLastWeek: 87,
+		scheduledPreviousWeek: 87,
 		cancelledLastWeek: 32,
 		upcomingNextSevenDays: 41,
 		lastPlayedDate: "2026-09-27",
@@ -44,4 +55,14 @@ export const FACILITY_DETAIL: FacilityDetailView = {
 		],
 		popularTimes: [{ dayOfWeek: 6, timePeriod: 2, gamesPlayed: 12 }],
 	},
+};
+
+export const FACILITY_MONTH_ACTIVITY: ActivityPeriodView = {
+	...toReservationPeriodView(FACILITY_DETAIL.stats, "month"),
+	...toPlayerPeriodView(FACILITY_DETAIL.stats, "month"),
+};
+
+export const FACILITY_WEEK_ACTIVITY: ActivityPeriodView = {
+	...toReservationPeriodView(FACILITY_DETAIL.stats, "week"),
+	...toPlayerPeriodView(FACILITY_DETAIL.stats, "week"),
 };

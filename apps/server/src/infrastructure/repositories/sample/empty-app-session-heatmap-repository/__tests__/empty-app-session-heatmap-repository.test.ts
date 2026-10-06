@@ -2,6 +2,6 @@ import { EmptyAppSessionHeatmapRepository } from "@server/infrastructure/reposit
 
 describe("EmptyAppSessionHeatmapRepository", () => {
 	it("returns no cells", async () => {
-		await expect(new EmptyAppSessionHeatmapRepository().listLast28Days()).resolves.toEqual([]);
+		await expect(new EmptyAppSessionHeatmapRepository().listSessions()).resolves.toEqual([]);
 	});
 });

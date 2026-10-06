@@ -1,21 +1,25 @@
-import type { FacilityDetailView } from "@market-health-map/core/application";
-import { FACILITY_DETAIL } from "@/application/test/facility-detail";
+import type { ActivityPeriodView } from "@market-health-map/core/application";
+import {
+	FACILITY_DETAIL,
+	FACILITY_MONTH_ACTIVITY,
+	FACILITY_WEEK_ACTIVITY,
+} from "@/application/test/facility-detail";
 import { ActivitySummaryPrompt } from "@/infrastructure/ai/prompts/activity-summary-prompt";
 
 const prompt = new ActivitySummaryPrompt();
 
-function facilitySubject(detail: FacilityDetailView) {
+function facilitySubject(stats: ActivityPeriodView = FACILITY_MONTH_ACTIVITY) {
 	return {
 		kind: "facility" as const,
-		id: detail.facility.id,
-		name: detail.facility.name,
-		stats: detail.stats,
+		id: FACILITY_DETAIL.facility.id,
+		name: FACILITY_DETAIL.facility.name,
+		stats,
 	};
 }
 
 describe("ActivitySummaryPrompt", () => {
 	it("grounds insights in comparisons and limits anomaly claims", () => {
-		const messages = prompt.build(facilitySubject(FACILITY_DETAIL), "en");
+		const messages = prompt.build(facilitySubject(), "en");
 		expect(messages[0]?.content).toContain("cannot establish historical normality");
 		expect(messages[0]?.content).toContain("Small counts are weak evidence");
 		expect(messages[2]?.content).toContain("Activation is weakening faster");
@@ -36,15 +40,12 @@ describe("ActivitySummaryPrompt", () => {
 		const content = prompt
 			.build(
 				facilitySubject({
-					...FACILITY_DETAIL,
-					stats: {
-						...FACILITY_DETAIL.stats,
-						confirmationRate: null,
-						playedPeriodChangePercent: null,
-						uniquePlayersPeriodChangePercent: null,
-						activatedPlayersPeriodChangePercent: null,
-						confirmationRateChangePoints: null,
-					},
+					...FACILITY_MONTH_ACTIVITY,
+					confirmationRate: null,
+					playedChangePercent: null,
+					uniquePlayersChangePercent: null,
+					activatedPlayersChangePercent: null,
+					confirmationRateChangePoints: null,
 				}),
 				"en",
 			)
@@ -60,14 +61,11 @@ describe("ActivitySummaryPrompt", () => {
 		const content = prompt
 			.build(
 				facilitySubject({
-					...FACILITY_DETAIL,
-					stats: {
-						...FACILITY_DETAIL.stats,
-						playedPeriodChangePercent: 14,
-						uniquePlayersPeriodChangePercent: 11.5,
-						activatedPlayersPeriodChangePercent: -34.5,
-						confirmationRateChangePoints: 0,
-					},
+					...FACILITY_MONTH_ACTIVITY,
+					playedChangePercent: 14,
+					uniquePlayersChangePercent: 11.5,
+					activatedPlayersChangePercent: -34.5,
+					confirmationRateChangePoints: 0,
 				}),
 				"en",
 			)
@@ -79,13 +77,22 @@ describe("ActivitySummaryPrompt", () => {
 		);
 		expect(content).toContain("Confirmation rate: 84.8%, unchanged from the previous 28 days.");
 	});
+	it("compares last week with the week before when the week is selected", () => {
+		const messages = prompt.build(facilitySubject(FACILITY_WEEK_ACTIVITY), "pt-BR");
+		const facts = messages.at(-1)?.content ?? "";
+
+		expect(messages[0]?.content).toContain("Identify the most useful signals in last week");
+		expect(messages[1]?.content).toContain("Period: last week (Aug 24 to Aug 30, 2026)");
+		expect(messages[2]?.content).toContain("em relação à semana anterior");
+		expect(facts).toContain("compared with the previous week.");
+		expect(facts).toContain("Pickup games played: 51 → 55, up 7.8% from the previous week.");
+		expect(prompt.build(facilitySubject(FACILITY_WEEK_ACTIVITY), "fr")[2]?.content).toContain(
+			"versus the previous week",
+		);
+	});
 	it("uses the viewer language with English fallback", () => {
-		expect(prompt.build(facilitySubject(FACILITY_DETAIL), "pt-BR")[2]?.content).toContain(
-			"ativação",
-		);
-		expect(prompt.build(facilitySubject(FACILITY_DETAIL), "fr")[0]?.content).toContain(
-			"in English",
-		);
+		expect(prompt.build(facilitySubject(), "pt-BR")[2]?.content).toContain("ativação");
+		expect(prompt.build(facilitySubject(), "fr")[0]?.content).toContain("in English");
 	});
 	it("describes a single market with its active facilities", () => {
 		const content = prompt
@@ -94,7 +101,7 @@ describe("ActivitySummaryPrompt", () => {
 					kind: "market",
 					id: "2",
 					name: "Houston",
-					stats: FACILITY_DETAIL.stats,
+					stats: FACILITY_MONTH_ACTIVITY,
 					scope: {
 						facilityCount: 48,
 						activeFacilityCount: 31,
@@ -118,7 +125,7 @@ describe("ActivitySummaryPrompt", () => {
 					kind: "all-markets",
 					id: "all",
 					name: "All markets",
-					stats: FACILITY_DETAIL.stats,
+					stats: FACILITY_MONTH_ACTIVITY,
 					scope: {
 						facilityCount: 924,
 						activeFacilityCount: 610,
@@ -142,7 +149,7 @@ it("grounds AI wording in the independently computed contributors", () => {
 			kind: "all-markets",
 			id: "all",
 			name: "All markets",
-			stats: FACILITY_DETAIL.stats,
+			stats: FACILITY_MONTH_ACTIVITY,
 			insightFacts: "Houston: games declined, 200 to 100.",
 		},
 		"en",
