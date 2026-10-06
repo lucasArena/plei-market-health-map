@@ -70,7 +70,6 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 								<p className="truncate text-xs text-muted-foreground">{view.address}</p>
 							</div>
 						</header>
-
 						{aiContext && view.summary && <AiSummary context={aiContext} fallback={view.summary} />}
 						{!(aiContext && view.summary) && isAiPending && (
 							<AiSummarySkeleton testId="facility-ai-summary-skeleton" />

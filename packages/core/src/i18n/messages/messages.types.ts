@@ -81,21 +81,6 @@ export interface Messages {
 			pending: string;
 		};
 		layersGames: string;
-		trend: {
-			toggle: string;
-			gamesOne: string;
-			gamesOther: string;
-			gamesUp: string;
-			gamesDown: string;
-			gamesStable: string;
-			changeUp: string;
-			changeDown: string;
-			changeStable: string;
-			panelTitle: string;
-			panelCompare: string;
-			panelChange: string;
-			panelNoPrevious: string;
-		};
 		layersSessions: string;
 		layersRegistrations: string;
 		registrationHeatmapLegend: string;
@@ -267,8 +252,6 @@ export interface Messages {
 		neverChanged: string;
 		lastChange: string;
 		saveFailed: string;
-		requires: string;
-		waiting: string;
 		descriptions: Record<string, string>;
 	};
 	offline: {

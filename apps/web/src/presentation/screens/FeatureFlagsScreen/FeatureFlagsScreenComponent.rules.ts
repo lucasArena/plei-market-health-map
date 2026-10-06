@@ -1,7 +1,6 @@
 "use client";
 
 import type { FeatureFlagView } from "@market-health-map/core/application";
-import { GAMES_WINDOW_DAYS } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -32,31 +31,17 @@ function lastChangeLabel(
 	});
 }
 
-function statusLabel(
-	flag: FeatureFlagView,
-	enabledKeys: ReadonlySet<string>,
-	messages: FeatureFlagsMessages,
-): string {
-	if (!flag.enabled) return messages.off;
-	if (flag.requires && !enabledKeys.has(flag.requires)) {
-		return formatMessage(messages.waiting, { flag: flag.requires });
-	}
-	return messages.on;
-}
-
 export function buildFeatureFlagRows(
 	flags: FeatureFlagView[],
 	messages: FeatureFlagsMessages,
 	formatters: DetailFormatters,
 ): FeatureFlagRow[] {
-	const enabledKeys = new Set(flags.filter((flag) => flag.enabled).map((flag) => flag.key));
 	return flags.map((flag) => ({
 		key: flag.key,
-		description: formatMessage(messages.descriptions[flag.key] ?? "", { days: GAMES_WINDOW_DAYS }),
+		description: messages.descriptions[flag.key] ?? "",
 		enabled: flag.enabled,
 		state: flag.enabled ? "on" : "off",
-		statusLabel: statusLabel(flag, enabledKeys, messages),
-		requirement: flag.requires ? formatMessage(messages.requires, { flag: flag.requires }) : null,
+		statusLabel: flag.enabled ? messages.on : messages.off,
 		toggleLabel: formatMessage(flag.enabled ? messages.turnOff : messages.turnOn, {
 			flag: flag.key,
 		}),

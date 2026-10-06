@@ -10,8 +10,6 @@ export interface FeatureFlagRow {
 	enabled: boolean;
 	state: "on" | "off";
 	statusLabel: string;
-	/** Explains which flag this one needs on, when it needs one. */
-	requirement: string | null;
 	toggleLabel: string;
 	lastChange: string;
 }

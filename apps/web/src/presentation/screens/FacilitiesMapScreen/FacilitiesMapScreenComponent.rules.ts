@@ -1,16 +1,9 @@
 "use client";
 
 import type { FacilityPointView } from "@market-health-map/core/application";
-import type {
-	GameDepartment,
-	GameDepartmentCounts,
-	GamesTrendLevel,
-} from "@market-health-map/core/domain";
-import { type GamesTrend, gamesTrend } from "@market-health-map/core/domain";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GAMES_TREND_COLORS } from "@/application/constants/games-trend-colors";
 import { PLEI_LOGO_URL, PLEI_LOGO_WHITE_URL } from "@/application/constants/plei-logo";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
@@ -61,7 +54,6 @@ import {
 	CLUSTER_PAINT,
 	CLUSTER_PREVIEW_LIMIT,
 	CLUSTER_RADIUS,
-	CLUSTER_TREND_TIP,
 	DETAIL_PANEL_OFFSET,
 	FACILITIES_LAYER_ID,
 	FACILITIES_LOGO_LAYER_ID,
@@ -75,14 +67,9 @@ import {
 	FACILITY_GLASS_INACTIVE_SHADOW,
 	FACILITY_GLASS_SELECTED_SHADOW,
 	FACILITY_GLASS_SHADOW,
-	FACILITY_GLASS_STROKE,
 	FACILITY_LOGO_LAYOUT,
 	FACILITY_LOGO_PAINT,
-	FACILITY_TREND_TIP,
-	facilityGlassRingShadow,
-	GAMES_CLUSTER_PROPERTIES,
 	HOVER_CARD_WIDTH,
-	INACTIVE_GAMES_MARKER_STYLE,
 	MAP_CENTER,
 	MAP_STYLE_URL,
 	MAP_ZOOM,
@@ -90,8 +77,6 @@ import {
 	REGISTRATION_HEATMAP_PAINT,
 	selectedRingColor,
 	selectedRingWidth,
-	TREND_TIP_CLASS,
-	type TrendTipShape,
 	UNCLUSTERED_FILTER,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 import type {
@@ -105,7 +90,6 @@ import type {
 	FacilityFeatureCollection,
 	FacilityGlassBadge,
 	FacilityLayerMotion,
-	FacilityTrendCounts,
 	HoverPlacement,
 	MapHover,
 	SessionHeatmapArea,
@@ -136,68 +120,9 @@ export function toFacilityFeatureCollection(
 				name: facility.name,
 				isActive: facility.isActive,
 				gamesLast28Days: facility.gamesLast28Days ?? 0,
-				gamesPrevious28Days: facility.gamesPrevious28Days ?? 0,
 			},
 		})),
 	};
-}
-
-function sumDepartments(
-	counts: GameDepartmentCounts | undefined,
-	departments: readonly GameDepartment[],
-) {
-	return departments.reduce((sum, department) => sum + (counts?.[department] ?? 0), 0);
-}
-
-/**
- * Applies the supply filters to facilities. Selected departments narrow both windows. With
- * the trend on, facilities with no games now but games in the previous window stay on the map
- * so their drop is visible; with it off the result matches the map without trends.
- */
-export function facilitiesForMap(
-	facilities: readonly FacilityPointView[],
-	options: {
-		gameDepartments?: readonly GameDepartment[];
-		showGames: boolean;
-		showTrend: boolean;
-		showActiveFacilities: boolean;
-		showInactiveFacilities: boolean;
-	},
-): FacilityPointView[] {
-	const { gameDepartments, showGames, showTrend, showActiveFacilities, showInactiveFacilities } =
-		options;
-	return facilities
-		.map((facility) => {
-			if (!gameDepartments?.length) return facility;
-			return {
-				...facility,
-				gamesLast28Days: sumDepartments(facility.gamesByDepartment, gameDepartments),
-				gamesPrevious28Days: sumDepartments(facility.gamesPreviousByDepartment, gameDepartments),
-			};
-		})
-		.filter((facility) => {
-			const hasGames =
-				(facility.gamesLast28Days ?? 0) > 0 ||
-				(showTrend && (facility.gamesPrevious28Days ?? 0) > 0);
-			if (gameDepartments?.length && !hasGames) return false;
-			if (showGames) return showActiveFacilities && hasGames;
-			return facility.isActive ? showActiveFacilities : showInactiveFacilities;
-		});
-}
-
-function trendNumber(value: unknown) {
-	const count = Number(value ?? 0);
-	return Number.isFinite(count) ? count : 0;
-}
-
-/** A facility's games trend, the same classifier its cluster uses. */
-export function facilityTrend(current: unknown, previous: unknown): GamesTrend {
-	return gamesTrend(trendNumber(current), trendNumber(previous));
-}
-
-/** Cluster trends come from the summed windows MapLibre keeps on the cluster. */
-export function clusterTrend(properties: ClusterGlassFeature["properties"]): GamesTrend {
-	return gamesTrend(trendNumber(properties?.gameCount), trendNumber(properties?.gamePreviousCount));
 }
 
 export function toAppSessionHeatmapFeatureCollection(
@@ -355,7 +280,6 @@ function clusterFromEvent(event: MapLayerMouseEvent) {
 		total: Number(feature.properties.point_count),
 		center: (feature.geometry as GeoJSON.Point).coordinates as [number, number],
 		active: clusterGlassActive(feature.properties),
-		properties: feature.properties as ClusterGlassFeature["properties"],
 	};
 }
 
@@ -522,56 +446,10 @@ function clusterGlassCoordinates(feature: ClusterGlassFeature): [number, number]
 	return [longitude, latitude];
 }
 
-/** Gives a glass disc its trend tip shape; the tip only shows with a data-trend-tip. */
-function applyTrendTipShape(node: HTMLElement, tip: TrendTipShape) {
-	const size = String(tip.box);
-	if (node.dataset.trendTipBox === size) return;
-	node.dataset.trendTipBox = size;
-	node.classList.add(TREND_TIP_CLASS);
-	node.style.setProperty("--games-trend-tip-box", `${tip.box}px`);
-	node.style.setProperty("--games-trend-inner", `${tip.inner}px`);
-	node.style.setProperty("--games-trend-shape-up", tip.up);
-	node.style.setProperty("--games-trend-shape-down", tip.down);
-	node.style.setProperty("--games-trend-shape-stable", tip.stable);
-}
-
-/** Paints the glass trend ring, with a tip for up and down; trend off paints nothing. */
-export function applyGlassTrend(node: HTMLElement, trend: GamesTrendLevel | undefined) {
-	if (trend) node.dataset.trendTip = trend;
-	else delete node.dataset.trendTip;
-	if (trend) node.style.setProperty("--games-trend-color", GAMES_TREND_COLORS[trend]);
-	else node.style.removeProperty("--games-trend-color");
-}
-
-/**
- * Games layer markers with no games now: the inactive marker style on the existing disc (and
- * the cluster's ring span), reset with the rest of the glass on every sync. Never a trend.
- */
-export function applyInactiveGamesMarker(
-	node: HTMLElement,
-	inactive: boolean,
-	ring: HTMLElement | null = null,
-) {
-	const style = INACTIVE_GAMES_MARKER_STYLE;
-	if (inactive) node.dataset.inactive = "true";
-	else delete node.dataset.inactive;
-	node.style.opacity = inactive ? String(style.opacity) : "";
-	if (ring) {
-		ring.style.borderStyle = inactive ? style.ringStyle : "solid";
-		ring.style.borderWidth = `${inactive ? style.ringWidth : CLUSTER_GLASS_STROKE}px`;
-		if (inactive) ring.style.borderColor = style.ringColor;
-	} else if (inactive) {
-		node.style.border = `${style.ringWidth}px ${style.ringStyle} ${style.ringColor}`;
-	}
-	const label = node.querySelector("[data-testid$='-glass-label']");
-	if (inactive && label instanceof HTMLElement) label.style.color = style.label;
-}
-
 export function readClusterGlassBadges(
 	features: readonly ClusterGlassFeature[],
 	project: (coordinates: [number, number]) => { x: number; y: number },
 	showGames = false,
-	showTrend = false,
 ) {
 	const seen = new Set<number>();
 	const badges: ClusterGlassBadge[] = [];
@@ -581,18 +459,12 @@ export function readClusterGlassBadges(
 		if (typeof clusterId !== "number" || !coordinates || seen.has(clusterId)) continue;
 		seen.add(clusterId);
 		const point = project(coordinates);
-		const noGames =
-			showGames &&
-			trendNumber(feature.properties?.gameCount) === 0 &&
-			(!showTrend || trendNumber(feature.properties?.gamePreviousCount) === 0);
 		badges.push({
 			id: clusterId,
 			label: clusterGlassLabel(feature.properties, showGames),
 			x: point.x,
 			y: point.y,
 			active: clusterGlassActive(feature.properties),
-			...(showTrend && !noGames ? { trend: clusterTrend(feature.properties).level } : {}),
-			...(noGames ? { noGames } : {}),
 		});
 	}
 	return badges;
@@ -657,7 +529,6 @@ export function createClusterGlassNode() {
 	node.style.fontSize = "14px";
 	node.style.fontWeight = "600";
 	node.style.lineHeight = "1";
-	applyTrendTipShape(node, CLUSTER_TREND_TIP);
 	applyClusterGlassActivity(node, true);
 	return node;
 }
@@ -693,7 +564,6 @@ export function readFacilityGlassBadges(
 	features: readonly ClusterGlassFeature[],
 	project: (coordinates: [number, number]) => { x: number; y: number },
 	showGames = false,
-	showTrend = false,
 ) {
 	const seen = new Set<string>();
 	const badges: FacilityGlassBadge[] = [];
@@ -710,25 +580,12 @@ export function readFacilityGlassBadges(
 		}
 		seen.add(id);
 		const point = project(coordinates);
-		const noGames =
-			showGames &&
-			trendNumber(feature.properties?.gamesLast28Days) === 0 &&
-			(!showTrend || trendNumber(feature.properties?.gamesPrevious28Days) === 0);
 		badges.push({
 			id,
 			x: point.x,
 			y: point.y,
 			active: facilityGlassActive(feature.properties?.isActive),
 			...(showGames ? { label: formatSupplyCount(feature.properties?.gamesLast28Days ?? 0) } : {}),
-			...(noGames ? { noGames } : {}),
-			...(showTrend && !noGames
-				? {
-						trend: facilityTrend(
-							feature.properties?.gamesLast28Days,
-							feature.properties?.gamesPrevious28Days,
-						).level,
-					}
-				: {}),
 		});
 	}
 	return badges;
@@ -796,20 +653,10 @@ export function syncFacilityGlass(
 			[`${badge.active}`]: FACILITY_GLASS_SHADOW,
 			[`${!badge.active}`]: FACILITY_GLASS_INACTIVE_SHADOW,
 		}.true as string;
-		const isSelected = badge.id === selectedId;
-		const untrendedShadow = {
+		current.style.boxShadow = {
 			[`${true}`]: restingShadow,
-			[`${isSelected}`]: FACILITY_GLASS_SELECTED_SHADOW,
+			[`${badge.id === selectedId}`]: FACILITY_GLASS_SELECTED_SHADOW,
 		}.true as string;
-		const trendedShadow = badge.trend
-			? facilityGlassRingShadow(
-					GAMES_TREND_COLORS[badge.trend],
-					FACILITY_GLASS_STROKE + (isSelected ? 1 : 0),
-				)
-			: untrendedShadow;
-		// The inactive marker draws its ring as the disc border, so its shadow carries no ring.
-		current.style.boxShadow = badge.noGames && !isSelected ? CLUSTER_GLASS_SHADOW : trendedShadow;
-		applyGlassTrend(current, badge.trend);
 		applyFacilityGlassActivity(current, badge.active);
 		const logo = current.querySelector("[data-testid='facility-glass-core']");
 		const label = current.querySelector("[data-testid='facility-glass-label']");
@@ -820,10 +667,8 @@ export function syncFacilityGlass(
 			label.style.display = showCount ? "" : "none";
 			label.style.color = badge.active ? CLUSTER_GLASS_LABEL : CLUSTER_GLASS_INACTIVE_LABEL;
 		}
-		applyTrendTipShape(current, FACILITY_TREND_TIP);
 		current.style.width = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
 		current.style.height = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
-		applyInactiveGamesMarker(current, badge.noGames === true);
 		current.style.transform = `translate(${badge.x}px, ${badge.y}px) translate(-50%, -50%)`;
 	}
 	for (const [id, node] of nodes) {
@@ -850,12 +695,6 @@ export function syncClusterGlass(
 		const label = current.querySelector("[data-testid='cluster-glass-label']");
 		if (label) label.textContent = badge.label;
 		applyClusterGlassActivity(current, badge.active);
-		applyGlassTrend(current, badge.trend);
-		const ring = current.querySelector("[data-testid='cluster-glass-stroke']");
-		if (ring instanceof HTMLElement) {
-			if (badge.trend) ring.style.borderColor = GAMES_TREND_COLORS[badge.trend];
-			applyInactiveGamesMarker(current, badge.noGames === true, ring);
-		}
 		current.style.transform = clusterMarkerTransform(
 			badge.x,
 			badge.y,
@@ -876,7 +715,6 @@ export function bindFacilityGlass(
 	hoveredClusterIdRef: { current: number | null } = { current: null },
 	refreshClusterMarkersRef: { current: () => void } = { current: () => undefined },
 	showGamesRef: { current: boolean } = { current: false },
-	showTrendRef: { current: boolean } = { current: false },
 ) {
 	const container = map.getContainer();
 	if (!(container instanceof HTMLElement)) return;
@@ -908,7 +746,6 @@ export function bindFacilityGlass(
 						map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] }) as ClusterGlassFeature[],
 						project,
 						showGamesRef.current,
-						showTrendRef.current,
 					);
 		const facilities =
 			hidden || !map.getLayer(FACILITIES_LAYER_ID)
@@ -919,7 +756,6 @@ export function bindFacilityGlass(
 						}) as ClusterGlassFeature[],
 						project,
 						showGamesRef.current,
-						showTrendRef.current,
 					);
 		syncClusterGlass(host, badges, nodes, hoveredClusterIdRef.current);
 		syncFacilityGlass(facilityHost, facilities, facilityNodes, selectedFacilityIdRef.current);
@@ -949,14 +785,9 @@ export function useFacilitiesMapScreenRules() {
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
 	const showSupplyFilters = useFeatureFlag("facility-games-layer");
-	/** The trend flag already implies games (the server lists it only with games on). */
-	const showTrendFlag = useFeatureFlag("facility-games-trend");
 	const showGames = showSupplyFilters && mapLayers?.supplyMetric === "games";
 	const showGamesRef = useRef(showGames);
 	showGamesRef.current = showGames;
-	const showTrend = showTrendFlag && showGames && (mapLayers?.showGamesTrend ?? false);
-	const showTrendRef = useRef(showTrend);
-	showTrendRef.current = showTrend;
 	const heatmapQuery = useAppSessionHeatmap(
 		isRegistrations
 			? { ...mapLayers?.sessionFilters, metric: "registrations" }
@@ -1008,41 +839,26 @@ export function useFacilitiesMapScreenRules() {
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
 	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
-	const featureCollection = useMemo(
-		() =>
-			toFacilityFeatureCollection(
-				facilitiesForMap(query.data ?? [], {
-					gameDepartments,
-					showGames,
-					showTrend,
-					showActiveFacilities,
-					showInactiveFacilities,
-				}),
-			),
-		[
-			query.data,
-			showActiveFacilities,
-			showInactiveFacilities,
-			showGames,
-			showTrend,
-			gameDepartments,
-		],
-	);
-	const trendCountsById = useMemo(
-		() =>
-			new Map<string, FacilityTrendCounts>(
-				featureCollection.features.map((feature) => [
-					feature.properties.id,
-					{
-						current: feature.properties.gamesLast28Days ?? 0,
-						previous: feature.properties.gamesPrevious28Days ?? 0,
-					},
-				]),
-			),
-		[featureCollection],
-	);
-	const trendCountsRef = useRef(trendCountsById);
-	trendCountsRef.current = trendCountsById;
+	const featureCollection = useMemo(() => {
+		const facilities = (query.data ?? [])
+			.map((facility) => {
+				if (!gameDepartments?.length) return facility;
+				return {
+					...facility,
+					gamesLast28Days: gameDepartments.reduce(
+						(sum, department) => sum + (facility.gamesByDepartment?.[department] ?? 0),
+						0,
+					),
+				};
+			})
+			.filter((facility) => {
+				if (gameDepartments?.length && !(facility.gamesLast28Days && facility.gamesLast28Days > 0))
+					return false;
+				if (showGames) return showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0;
+				return facility.isActive ? showActiveFacilities : showInactiveFacilities;
+			});
+		return toFacilityFeatureCollection(facilities);
+	}, [query.data, showActiveFacilities, showInactiveFacilities, showGames, gameDepartments]);
 
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -1115,14 +931,9 @@ export function useFacilitiesMapScreenRules() {
 				facility.location.longitude,
 				facility.location.latitude,
 			]);
-			const counts = trendCountsRef.current.get(facility.id);
 			setHovered({
 				kind: "facility",
 				facility,
-				...(showGamesRef.current ? { games: counts?.current ?? 0 } : {}),
-				...(showTrendRef.current
-					? { trend: facilityTrend(counts?.current, counts?.previous) }
-					: {}),
 				...clusterHoverPlacement(
 					{
 						x: projected?.x ?? event.point.x,
@@ -1157,15 +968,7 @@ export function useFacilitiesMapScreenRules() {
 			}
 			hoveredClusterIdRef.current = clusterId;
 			refreshClusterMarkersRef.current();
-			setHovered({
-				kind: "cluster",
-				clusterId,
-				total,
-				facilities: [],
-				...(showGamesRef.current ? { games: trendNumber(cluster.properties?.gameCount) } : {}),
-				...(showTrendRef.current ? { trend: clusterTrend(cluster.properties) } : {}),
-				...placement,
-			});
+			setHovered({ kind: "cluster", clusterId, total, facilities: [], ...placement });
 			const source = mapRef.current?.getSource<GeoJSONSource>(FACILITIES_SOURCE_ID);
 			const knownTotal = Number.isFinite(total) && total > 0;
 			const leafLimit = { true: total, false: CLUSTER_PREVIEW_LIMIT }[`${knownTotal}`];
@@ -1359,7 +1162,7 @@ export function useFacilitiesMapScreenRules() {
 					clusterMaxZoom: CLUSTER_MAX_ZOOM,
 					clusterProperties: {
 						[CLUSTER_ACTIVE_COUNT_KEY]: CLUSTER_ACTIVE_COUNT_EXPRESSION,
-						...GAMES_CLUSTER_PROPERTIES,
+						gameCount: ["+", ["get", "gamesLast28Days"]],
 					},
 				});
 				created.addLayer({
@@ -1604,7 +1407,6 @@ export function useFacilitiesMapScreenRules() {
 			hoveredClusterIdRef,
 			refreshClusterMarkersRef,
 			showGamesRef,
-			showTrendRef,
 		);
 	}, [isMapReady]);
 
@@ -1619,17 +1421,6 @@ export function useFacilitiesMapScreenRules() {
 		refreshClusterMarkersRef.current();
 		mapRef.current?.triggerRepaint();
 	}, [isMapReady, showGames]);
-
-	useEffect(() => {
-		if (!isMapReady) return;
-		showTrendRef.current = showTrend;
-		refreshClusterMarkersRef.current();
-	}, [isMapReady, showTrend]);
-
-	const selectedTrend = useMemo(() => {
-		const counts = selectedFacilityId ? trendCountsById.get(selectedFacilityId) : undefined;
-		return showTrend && counts ? gamesTrend(counts.current, counts.previous) : null;
-	}, [selectedFacilityId, showTrend, trendCountsById]);
 
 	const {
 		finishReveal: finishLegendMotion,
@@ -1680,10 +1471,8 @@ export function useFacilitiesMapScreenRules() {
 		selectFacility,
 		sessionScale,
 		selectedFacilityId,
-		selectedTrend,
 		selectSearchFacility,
 		selectSearchMarket,
-		showTrend,
 		status,
 	};
 }

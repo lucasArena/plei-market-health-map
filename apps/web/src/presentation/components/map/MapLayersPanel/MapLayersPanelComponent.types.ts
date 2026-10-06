@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 export interface MapLayersSettings {
 	showActiveFacilities: boolean;
 	showInactiveFacilities: boolean;
-	showGamesTrend: boolean;
 	showSessions: boolean;
 	sessionFilters: AppSessionFilters;
 }
@@ -27,8 +26,6 @@ export interface MapLayersValue {
 	setShowActiveFacilities: (showActiveFacilities: boolean) => void;
 	showInactiveFacilities: boolean;
 	setShowInactiveFacilities: (showInactiveFacilities: boolean) => void;
-	showGamesTrend?: boolean;
-	setShowGamesTrend?: (showGamesTrend: boolean) => void;
 	showSessions: boolean;
 	setShowSessions: (showSessions: boolean) => void;
 	resetLayers: () => void;

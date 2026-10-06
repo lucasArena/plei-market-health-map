@@ -45,7 +45,6 @@ describe("buildFeatureFlagRows", () => {
 				enabled: true,
 				state: "on",
 				statusLabel: "On",
-				requirement: null,
 				toggleLabel: "Turn new-panel off",
 				lastChange: "stefano@plei.com · Oct 1, 2026",
 			},
@@ -55,47 +54,10 @@ describe("buildFeatureFlagRows", () => {
 				enabled: false,
 				state: "off",
 				statusLabel: "Off",
-				requirement: null,
 				toggleLabel: "Turn demographic-filters on",
 				lastChange: "Never switched",
 			},
 		]);
-	});
-
-	it("notes a flag's requirement and waits for it while it is off", () => {
-		const trend = {
-			key: "facility-games-trend",
-			enabled: true,
-			updatedBy: null,
-			updatedAt: null,
-			requires: "facility-games-layer",
-		};
-		const games = { key: "facility-games-layer", enabled: false, updatedBy: null, updatedAt: null };
-
-		const [, waiting] = buildFeatureFlagRows([games, trend], messages, formatters);
-		expect(waiting).toMatchObject({
-			enabled: true,
-			state: "on",
-			statusLabel: "On, waiting for facility-games-layer",
-			requirement: "Only takes effect while facility-games-layer is on.",
-		});
-
-		const [, active] = buildFeatureFlagRows(
-			[{ ...games, enabled: true }, trend],
-			messages,
-			formatters,
-		);
-		expect(active?.statusLabel).toBe("On");
-
-		const [, off] = buildFeatureFlagRows(
-			[games, { ...trend, enabled: false }],
-			messages,
-			formatters,
-		);
-		expect(off).toMatchObject({
-			statusLabel: "Off",
-			requirement: "Only takes effect while facility-games-layer is on.",
-		});
 	});
 });
 

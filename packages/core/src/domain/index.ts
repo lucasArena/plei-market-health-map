@@ -5,15 +5,6 @@ export type {
 	GameDepartment,
 	GameDepartmentCounts,
 } from "@core/domain/entities/facility/facility.types";
-export {
-	classifyGamesTrend,
-	GAMES_WINDOW_DAYS,
-	gamesTrend,
-} from "@core/domain/entities/games-trend/games-trend";
-export type {
-	GamesTrend,
-	GamesTrendLevel,
-} from "@core/domain/entities/games-trend/games-trend.types";
 export { LoginEvent } from "@core/domain/entities/login-event/login-event";
 export type {
 	CreateLoginEventInput,

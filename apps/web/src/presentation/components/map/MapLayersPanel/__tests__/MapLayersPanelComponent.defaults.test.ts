@@ -8,7 +8,6 @@ describe("MAP_LAYERS_DEFAULTS", () => {
 		expect(MAP_LAYERS_DEFAULTS).toEqual({
 			showActiveFacilities: true,
 			showInactiveFacilities: false,
-			showGamesTrend: false,
 			showSessions: true,
 			sessionFilters: {},
 		});
@@ -20,16 +19,14 @@ describe("isMapLayersCustomized", () => {
 		expect(isMapLayersCustomized(MAP_LAYERS_DEFAULTS)).toBe(false);
 	});
 
-	it.each([
-		["showActiveFacilities"],
-		["showInactiveFacilities"],
-		["showGamesTrend"],
-		["showSessions"],
-	] as const)("is true when %s differs from the default", (key) => {
-		expect(
-			isMapLayersCustomized({ ...MAP_LAYERS_DEFAULTS, [key]: !MAP_LAYERS_DEFAULTS[key] }),
-		).toBe(true);
-	});
+	it.each([["showActiveFacilities"], ["showInactiveFacilities"], ["showSessions"]] as const)(
+		"is true when %s differs from the default",
+		(key) => {
+			expect(
+				isMapLayersCustomized({ ...MAP_LAYERS_DEFAULTS, [key]: !MAP_LAYERS_DEFAULTS[key] }),
+			).toBe(true);
+		},
+	);
 
 	it("is true only while a player filter has a value", () => {
 		expect(

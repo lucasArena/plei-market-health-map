@@ -7,9 +7,6 @@ import {
 	CLUSTER_HOVER_ITEM_CLASS,
 	CLUSTER_HOVER_LIST_CLASS,
 	CLUSTER_HOVER_NAME_CLASS,
-	CLUSTER_HOVER_TREND_CLASS,
-	FACILITY_HOVER_TEXT_CLASS,
-	HOVER_TREND_LINE_CLASS,
 } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.styles";
 import type { FacilityHoverCardProps } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
 import { HOVER_CARD_WIDTH } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
@@ -26,7 +23,6 @@ export function FacilityHoverCard({
 		clusterCard,
 		facilities,
 		facilityCard,
-		facilityTrend,
 		finishReveal,
 		labels,
 		listFadeClass,
@@ -64,11 +60,6 @@ export function FacilityHoverCard({
 						cluster: clusterCard && labels && (
 							<>
 								<p className={CLUSTER_HOVER_HEADING_CLASS}>{labels.title}</p>
-								{labels.trend && (
-									<p data-testid="cluster-hover-trend" className={CLUSTER_HOVER_TREND_CLASS}>
-										{labels.trend}
-									</p>
-								)}
 								{facilities.length > 0 && (
 									<>
 										<div
@@ -116,16 +107,7 @@ export function FacilityHoverCard({
 									avatarUrl={facilityCard.facility.avatarUrl}
 									appearance="muted"
 								/>
-								{facilityTrend ? (
-									<span className={FACILITY_HOVER_TEXT_CLASS}>
-										<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>
-										<span data-testid="facility-hover-trend" className={HOVER_TREND_LINE_CLASS}>
-											{facilityTrend}
-										</span>
-									</span>
-								) : (
-									<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>
-								)}
+								<span className={CLUSTER_HOVER_NAME_CLASS}>{facilityCard.facility.name}</span>
 							</button>
 						),
 					}[card.kind]

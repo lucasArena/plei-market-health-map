@@ -9,8 +9,6 @@ function assertMetrics(metrics: FacilityMetrics): FacilityMetrics {
 		metrics.gamesLastWeek,
 		metrics.gamesLast28Days,
 		...Object.values(metrics.gamesByDepartment ?? {}),
-		...(metrics.gamesPrevious28Days === undefined ? [] : [metrics.gamesPrevious28Days]),
-		...Object.values(metrics.gamesPreviousByDepartment ?? {}),
 	];
 	if (counts.some((value) => !Number.isInteger(value) || value < 0)) {
 		throw new ValidationError("Facility counts must be non-negative integers.");

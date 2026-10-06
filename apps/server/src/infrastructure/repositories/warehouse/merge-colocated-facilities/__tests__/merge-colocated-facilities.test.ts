@@ -178,27 +178,3 @@ it("sums department counts across colocated facility members", () => {
 	});
 	expect(merged[0]?.toJSON().metrics.gamesLast28Days).toBe(12);
 });
-
-it("sums previous window games across colocated facility members", () => {
-	const a = facility("1", "Shared pitch", 7).toJSON();
-	const b = facility("2", "Shared pitch | Other", 5).toJSON();
-	const merged = mergeColocatedFacilities([
-		Facility.create({
-			...a,
-			metrics: {
-				...a.metrics,
-				gamesPrevious28Days: 9,
-				gamesPreviousByDepartment: { magic: 4, organizers: 3, partnerships: 2 },
-			},
-		}),
-		Facility.create({
-			...b,
-			metrics: { ...b.metrics, gamesPrevious28Days: 2 },
-		}),
-	]);
-	expect(merged[0]?.toJSON().metrics).toMatchObject({
-		gamesLast28Days: 12,
-		gamesPrevious28Days: 11,
-		gamesPreviousByDepartment: { magic: 4, organizers: 3, partnerships: 2 },
-	});
-});

@@ -2,7 +2,6 @@ import {
 	buildFacilityNames,
 	buildSampleFacilities,
 	SPREAD_DEGREES,
-	samplePreviousGames,
 	scatterAround,
 } from "@server/infrastructure/repositories/sample/sample-facilities/sample-facilities";
 import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
@@ -88,20 +87,5 @@ describe("seeded random helpers", () => {
 		expect(distribute(10, [1, 1, 1]).reduce((a, b) => a + b, 0)).toBe(10);
 		expect(distribute(0, [0, 0])).toEqual([0, 0]);
 		expect(distribute(10, [1, 1, 1])).toEqual([4, 3, 3]);
-	});
-});
-
-describe("samplePreviousGames", () => {
-	it("gives every sample facility previous window games for the trend", async () => {
-		const facilities = await new SampleFacilityRepository().listAll();
-		const previous = facilities.map((facility) => facility.toJSON().metrics.gamesPrevious28Days);
-		expect(previous.every((games) => Number.isInteger(games) && (games ?? -1) >= 0)).toBe(true);
-	});
-
-	it("covers empty, quiet and busy previous windows", () => {
-		expect(samplePreviousGames(0, () => 0.2)).toBe(0);
-		expect(samplePreviousGames(0, () => 0.75)).toBe(9);
-		expect(samplePreviousGames(40, () => 0.01)).toBe(0);
-		expect(samplePreviousGames(40, () => 0.5)).toBe(40);
 	});
 });

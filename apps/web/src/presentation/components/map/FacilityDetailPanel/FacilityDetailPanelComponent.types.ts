@@ -1,4 +1,3 @@
-import type { GamesTrend } from "@market-health-map/core/domain";
 import type { Messages } from "@market-health-map/core/i18n";
 import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 import type { PopularTimeCellView } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.types";
@@ -12,8 +11,6 @@ export interface FacilityDetailPanelProps {
 	isClosing: boolean;
 	onClose: () => void;
 	onClosed: () => void;
-	/** Games trend for the facility, only while Show trend is on. */
-	trend?: GamesTrend | null;
 }
 
 export type FacilityDetailStatus = "loading" | "error" | "ready";

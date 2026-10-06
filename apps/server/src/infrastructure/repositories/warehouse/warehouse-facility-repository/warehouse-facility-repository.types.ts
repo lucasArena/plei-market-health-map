@@ -12,10 +12,6 @@ export interface WarehouseLocationRow {
 	magic_games?: number | string;
 	organizer_games?: number | string;
 	partnership_games?: number | string;
-	played_previous_28_days?: number | string;
-	magic_games_previous?: number | string;
-	organizer_games_previous?: number | string;
-	partnership_games_previous?: number | string;
 	company_id: number | string | null;
 	company_logo: string | null;
 }

@@ -30,9 +30,3 @@ export const CLUSTER_HOVER_FOOTER_CLASS =
 export const CLUSTER_HOVER_ENTER_CLASS = "cluster-hover-in";
 
 export const CLUSTER_HOVER_EXIT_CLASS = "cluster-hover-out";
-
-export const HOVER_TREND_LINE_CLASS = "block text-[12px] leading-4 text-muted-foreground";
-
-export const CLUSTER_HOVER_TREND_CLASS = `${HOVER_TREND_LINE_CLASS} px-2 -mt-1 pb-2`;
-
-export const FACILITY_HOVER_TEXT_CLASS = "flex min-w-0 flex-1 flex-col";

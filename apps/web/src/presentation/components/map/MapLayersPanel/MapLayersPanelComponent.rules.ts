@@ -19,11 +19,6 @@ export function useMapLayersPanelRules() {
 	const supplyMetric = showGamesSelector ? (layers?.supplyMetric ?? "games") : "facilities";
 	const selectSupplyMetric = (value: string) =>
 		layers?.setSupplyMetric?.(value === "games" ? "games" : "facilities");
-	const showGamesTrendToggle = useFeatureFlag("facility-games-trend") && showGamesSelector;
-	const setShowGamesTrend = layers?.setShowGamesTrend;
-	useEffect(() => {
-		if (!showGamesTrendToggle) setShowGamesTrend?.(false);
-	}, [showGamesTrendToggle, setShowGamesTrend]);
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const setSessionFilters = layers?.setSessionFilters;
 	useEffect(() => {
@@ -76,15 +71,11 @@ export function useMapLayersPanelRules() {
 	const [localShowInactiveFacilities, setLocalShowInactiveFacilities] = useState(
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
-	const [localShowGamesTrend, setLocalShowGamesTrend] = useState(
-		MAP_LAYERS_DEFAULTS.showGamesTrend,
-	);
 	const [localShowSessions, setLocalShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
 	const [resetCount, setResetCount] = useState(0);
 	const showActiveFacilities = layers?.showActiveFacilities ?? localShowActiveFacilities;
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
-	const showGamesTrend = layers?.showGamesTrend ?? localShowGamesTrend;
 	const demandMetric = showDemographics ? (layers?.demandMetric ?? "sessions") : "sessions";
 	const selectDemandMetric = (metric: "sessions" | "registrations") => {
 		layers?.setDemandMetric?.(metric);
@@ -98,7 +89,6 @@ export function useMapLayersPanelRules() {
 		isMapLayersCustomized({
 			showActiveFacilities,
 			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
-			showGamesTrend: showGamesTrendToggle && supplyMetric === "games" ? showGamesTrend : false,
 			showSessions,
 			sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
 		});
@@ -129,13 +119,6 @@ export function useMapLayersPanelRules() {
 		}
 		setLocalShowInactiveFacilities((current) => !current);
 	}, [layers]);
-	const toggleGamesTrend = useCallback(() => {
-		if (layers?.setShowGamesTrend) {
-			layers.setShowGamesTrend(!layers.showGamesTrend);
-			return;
-		}
-		setLocalShowGamesTrend((current) => !current);
-	}, [layers]);
 	const toggleSessions = useCallback(() => {
 		if (layers) {
 			layers.setShowSessions(!layers.showSessions);
@@ -149,7 +132,6 @@ export function useMapLayersPanelRules() {
 		layers?.resetLayers();
 		setLocalShowActiveFacilities(MAP_LAYERS_DEFAULTS.showActiveFacilities);
 		setLocalShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
-		setLocalShowGamesTrend(MAP_LAYERS_DEFAULTS.showGamesTrend);
 		setLocalShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
 		setResetCount((current) => current + 1);
 		rootRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]")?.focus();
@@ -179,7 +161,6 @@ export function useMapLayersPanelRules() {
 		demandMetric,
 		selectDemandMetric,
 		showGamesSelector,
-		showGamesTrendToggle,
 		supplyMetric,
 		selectSupplyMetric,
 		showDemographics,
@@ -196,12 +177,10 @@ export function useMapLayersPanelRules() {
 		rootRef,
 		showActiveFacilities,
 		showInactiveFacilities,
-		showGamesTrend,
 		showSessions,
 		toggleExpanded,
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
-		toggleGamesTrend,
 		toggleSessions,
 	};
 }

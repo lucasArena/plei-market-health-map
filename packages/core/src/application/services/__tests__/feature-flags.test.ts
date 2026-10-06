@@ -1,7 +1,4 @@
-import {
-	FEATURE_FLAG_KEYS,
-	FEATURE_FLAG_REQUIREMENTS,
-} from "@core/application/dtos/feature-flags-dto";
+import { FEATURE_FLAG_KEYS } from "@core/application/dtos/feature-flags-dto";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import { NotFoundError } from "@core/application/errors/not-found-error";
 import { makeListEnabledFeatureFlags } from "@core/application/services/list-enabled-feature-flags";
@@ -102,79 +99,5 @@ describe("feature flags", () => {
 				updatedBy: "lucas@plei.com",
 			}),
 		).rejects.toBeInstanceOf(NotFoundError);
-	});
-
-	it("declares the games trend as depending on the games layer", () => {
-		expect(FEATURE_FLAG_KEYS).toEqual(
-			expect.arrayContaining([
-				"player-demographic-filters",
-				"facility-games-layer",
-				"facility-games-trend",
-			]),
-		);
-		expect(FEATURE_FLAG_REQUIREMENTS).toEqual({ "facility-games-trend": "facility-games-layer" });
-		for (const [key, requires] of Object.entries(FEATURE_FLAG_REQUIREMENTS)) {
-			expect(FEATURE_FLAG_KEYS).toContain(key);
-			expect(FEATURE_FLAG_KEYS).toContain(requires);
-		}
-	});
-});
-
-describe("feature flag requirements", () => {
-	const keys = ["games", "trend", "loop-a", "loop-b"];
-	const requirements = { trend: "games", "loop-a": "loop-b", "loop-b": "loop-a" };
-	const at = new Date("2026-10-01T15:00:00Z");
-
-	function setup(enabled: Record<string, boolean>) {
-		const featureFlags = new InMemoryFeatureFlagRepository(
-			Object.entries(enabled).map(([key, on]) => ({
-				key,
-				enabled: on,
-				updatedBy: "lucas@plei.com",
-				updatedAt: at,
-			})),
-		);
-		return {
-			listEnabled: makeListEnabledFeatureFlags({ featureFlags, keys, requirements }),
-			list: makeListFeatureFlags({ featureFlags, keys, requirements }),
-			set: makeSetFeatureFlag({ featureFlags, clock, keys, requirements }),
-		};
-	}
-
-	it("keeps a flag out of effect until the flag it requires is on too", async () => {
-		await expect(setup({ trend: true }).listEnabled()).resolves.toEqual({ enabled: [] });
-		await expect(setup({ trend: true, games: false }).listEnabled()).resolves.toEqual({
-			enabled: [],
-		});
-		await expect(setup({ games: true }).listEnabled()).resolves.toEqual({ enabled: ["games"] });
-		await expect(setup({ games: true, trend: true }).listEnabled()).resolves.toEqual({
-			enabled: ["games", "trend"],
-		});
-	});
-
-	it("never puts flags that require each other in effect", async () => {
-		await expect(setup({ "loop-a": true, "loop-b": true }).listEnabled()).resolves.toEqual({
-			enabled: [],
-		});
-	});
-
-	it("shows admins the saved value and what a flag requires", async () => {
-		const { list, set } = setup({ trend: true });
-
-		await expect(list()).resolves.toEqual(
-			expect.arrayContaining([
-				{ key: "games", enabled: false, updatedBy: null, updatedAt: null },
-				{
-					key: "trend",
-					enabled: true,
-					updatedBy: "lucas@plei.com",
-					updatedAt: at.toISOString(),
-					requires: "games",
-				},
-			]),
-		);
-		await expect(
-			set({ key: "trend", enabled: false, updatedBy: "lucas@plei.com" }),
-		).resolves.toMatchObject({ key: "trend", enabled: false, requires: "games" });
 	});
 });

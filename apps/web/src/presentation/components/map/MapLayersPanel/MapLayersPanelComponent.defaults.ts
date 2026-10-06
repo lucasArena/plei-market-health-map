@@ -3,7 +3,6 @@ import type { MapLayersSettings } from "@/presentation/components/map/MapLayersP
 export const MAP_LAYERS_DEFAULTS: Readonly<MapLayersSettings> = {
 	showActiveFacilities: true,
 	showInactiveFacilities: false,
-	showGamesTrend: false,
 	showSessions: true,
 	sessionFilters: {},
 };
@@ -15,7 +14,6 @@ export function isMapLayersCustomized(settings: Readonly<MapLayersSettings>) {
 	return (
 		settings.showActiveFacilities !== MAP_LAYERS_DEFAULTS.showActiveFacilities ||
 		settings.showInactiveFacilities !== MAP_LAYERS_DEFAULTS.showInactiveFacilities ||
-		settings.showGamesTrend !== MAP_LAYERS_DEFAULTS.showGamesTrend ||
 		settings.showSessions !== MAP_LAYERS_DEFAULTS.showSessions ||
 		hasSessionFilters
 	);

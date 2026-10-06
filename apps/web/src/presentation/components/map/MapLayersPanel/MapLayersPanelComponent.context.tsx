@@ -18,7 +18,6 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 	const [showInactiveFacilities, setShowInactiveFacilities] = useState(
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
-	const [showGamesTrend, setShowGamesTrend] = useState(MAP_LAYERS_DEFAULTS.showGamesTrend);
 	const [demandMetric, setDemandMetric] = useState<"sessions" | "registrations">("sessions");
 	const [demandFiltersPresent, setDemandFiltersPresent] = useState(false);
 	const [supplyFiltersPresent, setSupplyFiltersPresent] = useState(false);
@@ -31,7 +30,6 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 	const resetLayers = useCallback(() => {
 		setShowActiveFacilities(MAP_LAYERS_DEFAULTS.showActiveFacilities);
 		setShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
-		setShowGamesTrend(MAP_LAYERS_DEFAULTS.showGamesTrend);
 		setShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
 		setDemandMetric("sessions");
 		setSupplyMetric("games");
@@ -56,8 +54,6 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 			setShowActiveFacilities,
 			showInactiveFacilities,
 			setShowInactiveFacilities,
-			showGamesTrend,
-			setShowGamesTrend,
 			sessionFilters,
 			setSessionFilters,
 			showSessions,
@@ -72,7 +68,6 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 			supplyMetric,
 			showActiveFacilities,
 			showInactiveFacilities,
-			showGamesTrend,
 			showSessions,
 			sessionFilters,
 			resetLayers,

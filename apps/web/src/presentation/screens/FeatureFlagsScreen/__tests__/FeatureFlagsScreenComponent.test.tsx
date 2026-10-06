@@ -16,7 +16,6 @@ const ROW = {
 	enabled: true,
 	state: "on",
 	statusLabel: "On",
-	requirement: null,
 	toggleLabel: "Turn new-panel off",
 	lastChange: "stefano@plei.com · Oct 1, 2026",
 };
@@ -37,15 +36,6 @@ function rulesWith(overrides: Record<string, unknown> = {}) {
 				state: "off",
 				statusLabel: "Off",
 				toggleLabel: "Turn quiet on",
-				lastChange: "Never switched",
-			},
-			{
-				...ROW,
-				key: "needs-panel",
-				description: "",
-				statusLabel: "On, waiting for new-panel",
-				requirement: "Only takes effect while new-panel is on.",
-				toggleLabel: "Turn needs-panel off",
 				lastChange: "Never switched",
 			},
 		],
@@ -72,9 +62,6 @@ describe("FeatureFlagsScreen", () => {
 		const switches = screen.getAllByRole("switch");
 		expect(switches[0]).toHaveAttribute("aria-checked", "true");
 		expect(switches[1]).toHaveAttribute("aria-checked", "false");
-		expect(switches[2]).toHaveAttribute("aria-checked", "true");
-		expect(screen.getByText("Only takes effect while new-panel is on.")).toBeInTheDocument();
-		expect(screen.getByText("On, waiting for new-panel")).toBeInTheDocument();
 		expect(screen.getByRole("link", { name: "Back to the map" })).toHaveAttribute("href", "/");
 
 		fireEvent.click(screen.getByRole("switch", { name: "Turn new-panel off" }));

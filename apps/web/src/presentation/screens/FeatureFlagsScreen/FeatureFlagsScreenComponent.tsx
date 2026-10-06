@@ -64,9 +64,6 @@ export function FeatureFlagsScreen() {
 										{row.description && (
 											<p className="text-xs text-muted-foreground">{row.description}</p>
 										)}
-										{row.requirement && (
-											<p className="text-xs text-muted-foreground italic">{row.requirement}</p>
-										)}
 									</div>
 								),
 								status: (
