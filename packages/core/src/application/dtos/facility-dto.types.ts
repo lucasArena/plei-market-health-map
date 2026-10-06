@@ -7,6 +7,7 @@ export interface FacilityPointView {
 	name: string;
 	avatarUrl: string | null;
 	isActive: boolean;
+	gamesLast28Days?: number;
 	isActiveLastWeek: boolean;
 	location: GeoPoint;
 }

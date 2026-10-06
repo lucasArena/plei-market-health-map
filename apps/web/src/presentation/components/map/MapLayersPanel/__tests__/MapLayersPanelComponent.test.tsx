@@ -64,13 +64,13 @@ describe("MapLayersPanel", () => {
 			"map-icon-button",
 			"text-map-icon",
 		);
-		expect(switchByName("Active facilities")).toHaveClass(
+		expect(switchByName("Facilities")).toHaveClass(
 			"bg-pleiful-pitch-green-80",
 			"h-[13px]",
 			"w-[22px]",
 			"p-[1px]",
 		);
-		expect(switchByName("Active facilities").firstElementChild).toHaveClass(
+		expect(switchByName("Facilities").firstElementChild).toHaveClass(
 			"size-[9px]",
 			"translate-x-[9px]",
 			"transition-transform",
@@ -100,13 +100,13 @@ describe("MapLayersPanel", () => {
 			"uppercase",
 		);
 		expect(screen.getByText("App sessions")).toHaveClass("text-sm", "font-medium");
-		expect(screen.getByText("Active facilities")).toHaveClass("text-sm", "font-medium");
-		expect(screen.getByText("Inactive facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Facilities")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByText("Show inactive facilities")).toHaveClass("text-sm", "font-medium");
 		expect(screen.getByText("App sessions").parentElement).toHaveClass("px-2", "py-1.5", "gap-2");
 		expect(screen.getByText("App sessions").parentElement).not.toHaveClass("text-sm");
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
-		expect(screen.getByText("Active facilities").previousElementSibling).toBeNull();
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
+		expect(screen.getByText("Facilities").previousElementSibling).toBeNull();
+		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
@@ -116,28 +116,28 @@ describe("MapLayersPanel", () => {
 				<MapLayersPanel />
 			</MapLayersProvider>,
 		);
-		fireEvent.click(switchByName("Inactive facilities"));
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
-		fireEvent.click(switchByName("Active facilities"));
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "false");
-		fireEvent.click(switchByName("Inactive facilities"));
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("Show inactive facilities"));
+		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
+		fireEvent.click(switchByName("Facilities"));
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
+		fireEvent.click(switchByName("Show inactive facilities"));
+		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
 	});
 
 	it("toggles inactive facilities without a provider", () => {
 		renderWithMessages(<MapLayersPanel />);
-		fireEvent.click(switchByName("Inactive facilities"));
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
+		fireEvent.click(switchByName("Show inactive facilities"));
+		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("toggles the facilities layer", () => {
 		renderWithMessages(<MapLayersPanel />);
 
-		fireEvent.click(switchByName("Active facilities"));
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "false");
-		expect(switchByName("Active facilities")).toHaveClass("bg-[#e5e5e5]");
-		expect(switchByName("Active facilities").firstElementChild).toHaveClass("translate-x-0");
+		fireEvent.click(switchByName("Facilities"));
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Facilities")).toHaveClass("bg-[#e5e5e5]");
+		expect(switchByName("Facilities").firstElementChild).toHaveClass("translate-x-0");
 		fireEvent.click(switchByName("App sessions"));
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "false");
 		fireEvent.click(switchByName("App sessions"));
@@ -158,9 +158,9 @@ describe("MapLayersPanel", () => {
 		);
 
 		expect(screen.getByText("true")).toBeInTheDocument();
-		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("Facilities"));
 		expect(screen.getByText("false")).toBeInTheDocument();
-		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("Facilities"));
 		expect(screen.getByText("true")).toBeInTheDocument();
 	});
 
@@ -203,7 +203,7 @@ describe("MapLayersPanel", () => {
 		});
 
 		expect(screen.queryByText("Demand")).not.toBeInTheDocument();
-		expect(screen.queryByRole("switch", { name: "Active facilities" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("switch", { name: "Facilities" })).not.toBeInTheDocument();
 		const expand = screen.getByRole("button", { name: "Show layers" });
 		expect(expand).toHaveClass("map-glass", "map-icon-button", "rounded-full");
 		expect(expand.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
@@ -213,7 +213,7 @@ describe("MapLayersPanel", () => {
 
 		expect(screen.getByText("Demand").closest(".search-results-in")).toBeInTheDocument();
 		expect(screen.queryByText("Layers")).not.toBeInTheDocument();
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("hides the layers control away from the map", () => {
@@ -286,7 +286,7 @@ describe("MapLayersPanel", () => {
 		expect(button).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
 
-		for (const name of ["App sessions", "Active facilities", "Inactive facilities"]) {
+		for (const name of ["App sessions", "Facilities", "Show inactive facilities"]) {
 			fireEvent.click(switchByName(name));
 			expect(button).toHaveAttribute("data-active", "true");
 			expect(screen.getByTestId("layers-indicator")).toHaveClass(
@@ -374,14 +374,14 @@ describe("MapLayersPanel reset", () => {
 
 		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
-		expect(switchByName("Inactive facilities").parentElement?.nextElementSibling).toBeNull();
+		expect(switchByName("Show inactive facilities").parentElement?.nextElementSibling).toBeNull();
 	});
 
 	it("appears in a right-aligned footer inside the glass card when a setting differs", () => {
 		renderWithProvider();
 		const card = screen.getByRole("heading", { name: "Demand" }).parentElement;
 
-		for (const name of ["App sessions", "Active facilities", "Inactive facilities"]) {
+		for (const name of ["App sessions", "Facilities", "Show inactive facilities"]) {
 			fireEvent.click(switchByName(name));
 			const reset = screen.getByRole("button", { name: "Reset" });
 			expect(reset).toBeEnabled();
@@ -390,7 +390,7 @@ describe("MapLayersPanel reset", () => {
 			expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 		}
 
-		fireEvent.click(switchByName("Inactive facilities"));
+		fireEvent.click(switchByName("Show inactive facilities"));
 		const reset = screen.getByRole("button", { name: "Reset" });
 		const footer = reset.parentElement;
 		expect(card).toHaveClass("map-glass");
@@ -406,13 +406,12 @@ describe("MapLayersPanel reset", () => {
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
 
 		fireEvent.click(switchByName("App sessions"));
-		fireEvent.click(switchByName("Active facilities"));
-		fireEvent.click(switchByName("Inactive facilities"));
+		fireEvent.click(switchByName("Games"));
 		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(
 			JSON.stringify({
 				showActiveFacilities: false,
-				showInactiveFacilities: true,
+				showInactiveFacilities: false,
 				showSessions: false,
 				sessionFilters: { gender: "Female" },
 			}),
@@ -423,8 +422,10 @@ describe("MapLayersPanel reset", () => {
 
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(switchByName("Games")).toHaveAttribute("aria-checked", "true");
+		expect(
+			screen.queryByRole("switch", { name: "Show inactive facilities" }),
+		).not.toBeInTheDocument();
 		expect(toggle).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
@@ -449,11 +450,11 @@ describe("MapLayersPanel reset", () => {
 	it("restores the defaults without a provider", () => {
 		renderWithMessages(<MapLayersPanel />);
 
-		fireEvent.click(switchByName("Active facilities"));
+		fireEvent.click(switchByName("Facilities"));
 		fireEvent.click(switchByName("App sessions"));
 		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
-		expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
@@ -466,7 +467,7 @@ describe("MapLayersPanel reset", () => {
 			</MessagesProvider>,
 		);
 
-		fireEvent.click(screen.getByRole("switch", { name: "Instalações ativas" }));
+		fireEvent.click(screen.getByRole("switch", { name: "Instalações" }));
 		expect(screen.getByRole("button", { name: "Redefinir" })).toBeInTheDocument();
 	});
 });
@@ -572,5 +573,64 @@ it("navigates demand options with the keyboard and closes on Escape and outside 
 	fireEvent.click(trigger);
 	fireEvent.pointerDown(document.body);
 	expect(screen.queryByRole("listbox", { name: "Demand" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("defaults to Games and resets supply back to Games", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	const trigger = screen.getByRole("button", { name: "Supply" });
+	expect(trigger).toHaveTextContent("Games");
+	fireEvent.keyDown(trigger, { key: "ArrowDown" });
+	const active = screen.getByRole("option", { name: "Facilities" });
+	const games = screen.getByRole("option", { name: "Games" });
+	expect(games).toHaveFocus();
+	expect(screen.getAllByRole("option")).toEqual([games, active]);
+	fireEvent.keyDown(games, { key: "End" });
+	expect(active).toHaveFocus();
+	fireEvent.keyDown(active, { key: "ArrowUp" });
+	expect(games).toHaveFocus();
+	fireEvent.keyDown(games, { key: "Home" });
+	expect(games).toHaveFocus();
+	fireEvent.keyDown(games, { key: "Escape" });
+	expect(trigger).toHaveFocus();
+	fireEvent.click(trigger);
+	fireEvent.pointerDown(document.body);
+	expect(screen.queryByRole("listbox", { name: "Supply" })).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
+	fireEvent.click(trigger);
+	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+	expect(trigger).toHaveTextContent("Facilities");
+	expect(trigger).toHaveFocus();
+	expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Games");
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+it("shows the inactive sub-filter only for Facilities and defaults it off", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	expect(
+		screen.queryByRole("switch", { name: "Show inactive facilities" }),
+	).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+	expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
+	fireEvent.click(switchByName("Show inactive facilities"));
+	expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "true");
+	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+	fireEvent.click(screen.getByRole("option", { name: "Games" }));
+	expect(
+		screen.queryByRole("switch", { name: "Show inactive facilities" }),
+	).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });

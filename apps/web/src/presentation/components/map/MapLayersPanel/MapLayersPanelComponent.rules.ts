@@ -15,6 +15,10 @@ import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion"
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
+	const showGamesSelector = useFeatureFlag("facility-games-layer");
+	const supplyMetric = showGamesSelector ? (layers?.supplyMetric ?? "games") : "facilities";
+	const selectSupplyMetric = (value: string) =>
+		layers?.setSupplyMetric?.(value === "games" ? "games" : "facilities");
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const setSessionFilters = layers?.setSessionFilters;
 	useEffect(() => {
@@ -79,9 +83,10 @@ export function useMapLayersPanelRules() {
 	};
 	const isCustomized =
 		demandMetric !== "sessions" ||
+		(showGamesSelector && supplyMetric !== "games") ||
 		isMapLayersCustomized({
 			showActiveFacilities,
-			showInactiveFacilities,
+			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
 			showSessions,
 			sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
 		});
@@ -153,6 +158,9 @@ export function useMapLayersPanelRules() {
 		demandKeys,
 		demandMetric,
 		selectDemandMetric,
+		showGamesSelector,
+		supplyMetric,
+		selectSupplyMetric,
 		showDemographics,
 		cardMotion: motion,
 		closeOnEscape,

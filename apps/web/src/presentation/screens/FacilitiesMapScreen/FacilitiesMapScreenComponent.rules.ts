@@ -129,6 +129,7 @@ export function toFacilityFeatureCollection(
 				marketName: facility.marketName,
 				name: facility.name,
 				isActive: facility.isActive,
+				gamesLast28Days: facility.gamesLast28Days ?? 0,
 			},
 		})),
 	};
@@ -427,7 +428,17 @@ function facilityGlassHosts(map: MapLibreMap) {
 	});
 }
 
-function clusterGlassLabel(properties: ClusterGlassFeature["properties"]) {
+const supplyCountFormatter = new Intl.NumberFormat("en", {
+	notation: "compact",
+	maximumFractionDigits: 1,
+});
+
+function formatSupplyCount(count: number) {
+	return count >= 1000 ? supplyCountFormatter.format(count) : String(count);
+}
+
+function clusterGlassLabel(properties: ClusterGlassFeature["properties"], showGames: boolean) {
+	if (showGames) return formatSupplyCount(properties?.gameCount ?? 0);
 	const abbreviated = properties?.point_count_abbreviated;
 	if (typeof abbreviated === "string" || typeof abbreviated === "number")
 		return String(abbreviated);
@@ -448,6 +459,7 @@ function clusterGlassCoordinates(feature: ClusterGlassFeature): [number, number]
 export function readClusterGlassBadges(
 	features: readonly ClusterGlassFeature[],
 	project: (coordinates: [number, number]) => { x: number; y: number },
+	showGames = false,
 ) {
 	const seen = new Set<number>();
 	const badges: ClusterGlassBadge[] = [];
@@ -459,7 +471,7 @@ export function readClusterGlassBadges(
 		const point = project(coordinates);
 		badges.push({
 			id: clusterId,
-			label: clusterGlassLabel(feature.properties),
+			label: clusterGlassLabel(feature.properties, showGames),
 			x: point.x,
 			y: point.y,
 			active: clusterGlassActive(feature.properties),
@@ -561,6 +573,7 @@ function facilityGlassActive(active: unknown) {
 export function readFacilityGlassBadges(
 	features: readonly ClusterGlassFeature[],
 	project: (coordinates: [number, number]) => { x: number; y: number },
+	showGames = false,
 ) {
 	const seen = new Set<string>();
 	const badges: FacilityGlassBadge[] = [];
@@ -582,6 +595,7 @@ export function readFacilityGlassBadges(
 			x: point.x,
 			y: point.y,
 			active: facilityGlassActive(feature.properties?.isActive),
+			...(showGames ? { label: formatSupplyCount(feature.properties?.gamesLast28Days ?? 0) } : {}),
 		});
 	}
 	return badges;
@@ -600,7 +614,14 @@ export function createFacilityGlassNode() {
 	logo.style.objectFit = "contain";
 	logo.style.borderRadius = "999px";
 	ignorePointer(logo);
-	node.appendChild(logo);
+	const label = document.createElement("span");
+	label.dataset.testid = "facility-glass-label";
+	label.style.fontSize = "14px";
+	label.style.fontWeight = "600";
+	label.style.lineHeight = "1";
+	label.style.display = "none";
+	ignorePointer(label);
+	node.append(logo, label);
 	node.style.backgroundColor = FACILITY_GLASS_FILL;
 	return node;
 }
@@ -647,6 +668,17 @@ export function syncFacilityGlass(
 			[`${badge.id === selectedId}`]: FACILITY_GLASS_SELECTED_SHADOW,
 		}.true as string;
 		applyFacilityGlassActivity(current, badge.active);
+		const logo = current.querySelector("[data-testid='facility-glass-core']");
+		const label = current.querySelector("[data-testid='facility-glass-label']");
+		const showCount = badge.label !== undefined;
+		if (logo instanceof HTMLElement) logo.style.display = showCount ? "none" : "";
+		if (label instanceof HTMLElement) {
+			label.textContent = badge.label ?? "";
+			label.style.display = showCount ? "" : "none";
+			label.style.color = badge.active ? CLUSTER_GLASS_LABEL : CLUSTER_GLASS_INACTIVE_LABEL;
+		}
+		current.style.width = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
+		current.style.height = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
 		current.style.transform = `translate(${badge.x}px, ${badge.y}px) translate(-50%, -50%)`;
 	}
 	for (const [id, node] of nodes) {
@@ -692,6 +724,7 @@ export function bindFacilityGlass(
 	selectedFacilityIdRef: { current: string | null },
 	hoveredClusterIdRef: { current: number | null } = { current: null },
 	refreshClusterMarkersRef: { current: () => void } = { current: () => undefined },
+	showGamesRef: { current: boolean } = { current: false },
 ) {
 	const container = map.getContainer();
 	if (!(container instanceof HTMLElement)) return;
@@ -722,6 +755,7 @@ export function bindFacilityGlass(
 				: readClusterGlassBadges(
 						map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] }) as ClusterGlassFeature[],
 						project,
+						showGamesRef.current,
 					);
 		const facilities =
 			hidden || !map.getLayer(FACILITIES_LAYER_ID)
@@ -731,6 +765,7 @@ export function bindFacilityGlass(
 							layers: [FACILITIES_LAYER_ID],
 						}) as ClusterGlassFeature[],
 						project,
+						showGamesRef.current,
 					);
 		syncClusterGlass(host, badges, nodes, hoveredClusterIdRef.current);
 		syncFacilityGlass(facilityHost, facilities, facilityNodes, selectedFacilityIdRef.current);
@@ -763,6 +798,9 @@ export function useFacilitiesMapScreenRules() {
 	const mapLayers = useMapLayers();
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
+	const showGames = useFeatureFlag("facility-games-layer") && mapLayers?.supplyMetric === "games";
+	const showGamesRef = useRef(showGames);
+	showGamesRef.current = showGames;
 	const heatmapQuery = useAppSessionHeatmap(
 		isRegistrations
 			? { ...mapLayers?.sessionFilters, metric: "registrations" }
@@ -785,7 +823,7 @@ export function useFacilitiesMapScreenRules() {
 	const showActiveFacilities =
 		mapLayers?.showActiveFacilities ?? MAP_LAYERS_DEFAULTS.showActiveFacilities;
 	const showInactiveFacilities =
-		mapLayers?.showInactiveFacilities ?? MAP_LAYERS_DEFAULTS.showInactiveFacilities;
+		!showGames && (mapLayers?.showInactiveFacilities ?? MAP_LAYERS_DEFAULTS.showInactiveFacilities);
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? MAP_LAYERS_DEFAULTS.showSessions;
 	const filters = mapLayers?.sessionFilters;
@@ -819,9 +857,13 @@ export function useFacilitiesMapScreenRules() {
 	const shownFacilities = useMemo(
 		() =>
 			facilities.filter((facility) =>
-				facility.isActive ? showActiveFacilities : showInactiveFacilities,
+				showGames
+					? showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0
+					: facility.isActive
+						? showActiveFacilities
+						: showInactiveFacilities,
 			),
-		[facilities, showActiveFacilities, showInactiveFacilities],
+		[facilities, showActiveFacilities, showInactiveFacilities, showGames],
 	);
 	const featureCollection = useMemo(
 		() => toFacilityFeatureCollection(shownFacilities),
@@ -1129,6 +1171,7 @@ export function useFacilitiesMapScreenRules() {
 					clusterMaxZoom: CLUSTER_MAX_ZOOM,
 					clusterProperties: {
 						[CLUSTER_ACTIVE_COUNT_KEY]: CLUSTER_ACTIVE_COUNT_EXPRESSION,
+						gameCount: ["+", ["get", "gamesLast28Days"]],
 					},
 				});
 				created.addLayer({
@@ -1372,8 +1415,21 @@ export function useFacilitiesMapScreenRules() {
 			selectedFacilityIdRef,
 			hoveredClusterIdRef,
 			refreshClusterMarkersRef,
+			showGamesRef,
 		);
 	}, [isMapReady]);
+
+	useEffect(() => {
+		if (!isMapReady) return;
+		showGamesRef.current = showGames;
+		mapRef.current?.setPaintProperty(
+			FACILITIES_LAYER_ID,
+			"circle-radius",
+			showGames ? CLUSTER_OUTER_DIAMETER / 2 : FACILITY_GLASS_DIAMETER / 2,
+		);
+		refreshClusterMarkersRef.current();
+		mapRef.current?.triggerRepaint();
+	}, [isMapReady, showGames]);
 
 	const {
 		finishReveal: finishLegendMotion,

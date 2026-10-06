@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const FEATURE_FLAG_KEYS = [
 	"player-demographic-filters",
+	"facility-games-layer",
 ] as const satisfies readonly string[];
 
 export const setFeatureFlagSchema = z.object({
