@@ -50,6 +50,7 @@ export function MapLayersPanel() {
 		demandMetric,
 		selectDemandMetric,
 		showGamesSelector,
+		showGamesTrendToggle,
 		supplyMetric,
 		selectSupplyMetric,
 		cardMotion,
@@ -65,10 +66,12 @@ export function MapLayersPanel() {
 		rootRef,
 		showActiveFacilities,
 		showInactiveFacilities,
+		showGamesTrend,
 		showSessions,
 		toggleExpanded,
 		toggleActiveFacilities,
 		toggleInactiveFacilities,
+		toggleGamesTrend,
 		toggleSessions,
 	} = useMapLayersPanelRules();
 	const collapseLabel = {
@@ -201,7 +204,9 @@ export function MapLayersPanel() {
 							onToggle={toggleSessions}
 						/>
 					</div>
-					{showDemographics && <AppSessionFilters key={resetCount} showSessions={showSessions} />}
+					{showDemographics && showSessions && (
+						<AppSessionFilters key={resetCount} showSessions={showSessions} />
+					)}
 					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersSupply}
 					</h2>
@@ -228,15 +233,23 @@ export function MapLayersPanel() {
 							onToggle={toggleActiveFacilities}
 						/>
 					</div>
-					{showGamesSelector && (
+					{showGamesSelector && showActiveFacilities && (
 						<GameDepartmentFilter
 							key={`game-departments-${resetCount}`}
-							enabled={
-								showActiveFacilities || (supplyMetric === "facilities" && showInactiveFacilities)
-							}
+							enabled={showActiveFacilities}
 						/>
 					)}
-					{supplyMetric === "facilities" && (
+					{showGamesTrendToggle && showActiveFacilities && supplyMetric === "games" && (
+						<div className="flex w-full items-center justify-between gap-2 rounded-sm pl-5 pr-2 py-1.5">
+							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.trend.toggle}</p>
+							<LayerSwitch
+								checked={showGamesTrend}
+								label={messages.trend.toggle}
+								onToggle={toggleGamesTrend}
+							/>
+						</div>
+					)}
+					{showActiveFacilities && supplyMetric === "facilities" && (
 						<div className="flex w-full items-center justify-between gap-2 rounded-sm pl-5 pr-2 py-1.5">
 							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersInactiveFacilities}</p>
 							<LayerSwitch

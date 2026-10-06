@@ -119,8 +119,14 @@ The Demand picker uses a custom glass listbox matching the demographic filter op
 
 The Supply Department multi-select is shared by Games and Facilities under `facility-games-layer`. No selection includes all departments; multiple choices are ORed. Warehouse game counts classify Magic first by partner IDs 6, 52, 62, then Organizers by distinct partners with a current non-deleted Organizer Program term in `fct_terms`, and remaining games as Partnerships. Each facility DTO includes disjoint department totals; co-located facilities sum them. Selected departments determine game badge totals and the matching venues in Facilities mode over the same 28 completed days. Switching metrics preserves selections, and Reset clears them. Organizer membership is current-state, not reconstructed historical membership. Facility detail/hover data retains its existing unfiltered behavior.
 
+`facility-games-trend` gates the games trend: the Show trend switch under Games and everything it drives (trend rings and tips and hover changes). It requires `facility-games-layer` (`FEATURE_FLAG_REQUIREMENTS` in `feature-flags-dto.ts`), so it takes effect only while both are on: `GET /api/v1/feature-flags` lists it only then, and the Feature flags page notes the requirement and shows "On, waiting for facility-games-layer" while games is off. `listFacilities` reads the flags in effect and leaves `gamesLast28Days` and the department totals out of `/api/v1/facilities` while games is off, and the previous window (`gamesPrevious28Days`, `gamesPreviousByDepartment`) while the trend is off. Under `next dev` the server treats every flag as on, matching `useFeatureFlag`. Both flags start off like any new flag, so an admin turns on `facility-games-layer` and then `facility-games-trend`.
+
+Trend markers share one glass circle size and continuous colored outline. Growth uses the default pastel green and decline uses pastel red. Drops to zero from a nonzero previous period count as decline and stay visible as declining markers while trend is enabled.
+
 Supply filters share Demand’s Add filter flow and styling: choose Department, edit a removable chip, stage multi-select options and Apply. Reset clears the chip and applied selection.
 
 Demand and Supply filter selections are displayed in their chips only; the redundant applied/all-population summary lines are omitted. Pending changes, Apply and data status messages remain.
 
 Reset is available only in the Layers panel footer. Added filter chips make the footer Reset available even before Apply; it clears both Demand and Supply draft/applied filters.
+
+Games trend direction follows every count change without percentage or minimum-game thresholds: any increase is green/up, any decrease is red/down, and exactly equal counts are gray/rightward. Hover text reports the count difference.

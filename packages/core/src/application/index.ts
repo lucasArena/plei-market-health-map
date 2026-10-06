@@ -38,7 +38,11 @@ export type {
 	GetFacilityReservationStatsInput,
 } from "@core/application/dtos/facility-detail-dto.types";
 export type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
-export { FEATURE_FLAG_KEYS, setFeatureFlagSchema } from "@core/application/dtos/feature-flags-dto";
+export {
+	FEATURE_FLAG_KEYS,
+	FEATURE_FLAG_REQUIREMENTS,
+	setFeatureFlagSchema,
+} from "@core/application/dtos/feature-flags-dto";
 export type {
 	EnabledFeatureFlagsView,
 	FeatureFlagKey,

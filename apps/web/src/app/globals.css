@@ -643,3 +643,67 @@ button.map-icon-button[aria-expanded="true"],
     transition-duration: 1ms;
   }
 }
+
+.games-trend-tip[data-trend-tip] {
+  width: 45px !important;
+  height: 45px !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.games-trend-tip[data-trend-tip] [data-testid="cluster-glass-stroke"] {
+  visibility: hidden;
+}
+
+.games-trend-tip[data-trend-tip]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--games-trend-inner) * 2 + 1px);
+  height: calc(var(--games-trend-inner) * 2 + 1px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.08) 60%),
+    rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(18px) saturate(1.8);
+  -webkit-backdrop-filter: blur(18px) saturate(1.8);
+  pointer-events: none;
+}
+
+.games-trend-tip[data-trend-tip] [data-testid="cluster-glass-label"],
+.games-trend-tip[data-trend-tip] [data-testid="facility-glass-label"] {
+  position: relative;
+  z-index: 1;
+}
+
+.games-trend-tip[data-trend-tip]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--games-trend-tip-box);
+  height: var(--games-trend-tip-box);
+  margin-left: calc(var(--games-trend-tip-box) / -2);
+  margin-top: calc(var(--games-trend-tip-box) / -2);
+  background: var(--games-trend-color);
+  pointer-events: none;
+}
+
+.games-trend-tip[data-trend-tip="up"]::after {
+  clip-path: var(--games-trend-shape-up);
+}
+
+.games-trend-tip[data-trend-tip="down"]::after {
+  clip-path: var(--games-trend-shape-down);
+}
+
+.games-trend-tip[data-trend-tip="stable"]::after {
+  clip-path: var(--games-trend-shape-stable);
+  transform: rotate(-90deg);
+}

@@ -5,6 +5,7 @@ import type {
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
 import type { EntityId } from "@market-health-map/core/domain";
+import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseFacilityGameComparisonRow,
 	WarehouseFacilityPlayerStatsRow,
@@ -13,7 +14,7 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository.types";
 
 export const FACILITY_GAME_COMPARISONS_SQL = `
-with bounds as (select current_date as today)
+with bounds as (select ${WAREHOUSE_TODAY_SQL} as today)
 select r.location_id,
  count(distinct r.reservation_id) filter (where r.date_with_time::date >= b.today - 28) as played_last_28_days,
  count(distinct r.reservation_id) filter (where r.date_with_time::date < b.today - 28) as played_previous_28_days

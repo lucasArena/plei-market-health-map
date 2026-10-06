@@ -10,9 +10,9 @@ import {
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
-const mockFeatureFlag = vi.fn(() => false);
+const mockFeatureFlag = vi.fn((_key: string) => false);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
-	useFeatureFlag: () => mockFeatureFlag(),
+	useFeatureFlag: (key: string) => mockFeatureFlag(key),
 }));
 vi.mock("@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent", () => ({
 	AppSessionFilters: () => <div>Player filters</div>,
@@ -110,7 +110,7 @@ describe("MapLayersPanel", () => {
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
 	});
 
-	it("toggles inactive facilities independently", () => {
+	it("hides inactive facilities controls while Supply is off and retains their setting", () => {
 		renderWithMessages(
 			<MapLayersProvider>
 				<MapLayersPanel />
@@ -121,8 +121,11 @@ describe("MapLayersPanel", () => {
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "true");
 		fireEvent.click(switchByName("Facilities"));
 		expect(switchByName("Facilities")).toHaveAttribute("aria-checked", "false");
-		fireEvent.click(switchByName("Show inactive facilities"));
-		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "false");
+		expect(
+			screen.queryByRole("switch", { name: "Show inactive facilities" }),
+		).not.toBeInTheDocument();
+		fireEvent.click(switchByName("Facilities"));
+		expect(switchByName("Show inactive facilities")).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("toggles inactive facilities without a provider", () => {
@@ -673,5 +676,175 @@ it("offers only the footer Reset for pending filter pills", () => {
 	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
 	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});
+
+describe("Show trend", () => {
+	function TrendState() {
+		const layers = useMapLayers();
+		return <output data-testid="trend-state">{String(layers?.showGamesTrend)}</output>;
+	}
+
+	function renderTrendPanel() {
+		return renderWithMessages(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<TrendState />
+			</MapLayersProvider>,
+		);
+	}
+
+	afterEach(() => {
+		mockFeatureFlag.mockReturnValue(false);
+	});
+
+	it("sits under Games, off by default, styled like the inactive facilities switch", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderTrendPanel();
+
+		const trend = switchByName("Show trend");
+		expect(trend).toHaveAttribute("aria-checked", "false");
+		expect(trend).toHaveClass("bg-[#e5e5e5]", "h-[13px]", "w-[22px]", "p-[1px]");
+		expect(trend.parentElement).toHaveClass("pl-5", "pr-2", "py-1.5");
+		expect(screen.getByText("Show trend")).toHaveClass("text-sm", "font-medium");
+		expect(screen.getByTestId("trend-state")).toHaveTextContent("false");
+
+		fireEvent.click(trend);
+		expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Show trend")).toHaveClass("bg-pleiful-pitch-green-80");
+		expect(screen.getByTestId("trend-state")).toHaveTextContent("true");
+	});
+
+	it("only appears for the Games supply", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderTrendPanel();
+
+		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+		fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+		fireEvent.click(screen.getByRole("option", { name: "Games" }));
+		expect(switchByName("Show trend")).toBeInTheDocument();
+	});
+
+	it("keeps its state for Games while hidden in Facilities mode", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderTrendPanel();
+		fireEvent.click(switchByName("Show trend"));
+
+		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+		fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
+		expect(screen.getByTestId("trend-state")).toHaveTextContent("true");
+
+		fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+		fireEvent.click(screen.getByRole("option", { name: "Games" }));
+		expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "true");
+	});
+
+	it("turns Show trend back off when the trend flag goes off", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		const { rerender } = renderTrendPanel();
+		fireEvent.click(switchByName("Show trend"));
+		expect(screen.getByTestId("trend-state")).toHaveTextContent("true");
+
+		mockFeatureFlag.mockImplementation((key) => key !== "facility-games-trend");
+		rerender(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<TrendState />
+			</MapLayersProvider>,
+		);
+		expect(screen.getByTestId("trend-state")).toHaveTextContent("false");
+		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
+		mockFeatureFlag.mockImplementation(() => false);
+	});
+
+	it("is hidden when the games layer flag is off", () => {
+		renderTrendPanel();
+		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
+	});
+
+	it("is hidden, and never counts as customized, while the trend flag is off", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		const { rerender } = renderTrendPanel();
+		fireEvent.click(switchByName("Show trend"));
+		expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
+
+		mockFeatureFlag.mockImplementation((key) => key !== "facility-games-trend");
+		rerender(
+			<MapLayersProvider>
+				<MapLayersPanel />
+				<TrendState />
+			</MapLayersProvider>,
+		);
+
+		expect(screen.getByRole("button", { name: "Supply" })).toBeInTheDocument();
+		expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	});
+
+	it("turns on the dot and Reset, and Reset turns it back off", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderTrendPanel();
+		const button = screen.getByRole("button", { name: "Hide layers" });
+		expect(button).toHaveAttribute("data-active", "false");
+
+		fireEvent.click(switchByName("Show trend"));
+		expect(button).toHaveAttribute("data-active", "true");
+		expect(screen.getByTestId("layers-indicator")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+		expect(screen.getByTestId("trend-state")).toHaveTextContent("false");
+		expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "false");
+		expect(button).toHaveAttribute("data-active", "false");
+		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	});
+
+	it("toggles and resets without a provider", () => {
+		mockFeatureFlag.mockReturnValue(true);
+		renderWithMessages(<MapLayersPanel />);
+
+		fireEvent.click(switchByName("Show trend"));
+		expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "true");
+		fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+		expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "false");
+	});
+
+	it.each([
+		["pt-BR", "Mostrar tendência"],
+		["es", "Mostrar tendencia"],
+	] as const)("reads the %s label", (locale, label) => {
+		mockFeatureFlag.mockReturnValue(true);
+		render(
+			<MessagesProvider locale={locale} messages={getMessages(locale)}>
+				<MapLayersPanel />
+			</MessagesProvider>,
+		);
+		expect(screen.getByRole("switch", { name: label })).toHaveAttribute("aria-checked", "false");
+	});
+});
+
+it("hides sub-filters when their parent layer is off and restores them when on", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	fireEvent.click(switchByName("Show trend"));
+	fireEvent.click(switchByName("Games"));
+	expect(screen.queryByRole("switch", { name: "Show trend" })).not.toBeInTheDocument();
+	expect(screen.queryByRole("region", { name: "Department" })).not.toBeInTheDocument();
+	expect(screen.getByText("Player filters")).toBeInTheDocument();
+	fireEvent.click(switchByName("Games"));
+	expect(switchByName("Show trend")).toHaveAttribute("aria-checked", "true");
+	expect(screen.getByRole("region", { name: "Department" })).toBeInTheDocument();
+	fireEvent.click(switchByName("App sessions"));
+	expect(screen.queryByText("Player filters")).not.toBeInTheDocument();
+	expect(switchByName("Show trend")).toBeInTheDocument();
+	fireEvent.click(switchByName("App sessions"));
+	expect(screen.getByText("Player filters")).toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
