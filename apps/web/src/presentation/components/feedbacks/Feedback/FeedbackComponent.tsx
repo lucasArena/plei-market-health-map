@@ -216,7 +216,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 										</span>
 										<span className="flex min-w-0 flex-col gap-0.5 text-left">
 											<span className="font-medium">{messages[candidate.title]}</span>
-											<span className="text-xs font-normal text-muted-foreground">
+											<span className="truncate text-xs font-normal text-muted-foreground">
 												{messages[candidate.description]}
 											</span>
 										</span>
@@ -226,12 +226,17 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 									<Link
 										href={{ pathname: "/admin/metrics" }}
 										onClick={close}
-										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} items-start gap-3 py-2`}
 									>
 										<span className={FEEDBACK_ICON_WELL_CLASS}>
 											<AdminControlsIcon />
 										</span>
-										<span className="font-medium">{accountMessages.adminControls}</span>
+										<span className="flex min-w-0 flex-col gap-0.5 text-left">
+											<span className="font-medium">{accountMessages.adminControls}</span>
+											<span className="truncate text-xs font-normal text-muted-foreground">
+												{accountMessages.adminControlsDescription}
+											</span>
+										</span>
 									</Link>
 								)}
 							</div>

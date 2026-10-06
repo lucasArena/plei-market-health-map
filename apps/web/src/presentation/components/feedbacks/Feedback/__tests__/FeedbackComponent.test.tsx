@@ -56,9 +56,10 @@ describe("Feedback", () => {
 			expect(footer?.lastElementChild?.previousElementSibling?.previousElementSibling).toBe(
 				signOut.closest("form"),
 			);
-			const adminControls = screen.queryByRole("link", { name: "Admin controls" });
+			const adminControls = screen.queryByRole("link", { name: /^Admin controls/ });
 			if (isAdmin) {
 				expect(adminControls).toHaveAttribute("href", "/admin/metrics");
+				expect(adminControls).toHaveTextContent("Usage metrics and feature flags.");
 			} else {
 				expect(adminControls).not.toBeInTheDocument();
 			}

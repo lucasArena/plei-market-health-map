@@ -14,6 +14,7 @@ export interface Messages {
 		version: string;
 		signOut: string;
 		adminControls: string;
+		adminControlsDescription: string;
 	};
 	map: {
 		title: string;

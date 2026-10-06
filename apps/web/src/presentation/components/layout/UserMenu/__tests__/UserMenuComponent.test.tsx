@@ -71,10 +71,17 @@ describe("UserMenu", () => {
 			"px-2",
 			"py-1.5",
 		);
-		expect(screen.getByRole("link", { name: "Admin controls" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: /^Admin controls/ })).toHaveAttribute(
 			"href",
 			"/admin/metrics",
 		);
+		for (const tagline of [
+			"Share an idea to improve the map.",
+			"Tell us what went wrong.",
+			"Usage metrics and feature flags.",
+		]) {
+			expect(screen.getByText(tagline)).toHaveClass("truncate");
+		}
 		expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 		expect(screen.getByTestId("app-version")).toHaveTextContent(/^Version /);
 		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
@@ -83,7 +90,7 @@ describe("UserMenu", () => {
 	it("hides Admin controls from non-admins", () => {
 		renderMenu("Lucas Arena", false);
 		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
-		expect(screen.queryByRole("link", { name: "Admin controls" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: /^Admin controls/ })).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 	});
 
