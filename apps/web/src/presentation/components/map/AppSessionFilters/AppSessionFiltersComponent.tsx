@@ -12,7 +12,6 @@ export function AppSessionFilters({ showSessions }: Readonly<AppSessionFiltersPr
 		invalidAge,
 		options,
 		sessions,
-		summary,
 		hasFilters,
 		dirty,
 		apply,
@@ -205,9 +204,6 @@ export function AppSessionFilters({ showSessions }: Readonly<AppSessionFiltersPr
 					</button>
 				</div>
 			)}
-			<p aria-live="polite" className="mt-2 px-2 text-[11px] text-muted-foreground">
-				{summary ? copy.applied.replace("{filters}", summary) : copy.allPlayers}
-			</p>
 			{showSessions && status && (
 				<div role="status" className="mt-2 px-2 text-xs text-muted-foreground">
 					<p>{status}</p>

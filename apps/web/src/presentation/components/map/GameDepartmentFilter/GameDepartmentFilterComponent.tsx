@@ -158,9 +158,6 @@ export function GameDepartmentFilter({ enabled }: Readonly<GameDepartmentFilterP
 					</button>
 				</div>
 			)}
-			<p aria-live="polite" className="mt-2 px-2 text-[11px] text-muted-foreground">
-				{summary ? filters.applied.replace("{filters}", summary) : copy.gameDepartmentsAll}
-			</p>
 		</section>
 	);
 }
