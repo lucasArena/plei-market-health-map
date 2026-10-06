@@ -739,6 +739,7 @@ export function createClusterGlassNode() {
 }
 
 export function applyClusterGlassActivity(node: HTMLElement, active: boolean) {
+	node.dataset.activity = active ? "active" : "inactive";
 	const ring = node.querySelector("[data-testid='cluster-glass-stroke']");
 	const label = node.querySelector("[data-testid='cluster-glass-label']");
 	const labelColor = {
@@ -845,6 +846,7 @@ export function createFacilityGlassNode() {
 }
 
 export function applyFacilityGlassActivity(node: HTMLElement, active: boolean) {
+	node.dataset.activity = active ? "active" : "inactive";
 	const logo = node.querySelector("[data-testid='facility-glass-core']");
 	const logoSrc = {
 		[`${active}`]: PLEI_LOGO_URL,
