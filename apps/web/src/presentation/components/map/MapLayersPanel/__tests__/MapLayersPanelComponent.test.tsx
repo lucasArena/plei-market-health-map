@@ -659,3 +659,19 @@ it("preserves Department across supply modes and clears it with the layer Reset"
 	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
+
+it("offers only the footer Reset for pending filter pills", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+	fireEvent.click(screen.getByRole("option", { name: "Department" }));
+	expect(screen.getAllByRole("button", { name: "Reset" })).toHaveLength(1);
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(screen.queryByRole("button", { name: "Department" })).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});

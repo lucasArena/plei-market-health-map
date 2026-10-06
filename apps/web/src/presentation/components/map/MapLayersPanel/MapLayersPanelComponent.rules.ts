@@ -82,6 +82,7 @@ export function useMapLayersPanelRules() {
 		closeDemand();
 	};
 	const isCustomized =
+		Boolean(layers?.demandFiltersPresent || layers?.supplyFiltersPresent) ||
 		demandMetric !== "sessions" ||
 		(showGamesSelector && supplyMetric !== "games") ||
 		(showGamesSelector && Boolean(layers?.gameDepartments?.length)) ||

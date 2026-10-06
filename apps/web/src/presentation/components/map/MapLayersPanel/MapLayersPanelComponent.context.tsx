@@ -19,6 +19,8 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
 	const [demandMetric, setDemandMetric] = useState<"sessions" | "registrations">("sessions");
+	const [demandFiltersPresent, setDemandFiltersPresent] = useState(false);
+	const [supplyFiltersPresent, setSupplyFiltersPresent] = useState(false);
 	const [gameDepartments, setGameDepartments] = useState<GameDepartment[]>([]);
 	const [supplyMetric, setSupplyMetric] = useState<"facilities" | "games">("games");
 	const [showSessions, setShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
@@ -32,14 +34,20 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		setDemandMetric("sessions");
 		setSupplyMetric("games");
 		setGameDepartments([]);
+		setDemandFiltersPresent(false);
+		setSupplyFiltersPresent(false);
 		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
 	}, []);
 	const value = useMemo(
 		() => ({
 			demandMetric,
 			setDemandMetric,
+			demandFiltersPresent,
+			supplyFiltersPresent,
 			gameDepartments,
 			supplyMetric,
+			setDemandFiltersPresent,
+			setSupplyFiltersPresent,
 			setGameDepartments,
 			setSupplyMetric,
 			showActiveFacilities,
@@ -54,6 +62,8 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		}),
 		[
 			demandMetric,
+			demandFiltersPresent,
+			supplyFiltersPresent,
 			gameDepartments,
 			supplyMetric,
 			showActiveFacilities,

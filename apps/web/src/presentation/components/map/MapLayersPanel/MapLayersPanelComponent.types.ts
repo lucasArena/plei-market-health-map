@@ -10,6 +10,10 @@ export interface MapLayersSettings {
 }
 
 export interface MapLayersValue {
+	demandFiltersPresent?: boolean;
+	supplyFiltersPresent?: boolean;
+	setDemandFiltersPresent?: (present: boolean) => void;
+	setSupplyFiltersPresent?: (present: boolean) => void;
 	gameDepartments?: GameDepartment[];
 	setGameDepartments?: (departments: GameDepartment[]) => void;
 	demandMetric?: "sessions" | "registrations";

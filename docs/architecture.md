@@ -254,3 +254,5 @@ The Supply Department multi-select is shared by Games and Facilities under `faci
 Supply filters share Demand’s Add filter flow and styling: choose Department, edit a removable chip, stage multi-select options and Apply. Reset clears the chip and applied selection.
 
 Demand and Supply filter selections are displayed in their chips only; the redundant applied/all-population summary lines are omitted. Pending changes, Apply and data status messages remain.
+
+Reset is available only in the Layers panel footer. Added filter chips make the footer Reset available even before Apply; it clears both Demand and Supply draft/applied filters.

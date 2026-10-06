@@ -12,10 +12,8 @@ export function AppSessionFilters({ showSessions }: Readonly<AppSessionFiltersPr
 		invalidAge,
 		options,
 		sessions,
-		hasFilters,
 		dirty,
 		apply,
-		reset,
 		status,
 		menu,
 		menuRef,
@@ -52,15 +50,6 @@ export function AppSessionFilters({ showSessions }: Readonly<AppSessionFiltersPr
 					</span>
 					{copy.add}
 				</button>
-				{(hasFilters || dirty || fields.length > 0) && (
-					<button
-						type="button"
-						onClick={reset}
-						className="cursor-pointer rounded-md px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-					>
-						{copy.reset}
-					</button>
-				)}
 			</div>
 			{fields.length > 0 && (
 				<div className="mt-2 flex flex-wrap gap-1.5">

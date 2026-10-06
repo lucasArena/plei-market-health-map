@@ -78,7 +78,11 @@ it("starts compact, adds only chosen filters and applies one combined cohort", a
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 	await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
 	expect(screen.queryByText("Applied: Female · Advanced · 18–35")).not.toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	for (const label of ["Gender", "Player skill level", "Player age"]) {
+		const remove = screen.queryByRole("button", { name: `Remove ${label} filter` });
+		if (remove) fireEvent.click(remove);
+	}
+	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 	expect(screen.getByTestId("filters")).toHaveTextContent("{}");
 	expect(screen.queryByRole("button", { name: "Gender" })).not.toBeInTheDocument();
 });
@@ -176,7 +180,10 @@ it("handles a standalone control and loading options", () => {
 	fireEvent.click(screen.getByRole("option", { name: "Player age" }));
 	fireEvent.change(screen.getByLabelText("Minimum age"), { target: { value: "18" } });
 	fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
-	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	for (const label of ["Gender", "Player skill level", "Player age"]) {
+		const remove = screen.queryByRole("button", { name: `Remove ${label} filter` });
+		if (remove) fireEvent.click(remove);
+	}
 	client.clear();
 });
 

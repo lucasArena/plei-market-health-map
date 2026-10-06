@@ -13,7 +13,6 @@ export function GameDepartmentFilter({ enabled }: Readonly<GameDepartmentFilterP
 		hasField,
 		dirty,
 		options,
-		summary,
 		draftSummary,
 		openMenu,
 		closeMenu,
@@ -45,15 +44,6 @@ export function GameDepartmentFilter({ enabled }: Readonly<GameDepartmentFilterP
 					</span>
 					{filters.add}
 				</button>
-				{(hasField || dirty || summary) && (
-					<button
-						type="button"
-						onClick={reset}
-						className="cursor-pointer rounded-md px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-					>
-						{filters.reset}
-					</button>
-				)}
 			</div>
 			{hasField && (
 				<div className="mt-2 flex flex-wrap gap-1.5">

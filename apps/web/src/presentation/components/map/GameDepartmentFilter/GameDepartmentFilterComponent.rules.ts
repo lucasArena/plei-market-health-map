@@ -81,6 +81,13 @@ export function useGameDepartmentFilterRules(enabled: boolean) {
 		if (event.key === "End") next = buttons.length - 1;
 		buttons[next]?.focus();
 	};
+	const reportFields = layers?.setSupplyFiltersPresent;
+	const hasFields = hasField;
+	useEffect(() => {
+		reportFields?.(hasFields);
+		return () => reportFields?.(false);
+	}, [reportFields, hasFields]);
+
 	useEffect(() => {
 		setDraft(applied);
 		if (applied.length) setHasField(true);
