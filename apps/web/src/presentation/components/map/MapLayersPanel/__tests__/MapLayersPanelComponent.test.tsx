@@ -217,7 +217,7 @@ describe("MapLayersPanel", () => {
 	});
 
 	it("hides the layers control away from the map", () => {
-		mockPathname.mockReturnValue("/metrics");
+		mockPathname.mockReturnValue("/admin/metrics");
 		renderWithMessages(<MapLayersPanel />);
 
 		expect(screen.queryByRole("switch")).not.toBeInTheDocument();

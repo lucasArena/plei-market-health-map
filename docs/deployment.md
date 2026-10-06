@@ -50,7 +50,7 @@ The bump rules are in [`AGENTS.md`](../AGENTS.md#versioning-and-releases).
 | `LINEAR_CLIENT_ID` / `LINEAR_CLIENT_SECRET` | Server-only credentials of the "Market Health Map" Linear OAuth app, with the client credentials grant enabled. The in-app feedback form (`POST /api/v1/feedback`) files issues as the app, showing the submitter's name and avatar. Preferred over `LINEAR_API_KEY` when both are set |
 | `LINEAR_API_KEY` | Fallback: a personal Linear API key. Issues are then created as that person. Without app credentials or a key, feedback answers 503 |
 | `TARGET_USER_EMAILS` | Comma-separated @plei.com emails of the people whose weekly use measures the project goal (App metrics). Everyone is still recorded; only these count toward the 75% goal. Set in Vercel Production and Preview |
-| `ADMIN_EMAILS` | Comma-separated emails of the admins: the people who can open App metrics and Feature flags (the account hub links, the `/metrics` and `/feature-flags` pages and their APIs). Anyone else gets a 404 page and a 403 from the API; unset means nobody. Set in Vercel Production and Preview |
+| `ADMIN_EMAILS` | Comma-separated emails of the admins: the people who can open Admin controls (the account hub link, the `/admin/metrics` and `/admin/feature-flags` pages and their APIs). Anyone else gets a 404 page and a 403 from the API; unset means nobody. Set in Vercel Production and Preview |
 | `FEEDBACK_DRY_RUN` | `true` logs feedback instead of creating Linear issues and returns a fake `DRY-n` ticket, even when credentials are set. Leave unset or `false` in staging and production |
 
 `DATABASE_URL_UNPOOLED` is only needed in GitHub Actions, for migrations.

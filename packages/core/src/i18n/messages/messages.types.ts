@@ -13,8 +13,8 @@ export interface Messages {
 		accountMenu: string;
 		version: string;
 		signOut: string;
-		appMetrics: string;
-		featureFlags: string;
+		adminControls: string;
+		adminControlsDescription: string;
 	};
 	map: {
 		title: string;

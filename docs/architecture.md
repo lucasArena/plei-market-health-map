@@ -162,17 +162,17 @@ Flags turn a feature on or off for everyone without a deploy. The keys live in c
 
 ```
 web useFeatureFlag(key)  ->  GET /api/v1/feature-flags             -> { enabled: [...] }   (any signed-in user)
-/feature-flags screen    ->  GET /api/v1/feature-flags/all         -> every flag in code    (admins only)
+/admin/feature-flags     ->  GET /api/v1/feature-flags/all         -> every flag in code    (admins only)
                          ->  PUT /api/v1/feature-flags/:key        { enabled }              (admins only)
   -> feature-flags-controller -> listEnabledFeatureFlags / listFeatureFlags / setFeatureFlag (core)
   -> CachedFeatureFlagRepository (30 s, cleared on every switch) -> PrismaFeatureFlagRepository
 ```
 
-Admins are the people in `ADMIN_EMAILS`. The `/feature-flags` page and `/metrics` share the `AdminTabs` bar and answer 404 for anyone else, and their APIs answer 403 (`require-admin.ts`). Each server instance caches the flags for 30 seconds and each browser refetches them after 30 seconds, so a switch reaches everyone within about a minute. How agents add and remove flags is in `AGENTS.md` → *Feature flags*.
+Admins are the people in `ADMIN_EMAILS`. The avatar menu shows them one **Admin controls** link that opens `/admin/metrics`; it and `/admin/feature-flags` share the `AdminTabs` bar to switch between them (`/admin` redirects to metrics, and the old `/metrics` and `/feature-flags` URLs redirect permanently from `next.config.ts`). The pages answer 404 for anyone else, and their APIs answer 403 (`require-admin.ts`). Each server instance caches the flags for 30 seconds and each browser refetches them after 30 seconds, so a switch reaches everyone within about a minute. How agents add and remove flags is in `AGENTS.md` → *Feature flags*.
 
 ## App metrics (project success tracking)
 
-The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/metrics`, from the avatar menu) measures it. Only the people in `ADMIN_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
+The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/admin/metrics`, from Admin controls in the avatar menu) measures it. Only the people in `ADMIN_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
 
 ```
 ActivityTracker (web, every signed-in page)  ->  POST /api/v1/activity   (activity-controller)
@@ -234,7 +234,7 @@ The map layers control groups App sessions under Demand and independent Active f
 
 ### App session demographic filters
 
-Enable `player-demographic-filters` in the admin Feature flags page to expose Player filters under App sessions. The flag starts off. Gender and skill options are the distinct nonempty stored `dim_player.gender` and `dim_player.skill_description` values for accounts with activity in the same 28 completed days. They load independently of session aggregates. Age filtering uses optional inclusive minimum and maximum whole-year bounds from 0 through 120. Either bound can be left blank. This is a current-profile filter, not age or profile at session time. Each field defaults to All; selected values within gender or skill combine with OR, and separate fields combine with AND. Missing profile values remain included for unrestricted fields and are excluded when that field is selected. No additional account eligibility or game participation restriction is introduced.
+Enable `player-demographic-filters` in Admin controls → Feature flags to expose Player filters under App sessions. The flag starts off. Gender and skill options are the distinct nonempty stored `dim_player.gender` and `dim_player.skill_description` values for accounts with activity in the same 28 completed days. They load independently of session aggregates. Age filtering uses optional inclusive minimum and maximum whole-year bounds from 0 through 120. Either bound can be left blank. This is a current-profile filter, not age or profile at session time. Each field defaults to All; selected values within gender or skill combine with OR, and separate fields combine with AND. Missing profile values remain included for unrestricted fields and are excluded when that field is selected. No additional account eligibility or game participation restriction is introduced.
 
 `AppSessionFilters` starts with Add filter, whose custom glass menu offers the remaining demographic fields. Added fields render as removable chips; each chip opens a styled option list instead of a native select. Keyboard arrows, Home, End and Escape operate the lists, with focus restored to the trigger. Profile choices load only when a gender, skill or age menu is opened. Edits stay local until Apply updates the `MapLayersProvider` cohort. Reset immediately returns to all players. Hiding App sessions disables editing, pauses requests and retains applied filters. Disabling the feature flag clears the cohort. The map legend displays the applied cohort, and clears stale data and scale values while another cohort loads. Failures surface in the filter menu.
 

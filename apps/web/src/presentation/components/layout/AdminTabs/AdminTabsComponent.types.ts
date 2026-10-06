@@ -6,6 +6,6 @@ export interface AdminTabsProps {
 
 export interface AdminTabLink {
 	tab: AdminTab;
-	href: "/metrics" | "/feature-flags";
+	href: "/admin/metrics" | "/admin/feature-flags";
 	label: string;
 }
