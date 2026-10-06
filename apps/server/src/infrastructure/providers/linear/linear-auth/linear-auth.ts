@@ -7,7 +7,7 @@ import type { FetchLike } from "@server/infrastructure/providers/linear/linear-i
 import { oauthTokenResponseSchema } from "@server/infrastructure/providers/linear/linear-responses/linear-responses";
 
 export const LINEAR_OAUTH_TOKEN_URL = "https://api.linear.app/oauth/token";
-export const LINEAR_APP_SCOPE = "read,write";
+export const LINEAR_APP_SCOPE = "read,write,customer:write";
 export const LINEAR_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const DEFAULT_TIMEOUT_MS = 20_000;
 

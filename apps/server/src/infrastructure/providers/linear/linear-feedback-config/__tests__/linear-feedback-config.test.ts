@@ -27,7 +27,7 @@ describe("toLinearIssueInput", () => {
 		});
 	});
 
-	it("sends bugs to Engineering triage with the bug label", () => {
+	it("sends bugs to Engineering triage with the bug label and the request body", () => {
 		expect(
 			toLinearIssueInput(
 				{ ...BUG, submitter: { displayName: "Stefano Sanchez" } },
@@ -38,6 +38,7 @@ describe("toLinearIssueInput", () => {
 			stateId: "904a3068-92b9-4e7d-bd86-bc52cde54a83",
 			projectId: "98a63408-5cac-4a0e-85a9-1b73d17ea096",
 			labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
+			description: "b",
 		});
 	});
 
