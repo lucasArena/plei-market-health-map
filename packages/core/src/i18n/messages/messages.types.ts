@@ -25,6 +25,7 @@ export interface Messages {
 		markets: string;
 		facilities: string;
 		facilityCount: string;
+		facilityCountOne: string;
 		noSearchResults: string;
 		clusterCount: string;
 		moreFacilities: string;

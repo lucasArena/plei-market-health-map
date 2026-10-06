@@ -805,14 +805,16 @@ export function useFacilitiesMapScreenRules() {
 	const hoveredFacilityIdRef = useRef<string | null>(null);
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
-	const featureCollection = useMemo(
+	const shownFacilities = useMemo(
 		() =>
-			toFacilityFeatureCollection(
-				facilities.filter((facility) =>
-					facility.isActive ? showActiveFacilities : showInactiveFacilities,
-				),
+			facilities.filter((facility) =>
+				facility.isActive ? showActiveFacilities : showInactiveFacilities,
 			),
 		[facilities, showActiveFacilities, showInactiveFacilities],
+	);
+	const featureCollection = useMemo(
+		() => toFacilityFeatureCollection(shownFacilities),
+		[shownFacilities],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -1391,6 +1393,7 @@ export function useFacilitiesMapScreenRules() {
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
+		shownFacilities,
 		status,
 	};
 }

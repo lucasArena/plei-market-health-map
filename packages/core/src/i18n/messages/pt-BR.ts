@@ -29,6 +29,7 @@ export const ptBR: Messages = {
 		markets: "Mercados",
 		facilities: "Instalações",
 		facilityCount: "{count} instalações",
+		facilityCountOne: "{count} instalação",
 		noSearchResults: "Nenhum mercado ou instalação encontrado",
 		clusterCount: "{count} instalações",
 		moreFacilities: "+{count} outras",

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMessage } from "@market-health-map/core/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +10,7 @@ import type {
 	MarketSearchResult,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
+import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
@@ -18,29 +20,33 @@ const RESULT_LIMIT = 8;
 
 export function buildMarketSearchResults(
 	facilities: MapSearchProps["facilities"],
+	shownFacilities: MapSearchProps["shownFacilities"],
 ): MarketSearchResult[] {
 	const markets = new Map<string, MarketSearchResult>();
 	for (const facility of facilities) {
-		const current = markets.get(facility.marketId);
-		if (current) {
-			current.facilities.push(facility);
-			continue;
-		}
+		if (markets.has(facility.marketId)) continue;
 		markets.set(facility.marketId, {
 			id: facility.marketId,
 			name: facility.marketName,
-			facilities: [facility],
+			facilities: [],
 		});
+	}
+	for (const facility of shownFacilities) {
+		markets.get(facility.marketId)?.facilities.push(facility);
 	}
 	return [...markets.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function useMapSearchRules({
 	facilities,
+	shownFacilities,
+	messages,
 	onFacilitySelect,
 	onMarketSelect,
 	onClear,
 }: MapSearchProps) {
+	const { locale } = useMessages();
+	const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
 	const { period } = useMapScope();
 	const [query, setQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
@@ -48,12 +54,15 @@ export function useMapSearchRules({
 	const rootRef = useRef<HTMLDivElement>(null);
 	const queryClient = useQueryClient();
 	const intent = useIntentPrefetch();
-	const markets = useMemo(() => buildMarketSearchResults(facilities), [facilities]);
+	const markets = useMemo(
+		() => buildMarketSearchResults(facilities, shownFacilities),
+		[facilities, shownFacilities],
+	);
 	const normalizedQuery = query.trim().toLocaleLowerCase();
 	const visibleMarkets = markets
 		.filter((market) => market.name.toLocaleLowerCase().includes(normalizedQuery))
 		.slice(0, RESULT_LIMIT);
-	const visibleFacilities = facilities
+	const visibleFacilities = shownFacilities
 		.filter((facility) => facility.name.toLocaleLowerCase().includes(normalizedQuery))
 		.sort((a, b) => a.name.localeCompare(b.name))
 		.slice(0, RESULT_LIMIT);
@@ -100,6 +109,13 @@ export function useMapSearchRules({
 			void prefetchFacilityStats(queryClient, facility.id).catch(() => undefined);
 		});
 
+	const facilityCountLabel = (market: MarketSearchResult) => {
+		const count = market.facilities.length;
+		const template =
+			plural.select(count) === "one" ? messages.facilityCountOne : messages.facilityCount;
+		return formatMessage(template, { count });
+	};
+
 	const clear = () => {
 		setQuery("");
 		setIsOpen(true);
@@ -109,6 +125,7 @@ export function useMapSearchRules({
 	return {
 		cancelPrefetch: intent.cancel,
 		clear,
+		facilityCountLabel,
 		finishResultsMotion: finishReveal,
 		handleChange,
 		handleKeyDown,
