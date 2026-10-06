@@ -687,7 +687,8 @@ button.map-icon-button[aria-expanded="true"],
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   border-radius: 50%;
   background:
-    radial-gradient(circle, transparent 15.5px, var(--games-circle-ring, #86efac) 15.5px, var(--games-circle-ring, #86efac) 17.5px, transparent 17.5px),
+    var(--games-circle-ring-image, url("/icons/games-trend-ring.svg")) center / 35px 35px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.28)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.08) 46%, rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(18px) saturate(1.8);
@@ -696,14 +697,13 @@ button.map-icon-button[aria-expanded="true"],
 }
 
 .games-count-circle[data-activity="inactive"] {
-  --games-circle-ring: #898e99;
+  --games-circle-ring-image: url("/icons/games-trend-ring-inactive.svg");
 }
 
 .games-count-circle [data-testid="cluster-glass-label"],
 .games-count-circle [data-testid="facility-glass-label"] {
   position: relative;
   z-index: 1;
-
 }
 
 .games-trend-tip[data-trend-tip]::after {
