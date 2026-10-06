@@ -31,6 +31,7 @@ export const es: Messages = {
 		registrationHeatmapValue: "{count} registros en un mercado",
 		registrationHeatmapHighValue: "{count}+ registros en un mercado",
 
+		layersGames: "Partidos · últimos 28 días",
 		title: "Mapa de sedes",
 		loading: "Cargando sedes…",
 		failed: "No se pudieron cargar las sedes.",
@@ -265,6 +266,8 @@ export const es: Messages = {
 		lastChange: "{who} · {date}",
 		saveFailed: "No pudimos cambiar {flag}. Inténtalo de nuevo.",
 		descriptions: {
+			"facility-games-layer":
+				"Mostrar el selector de partidos con conteos por grupo e instalación.",
 			"player-demographic-filters":
 				"Seleccionar sesiones o registros y filtrar la demanda por género, nivel y edad.",
 		},

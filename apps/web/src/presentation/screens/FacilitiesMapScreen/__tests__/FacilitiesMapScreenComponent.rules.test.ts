@@ -29,6 +29,7 @@ import {
 	readFacilityGlassBadges,
 	resolveMapStatus,
 	syncClusterGlass,
+	syncFacilityGlass,
 	toAppSessionHeatmapFeatureCollection,
 	toFacilityFeatureCollection,
 	useFacilitiesMapScreenRules,
@@ -129,6 +130,7 @@ const layersState = vi.hoisted(() => ({
 	showSessions: true,
 	hasProvider: true,
 	demandMetric: "sessions" as "sessions" | "registrations",
+	supplyMetric: "facilities" as "facilities" | "games",
 	sessionFilters: {} as AppSessionFilters,
 }));
 
@@ -142,6 +144,7 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					setShowInactiveFacilities: vi.fn(),
 					showSessions: layersState.showSessions,
 					demandMetric: layersState.demandMetric,
+					supplyMetric: layersState.supplyMetric,
 					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
@@ -149,10 +152,11 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 }));
 
 const mockDemandFlag = vi.fn(() => false);
+const mockSupplyFlag = vi.fn(() => false);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
-	useFeatureFlag: () => mockDemandFlag(),
+	useFeatureFlag: (key: string) =>
+		key === "facility-games-layer" ? mockSupplyFlag() : mockDemandFlag(),
 }));
-
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
 	useAppSessionHeatmap: (...args: unknown[]) => mockUseAppSessionHeatmap(...args),
@@ -582,6 +586,7 @@ describe("toFacilityFeatureCollection", () => {
 						marketName: "Austin",
 						name: "Eastside Futsal Arena",
 						isActive: true,
+						gamesLast28Days: 0,
 					},
 				},
 			],
@@ -758,6 +763,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.sessionFilters = {};
 		layersState.demandMetric = "sessions";
 		mockDemandFlag.mockReturnValue(false);
+		layersState.supplyMetric = "facilities";
+		mockSupplyFlag.mockReturnValue(false);
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -832,6 +839,7 @@ describe("useFacilitiesMapScreenRules", () => {
 				clusterRadius: 40,
 				clusterProperties: {
 					[CLUSTER_ACTIVE_COUNT_KEY]: CLUSTER_ACTIVE_COUNT_EXPRESSION,
+					gameCount: ["+", ["get", "gamesLast28Days"]],
 				},
 			}),
 		);
@@ -943,6 +951,19 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.hovered).toMatchObject({ kind: "facility", x: 200, y: 80 });
 		act(() => move({ x: 180, y: 140 }));
 		expect(result.current.hovered).toMatchObject({ kind: "facility", x: 200, y: 80 });
+	});
+
+	it("preserves facility hover and detail click while Games is selected", async () => {
+		mockSupplyFlag.mockReturnValue(true);
+		layersState.supplyMetric = "games";
+		const { result } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const event = { features: [{ properties: { id: "f1" } }], point: { x: 120, y: 80 } };
+		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event));
+		expect(result.current.hovered).toMatchObject({ kind: "facility", facility: FACILITY });
+		act(() => mapState.handlers.get(`click:${FACILITIES_LAYER_ID}`)?.(event));
+		expect(result.current.selectedFacilityId).toBe("f1");
 	});
 
 	it("opens the detail panel on facility click and closes it with an animation", async () => {
@@ -1619,4 +1640,38 @@ it("uses individual market counts for registrations even when markets share a vi
 	};
 	expect(appSessionHeatmapScale(cells, bounds)).toEqual({ low: 300, high: 300 });
 	expect(appSessionHeatmapScale(cells, bounds, false)).toEqual({ low: 100, high: 200 });
+});
+
+it("uses summed game counts for clusters and game counts for individual facility badges", () => {
+	const project = () => ({ x: 1, y: 2 });
+	const features = [
+		{
+			geometry: { coordinates: [1, 2] },
+			properties: { cluster_id: 7, point_count: 2, gameCount: 90, activeCount: 2 },
+		},
+	];
+	expect(readClusterGlassBadges(features, project, true)[0]?.label).toBe("90");
+	expect(readClusterGlassBadges(features, project)[0]?.label).toBe("2");
+	const facilities = [
+		{
+			geometry: { coordinates: [1, 2] },
+			properties: { id: "a", isActive: true, gamesLast28Days: 40 },
+		},
+	];
+	expect(readFacilityGlassBadges(facilities, project, true)[0]?.label).toBe("40");
+	const host = document.createElement("div");
+	const nodes = new Map<string, HTMLElement>();
+	syncFacilityGlass(host, readFacilityGlassBadges(facilities, project, true), nodes, "a");
+	expect(host.querySelector('[data-testid="facility-glass-label"]')).toHaveTextContent("40");
+	expect(host.querySelector('[data-testid="facility-glass-core"]')).toHaveStyle({
+		display: "none",
+	});
+	expect(nodes.get("a")).toHaveStyle({ pointerEvents: "none" });
+	syncFacilityGlass(host, readFacilityGlassBadges(facilities, project), nodes);
+	expect(host.querySelector('[data-testid="facility-glass-label"]')).toHaveStyle({
+		display: "none",
+	});
+	expect(
+		host.querySelector<HTMLElement>('[data-testid="facility-glass-core"]')?.style.display,
+	).toBe("");
 });

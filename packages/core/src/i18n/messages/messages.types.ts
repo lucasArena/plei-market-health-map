@@ -75,6 +75,7 @@ export interface Messages {
 			applied: string;
 			pending: string;
 		};
+		layersGames: string;
 		layersSessions: string;
 		layersRegistrations: string;
 		registrationHeatmapLegend: string;

@@ -3,6 +3,7 @@
 import { AppSessionFilters } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent";
 import { useMapLayersPanelRules } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.rules";
 import type { LayerSwitchProps } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.types";
+import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 import {
 	MAP_MENU_GROUP_LABEL_CLASS,
 	MAP_MENU_ROW_LABEL_CLASS,
@@ -47,6 +48,9 @@ export function MapLayersPanel() {
 		demandKeys,
 		demandMetric,
 		selectDemandMetric,
+		showGamesSelector,
+		supplyMetric,
+		selectSupplyMetric,
 		cardMotion,
 		closeOnEscape,
 		finishCardMotion,
@@ -120,7 +124,7 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+36px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics || showGamesSelector ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+36px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
 				>
 					<h2 className={`px-2 pt-1.5 pb-1 ${MAP_MENU_GROUP_LABEL_CLASS}`}>
 						{messages.layersDemand}
@@ -201,10 +205,25 @@ export function MapLayersPanel() {
 						{messages.layersSupply}
 					</h2>
 					<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
-						<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersActiveFacilities}</p>
+						{showGamesSelector ? (
+							<MapMetricSelect
+								key={`supply-${resetCount}`}
+								label={messages.layersSupply}
+								value={supplyMetric}
+								onSelect={selectSupplyMetric}
+								options={[
+									{ value: "facilities", label: messages.layersActiveFacilities },
+									{ value: "games", label: messages.layersGames },
+								]}
+							/>
+						) : (
+							<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersActiveFacilities}</p>
+						)}
 						<LayerSwitch
 							checked={showActiveFacilities}
-							label={messages.layersActiveFacilities}
+							label={
+								supplyMetric === "games" ? messages.layersGames : messages.layersActiveFacilities
+							}
 							onToggle={toggleActiveFacilities}
 						/>
 					</div>

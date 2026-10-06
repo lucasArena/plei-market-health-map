@@ -574,3 +574,37 @@ it("navigates demand options with the keyboard and closes on Escape and outside 
 	expect(screen.queryByRole("listbox", { name: "Demand" })).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
+
+it("selects Games as supply and resets to active facilities", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	const trigger = screen.getByRole("button", { name: "Supply" });
+	fireEvent.keyDown(trigger, { key: "ArrowDown" });
+	const active = screen.getByRole("option", { name: "Active facilities" });
+	const games = screen.getByRole("option", { name: "Games · last 28 days" });
+	expect(active).toHaveFocus();
+	fireEvent.keyDown(active, { key: "End" });
+	expect(games).toHaveFocus();
+	fireEvent.keyDown(games, { key: "ArrowUp" });
+	expect(active).toHaveFocus();
+	fireEvent.keyDown(active, { key: "Home" });
+	expect(active).toHaveFocus();
+	fireEvent.keyDown(active, { key: "Escape" });
+	expect(trigger).toHaveFocus();
+	fireEvent.click(trigger);
+	fireEvent.pointerDown(document.body);
+	expect(screen.queryByRole("listbox", { name: "Supply" })).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Show layers" }));
+	fireEvent.click(trigger);
+	fireEvent.click(screen.getByRole("option", { name: "Games · last 28 days" }));
+	expect(trigger).toHaveTextContent("Games · last 28 days");
+	expect(trigger).toHaveFocus();
+	expect(switchByName("Games · last 28 days")).toHaveAttribute("aria-checked", "true");
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Active facilities");
+	mockFeatureFlag.mockReturnValue(false);
+});

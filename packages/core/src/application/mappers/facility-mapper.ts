@@ -10,6 +10,7 @@ export function toFacilityPointView(facility: Facility): FacilityPointView {
 		name,
 		avatarUrl,
 		isActive: metrics.gamesLast28Days > 0,
+		gamesLast28Days: metrics.gamesLast28Days,
 		location,
 	};
 }

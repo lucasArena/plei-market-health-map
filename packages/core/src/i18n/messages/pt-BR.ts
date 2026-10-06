@@ -30,6 +30,7 @@ export const ptBR: Messages = {
 		registrationHeatmapValue: "{count} cadastros em um mercado",
 		registrationHeatmapHighValue: "{count}+ cadastros em um mercado",
 
+		layersGames: "Jogos · últimos 28 dias",
 		title: "Mapa de instalações",
 		loading: "Carregando instalações…",
 		failed: "Não foi possível carregar as instalações.",
@@ -265,6 +266,7 @@ export const ptBR: Messages = {
 		lastChange: "{who} · {date}",
 		saveFailed: "Não foi possível alterar {flag}. Tente novamente.",
 		descriptions: {
+			"facility-games-layer": "Mostrar o seletor de jogos com contagens por grupo e instalação.",
 			"player-demographic-filters":
 				"Selecionar sessões ou cadastros e filtrar a demanda por gênero, nível e idade.",
 		},

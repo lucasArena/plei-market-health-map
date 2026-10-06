@@ -28,6 +28,7 @@ export const en: Messages = {
 		registrationHeatmapValue: "{count} registrations in a market",
 		registrationHeatmapHighValue: "{count}+ registrations in a market",
 
+		layersGames: "Games · last 28 days",
 		title: "Facilities map",
 		loading: "Loading facilities…",
 		failed: "Could not load facilities.",
@@ -260,6 +261,8 @@ export const en: Messages = {
 		lastChange: "{who} · {date}",
 		saveFailed: "We couldn't switch {flag}. Please try again.",
 		descriptions: {
+			"facility-games-layer":
+				"Show a Games supply selector with game counts in clusters and at each facility.",
 			"player-demographic-filters":
 				"Select app sessions or user registrations and filter demand by gender, skill level and age.",
 		},
