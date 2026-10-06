@@ -17,6 +17,7 @@ export interface LinearIssueCreateInput {
 	projectId: string;
 	labelIds: string[];
 	title: string;
+	description?: string;
 	createAsUser?: string;
 	displayIconUrl?: string;
 }

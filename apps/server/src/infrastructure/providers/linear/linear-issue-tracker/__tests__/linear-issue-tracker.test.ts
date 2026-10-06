@@ -159,6 +159,7 @@ describe("LinearIssueTracker", () => {
 			input: {
 				teamId: "bd06d3df-8b17-42f7-96b1-0b6b7b3eb5ad",
 				labelIds: ["66be57d9-22f0-4fba-a55a-9e0782dd3c0d"],
+				description: "Body",
 			},
 		});
 		expect(fetch).toHaveBeenCalledTimes(1);
