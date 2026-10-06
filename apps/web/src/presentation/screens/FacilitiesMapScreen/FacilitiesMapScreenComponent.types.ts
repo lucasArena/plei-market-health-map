@@ -85,6 +85,8 @@ export interface ClusterGlassFeature {
 		point_count?: number;
 		point_count_abbreviated?: string | number;
 		activeCount?: number;
+		gameCount?: number;
+		gamesLast28Days?: number;
 		id?: string | number;
 		isActive?: boolean | number | string;
 	};
@@ -125,6 +127,7 @@ export interface ClusterGlassBadge {
 }
 
 export interface FacilityGlassBadge {
+	label?: string;
 	id: string;
 	x: number;
 	y: number;

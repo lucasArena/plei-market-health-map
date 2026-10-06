@@ -9,6 +9,7 @@ export interface MarketSearchResult {
 
 export interface MapSearchProps {
 	facilities: FacilityPointView[];
+	shownFacilities: FacilityPointView[];
 	messages: Messages["map"];
 	onFacilitySelect(facility: FacilityPointView): void;
 	onMarketSelect(market: MarketSearchResult): void;

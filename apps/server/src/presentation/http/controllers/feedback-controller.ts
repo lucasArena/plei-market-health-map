@@ -84,6 +84,7 @@ export function feedbackController(
 			message: text(form, "message") ?? "",
 			pageUrl: text(form, "pageUrl"),
 			view: text(form, "view"),
+			appVersion: text(form, "appVersion"),
 			images: await readImages(form),
 			submitter: { name: principal.name, email: principal.email, avatarUrl: principal.image },
 		});

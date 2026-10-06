@@ -280,6 +280,7 @@ export function useFeedbackRules({ facilityId: suppliedFacilityId, user }: Feedb
 				images: attachments.map((attachment) => attachment.file),
 				pageUrl: window.location.href,
 				view: feedbackView(facilityId),
+				appVersion: getAppVersion(),
 			});
 		},
 		[attachments, canSubmit, facilityId, submission, trimmedMessage, type],

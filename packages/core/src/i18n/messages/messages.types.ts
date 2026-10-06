@@ -13,8 +13,8 @@ export interface Messages {
 		accountMenu: string;
 		version: string;
 		signOut: string;
-		appMetrics: string;
-		featureFlags: string;
+		adminControls: string;
+		adminControlsDescription: string;
 	};
 	map: {
 		title: string;
@@ -25,6 +25,7 @@ export interface Messages {
 		markets: string;
 		facilities: string;
 		facilityCount: string;
+		facilityCountOne: string;
 		noSearchResults: string;
 		clusterCount: string;
 		moreFacilities: string;
@@ -75,7 +76,15 @@ export interface Messages {
 			applied: string;
 			pending: string;
 		};
+		layersGames: string;
 		layersSessions: string;
+		layersRegistrations: string;
+		registrationHeatmapLegend: string;
+		registrationHeatmapContext: string;
+		registrationHeatmapLoading: string;
+		registrationHeatmapNoActivity: string;
+		registrationHeatmapValue: string;
+		registrationHeatmapHighValue: string;
 		layersCollapse: string;
 		layersExpand: string;
 		layersReset: string;

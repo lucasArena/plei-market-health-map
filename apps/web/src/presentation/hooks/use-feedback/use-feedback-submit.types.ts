@@ -6,4 +6,5 @@ export interface FeedbackSubmission {
 	images: File[];
 	pageUrl?: string;
 	view?: string;
+	appVersion?: string;
 }

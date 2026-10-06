@@ -163,6 +163,12 @@ export const APP_SESSION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 	],
 };
 
+export const REGISTRATION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
+	...APP_SESSION_HEATMAP_PAINT,
+	"heatmap-intensity": 3,
+	"heatmap-radius": ["interpolate", ["linear"], ["zoom"], 3, 24, 8, 32, 12, 40, 16, 48],
+};
+
 export function selectedRingColor(facilityId: string | null): ExpressionSpecification {
 	return ["case", ["==", ["get", "id"], facilityId ?? ""], SELECTED_RING_COLOR, MARKER_RING_COLOR];
 }

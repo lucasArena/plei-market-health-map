@@ -2,7 +2,7 @@ import type { MapLayersSettings } from "@/presentation/components/map/MapLayersP
 
 export const MAP_LAYERS_DEFAULTS: Readonly<MapLayersSettings> = {
 	showActiveFacilities: true,
-	showInactiveFacilities: true,
+	showInactiveFacilities: false,
 	showSessions: true,
 	sessionFilters: {},
 };

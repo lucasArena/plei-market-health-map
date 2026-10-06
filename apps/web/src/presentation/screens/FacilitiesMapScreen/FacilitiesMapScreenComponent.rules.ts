@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLEI_LOGO_URL, PLEI_LOGO_WHITE_URL } from "@/application/constants/plei-logo";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type { MarketSearchResult } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 import {
 	ALL_MARKETS_SCOPE,
@@ -20,6 +21,7 @@ import {
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
@@ -74,6 +76,7 @@ import {
 	MAP_STYLE_URL,
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
+	REGISTRATION_HEATMAP_PAINT,
 	selectedRingColor,
 	selectedRingWidth,
 	UNCLUSTERED_FILTER,
@@ -126,6 +129,7 @@ export function toFacilityFeatureCollection(
 				marketName: facility.marketName,
 				name: facility.name,
 				isActive: facility.isActive,
+				gamesLast28Days: facility.gamesLast28Days ?? 0,
 			},
 		})),
 	};
@@ -203,8 +207,13 @@ export function appSessionHeatmapAreas(
 export function appSessionHeatmapScale(
 	cells: AppSessionHeatmapCellView[],
 	bounds?: SessionHeatmapBounds,
+	aggregateAreas = true,
 ): SessionHeatmapScale {
-	const sortedWeights = appSessionHeatmapAreas(cells, bounds)
+	const visibleCells = bounds
+		? cells.filter((cell) => bounds.contains([cell.lng, cell.lat]))
+		: cells;
+	const scaleCells = aggregateAreas ? appSessionHeatmapAreas(cells, bounds) : visibleCells;
+	const sortedWeights = scaleCells
 		.map((cell) => cell.sessionWeight)
 		.filter((weight) => weight > 0)
 		.sort((a, b) => a - b);
@@ -419,7 +428,17 @@ function facilityGlassHosts(map: MapLibreMap) {
 	});
 }
 
-function clusterGlassLabel(properties: ClusterGlassFeature["properties"]) {
+const supplyCountFormatter = new Intl.NumberFormat("en", {
+	notation: "compact",
+	maximumFractionDigits: 1,
+});
+
+function formatSupplyCount(count: number) {
+	return count >= 1000 ? supplyCountFormatter.format(count) : String(count);
+}
+
+function clusterGlassLabel(properties: ClusterGlassFeature["properties"], showGames: boolean) {
+	if (showGames) return formatSupplyCount(properties?.gameCount ?? 0);
 	const abbreviated = properties?.point_count_abbreviated;
 	if (typeof abbreviated === "string" || typeof abbreviated === "number")
 		return String(abbreviated);
@@ -440,6 +459,7 @@ function clusterGlassCoordinates(feature: ClusterGlassFeature): [number, number]
 export function readClusterGlassBadges(
 	features: readonly ClusterGlassFeature[],
 	project: (coordinates: [number, number]) => { x: number; y: number },
+	showGames = false,
 ) {
 	const seen = new Set<number>();
 	const badges: ClusterGlassBadge[] = [];
@@ -451,7 +471,7 @@ export function readClusterGlassBadges(
 		const point = project(coordinates);
 		badges.push({
 			id: clusterId,
-			label: clusterGlassLabel(feature.properties),
+			label: clusterGlassLabel(feature.properties, showGames),
 			x: point.x,
 			y: point.y,
 			active: clusterGlassActive(feature.properties),
@@ -553,6 +573,7 @@ function facilityGlassActive(active: unknown) {
 export function readFacilityGlassBadges(
 	features: readonly ClusterGlassFeature[],
 	project: (coordinates: [number, number]) => { x: number; y: number },
+	showGames = false,
 ) {
 	const seen = new Set<string>();
 	const badges: FacilityGlassBadge[] = [];
@@ -574,6 +595,7 @@ export function readFacilityGlassBadges(
 			x: point.x,
 			y: point.y,
 			active: facilityGlassActive(feature.properties?.isActive),
+			...(showGames ? { label: formatSupplyCount(feature.properties?.gamesLast28Days ?? 0) } : {}),
 		});
 	}
 	return badges;
@@ -592,7 +614,14 @@ export function createFacilityGlassNode() {
 	logo.style.objectFit = "contain";
 	logo.style.borderRadius = "999px";
 	ignorePointer(logo);
-	node.appendChild(logo);
+	const label = document.createElement("span");
+	label.dataset.testid = "facility-glass-label";
+	label.style.fontSize = "14px";
+	label.style.fontWeight = "600";
+	label.style.lineHeight = "1";
+	label.style.display = "none";
+	ignorePointer(label);
+	node.append(logo, label);
 	node.style.backgroundColor = FACILITY_GLASS_FILL;
 	return node;
 }
@@ -639,6 +668,17 @@ export function syncFacilityGlass(
 			[`${badge.id === selectedId}`]: FACILITY_GLASS_SELECTED_SHADOW,
 		}.true as string;
 		applyFacilityGlassActivity(current, badge.active);
+		const logo = current.querySelector("[data-testid='facility-glass-core']");
+		const label = current.querySelector("[data-testid='facility-glass-label']");
+		const showCount = badge.label !== undefined;
+		if (logo instanceof HTMLElement) logo.style.display = showCount ? "none" : "";
+		if (label instanceof HTMLElement) {
+			label.textContent = badge.label ?? "";
+			label.style.display = showCount ? "" : "none";
+			label.style.color = badge.active ? CLUSTER_GLASS_LABEL : CLUSTER_GLASS_INACTIVE_LABEL;
+		}
+		current.style.width = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
+		current.style.height = `${showCount ? CLUSTER_OUTER_DIAMETER : FACILITY_GLASS_DIAMETER}px`;
 		current.style.transform = `translate(${badge.x}px, ${badge.y}px) translate(-50%, -50%)`;
 	}
 	for (const [id, node] of nodes) {
@@ -682,6 +722,7 @@ export function bindFacilityGlass(
 	selectedFacilityIdRef: { current: string | null },
 	hoveredClusterIdRef: { current: number | null } = { current: null },
 	refreshClusterMarkersRef: { current: () => void } = { current: () => undefined },
+	showGamesRef: { current: boolean } = { current: false },
 ) {
 	const container = map.getContainer();
 	if (!(container instanceof HTMLElement)) return;
@@ -710,6 +751,7 @@ export function bindFacilityGlass(
 				: readClusterGlassBadges(
 						map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] }) as ClusterGlassFeature[],
 						project,
+						showGamesRef.current,
 					);
 		const facilities =
 			hidden || !map.getLayer(FACILITIES_LAYER_ID)
@@ -719,6 +761,7 @@ export function bindFacilityGlass(
 							layers: [FACILITIES_LAYER_ID],
 						}) as ClusterGlassFeature[],
 						project,
+						showGamesRef.current,
 					);
 		syncClusterGlass(host, badges, nodes, hoveredClusterIdRef.current);
 		syncFacilityGlass(facilityHost, facilities, facilityNodes, selectedFacilityIdRef.current);
@@ -744,8 +787,15 @@ export function useFacilitiesMapScreenRules() {
 		[query.data, period],
 	);
 	const mapLayers = useMapLayers();
+	const showDemographics = useFeatureFlag("player-demographic-filters");
+	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
+	const showGames = useFeatureFlag("facility-games-layer") && mapLayers?.supplyMetric === "games";
+	const showGamesRef = useRef(showGames);
+	showGamesRef.current = showGames;
 	const heatmapQuery = useAppSessionHeatmap(
-		mapLayers?.sessionFilters,
+		isRegistrations
+			? { ...mapLayers?.sessionFilters, metric: "registrations" }
+			: mapLayers?.sessionFilters,
 		period,
 		mapLayers?.showSessions ?? true,
 	);
@@ -761,10 +811,12 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
-	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
-	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
+	const showActiveFacilities =
+		mapLayers?.showActiveFacilities ?? MAP_LAYERS_DEFAULTS.showActiveFacilities;
+	const showInactiveFacilities =
+		!showGames && (mapLayers?.showInactiveFacilities ?? MAP_LAYERS_DEFAULTS.showInactiveFacilities);
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
-	const showSessions = mapLayers?.showSessions ?? true;
+	const showSessions = mapLayers?.showSessions ?? MAP_LAYERS_DEFAULTS.showSessions;
 	const filters = mapLayers?.sessionFilters;
 	const ageLabel =
 		filters?.ageMin === filters?.ageMax
@@ -793,14 +845,20 @@ export function useFacilitiesMapScreenRules() {
 	const hoveredFacilityIdRef = useRef<string | null>(null);
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
-	const featureCollection = useMemo(
+	const shownFacilities = useMemo(
 		() =>
-			toFacilityFeatureCollection(
-				facilities.filter((facility) =>
-					facility.isActive ? showActiveFacilities : showInactiveFacilities,
-				),
+			facilities.filter((facility) =>
+				showGames
+					? showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0
+					: facility.isActive
+						? showActiveFacilities
+						: showInactiveFacilities,
 			),
-		[facilities, showActiveFacilities, showInactiveFacilities],
+		[facilities, showActiveFacilities, showInactiveFacilities, showGames],
+	);
+	const featureCollection = useMemo(
+		() => toFacilityFeatureCollection(shownFacilities),
+		[shownFacilities],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -1054,11 +1112,11 @@ export function useFacilitiesMapScreenRules() {
 		map
 			.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)
 			?.setData(toAppSessionHeatmapFeatureCollection(heatmapQuery.data, bounds));
-		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds);
+		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds, !isRegistrations);
 		setSessionScale((current) =>
 			current.low === nextScale.low && current.high === nextScale.high ? current : nextScale,
 		);
-	}, [heatmapQuery.data, heatmapQuery.isError]);
+	}, [heatmapQuery.data, heatmapQuery.isError, isRegistrations]);
 
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
 	useExclusiveSidePanel(
@@ -1104,6 +1162,7 @@ export function useFacilitiesMapScreenRules() {
 					clusterMaxZoom: CLUSTER_MAX_ZOOM,
 					clusterProperties: {
 						[CLUSTER_ACTIVE_COUNT_KEY]: CLUSTER_ACTIVE_COUNT_EXPRESSION,
+						gameCount: ["+", ["get", "gamesLast28Days"]],
 					},
 				});
 				created.addLayer({
@@ -1208,6 +1267,15 @@ export function useFacilitiesMapScreenRules() {
 		[`${sessionScale.high === 0}`]: "empty",
 		[`${isSessionHeatmapLoading}`]: "loading",
 	}.true as SessionLegendState;
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
+		const paint = isRegistrations ? REGISTRATION_HEATMAP_PAINT : APP_SESSION_HEATMAP_PAINT;
+		for (const property of ["heatmap-intensity", "heatmap-radius"] as const) {
+			map.setPaintProperty(APP_SESSION_HEATMAP_LAYER_ID, property, paint?.[property]);
+		}
+	}, [isMapReady, isRegistrations]);
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -1338,14 +1406,32 @@ export function useFacilitiesMapScreenRules() {
 			selectedFacilityIdRef,
 			hoveredClusterIdRef,
 			refreshClusterMarkersRef,
+			showGamesRef,
 		);
 	}, [isMapReady]);
+
+	useEffect(() => {
+		if (!isMapReady) return;
+		showGamesRef.current = showGames;
+		mapRef.current?.setPaintProperty(
+			FACILITIES_LAYER_ID,
+			"circle-radius",
+			showGames ? CLUSTER_OUTER_DIAMETER / 2 : FACILITY_GLASS_DIAMETER / 2,
+		);
+		refreshClusterMarkersRef.current();
+		mapRef.current?.triggerRepaint();
+	}, [isMapReady, showGames]);
 
 	const {
 		finishReveal: finishLegendMotion,
 		isShown: isLegendShown,
 		motion: legendMotion,
-	} = useRevealMotion(hasSessionHeatmap || isSessionHeatmapLoading, PANEL_SLIDE_MS);
+	} = useRevealMotion(
+		hasSessionHeatmap ||
+			isSessionHeatmapLoading ||
+			(isRegistrations && showSessions && !heatmapQuery.isError && !!heatmapQuery.data),
+		PANEL_SLIDE_MS,
+	);
 
 	const legendMotionClass = {
 		hidden: "",
@@ -1361,9 +1447,11 @@ export function useFacilitiesMapScreenRules() {
 		closePanel,
 		containerRef,
 		facilities,
-		sessionHeatmapLegend: formatMessage(messages.map.sessionHeatmapLegend, {
-			span: messages.statsPeriods[period].span,
-		}),
+		sessionHeatmapLegend: isRegistrations
+			? messages.map.registrationHeatmapLegend
+			: formatMessage(messages.map.sessionHeatmapLegend, {
+					span: messages.statsPeriods[period].span,
+				}),
 		finishLegendMotion,
 		hasSessionHeatmap,
 		handlePanelClosed,
@@ -1372,13 +1460,25 @@ export function useFacilitiesMapScreenRules() {
 		legendMotionClass,
 		hovered,
 		isPanelClosing,
-		messages: messages.map,
+		messages: isRegistrations
+			? {
+					...messages.map,
+					sessionHeatmapLegend: messages.map.registrationHeatmapLegend,
+					sessionHeatmapContext: messages.map.registrationHeatmapContext,
+					sessionHeatmapLoading: messages.map.registrationHeatmapLoading,
+					sessionHeatmapNoActivity: messages.map.registrationHeatmapNoActivity,
+					sessionHeatmapLowValue: messages.map.registrationHeatmapValue,
+					sessionHeatmapMidValue: messages.map.registrationHeatmapValue,
+					sessionHeatmapHighValue: messages.map.registrationHeatmapHighValue,
+				}
+			: messages.map,
 		releaseClusterHover: scheduleHoverDismiss,
 		selectFacility,
 		sessionScale,
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
+		shownFacilities,
 		status,
 	};
 }
