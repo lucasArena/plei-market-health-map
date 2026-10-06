@@ -73,3 +73,5 @@ Layer sub-controls are visible only while their parent toggle is on: player filt
 Count marker rings follow facility activity in both trend states: active facilities use green and inactive facilities use gray; clusters use green when any member is active. Show inactive facilities uses the same text size and weight as Show trend.
 
 Active and inactive count circles use the exact 35px ring assets from Figma nodes 21038:2078 and 21038:2082, with the white translucent overlay above the vertical glass highlight. Count typography remains at the user-preferred 12px in both trend states.
+
+The stable trend arrow is the same 12px arrow geometry as the upward icon, rotated right and colored gray, with the same 1.33px rounded stroke.
