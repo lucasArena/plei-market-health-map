@@ -137,7 +137,7 @@ export function MapLayersPanel() {
 									aria-controls={isDemandOpen ? demandListId : undefined}
 									onClick={toggleDemand}
 									onKeyDown={demandKeys}
-									className={`flex w-full cursor-pointer items-center justify-between gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-foreground ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+									className={`flex w-full cursor-pointer items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm font-medium text-foreground ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 								>
 									<span>
 										{demandMetric === "registrations"
@@ -172,7 +172,7 @@ export function MapLayersPanel() {
 												role="option"
 												aria-selected={demandMetric === metric}
 												onClick={() => selectDemandMetric(metric)}
-												className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm px-2 py-2 text-left text-xs aria-selected:bg-foreground/[0.05] ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
+												className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm px-2 py-2 text-left text-sm aria-selected:bg-foreground/[0.05] ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 											>
 												{metric === "registrations"
 													? messages.layersRegistrations
