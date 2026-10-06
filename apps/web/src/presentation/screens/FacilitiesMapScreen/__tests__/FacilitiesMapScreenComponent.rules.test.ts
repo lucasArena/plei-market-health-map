@@ -364,7 +364,7 @@ describe("facility glass", () => {
 		expect((ring as HTMLElement).style.borderColor).toBe("rgb(137, 142, 153)");
 	});
 
-	it("scales a hovered cluster marker and eases the transform back", () => {
+	it("updates cluster positions immediately while easing hover scale", () => {
 		const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 		const markerStart = css.indexOf(".cluster-marker {");
 		const marker = css.slice(markerStart, markerStart + 120);
@@ -387,11 +387,25 @@ describe("facility glass", () => {
 		expect(resting?.classList.contains(CLUSTER_MARKER_CLASS)).toBe(true);
 		expect(createFacilityGlassNode().classList.contains(CLUSTER_MARKER_CLASS)).toBe(false);
 		expect(hovered?.style.transform).toBe(
-			`translate(40px, 420px) translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
+			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
 		);
-		expect(resting?.style.transform).toBe("translate(200px, 300px) translate(-50%, -50%) scale(1)");
+		expect(resting?.style.transform).toBe("translate(-50%, -50%) scale(1)");
+		expect(hovered?.style.left).toBe("40px");
+		expect(hovered?.style.top).toBe("420px");
+		syncClusterGlass(
+			host,
+			badges.map((badge) => ({ ...badge, x: 120, y: 240 })),
+			nodes,
+			62,
+		);
+		expect(nodes.get(62)).toBe(hovered);
+		expect(hovered?.style.left).toBe("120px");
+		expect(hovered?.style.top).toBe("240px");
+		expect(hovered?.style.transform).toBe(
+			`translate(-50%, -50%) scale(${CLUSTER_MARKER_HOVER_SCALE})`,
+		);
 		syncClusterGlass(host, badges, nodes, null);
-		expect(hovered?.style.transform).toBe("translate(40px, 420px) translate(-50%, -50%) scale(1)");
+		expect(hovered?.style.transform).toBe("translate(-50%, -50%) scale(1)");
 	});
 
 	it("keeps one badge per cluster and marks a cluster inactive when it has no active facility", () => {

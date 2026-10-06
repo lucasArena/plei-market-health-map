@@ -490,9 +490,9 @@ function clusterGlassActive(properties: ClusterGlassFeature["properties"]) {
 	return typeof count === "number" && count > 0;
 }
 
-export function clusterMarkerTransform(x: number, y: number, engaged: boolean) {
+export function clusterMarkerTransform(engaged: boolean) {
 	const scale = { true: CLUSTER_MARKER_HOVER_SCALE, false: 1 }[`${engaged}`];
-	return `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale})`;
+	return `translate(-50%, -50%) scale(${scale})`;
 }
 
 export function createClusterGlassNode() {
@@ -665,11 +665,9 @@ export function syncClusterGlass(
 		const label = current.querySelector("[data-testid='cluster-glass-label']");
 		if (label) label.textContent = badge.label;
 		applyClusterGlassActivity(current, badge.active);
-		current.style.transform = clusterMarkerTransform(
-			badge.x,
-			badge.y,
-			badge.id === engagedClusterId,
-		);
+		current.style.left = `${badge.x}px`;
+		current.style.top = `${badge.y}px`;
+		current.style.transform = clusterMarkerTransform(badge.id === engagedClusterId);
 	}
 	for (const [id, node] of nodes) {
 		if (seen.has(id)) continue;
