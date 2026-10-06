@@ -42,9 +42,18 @@ const FACILITIES = [
 
 describe("buildMarketSearchResults", () => {
 	it("groups facilities by market and sorts markets by name", () => {
-		const markets = buildMarketSearchResults(FACILITIES);
+		const markets = buildMarketSearchResults(FACILITIES, FACILITIES);
 		expect(markets.map((market) => market.name)).toEqual(["Austin", "Miami"]);
 		expect(markets[0]?.facilities).toHaveLength(2);
+	});
+
+	it("keeps every market but gives each only its shown facilities", () => {
+		const shown = FACILITIES.slice(0, 1);
+		const markets = buildMarketSearchResults(FACILITIES, shown);
+		expect(markets).toEqual([
+			{ id: "austin", name: "Austin", facilities: shown },
+			{ id: "miami", name: "Miami", facilities: [] },
+		]);
 	});
 });
 
@@ -55,6 +64,7 @@ describe("MapSearch", () => {
 		render(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={onFacilitySelect}
 				onMarketSelect={onMarketSelect}
@@ -100,11 +110,52 @@ describe("MapSearch", () => {
 		expect(input).toHaveValue("Beach Field House");
 	});
 
+	it("counts and lists only the facilities the map layers show", () => {
+		const onMarketSelect = vi.fn();
+		const activeFacilities = FACILITIES.filter((facility) => facility.isActive);
+		render(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={activeFacilities}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={onMarketSelect}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets or facilities" }));
+
+		expect(screen.getByRole("option", { name: /Austin.*1 facilities/ })).toBeInTheDocument();
+		expect(screen.queryByRole("option", { name: /Northside Soccer Center/ })).toBeNull();
+		fireEvent.click(screen.getByRole("option", { name: /Austin.*1 facilities/ }));
+		expect(onMarketSelect).toHaveBeenCalledWith(
+			expect.objectContaining({ id: "austin", facilities: [FACILITIES[0]] }),
+		);
+	});
+
+	it("still lists a market whose facilities are all hidden", () => {
+		render(
+			<MapSearch
+				facilities={FACILITIES}
+				shownFacilities={[]}
+				messages={EN_MESSAGES.map}
+				onFacilitySelect={vi.fn()}
+				onMarketSelect={vi.fn()}
+				onClear={vi.fn()}
+			/>,
+		);
+		fireEvent.focus(screen.getByRole("combobox", { name: "Search markets or facilities" }));
+
+		expect(screen.getByRole("option", { name: /Miami.*0 facilities/ })).toBeInTheDocument();
+		expect(screen.queryByText("Facilities")).toBeNull();
+	});
+
 	it("clears, closes, and reports an empty result", () => {
 		const onClear = vi.fn();
 		render(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -145,6 +196,7 @@ describe("MapSearch", () => {
 		render(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -164,6 +216,7 @@ describe("MapSearch", () => {
 		const { container } = render(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -183,6 +236,7 @@ describe("MapSearch", () => {
 		render(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}
@@ -217,6 +271,7 @@ describe("MapSearch", () => {
 		render(
 			<MapSearch
 				facilities={FACILITIES}
+				shownFacilities={FACILITIES}
 				messages={EN_MESSAGES.map}
 				onFacilitySelect={vi.fn()}
 				onMarketSelect={vi.fn()}

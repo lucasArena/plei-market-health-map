@@ -17,25 +17,26 @@ const RESULT_LIMIT = 8;
 
 export function buildMarketSearchResults(
 	facilities: MapSearchProps["facilities"],
+	shownFacilities: MapSearchProps["shownFacilities"],
 ): MarketSearchResult[] {
 	const markets = new Map<string, MarketSearchResult>();
 	for (const facility of facilities) {
-		const current = markets.get(facility.marketId);
-		if (current) {
-			current.facilities.push(facility);
-			continue;
-		}
+		if (markets.has(facility.marketId)) continue;
 		markets.set(facility.marketId, {
 			id: facility.marketId,
 			name: facility.marketName,
-			facilities: [facility],
+			facilities: [],
 		});
+	}
+	for (const facility of shownFacilities) {
+		markets.get(facility.marketId)?.facilities.push(facility);
 	}
 	return [...markets.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function useMapSearchRules({
 	facilities,
+	shownFacilities,
 	onFacilitySelect,
 	onMarketSelect,
 	onClear,
@@ -46,12 +47,15 @@ export function useMapSearchRules({
 	const rootRef = useRef<HTMLDivElement>(null);
 	const queryClient = useQueryClient();
 	const intent = useIntentPrefetch();
-	const markets = useMemo(() => buildMarketSearchResults(facilities), [facilities]);
+	const markets = useMemo(
+		() => buildMarketSearchResults(facilities, shownFacilities),
+		[facilities, shownFacilities],
+	);
 	const normalizedQuery = query.trim().toLocaleLowerCase();
 	const visibleMarkets = markets
 		.filter((market) => market.name.toLocaleLowerCase().includes(normalizedQuery))
 		.slice(0, RESULT_LIMIT);
-	const visibleFacilities = facilities
+	const visibleFacilities = shownFacilities
 		.filter((facility) => facility.name.toLocaleLowerCase().includes(normalizedQuery))
 		.sort((a, b) => a.name.localeCompare(b.name))
 		.slice(0, RESULT_LIMIT);

@@ -788,14 +788,16 @@ export function useFacilitiesMapScreenRules() {
 	const hoveredFacilityIdRef = useRef<string | null>(null);
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
-	const featureCollection = useMemo(
+	const shownFacilities = useMemo(
 		() =>
-			toFacilityFeatureCollection(
-				(query.data ?? []).filter((facility) =>
-					facility.isActive ? showActiveFacilities : showInactiveFacilities,
-				),
+			(query.data ?? []).filter((facility) =>
+				facility.isActive ? showActiveFacilities : showInactiveFacilities,
 			),
 		[query.data, showActiveFacilities, showInactiveFacilities],
+	);
+	const featureCollection = useMemo(
+		() => toFacilityFeatureCollection(shownFacilities),
+		[shownFacilities],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -1371,6 +1373,7 @@ export function useFacilitiesMapScreenRules() {
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
+		shownFacilities,
 		status,
 	};
 }

@@ -85,6 +85,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		messages: EN_MESSAGES.map,
 		sessionScale: { low: 0, high: 0 },
 		sessionLegendState: "empty",
+		shownFacilities: [],
 		status,
 		...overrides,
 	};

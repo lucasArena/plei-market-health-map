@@ -34,6 +34,7 @@ export function FacilitiesMapScreen() {
 		sessionScale,
 		sessionFilterSummary,
 		sessionLegendState,
+		shownFacilities,
 		status,
 	} = useFacilitiesMapScreenRules();
 	const { legendSlot, searchSlot } = useHeaderSlot();
@@ -56,6 +57,7 @@ export function FacilitiesMapScreen() {
 				createPortal(
 					<MapSearch
 						facilities={facilities}
+						shownFacilities={shownFacilities}
 						messages={messages}
 						onFacilitySelect={selectSearchFacility}
 						onMarketSelect={selectSearchMarket}
