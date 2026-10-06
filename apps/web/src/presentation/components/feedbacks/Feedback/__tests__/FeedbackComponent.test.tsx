@@ -44,7 +44,7 @@ function finishClosing() {
 
 describe("Feedback", () => {
 	it.each([true, false])(
-		"shows the admin links only to admins and ends with sign-out and the version (%s)",
+		"shows Admin controls only to admins and ends with sign-out and the version (%s)",
 		(isAdmin) => {
 			renderWidget(
 				<Feedback user={{ name: "Stefano", email: "stefano@plei.com", image: null, isAdmin }} />,
@@ -56,15 +56,14 @@ describe("Feedback", () => {
 			expect(footer?.lastElementChild?.previousElementSibling?.previousElementSibling).toBe(
 				signOut.closest("form"),
 			);
-			const metrics = screen.queryByRole("link", { name: "App metrics" });
-			const flags = screen.queryByRole("link", { name: "Feature flags" });
+			const adminControls = screen.queryByRole("link", { name: "Admin controls" });
 			if (isAdmin) {
-				expect(metrics).toHaveAttribute("href", "/metrics");
-				expect(flags).toHaveAttribute("href", "/feature-flags");
+				expect(adminControls).toHaveAttribute("href", "/admin/metrics");
 			} else {
-				expect(metrics).not.toBeInTheDocument();
-				expect(flags).not.toBeInTheDocument();
+				expect(adminControls).not.toBeInTheDocument();
 			}
+			expect(screen.queryByRole("link", { name: "App metrics" })).not.toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: "Feature flags" })).not.toBeInTheDocument();
 		},
 	);
 

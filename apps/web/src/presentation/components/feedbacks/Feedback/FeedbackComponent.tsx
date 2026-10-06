@@ -59,7 +59,7 @@ function TypeIcon({ type }: Readonly<FeedbackTypeIconProps>) {
 	);
 }
 
-function FlagIcon() {
+function AdminControlsIcon() {
 	return (
 		<svg
 			viewBox="0 0 24 24"
@@ -67,27 +67,13 @@ function FlagIcon() {
 			stroke="currentColor"
 			strokeWidth="1.8"
 			strokeLinecap="round"
-			strokeLinejoin="round"
 			aria-hidden="true"
 			className="size-4"
 		>
-			<path d="M5 21V4M5 4h11l-2 4 2 4H5" />
-		</svg>
-	);
-}
-
-function MetricsIcon() {
-	return (
-		<svg
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.8"
-			aria-hidden="true"
-			className="size-4"
-		>
-			<path d="M4 19V5M4 19h16" />
-			<path d="M8 16v-5M12 16V8M16 16v-3" />
+			<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" />
+			<circle cx="16" cy="6" r="2" />
+			<circle cx="10" cy="12" r="2" />
+			<circle cx="18" cy="18" r="2" />
 		</svg>
 	);
 }
@@ -143,7 +129,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 	const triggerLabel = user ? accountMessages.accountMenu : messages.open;
 	const dialogLabel = user && step === "home" ? accountMessages.accountMenu : messages.title;
 	const showHome = !created && step === "home";
-	const showAdminLinks = Boolean(user?.isAdmin);
+	const showAdminControls = Boolean(user?.isAdmin);
 
 	return (
 		<div ref={containerRef} data-testid="feedback-widget" className={FEEDBACK_STACK_CLASS}>
@@ -236,29 +222,17 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 										</span>
 									</button>
 								))}
-								{showAdminLinks && (
-									<>
-										<Link
-											href={{ pathname: "/metrics" }}
-											onClick={close}
-											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
-										>
-											<span className={FEEDBACK_ICON_WELL_CLASS}>
-												<MetricsIcon />
-											</span>
-											<span className="font-medium">{accountMessages.appMetrics}</span>
-										</Link>
-										<Link
-											href={{ pathname: "/feature-flags" }}
-											onClick={close}
-											className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
-										>
-											<span className={FEEDBACK_ICON_WELL_CLASS}>
-												<FlagIcon />
-											</span>
-											<span className="font-medium">{accountMessages.featureFlags}</span>
-										</Link>
-									</>
+								{showAdminControls && (
+									<Link
+										href={{ pathname: "/admin/metrics" }}
+										onClick={close}
+										className={`${FEEDBACK_MENU_ITEM_CLASS} gap-3 py-2`}
+									>
+										<span className={FEEDBACK_ICON_WELL_CLASS}>
+											<AdminControlsIcon />
+										</span>
+										<span className="font-medium">{accountMessages.adminControls}</span>
+									</Link>
 								)}
 							</div>
 							{user && (

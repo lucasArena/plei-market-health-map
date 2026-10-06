@@ -18,8 +18,7 @@ export const es: Messages = {
 		accountMenu: "Menú de la cuenta",
 		version: "Versión {version}",
 		signOut: "Cerrar sesión",
-		appMetrics: "Métricas de la app",
-		featureFlags: "Feature flags",
+		adminControls: "Controles de administración",
 	},
 	map: {
 		title: "Mapa de sedes",
@@ -236,7 +235,7 @@ export const es: Messages = {
 		featureFeedbackSent: "Comentarios",
 	},
 	admin: {
-		tabsLabel: "Páginas de administración",
+		tabsLabel: "Controles de administración",
 		metricsTab: "Métricas de la app",
 		featureFlagsTab: "Feature flags",
 	},

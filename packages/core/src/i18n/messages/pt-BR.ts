@@ -17,8 +17,7 @@ export const ptBR: Messages = {
 		accountMenu: "Menu da conta",
 		version: "Versão {version}",
 		signOut: "Sair",
-		appMetrics: "Métricas do app",
-		featureFlags: "Feature flags",
+		adminControls: "Controles de admin",
 	},
 	map: {
 		title: "Mapa de instalações",
@@ -236,7 +235,7 @@ export const ptBR: Messages = {
 		featureFeedbackSent: "Feedback",
 	},
 	admin: {
-		tabsLabel: "Páginas de admin",
+		tabsLabel: "Controles de admin",
 		metricsTab: "Métricas do app",
 		featureFlagsTab: "Feature flags",
 	},

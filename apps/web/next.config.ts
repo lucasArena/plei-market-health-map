@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
 		"@neondatabase/serverless",
 		"pg",
 	],
+	async redirects() {
+		return [
+			{ source: "/metrics", destination: "/admin/metrics", permanent: true },
+			{ source: "/feature-flags", destination: "/admin/feature-flags", permanent: true },
+		];
+	},
 	async headers() {
 		return [
 			{

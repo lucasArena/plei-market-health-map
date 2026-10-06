@@ -16,8 +16,7 @@ export const en: Messages = {
 		accountMenu: "Account menu",
 		version: "Version {version}",
 		signOut: "Sign out",
-		appMetrics: "App metrics",
-		featureFlags: "Feature flags",
+		adminControls: "Admin controls",
 	},
 	map: {
 		title: "Facilities map",
@@ -232,7 +231,7 @@ export const en: Messages = {
 		featureFeedbackSent: "Feedback",
 	},
 	admin: {
-		tabsLabel: "Admin pages",
+		tabsLabel: "Admin controls",
 		metricsTab: "App metrics",
 		featureFlagsTab: "Feature flags",
 	},
