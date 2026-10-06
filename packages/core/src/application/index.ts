@@ -26,8 +26,13 @@ export type {
 	AppSessionFilters,
 } from "@core/application/dtos/app-session-filters-dto.types";
 export type { AppSessionHeatmapCellView } from "@core/application/dtos/app-session-heatmap-dto.types";
-export { getFacilityDetailSchema } from "@core/application/dtos/facility-detail-dto";
+export {
+	DEFAULT_STATS_PERIOD,
+	getFacilityDetailSchema,
+	STATS_PERIODS,
+} from "@core/application/dtos/facility-detail-dto";
 export type {
+	ActivityPeriodView,
 	FacilityDetailView,
 	FacilityPlayerStatsView,
 	FacilityReservationDetailView,
@@ -36,6 +41,9 @@ export type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	PlayerPeriodView,
+	ReservationPeriodView,
+	StatsPeriod,
 } from "@core/application/dtos/facility-detail-dto.types";
 export type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
 export { FEATURE_FLAG_KEYS, setFeatureFlagSchema } from "@core/application/dtos/feature-flags-dto";
@@ -74,14 +82,19 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
-export { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
+export {
+	getMarketGameInsightsSchema,
+	getMarketSummarySchema,
+} from "@core/application/dtos/market-summary-dto";
 export type {
 	FacilityGameChangeView,
+	GetMarketGameInsightsInput,
 	GetMarketSummaryInput,
 	MarketGameChangeView,
 	MarketPlayerStatsView,
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
+	MarketSummaryPeriodView,
 	MarketSummaryScopeView,
 	MarketSummaryView,
 } from "@core/application/dtos/market-summary-dto.types";
@@ -97,6 +110,8 @@ export {
 	toFacilityPlayerStatsView,
 	toFacilityReservationStatsView,
 	toFacilityStatsView,
+	toPlayerPeriodView,
+	toReservationPeriodView,
 } from "@core/application/mappers/facility-stats-mapper";
 export {
 	FEEDBACK_TITLES,
@@ -110,6 +125,7 @@ export {
 	MARKET_SUMMARY_RANK_LIMIT,
 	selectMarketFacilities,
 	toMarketMemberIds,
+	toMarketSummaryPeriod,
 	toMarketSummaryScope,
 	toTopFacilities,
 	toTopMarkets,

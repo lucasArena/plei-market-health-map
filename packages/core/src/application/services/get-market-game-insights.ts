@@ -1,6 +1,6 @@
-import { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
+import { getMarketGameInsightsSchema } from "@core/application/dtos/market-summary-dto";
 import type {
-	GetMarketSummaryInput,
+	GetMarketGameInsightsInput,
 	MarketGameChangeView,
 } from "@core/application/dtos/market-summary-dto.types";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -13,12 +13,12 @@ import type { GetMarketGameInsightsDeps } from "@core/application/services/get-m
 
 export function makeGetMarketGameInsights({ facilities, stats }: GetMarketGameInsightsDeps) {
 	return async function getMarketGameInsights(
-		input: GetMarketSummaryInput = {},
+		input: GetMarketGameInsightsInput = {},
 	): Promise<MarketGameChangeView[]> {
-		const parsed = getMarketSummarySchema.safeParse(input);
+		const parsed = getMarketGameInsightsSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
 		const visible = selectMarketFacilities(await facilities.listAll(), parsed.data.market);
 		const comparisons = await stats.getGameComparisons(toMarketMemberIds(visible));
-		return toMarketGameChanges(visible, comparisons);
+		return toMarketGameChanges(visible, comparisons, parsed.data.period);
 	};
 }

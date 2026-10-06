@@ -18,6 +18,7 @@ export function FacilitiesMapScreen() {
 		closePanel,
 		containerRef,
 		facilities,
+		sessionHeatmapLegend,
 		finishLegendMotion,
 		handlePanelClosed,
 		holdClusterHover,
@@ -89,7 +90,7 @@ export function FacilitiesMapScreen() {
 						className={`${SESSION_HEATMAP_LEGEND_CLASS} ${legendMotionClass}`}
 					>
 						<p className="text-[11px] font-semibold tracking-tight text-foreground">
-							{messages.sessionHeatmapLegend}
+							{sessionHeatmapLegend}
 						</p>
 						<p className="mt-0.5 text-[10px] text-muted-foreground">
 							{messages.sessionHeatmapContext}

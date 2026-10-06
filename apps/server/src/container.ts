@@ -2,6 +2,7 @@ import type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	GetMarketGameInsightsInput,
 	GetMarketSummaryInput,
 	IssueTracker,
 	ListAppMetricsPeopleInput,
@@ -9,6 +10,7 @@ import type {
 	RecordDailyActivityInput,
 	RecordLoginInput,
 	SetFeatureFlagInput,
+	StatsPeriod,
 	SubmitFeedbackInput,
 } from "@market-health-map/core/application";
 import {
@@ -162,9 +164,9 @@ function buildAppSessionHeatmap() {
 	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({ appSessionHeatmap });
 	return {
 		listAppSessionFilterOptions,
-		listAppSessionHeatmap: async (filters: AppSessionFilters = {}) => {
+		listAppSessionHeatmap: async (filters: AppSessionFilters = {}, period?: StatsPeriod) => {
 			try {
-				return await listAppSessionHeatmap(filters);
+				return await listAppSessionHeatmap(filters, period);
 			} catch (error) {
 				console.error(
 					"[app-session-heatmap]",
@@ -245,15 +247,15 @@ const container = {
 	recordLogin: (input: RecordLoginInput) => loginModule().recordLogin(input),
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
 	listFacilities: () => facilityModule().listFacilities(),
-	listAppSessionHeatmap: (filters?: AppSessionFilters) =>
-		appSessionHeatmapModule().listAppSessionHeatmap(filters),
+	listAppSessionHeatmap: (filters?: AppSessionFilters, period?: StatsPeriod) =>
+		appSessionHeatmapModule().listAppSessionHeatmap(filters, period),
 	listAppSessionFilterOptions: () => appSessionHeatmapModule().listAppSessionFilterOptions(),
 	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
 	getFacilityReservationStats: (input: GetFacilityReservationStatsInput) =>
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
-	getMarketGameInsights: (input?: GetMarketSummaryInput) =>
+	getMarketGameInsights: (input?: GetMarketGameInsightsInput) =>
 		facilityModule().getMarketGameInsights(input),
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
 	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>

@@ -24,8 +24,8 @@ export function aiSummaryContextFor(
 ): AiSummaryContext {
 	return {
 		cacheKey: aiSummaryCache.keyFor(
-			`${subject.kind}-${subject.id}`,
-			subject.stats.periodEnd,
+			`${subject.kind}-${subject.id}-${subject.stats.period}`,
+			subject.stats.end,
 			locale,
 		),
 		prompt: activitySummaryPrompt.build(subject, locale),

@@ -33,10 +33,10 @@ export function directionIn(line: string): ChangeDirection | null {
 export function buildInsightChecks({ stats, insightFacts }: ActivitySummarySubject): InsightChecks {
 	return {
 		metrics: [
-			{ pattern: /activa?t|ativad/i, change: stats.activatedPlayersPeriodChangePercent },
-			{ pattern: /unique|únic|unic/i, change: stats.uniquePlayersPeriodChangePercent },
+			{ pattern: /activa?t|ativad/i, change: stats.activatedPlayersChangePercent },
+			{ pattern: /unique|únic|unic/i, change: stats.uniquePlayersChangePercent },
 			{ pattern: /confirm/i, change: stats.confirmationRateChangePoints },
-			{ pattern: /\bgames?\b|jogos|partidos/i, change: stats.playedPeriodChangePercent },
+			{ pattern: /\bgames?\b|jogos|partidos/i, change: stats.playedChangePercent },
 		],
 		contributorPercents: insightFacts ? percentsIn(insightFacts) : [],
 	};

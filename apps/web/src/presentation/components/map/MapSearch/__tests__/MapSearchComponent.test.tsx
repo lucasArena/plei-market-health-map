@@ -19,6 +19,7 @@ const FACILITIES = [
 		name: "Eastside Futsal Arena",
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 30.27, longitude: -97.74 },
 	},
 	{
@@ -28,6 +29,7 @@ const FACILITIES = [
 		name: "Northside Soccer Center",
 		avatarUrl: null,
 		isActive: false,
+		isActiveLastWeek: false,
 		location: { latitude: 30.4, longitude: -97.7 },
 	},
 	{
@@ -37,6 +39,7 @@ const FACILITIES = [
 		name: "Beach Field House",
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 25.76, longitude: -80.19 },
 	},
 ];

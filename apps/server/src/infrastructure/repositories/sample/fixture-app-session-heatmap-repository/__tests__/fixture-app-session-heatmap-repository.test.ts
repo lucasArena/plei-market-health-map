@@ -36,10 +36,10 @@ describe("FixtureAppSessionHeatmapRepository", () => {
 		writeFileSync(path, "lat,lng,session_weight\n29.746,-95.352,1134\n");
 
 		const repository = new FixtureAppSessionHeatmapRepository(path);
-		await expect(repository.listLast28Days()).resolves.toEqual([
+		await expect(repository.listSessions("month")).resolves.toEqual([
 			{ lat: 29.746, lng: -95.352, sessionWeight: 1134 },
 		]);
-		await expect(repository.listLast28Days()).resolves.toEqual([
+		await expect(repository.listSessions("month")).resolves.toEqual([
 			{ lat: 29.746, lng: -95.352, sessionWeight: 1134 },
 		]);
 	});

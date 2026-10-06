@@ -24,7 +24,7 @@ export function useMarketSummaryToggleRules() {
 	const { activePanel, closePanel } = useSidePanels();
 	const isFacilitySelected = activePanel === "facility-detail";
 	const queryClient = useQueryClient();
-	const { scope } = useMapScope();
+	const { period, scope } = useMapScope();
 	useIdleMarketPrefetch(isOnMap);
 
 	const prefetchScope = useCallback(() => {
@@ -33,8 +33,8 @@ export function useMarketSummaryToggleRules() {
 			return;
 		}
 		const marketId = scope.kind === "market" ? scope.id : null;
-		void prefetchMarketSummary(queryClient, marketId).catch(() => undefined);
-	}, [queryClient, scope]);
+		void prefetchMarketSummary(queryClient, marketId, period).catch(() => undefined);
+	}, [period, queryClient, scope]);
 
 	const toggle = useCallback(() => {
 		if (isFacilitySelected) {

@@ -28,6 +28,7 @@ describe("listFacilities", () => {
 				name: "Location a",
 				avatarUrl: null,
 				isActive: true,
+				isActiveLastWeek: true,
 				location: { latitude: 30.27, longitude: -97.74 },
 			},
 			{
@@ -37,6 +38,7 @@ describe("listFacilities", () => {
 				name: "Location b",
 				avatarUrl: null,
 				isActive: false,
+				isActiveLastWeek: true,
 				location: { latitude: 30.27, longitude: -97.74 },
 			},
 		]);
