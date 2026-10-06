@@ -42,7 +42,7 @@ export const FEEDBACK_CLOSE_CLASS =
 	"flex size-7 shrink-0 items-center justify-center rounded-full text-lg leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 export const FEEDBACK_ICON_WELL_CLASS =
-	"flex size-5 shrink-0 items-center justify-center text-map-icon";
+	"flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/70 text-map-icon";
 
 export const FEEDBACK_MENU_ITEM_CLASS =
 	"relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground";
