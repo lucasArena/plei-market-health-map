@@ -43,6 +43,7 @@ export const submitFeedbackSchema = z.object({
 	message: z.string().trim().min(1).max(MAX_FEEDBACK_MESSAGE_LENGTH),
 	pageUrl: optionalContext,
 	view: optionalContext,
+	appVersion: optionalContext,
 	images: z.array(feedbackImageSchema).max(MAX_FEEDBACK_IMAGES).default([]),
 	submitter: z.object({
 		name: z.preprocess(blankAsUndefined, z.string().trim().max(255).nullish()),
