@@ -2673,6 +2673,27 @@ describe("games trend on the glass ring", () => {
 		expect(ring?.style.borderColor).toBe("rgb(134, 239, 172)");
 	});
 
+	it("uses the cluster stroke for selected and inactive count badges", () => {
+		const host = document.createElement("div");
+		const nodes = new Map<string, HTMLElement>();
+		const badge = { id: "f1", label: "8", x: 10, y: 20, active: true };
+
+		syncFacilityGlass(host, [badge], nodes, "f1");
+		const ring = nodes
+			.get("f1")
+			?.querySelector<HTMLElement>("[data-testid='facility-glass-stroke']");
+		expect(ring?.style.display).not.toBe("none");
+		expect(ring?.style.borderColor).toBe("rgb(17, 24, 39)");
+		expect(ring?.style.borderWidth).toBe("3px");
+
+		syncFacilityGlass(host, [{ ...badge, active: false }], nodes);
+		expect(ring?.style.borderColor).toBe("rgb(137, 142, 153)");
+		expect(ring?.style.borderWidth).toBe("2px");
+
+		syncFacilityGlass(host, [{ id: "f1", x: 10, y: 20, active: true }], nodes);
+		expect(ring?.style.display).toBe("none");
+	});
+
 	it("colors the facility count ring like clusters, keeps selection thicker, and restores it with trend off", () => {
 		const host = document.createElement("div");
 		const nodes = new Map<string, HTMLElement>();
