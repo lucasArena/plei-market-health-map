@@ -212,8 +212,8 @@ export function MapLayersPanel() {
 								value={supplyMetric}
 								onSelect={selectSupplyMetric}
 								options={[
-									{ value: "facilities", label: messages.layersActiveFacilities },
 									{ value: "games", label: messages.layersGames },
+									{ value: "facilities", label: messages.layersActiveFacilities },
 								]}
 							/>
 						) : (
