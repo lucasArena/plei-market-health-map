@@ -22,6 +22,11 @@ export const es: Messages = {
 		featureFlags: "Feature flags",
 	},
 	map: {
+		gameDepartment: "Departamento",
+		gameDepartmentMagic: "Magic",
+		gameDepartmentOrganizers: "Organizadores",
+		gameDepartmentPartnerships: "Alianzas",
+		gameDepartmentsAll: "Todos los departamentos",
 		layersRegistrations: "Registros de usuarios",
 		registrationHeatmapLegend: "Registros por mercado · últimos 28 días",
 		registrationHeatmapContext:

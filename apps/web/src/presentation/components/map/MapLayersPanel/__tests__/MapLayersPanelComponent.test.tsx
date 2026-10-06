@@ -634,3 +634,26 @@ it("shows the inactive sub-filter only for Facilities and defaults it off", () =
 	).not.toBeInTheDocument();
 	mockFeatureFlag.mockReturnValue(false);
 });
+
+it("preserves Department across supply modes and clears it with the layer Reset", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	const department = screen.getByRole("button", { name: "Department" });
+	fireEvent.click(department);
+	fireEvent.click(screen.getByRole("checkbox", { name: "Magic" }));
+	fireEvent.keyDown(screen.getByRole("checkbox", { name: "Magic" }), { key: "Escape" });
+	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+	fireEvent.click(screen.getByRole("option", { name: "Facilities" }));
+	expect(department).toHaveTextContent("Magic");
+	fireEvent.click(screen.getByRole("button", { name: "Supply" }));
+	fireEvent.click(screen.getByRole("option", { name: "Games" }));
+	expect(department).toHaveTextContent("Magic");
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(screen.getByRole("button", { name: "Department" })).toHaveTextContent("All departments");
+	expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});

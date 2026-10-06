@@ -1,5 +1,10 @@
 export { Facility } from "@core/domain/entities/facility/facility";
-export type { FacilityMetrics, FacilityProps } from "@core/domain/entities/facility/facility.types";
+export type {
+	FacilityMetrics,
+	FacilityProps,
+	GameDepartment,
+	GameDepartmentCounts,
+} from "@core/domain/entities/facility/facility.types";
 export { LoginEvent } from "@core/domain/entities/login-event/login-event";
 export type {
 	CreateLoginEventInput,

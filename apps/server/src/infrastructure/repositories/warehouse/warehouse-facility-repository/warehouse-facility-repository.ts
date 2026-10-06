@@ -14,9 +14,24 @@ export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
   select current_date as today
 ),
-facility_activity as (
-  select r.location_id, count(distinct r.reservation_id) as played_last_28_days
+organizer_partners as (
+  select distinct partner_id from plei_gold.fct_terms
+  where name ilike '%Organizer Program%' and deleted_at is null
+),
+classified_games as (
+  select r.*, case
+    when r.partner_id in (6, 52, 62) then 'magic'
+    when op.partner_id is not null then 'organizers'
+    else 'partnerships' end as department
   from plei_gold.dim_reservation r
+  left join organizer_partners op on op.partner_id = r.partner_id
+),
+facility_activity as (
+  select r.location_id, count(distinct r.reservation_id) as played_last_28_days,
+         count(distinct r.reservation_id) filter (where r.department = 'magic') as magic_games,
+         count(distinct r.reservation_id) filter (where r.department = 'organizers') as organizer_games,
+         count(distinct r.reservation_id) filter (where r.department = 'partnerships') as partnership_games
+  from classified_games r
   cross join bounds b
   where r.reservation_type = 'OpenReservation'
     and r.confirmed
@@ -28,6 +43,9 @@ facility_activity as (
 select l.location_id, l.location_name, l.address, l.city, l.state,
        l.region_id, r.region_name, l.location_latitude, l.location_longitude,
        coalesce(a.played_last_28_days, 0) as played_last_28_days,
+       coalesce(a.magic_games, 0) as magic_games,
+       coalesce(a.organizer_games, 0) as organizer_games,
+       coalesce(a.partnership_games, 0) as partnership_games,
        c.id as company_id, c.logo as company_logo
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
@@ -74,6 +92,15 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 				activePlayers: 0,
 				gamesLastWeek: 0,
 				gamesLast28Days: Number(row.played_last_28_days),
+				...(row.magic_games !== undefined
+					? {
+							gamesByDepartment: {
+								magic: Number(row.magic_games),
+								organizers: Number(row.organizer_games),
+								partnerships: Number(row.partnership_games),
+							},
+						}
+					: {}),
 				utilization: 0,
 			},
 		});

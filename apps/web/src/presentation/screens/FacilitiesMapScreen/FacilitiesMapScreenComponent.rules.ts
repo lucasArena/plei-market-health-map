@@ -784,7 +784,8 @@ export function useFacilitiesMapScreenRules() {
 	const mapLayers = useMapLayers();
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
-	const showGames = useFeatureFlag("facility-games-layer") && mapLayers?.supplyMetric === "games";
+	const showSupplyFilters = useFeatureFlag("facility-games-layer");
+	const showGames = showSupplyFilters && mapLayers?.supplyMetric === "games";
 	const showGamesRef = useRef(showGames);
 	showGamesRef.current = showGames;
 	const heatmapQuery = useAppSessionHeatmap(
@@ -837,19 +838,28 @@ export function useFacilitiesMapScreenRules() {
 	const hoveredFacilityIdRef = useRef<string | null>(null);
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
-	const featureCollection = useMemo(
-		() =>
-			toFacilityFeatureCollection(
-				(query.data ?? []).filter((facility) =>
-					showGames
-						? showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0
-						: facility.isActive
-							? showActiveFacilities
-							: showInactiveFacilities,
-				),
-			),
-		[query.data, showActiveFacilities, showInactiveFacilities, showGames],
-	);
+	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
+	const featureCollection = useMemo(() => {
+		const facilities = (query.data ?? [])
+			.map((facility) => {
+				if (!gameDepartments?.length) return facility;
+				return {
+					...facility,
+					gamesLast28Days: gameDepartments.reduce(
+						(sum, department) => sum + (facility.gamesByDepartment?.[department] ?? 0),
+						0,
+					),
+				};
+			})
+			.filter((facility) => {
+				if (gameDepartments?.length && !(facility.gamesLast28Days && facility.gamesLast28Days > 0))
+					return false;
+				if (showGames) return showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0;
+				return facility.isActive ? showActiveFacilities : showInactiveFacilities;
+			});
+		return toFacilityFeatureCollection(facilities);
+	}, [query.data, showActiveFacilities, showInactiveFacilities, showGames, gameDepartments]);
+
 	const heatmapFeatureCollection = useMemo(
 		() =>
 			heatmapQuery.isError || !heatmapQuery.data

@@ -131,6 +131,7 @@ const layersState = vi.hoisted(() => ({
 	hasProvider: true,
 	demandMetric: "sessions" as "sessions" | "registrations",
 	supplyMetric: "facilities" as "facilities" | "games",
+	gameDepartments: [] as ("magic" | "organizers" | "partnerships")[],
 	sessionFilters: {} as AppSessionFilters,
 }));
 
@@ -145,6 +146,7 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					showSessions: layersState.showSessions,
 					demandMetric: layersState.demandMetric,
 					supplyMetric: layersState.supplyMetric,
+					gameDepartments: layersState.gameDepartments,
 					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
@@ -764,6 +766,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.demandMetric = "sessions";
 		mockDemandFlag.mockReturnValue(false);
 		layersState.supplyMetric = "facilities";
+		layersState.gameDepartments = [];
 		mockSupplyFlag.mockReturnValue(false);
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
@@ -811,6 +814,47 @@ describe("useFacilitiesMapScreenRules", () => {
 		rerender();
 		expect(mapState.setData).toHaveBeenCalledWith(
 			toFacilityFeatureCollection([played, inactive, empty]),
+		);
+	});
+
+	it("uses selected departments for both Games and Facilities and restores all departments when cleared", async () => {
+		mockSupplyFlag.mockReturnValue(true);
+		layersState.supplyMetric = "games";
+		layersState.gameDepartments = ["magic", "organizers"];
+		const included = {
+			...FACILITY,
+			gamesLast28Days: 10,
+			gamesByDepartment: { magic: 3, organizers: 2, partnerships: 5 },
+		};
+		const excluded = {
+			...FACILITY,
+			id: "other",
+			gamesLast28Days: 7,
+			gamesByDepartment: { magic: 0, organizers: 0, partnerships: 7 },
+		};
+		mockUseFacilities.mockReturnValue({
+			data: [included, excluded],
+			isPending: false,
+			isError: false,
+		});
+		const { rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(mapState.setData).toHaveBeenCalledWith(
+			toFacilityFeatureCollection([{ ...included, gamesLast28Days: 5 }]),
+		);
+		mapState.setData.mockClear();
+		layersState.supplyMetric = "facilities";
+		rerender();
+		expect(mapState.setData).toHaveBeenCalledWith(
+			toFacilityFeatureCollection([{ ...included, gamesLast28Days: 5 }]),
+		);
+		mapState.setData.mockClear();
+		layersState.supplyMetric = "games";
+		layersState.gameDepartments = [];
+		rerender();
+		expect(mapState.setData).toHaveBeenCalledWith(
+			toFacilityFeatureCollection([included, excluded]),
 		);
 	});
 

@@ -21,6 +21,11 @@ export const ptBR: Messages = {
 		featureFlags: "Feature flags",
 	},
 	map: {
+		gameDepartment: "Departamento",
+		gameDepartmentMagic: "Magic",
+		gameDepartmentOrganizers: "Organizadores",
+		gameDepartmentPartnerships: "Parcerias",
+		gameDepartmentsAll: "Todos os departamentos",
 		layersRegistrations: "Cadastros de usuários",
 		registrationHeatmapLegend: "Cadastros por mercado · últimos 28 dias",
 		registrationHeatmapContext:

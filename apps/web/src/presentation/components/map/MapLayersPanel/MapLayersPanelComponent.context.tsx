@@ -1,6 +1,7 @@
 "use client";
 
 import type { AppSessionFilters } from "@market-health-map/core/application";
+import type { GameDepartment } from "@market-health-map/core/domain";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type {
@@ -18,6 +19,7 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
 	const [demandMetric, setDemandMetric] = useState<"sessions" | "registrations">("sessions");
+	const [gameDepartments, setGameDepartments] = useState<GameDepartment[]>([]);
 	const [supplyMetric, setSupplyMetric] = useState<"facilities" | "games">("games");
 	const [showSessions, setShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
 	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({
@@ -29,13 +31,16 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		setShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
 		setDemandMetric("sessions");
 		setSupplyMetric("games");
+		setGameDepartments([]);
 		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
 	}, []);
 	const value = useMemo(
 		() => ({
 			demandMetric,
 			setDemandMetric,
+			gameDepartments,
 			supplyMetric,
+			setGameDepartments,
 			setSupplyMetric,
 			showActiveFacilities,
 			setShowActiveFacilities,
@@ -49,6 +54,7 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		}),
 		[
 			demandMetric,
+			gameDepartments,
 			supplyMetric,
 			showActiveFacilities,
 			showInactiveFacilities,

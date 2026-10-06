@@ -20,6 +20,11 @@ export const en: Messages = {
 		featureFlags: "Feature flags",
 	},
 	map: {
+		gameDepartment: "Department",
+		gameDepartmentMagic: "Magic",
+		gameDepartmentOrganizers: "Organizers",
+		gameDepartmentPartnerships: "Partnerships",
+		gameDepartmentsAll: "All departments",
 		layersRegistrations: "User registrations",
 		registrationHeatmapLegend: "Registrations per market · last 28 days",
 		registrationHeatmapContext: "Market totals placed at the median facility location",

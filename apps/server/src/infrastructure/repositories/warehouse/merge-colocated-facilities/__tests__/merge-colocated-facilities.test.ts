@@ -157,3 +157,24 @@ describe("mergeColocatedFacilities", () => {
 		expect(summary(merged).map((item) => item.id)).toEqual(["100", "889"]);
 	});
 });
+
+it("sums department counts across colocated facility members", () => {
+	const a = facility("1", "Shared pitch", 7).toJSON();
+	const b = facility("2", "Shared pitch | Other", 5).toJSON();
+	const merged = mergeColocatedFacilities([
+		Facility.create({
+			...a,
+			metrics: { ...a.metrics, gamesByDepartment: { magic: 4, organizers: 2, partnerships: 1 } },
+		}),
+		Facility.create({
+			...b,
+			metrics: { ...b.metrics, gamesByDepartment: { magic: 1, organizers: 1, partnerships: 3 } },
+		}),
+	]);
+	expect(merged[0]?.toJSON().metrics.gamesByDepartment).toEqual({
+		magic: 5,
+		organizers: 3,
+		partnerships: 4,
+	});
+	expect(merged[0]?.toJSON().metrics.gamesLast28Days).toBe(12);
+});

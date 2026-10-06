@@ -84,6 +84,7 @@ export function useMapLayersPanelRules() {
 	const isCustomized =
 		demandMetric !== "sessions" ||
 		(showGamesSelector && supplyMetric !== "games") ||
+		(showGamesSelector && Boolean(layers?.gameDepartments?.length)) ||
 		isMapLayersCustomized({
 			showActiveFacilities,
 			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
