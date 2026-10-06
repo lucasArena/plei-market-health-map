@@ -36,6 +36,7 @@ import {
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import {
 	APP_SESSION_HEATMAP_LAYER_ID,
+	APP_SESSION_HEATMAP_PAINT,
 	APP_SESSION_HEATMAP_SOURCE_ID,
 	CLUSTER_ACTIVE_COUNT_EXPRESSION,
 	CLUSTER_ACTIVE_COUNT_KEY,
@@ -48,6 +49,7 @@ import {
 	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
 	FACILITY_DOT_ZOOM,
+	REGISTRATION_HEATMAP_PAINT,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 import type { ClusterTreeSource } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
@@ -127,6 +129,7 @@ const layersState = vi.hoisted(() => ({
 	showInactiveFacilities: true,
 	showSessions: true,
 	hasProvider: true,
+	demandMetric: "sessions" as "sessions" | "registrations",
 	sessionFilters: {} as AppSessionFilters,
 }));
 
@@ -139,10 +142,16 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 					setShowActiveFacilities: vi.fn(),
 					setShowInactiveFacilities: vi.fn(),
 					showSessions: layersState.showSessions,
+					demandMetric: layersState.demandMetric,
 					sessionFilters: layersState.sessionFilters,
 					setShowSessions: vi.fn(),
 				}
 			: null,
+}));
+
+const mockDemandFlag = vi.fn(() => false);
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockDemandFlag(),
 }));
 
 const mockUseAppSessionHeatmap = vi.fn();
@@ -758,6 +767,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.showSessions = true;
 		layersState.hasProvider = true;
 		layersState.sessionFilters = {};
+		layersState.demandMetric = "sessions";
+		mockDemandFlag.mockReturnValue(false);
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
 		mockUseFacilities.mockReturnValue({ data: [FACILITY], isPending: false, isError: false });
@@ -1572,6 +1583,61 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.sessionLegendState).not.toBe("loading");
 		expect(result.current.isLegendShown).toBe(false);
 	});
+	it("loads registrations with the applied cohort and changes all legend labels", async () => {
+		mockDemandFlag.mockReturnValue(true);
+		layersState.demandMetric = "registrations";
+		layersState.sessionFilters = { gender: "Female", ageMin: 18 };
+		const { result, rerender } = renderRules();
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
+			{ gender: "Female", ageMin: 18, metric: "registrations" },
+			"week",
+			true,
+		);
+		expect(result.current.messages.sessionHeatmapLegend).toContain("Registrations per market");
+		expect(result.current.sessionHeatmapLegend).toBe(EN_MESSAGES.map.registrationHeatmapLegend);
+		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"heatmap-intensity",
+			REGISTRATION_HEATMAP_PAINT?.["heatmap-intensity"],
+		);
+		expect(result.current.messages.sessionHeatmapLoading).toBe("Loading user registrations…");
+		expect(result.current.messages.sessionHeatmapLowValue).toContain("registrations");
+		mockUseAppSessionHeatmap.mockReturnValue({ data: [], isPending: false, isError: false });
+		rerender();
+		expect(result.current.sessionLegendState).toBe("empty");
+		expect(result.current.isLegendShown).toBe(true);
+		mockDemandFlag.mockReturnValue(false);
+		rerender();
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
+			layersState.sessionFilters,
+			"week",
+			true,
+		);
+		expect(result.current.messages.sessionHeatmapLegend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
+		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
+			APP_SESSION_HEATMAP_LAYER_ID,
+			"heatmap-intensity",
+			APP_SESSION_HEATMAP_PAINT?.["heatmap-intensity"],
+		);
+	});
+});
+
+it("uses individual market counts for registrations even when markets share a viewport area", () => {
+	const cells = [
+		{ lat: 1, lng: 1, sessionWeight: 100 },
+		{ lat: 1.01, lng: 1.01, sessionWeight: 200 },
+	];
+	const bounds = {
+		contains: () => true,
+		getWest: () => 0,
+		getEast: () => 24,
+		getSouth: () => 0,
+		getNorth: () => 16,
+	};
+	expect(appSessionHeatmapScale(cells, bounds)).toEqual({ low: 300, high: 300 });
+	expect(appSessionHeatmapScale(cells, bounds, false)).toEqual({ low: 100, high: 200 });
 });
 
 describe("facilitiesForPeriod", () => {

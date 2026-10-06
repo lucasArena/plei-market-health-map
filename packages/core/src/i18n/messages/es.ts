@@ -22,6 +22,15 @@ export const es: Messages = {
 		adminControlsDescription: "Métricas de uso y feature flags.",
 	},
 	map: {
+		layersRegistrations: "Registros de usuarios",
+		registrationHeatmapLegend: "Registros por mercado · últimos 28 días",
+		registrationHeatmapContext:
+			"Totales por mercado situados en la ubicación mediana de las instalaciones",
+		registrationHeatmapLoading: "Cargando registros de usuarios…",
+		registrationHeatmapNoActivity: "No hay registros en la vista actual del mapa",
+		registrationHeatmapValue: "{count} registros en un mercado",
+		registrationHeatmapHighValue: "{count}+ registros en un mercado",
+
 		title: "Mapa de sedes",
 		loading: "Cargando sedes…",
 		failed: "No se pudieron cargar las sedes.",
@@ -74,9 +83,9 @@ export const es: Messages = {
 			help: "Perfil actual · últimos 28 días completos. Los filtros se aplican juntos; los jugadores sin datos se excluyen solo en los campos seleccionados.",
 			loading: "Cargando filtros…",
 			optionsError: "No se pudieron cargar los filtros.",
-			updating: "Actualizando sesiones…",
-			sessionsError: "No se pudieron cargar las sesiones. Intenta de nuevo.",
-			empty: "Ninguna sesión coincide con estos filtros.",
+			updating: "Actualizando demanda…",
+			sessionsError: "No se pudo cargar la demanda. Intenta de nuevo.",
+			empty: "Ninguna demanda coincide con estos filtros.",
 			retry: "Reintentar",
 			applied: "Aplicados: {filters}",
 			pending: "Cambios pendientes",
@@ -274,7 +283,8 @@ export const es: Messages = {
 		lastChange: "{who} · {date}",
 		saveFailed: "No pudimos cambiar {flag}. Inténtalo de nuevo.",
 		descriptions: {
-			"player-demographic-filters": "Filtrar sesiones por g\u00e9nero, nivel y edad.",
+			"player-demographic-filters":
+				"Seleccionar sesiones o registros y filtrar la demanda por género, nivel y edad.",
 		},
 	},
 	offline: {

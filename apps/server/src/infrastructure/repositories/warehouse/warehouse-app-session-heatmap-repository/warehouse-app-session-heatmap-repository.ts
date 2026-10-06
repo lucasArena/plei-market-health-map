@@ -14,7 +14,8 @@ export const APP_SESSION_FILTER_OPTIONS_SQL = `
 SELECT DISTINCT NULLIF(TRIM(gender::text), '') AS gender,
   NULLIF(TRIM(skill_description::text), '') AS skill, age_integer AS age
 FROM plei_gold.dim_player
-WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)`;
+WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)
+  OR (confirmed_at >= CURRENT_DATE - 28 AND confirmed_at < CURRENT_DATE AND players_type = 'pleiapp_player')`;
 
 const SESSION_WINDOWS: Record<StatsPeriod, string> = {
 	week: "date >= date_trunc('week', CURRENT_DATE)::date - 7\n  AND date < date_trunc('week', CURRENT_DATE)::date",
@@ -34,6 +35,25 @@ WHERE ${SESSION_WINDOWS[period]}
   AND NOT (ABS(lat) < 0.01 AND ABS(lng) < 0.01)
 GROUP BY 1, 2`;
 }
+
+export const REGISTRATION_HEATMAP_LAST_28D_SQL = `
+WITH region_coordinates AS (
+  SELECT region_id,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY location_latitude) AS lat,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY location_longitude) AS lng
+  FROM plei_gold.dim_location
+  WHERE location_latitude BETWEEN -90 AND 90
+    AND location_longitude BETWEEN -180 AND 180
+    AND NOT (ABS(location_latitude) < 0.01 AND ABS(location_longitude) < 0.01)
+  GROUP BY region_id
+)
+SELECT c.lat, c.lng, COUNT(DISTINCT p.player_id)::bigint AS session_weight
+FROM plei_gold.dim_player p
+JOIN region_coordinates c ON c.region_id = p.region_id
+WHERE p.confirmed_at >= CURRENT_DATE - 28
+  AND p.confirmed_at < CURRENT_DATE
+  AND p.players_type = 'pleiapp_player'
+GROUP BY c.lat, c.lng`;
 
 export function toAppSessionHeatmapCell(
 	row: WarehouseAppSessionHeatmapRow,
@@ -90,12 +110,22 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 					: `${column} ${operator} $${values.length}`,
 			);
 		}
-		let sql = appSessionHeatmapSql(period);
+		let sql =
+			filters.metric === "registrations"
+				? REGISTRATION_HEATMAP_LAST_28D_SQL
+				: appSessionHeatmapSql(period);
 		if (predicates.length) {
-			sql = sql.replace(
-				"GROUP BY 1, 2",
-				`AND EXISTS (SELECT 1 FROM plei_gold.dim_player p WHERE p.player_id = players_behaviour.player_id AND ${predicates.join(" AND ")})\nGROUP BY 1, 2`,
-			);
+			if (filters.metric === "registrations") {
+				sql = sql.replace(
+					"GROUP BY c.lat, c.lng",
+					`AND ${predicates.join(" AND ")}\nGROUP BY c.lat, c.lng`,
+				);
+			} else {
+				sql = sql.replace(
+					"GROUP BY 1, 2",
+					`AND EXISTS (SELECT 1 FROM plei_gold.dim_player p WHERE p.player_id = players_behaviour.player_id AND ${predicates.join(" AND ")})\nGROUP BY 1, 2`,
+				);
+			}
 		}
 		const result = values.length
 			? await this.warehouse.query<WarehouseAppSessionHeatmapRow>(sql, values)

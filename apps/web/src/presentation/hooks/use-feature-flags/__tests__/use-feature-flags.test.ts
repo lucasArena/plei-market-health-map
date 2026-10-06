@@ -18,7 +18,10 @@ function stubFetch(data: unknown) {
 }
 
 describe("feature flag hooks", () => {
-	afterEach(() => vi.unstubAllGlobals());
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+	});
 
 	it("loads the flags that are on", async () => {
 		const fetchMock = stubFetch({ enabled: ["new-panel"] });
@@ -73,4 +76,33 @@ describe("feature flag hooks", () => {
 		);
 		expect(invalidate).toHaveBeenCalledWith({ queryKey: ["feature-flags"] });
 	});
+});
+
+it("enables flags immediately in local development even when saved settings are off", async () => {
+	vi.stubEnv("NODE_ENV", "development");
+	stubFetch({ enabled: [] });
+	const { Wrapper } = createQueryWrapper();
+	const { result } = renderHook(
+		() => ({ flag: useFeatureFlag("player-demographic-filters"), query: useFeatureFlags() }),
+		{ wrapper: Wrapper },
+	);
+	expect(result.current.flag).toBe(true);
+	await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+	expect(result.current.flag).toBe(true);
+	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
+});
+it("honors saved flag settings in production builds including staging", async () => {
+	vi.stubEnv("NODE_ENV", "production");
+	stubFetch({ enabled: [] });
+	const { Wrapper } = createQueryWrapper();
+	const { result } = renderHook(
+		() => ({ flag: useFeatureFlag("player-demographic-filters"), query: useFeatureFlags() }),
+		{ wrapper: Wrapper },
+	);
+	expect(result.current.flag).toBe(false);
+	await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+	expect(result.current.flag).toBe(false);
+	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
 });

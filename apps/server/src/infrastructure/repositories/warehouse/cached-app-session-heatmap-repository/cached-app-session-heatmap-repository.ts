@@ -39,6 +39,7 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 		const now = this.clock.now().getTime();
 		const key = JSON.stringify([
 			period,
+			filters.metric,
 			Array.isArray(filters.gender) ? [...filters.gender].sort() : filters.gender,
 			Array.isArray(filters.skill) ? [...filters.skill].sort() : filters.skill,
 			filters.ageMin,

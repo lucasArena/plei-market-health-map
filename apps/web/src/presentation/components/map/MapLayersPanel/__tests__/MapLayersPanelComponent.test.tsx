@@ -512,3 +512,65 @@ it("clears the applied cohort when its feature flag is disabled", () => {
 	);
 	expect(screen.getByTestId("cohort")).toHaveTextContent("{}");
 });
+
+it("selects one demand metric behind the demographic flag and resets it", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	const selector = screen.getByRole("button", { name: "Demand" });
+	expect(selector).toHaveTextContent("App sessions");
+	fireEvent.click(selector);
+	expect(screen.getByRole("listbox", { name: "Demand" })).toHaveClass("map-glass", "border-border");
+	fireEvent.click(screen.getByRole("option", { name: "User registrations" }));
+	expect(selector).toHaveTextContent("User registrations");
+	expect(selector).toHaveFocus();
+	expect(switchByName("User registrations")).toHaveAttribute("aria-checked", "true");
+	fireEvent.click(switchByName("User registrations"));
+	expect(switchByName("User registrations")).toHaveAttribute("aria-checked", "false");
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(selector).toHaveTextContent("App sessions");
+	expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
+	mockFeatureFlag.mockReturnValue(false);
+});
+it("hides the demand selector when the flag is off", () => {
+	mockFeatureFlag.mockReturnValue(false);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	expect(screen.queryByRole("button", { name: "Demand" })).not.toBeInTheDocument();
+});
+
+it("navigates demand options with the keyboard and closes on Escape and outside clicks", () => {
+	mockFeatureFlag.mockReturnValue(true);
+	renderWithMessages(
+		<MapLayersProvider>
+			<MapLayersPanel />
+		</MapLayersProvider>,
+	);
+	const trigger = screen.getByRole("button", { name: "Demand" });
+	fireEvent.keyDown(trigger, { key: "ArrowDown" });
+	const sessions = screen.getByRole("option", { name: "App sessions" });
+	const registrations = screen.getByRole("option", { name: "User registrations" });
+	expect(sessions).toHaveFocus();
+	fireEvent.keyDown(sessions, { key: "ArrowDown" });
+	expect(registrations).toHaveFocus();
+	fireEvent.keyDown(registrations, { key: "ArrowUp" });
+	expect(sessions).toHaveFocus();
+	fireEvent.keyDown(sessions, { key: "End" });
+	expect(registrations).toHaveFocus();
+	fireEvent.keyDown(registrations, { key: "Home" });
+	expect(sessions).toHaveFocus();
+	fireEvent.keyDown(sessions, { key: "Escape" });
+	expect(screen.queryByRole("listbox", { name: "Demand" })).not.toBeInTheDocument();
+	expect(trigger).toHaveFocus();
+	expect(screen.getByRole("button", { name: "Hide layers" })).toBeInTheDocument();
+	fireEvent.click(trigger);
+	fireEvent.pointerDown(document.body);
+	expect(screen.queryByRole("listbox", { name: "Demand" })).not.toBeInTheDocument();
+	mockFeatureFlag.mockReturnValue(false);
+});

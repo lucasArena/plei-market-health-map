@@ -17,6 +17,7 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 	const [showInactiveFacilities, setShowInactiveFacilities] = useState(
 		MAP_LAYERS_DEFAULTS.showInactiveFacilities,
 	);
+	const [demandMetric, setDemandMetric] = useState<"sessions" | "registrations">("sessions");
 	const [showSessions, setShowSessions] = useState(MAP_LAYERS_DEFAULTS.showSessions);
 	const [sessionFilters, setSessionFilters] = useState<AppSessionFilters>({
 		...MAP_LAYERS_DEFAULTS.sessionFilters,
@@ -25,10 +26,13 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		setShowActiveFacilities(MAP_LAYERS_DEFAULTS.showActiveFacilities);
 		setShowInactiveFacilities(MAP_LAYERS_DEFAULTS.showInactiveFacilities);
 		setShowSessions(MAP_LAYERS_DEFAULTS.showSessions);
+		setDemandMetric("sessions");
 		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
 	}, []);
 	const value = useMemo(
 		() => ({
+			demandMetric,
+			setDemandMetric,
 			showActiveFacilities,
 			setShowActiveFacilities,
 			showInactiveFacilities,
@@ -39,7 +43,14 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 			setShowSessions,
 			resetLayers,
 		}),
-		[showActiveFacilities, showInactiveFacilities, showSessions, sessionFilters, resetLayers],
+		[
+			demandMetric,
+			showActiveFacilities,
+			showInactiveFacilities,
+			showSessions,
+			sessionFilters,
+			resetLayers,
+		],
 	);
 	return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }

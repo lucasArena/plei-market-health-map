@@ -18,6 +18,7 @@ const age = z
 
 export const appSessionFiltersSchema = z
 	.object({
+		metric: z.literal("registrations").optional(),
 		gender: profileValue,
 		skill: profileValue,
 		ageMin: age,

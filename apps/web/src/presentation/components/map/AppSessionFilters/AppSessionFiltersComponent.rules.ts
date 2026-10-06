@@ -51,7 +51,11 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 	useEffect(() => {
 		if (!showSessions) setMenu(null);
 	}, [showSessions]);
-	const sessions = useAppSessionHeatmap(applied, period, showSessions);
+	const sessions = useAppSessionHeatmap(
+		layers?.demandMetric === "registrations" ? { ...applied, metric: "registrations" } : applied,
+		period,
+		showSessions,
+	);
 	function ageLabel(filters: AppSessionFilters) {
 		if (filters.ageMin !== undefined && filters.ageMax !== undefined)
 			return `${filters.ageMin}–${filters.ageMax}`;

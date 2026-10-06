@@ -77,6 +77,13 @@ export interface Messages {
 			pending: string;
 		};
 		layersSessions: string;
+		layersRegistrations: string;
+		registrationHeatmapLegend: string;
+		registrationHeatmapContext: string;
+		registrationHeatmapLoading: string;
+		registrationHeatmapNoActivity: string;
+		registrationHeatmapValue: string;
+		registrationHeatmapHighValue: string;
 		layersCollapse: string;
 		layersExpand: string;
 		layersReset: string;

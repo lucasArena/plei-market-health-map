@@ -21,6 +21,15 @@ export const ptBR: Messages = {
 		adminControlsDescription: "Métricas de uso e feature flags.",
 	},
 	map: {
+		layersRegistrations: "Cadastros de usuários",
+		registrationHeatmapLegend: "Cadastros por mercado · últimos 28 dias",
+		registrationHeatmapContext:
+			"Totais por mercado posicionados na localização mediana das instalações",
+		registrationHeatmapLoading: "Carregando cadastros de usuários…",
+		registrationHeatmapNoActivity: "Nenhum cadastro na área atual do mapa",
+		registrationHeatmapValue: "{count} cadastros em um mercado",
+		registrationHeatmapHighValue: "{count}+ cadastros em um mercado",
+
 		title: "Mapa de instalações",
 		loading: "Carregando instalações…",
 		failed: "Não foi possível carregar as instalações.",
@@ -73,9 +82,9 @@ export const ptBR: Messages = {
 			help: "Perfil atual · últimos 28 dias completos. Os filtros se aplicam juntos; jogadores sem dados são excluídos apenas nos campos selecionados.",
 			loading: "Carregando filtros…",
 			optionsError: "Não foi possível carregar os filtros.",
-			updating: "Atualizando sessões…",
-			sessionsError: "Não foi possível carregar as sessões. Tente novamente.",
-			empty: "Nenhuma sessão corresponde a estes filtros.",
+			updating: "Atualizando demanda…",
+			sessionsError: "Não foi possível carregar a demanda. Tente novamente.",
+			empty: "Nenhuma demanda corresponde a estes filtros.",
 			retry: "Tentar novamente",
 			applied: "Aplicados: {filters}",
 			pending: "Alterações pendentes",
@@ -273,7 +282,8 @@ export const ptBR: Messages = {
 		lastChange: "{who} · {date}",
 		saveFailed: "Não foi possível alterar {flag}. Tente novamente.",
 		descriptions: {
-			"player-demographic-filters": "Filtrar sess\u00f5es por g\u00eanero, n\u00edvel e idade.",
+			"player-demographic-filters":
+				"Selecionar sessões ou cadastros e filtrar a demanda por gênero, nível e idade.",
 		},
 	},
 	offline: {

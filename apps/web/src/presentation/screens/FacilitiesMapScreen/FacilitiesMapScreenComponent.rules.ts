@@ -21,6 +21,7 @@ import {
 } from "@/presentation/hooks/use-app/use-app-session-heatmap";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
@@ -75,6 +76,7 @@ import {
 	MAP_STYLE_URL,
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
+	REGISTRATION_HEATMAP_PAINT,
 	selectedRingColor,
 	selectedRingWidth,
 	UNCLUSTERED_FILTER,
@@ -204,8 +206,13 @@ export function appSessionHeatmapAreas(
 export function appSessionHeatmapScale(
 	cells: AppSessionHeatmapCellView[],
 	bounds?: SessionHeatmapBounds,
+	aggregateAreas = true,
 ): SessionHeatmapScale {
-	const sortedWeights = appSessionHeatmapAreas(cells, bounds)
+	const visibleCells = bounds
+		? cells.filter((cell) => bounds.contains([cell.lng, cell.lat]))
+		: cells;
+	const scaleCells = aggregateAreas ? appSessionHeatmapAreas(cells, bounds) : visibleCells;
+	const sortedWeights = scaleCells
 		.map((cell) => cell.sessionWeight)
 		.filter((weight) => weight > 0)
 		.sort((a, b) => a - b);
@@ -754,8 +761,12 @@ export function useFacilitiesMapScreenRules() {
 		[query.data, period],
 	);
 	const mapLayers = useMapLayers();
+	const showDemographics = useFeatureFlag("player-demographic-filters");
+	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
 	const heatmapQuery = useAppSessionHeatmap(
-		mapLayers?.sessionFilters,
+		isRegistrations
+			? { ...mapLayers?.sessionFilters, metric: "registrations" }
+			: mapLayers?.sessionFilters,
 		period,
 		mapLayers?.showSessions ?? true,
 	);
@@ -1068,11 +1079,11 @@ export function useFacilitiesMapScreenRules() {
 		map
 			.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)
 			?.setData(toAppSessionHeatmapFeatureCollection(heatmapQuery.data, bounds));
-		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds);
+		const nextScale = appSessionHeatmapScale(heatmapQuery.data, bounds, !isRegistrations);
 		setSessionScale((current) =>
 			current.low === nextScale.low && current.high === nextScale.high ? current : nextScale,
 		);
-	}, [heatmapQuery.data, heatmapQuery.isError]);
+	}, [heatmapQuery.data, heatmapQuery.isError, isRegistrations]);
 
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
 	useExclusiveSidePanel(
@@ -1226,6 +1237,15 @@ export function useFacilitiesMapScreenRules() {
 	useEffect(() => {
 		const map = mapRef.current;
 		if (!isMapReady || !map) return;
+		const paint = isRegistrations ? REGISTRATION_HEATMAP_PAINT : APP_SESSION_HEATMAP_PAINT;
+		for (const property of ["heatmap-intensity", "heatmap-radius"] as const) {
+			map.setPaintProperty(APP_SESSION_HEATMAP_LAYER_ID, property, paint?.[property]);
+		}
+	}, [isMapReady, isRegistrations]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !map) return;
 		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showSessions);
 	}, [isMapReady, showSessions]);
 
@@ -1359,7 +1379,12 @@ export function useFacilitiesMapScreenRules() {
 		finishReveal: finishLegendMotion,
 		isShown: isLegendShown,
 		motion: legendMotion,
-	} = useRevealMotion(hasSessionHeatmap || isSessionHeatmapLoading, PANEL_SLIDE_MS);
+	} = useRevealMotion(
+		hasSessionHeatmap ||
+			isSessionHeatmapLoading ||
+			(isRegistrations && showSessions && !heatmapQuery.isError && !!heatmapQuery.data),
+		PANEL_SLIDE_MS,
+	);
 
 	const legendMotionClass = {
 		hidden: "",
@@ -1375,9 +1400,11 @@ export function useFacilitiesMapScreenRules() {
 		closePanel,
 		containerRef,
 		facilities,
-		sessionHeatmapLegend: formatMessage(messages.map.sessionHeatmapLegend, {
-			span: messages.statsPeriods[period].span,
-		}),
+		sessionHeatmapLegend: isRegistrations
+			? messages.map.registrationHeatmapLegend
+			: formatMessage(messages.map.sessionHeatmapLegend, {
+					span: messages.statsPeriods[period].span,
+				}),
 		finishLegendMotion,
 		hasSessionHeatmap,
 		handlePanelClosed,
@@ -1386,7 +1413,18 @@ export function useFacilitiesMapScreenRules() {
 		legendMotionClass,
 		hovered,
 		isPanelClosing,
-		messages: messages.map,
+		messages: isRegistrations
+			? {
+					...messages.map,
+					sessionHeatmapLegend: messages.map.registrationHeatmapLegend,
+					sessionHeatmapContext: messages.map.registrationHeatmapContext,
+					sessionHeatmapLoading: messages.map.registrationHeatmapLoading,
+					sessionHeatmapNoActivity: messages.map.registrationHeatmapNoActivity,
+					sessionHeatmapLowValue: messages.map.registrationHeatmapValue,
+					sessionHeatmapMidValue: messages.map.registrationHeatmapValue,
+					sessionHeatmapHighValue: messages.map.registrationHeatmapHighValue,
+				}
+			: messages.map,
 		releaseClusterHover: scheduleHoverDismiss,
 		selectFacility,
 		sessionScale,

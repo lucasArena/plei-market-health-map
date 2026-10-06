@@ -114,3 +114,17 @@ it("caches filter options and retries failures", async () => {
 	await repository.listFilterOptions();
 	expect(listFilterOptions).toHaveBeenCalledTimes(3);
 });
+
+it("keeps sessions and registrations in separate cache entries", async () => {
+	const { listSessions, repository } = setup();
+	listSessions.mockResolvedValueOnce([CELL]).mockResolvedValueOnce([{ ...CELL, sessionWeight: 9 }]);
+	expect(await repository.listSessions("month")).toEqual([CELL]);
+	expect(await repository.listSessions("month", { metric: "registrations" })).toEqual([
+		{ ...CELL, sessionWeight: 9 },
+	]);
+	expect(await repository.listSessions("month")).toEqual([CELL]);
+	expect(await repository.listSessions("month", { metric: "registrations" })).toEqual([
+		{ ...CELL, sessionWeight: 9 },
+	]);
+	expect(listSessions).toHaveBeenCalledTimes(2);
+});
