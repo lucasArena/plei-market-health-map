@@ -29,7 +29,7 @@ export function GameDepartmentFilter({ enabled }: Readonly<GameDepartmentFilterP
 			ref={rootRef}
 			aria-label={copy.gameDepartment}
 			onKeyDown={handleKeys}
-			className="mx-2 mb-2 border-b border-border pb-3 pt-1"
+			className="mx-2 mb-2 pb-3 pt-1"
 		>
 			<div className="flex items-center justify-between gap-2">
 				<button
