@@ -48,6 +48,7 @@ export const ptBR: Messages = {
 		noSearchResults: "Nenhum mercado, instalação ou cidade encontrado",
 		places: "Cidades e lugares",
 		placesAttribution: "Lugares do Photon · © colaboradores do OpenStreetMap",
+		searchingPlaces: "Buscando cidades…",
 		placeKinds: {
 			county: "Condado",
 			state: "Estado",

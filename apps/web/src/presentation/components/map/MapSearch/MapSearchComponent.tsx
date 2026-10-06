@@ -22,6 +22,7 @@ export function MapSearch(props: MapSearchProps) {
 		handleChange,
 		handleKeyDown,
 		isOpen,
+		isSearchingPlaces,
 		isResultsShown,
 		prefetchFacility,
 		prefetchMarket,
@@ -34,6 +35,7 @@ export function MapSearch(props: MapSearchProps) {
 		selectPlace,
 		setIsOpen,
 		showNoResults,
+		showSearching,
 		visibleFacilities,
 		visibleMarkets,
 		visiblePlaces,
@@ -52,6 +54,9 @@ export function MapSearch(props: MapSearchProps) {
 				<input
 					aria-label={messages.searchPlaceholder}
 					aria-autocomplete="list"
+					autoComplete="off"
+					autoCorrect="off"
+					spellCheck={false}
 					aria-controls="map-search-results"
 					aria-expanded={isOpen}
 					className="min-w-0 flex-1 bg-transparent text-[12px] text-map-icon outline-none placeholder:text-map-icon"
@@ -62,6 +67,32 @@ export function MapSearch(props: MapSearchProps) {
 					onFocus={() => setIsOpen(true)}
 					onKeyDown={handleKeyDown}
 				/>
+				{isSearchingPlaces && (
+					<span role="status" aria-label={messages.searchingPlaces} className="flex">
+						<svg
+							aria-hidden="true"
+							data-testid="map-search-spinner"
+							viewBox="0 0 24 24"
+							className="size-4 animate-spin text-muted-foreground"
+							fill="none"
+						>
+							<circle
+								cx="12"
+								cy="12"
+								r="9"
+								stroke="currentColor"
+								strokeOpacity="0.25"
+								strokeWidth="2.5"
+							/>
+							<path
+								d="M21 12a9 9 0 0 0-9-9"
+								stroke="currentColor"
+								strokeWidth="2.5"
+								strokeLinecap="round"
+							/>
+						</svg>
+					</span>
+				)}
 				{query && (
 					<button
 						type="button"
@@ -186,6 +217,11 @@ export function MapSearch(props: MapSearchProps) {
 								{messages.placesAttribution}
 							</p>
 						</section>
+					)}
+					{showSearching && (
+						<p className="px-3 py-4 text-center text-sm text-muted-foreground">
+							{messages.searchingPlaces}
+						</p>
 					)}
 					{showNoResults && (
 						<p className="px-3 py-4 text-center text-sm text-muted-foreground">

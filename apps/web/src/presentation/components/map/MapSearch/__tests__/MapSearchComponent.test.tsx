@@ -194,6 +194,7 @@ describe("MapSearch", () => {
 		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 		fireEvent.change(input, { target: { value: "nowhere" } });
 		expect(screen.queryByText("No markets, facilities or cities found")).not.toBeInTheDocument();
+		expect(screen.getByRole("listbox")).toHaveTextContent("Searching cities…");
 		expect(await screen.findByText("No markets, facilities or cities found")).toBeInTheDocument();
 
 		expect(onClear).not.toHaveBeenCalled();
@@ -359,10 +360,16 @@ describe("MapSearch", () => {
 		);
 		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
 
+		expect(input).toHaveAttribute("autocomplete", "off");
+		expect(screen.queryByRole("status", { name: "Searching cities…" })).not.toBeInTheDocument();
 		fireEvent.change(input, { target: { value: "wichita" } });
 		expect(screen.queryByText("No markets, facilities or cities found")).not.toBeInTheDocument();
 		expect(screen.queryByText("Cities and places")).not.toBeInTheDocument();
+		expect(screen.getByRole("status", { name: "Searching cities…" })).toContainElement(
+			screen.getByTestId("map-search-spinner"),
+		);
 		act(() => vi.advanceTimersByTime(300));
+		expect(screen.queryByRole("status", { name: "Searching cities…" })).not.toBeInTheDocument();
 
 		expect(screen.getByText("Cities and places")).toBeInTheDocument();
 		expect(

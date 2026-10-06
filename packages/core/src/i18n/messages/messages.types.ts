@@ -34,6 +34,7 @@ export interface Messages {
 		noSearchResults: string;
 		places: string;
 		placesAttribution: string;
+		searchingPlaces: string;
 		placeKinds: {
 			county: string;
 			state: string;

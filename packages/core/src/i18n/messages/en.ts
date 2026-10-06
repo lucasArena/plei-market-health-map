@@ -46,6 +46,7 @@ export const en: Messages = {
 		noSearchResults: "No markets, facilities or cities found",
 		places: "Cities and places",
 		placesAttribution: "Places from Photon · © OpenStreetMap contributors",
+		searchingPlaces: "Searching cities…",
 		placeKinds: {
 			county: "County",
 			state: "State",

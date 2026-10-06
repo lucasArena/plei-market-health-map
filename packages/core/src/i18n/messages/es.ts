@@ -49,6 +49,7 @@ export const es: Messages = {
 		noSearchResults: "No se encontraron mercados, sedes ni ciudades",
 		places: "Ciudades y lugares",
 		placesAttribution: "Lugares de Photon · © colaboradores de OpenStreetMap",
+		searchingPlaces: "Buscando ciudades…",
 		placeKinds: {
 			county: "Condado",
 			state: "Estado",
