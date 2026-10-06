@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+	buildChangelog,
 	buildReleaseNotes,
+	describeCommit,
 	linearIssuesIn,
 	parseCommitLog,
 	previousStableTag,
@@ -43,9 +45,9 @@ describe("linearIssuesIn", () => {
 	});
 });
 
-describe("buildReleaseNotes", () => {
+describe("buildChangelog", () => {
 	it("groups commits by type and lists the Linear issues", () => {
-		const notes = buildReleaseNotes({
+		const notes = buildChangelog({
 			tag: "v0.4.0",
 			previousTag: "v0.3.0",
 			date: "2026-09-29",
@@ -89,7 +91,7 @@ describe("buildReleaseNotes", () => {
 	});
 
 	it("handles a first release with no changes or issues", () => {
-		const notes = buildReleaseNotes({
+		const notes = buildChangelog({
 			tag: "v0.1.0",
 			previousTag: null,
 			date: "2026-09-29",
@@ -118,8 +120,8 @@ describe("feature-flagged work", () => {
 		assert.equal(withoutFlaggedWork(commits, []).length, 4);
 	});
 
-	it("leaves flagged tickets out of the notes and the Linear issues list", () => {
-		const notes = buildReleaseNotes({
+	it("leaves flagged tickets out of the changelog and the Linear issues list", () => {
+		const notes = buildChangelog({
 			tag: "v1.1.0",
 			previousTag: "v1.0.0",
 			date: "2026-10-02",
@@ -133,5 +135,65 @@ describe("feature-flagged work", () => {
 		assert.ok(notes.includes("- ENG-2"));
 		assert.ok(notes.includes("- ENG-3"));
 		assert.ok(!notes.includes("- ENG-1"));
+	});
+
+	it("leaves flagged tickets out of the release notes", () => {
+		const notes = buildReleaseNotes({ commits, flagged: ["ENG-1"] });
+
+		assert.ok(!notes.includes("Demographics"));
+		assert.ok(!notes.includes("ENG-1]"));
+		assert.ok(notes.includes("* Both. ([ENG-3](https://linear.app/plei/issue/ENG-3))"));
+	});
+});
+
+describe("describeCommit", () => {
+	it("turns a conventional commit into a sentence without its prefix or references", () => {
+		assert.equal(
+			describeCommit("feat(map): find cities outside our markets (ENG-5908) (#104)"),
+			"Find cities outside our markets.",
+		);
+		assert.equal(describeCommit("fix!: stop the crash (ENG-1, ENG-2)"), "Stop the crash.");
+		assert.equal(describeCommit("feat: ship it!"), "Ship it!");
+	});
+});
+
+describe("buildReleaseNotes", () => {
+	it("follows the Linear template with one line per ticket under Features and Fixes", () => {
+		const notes = buildReleaseNotes({
+			commits: [
+				{ sha: "e5", subject: "fix(map): polish the city list (ENG-10)", body: "" },
+				{ sha: "e4", subject: "chore(ci): bump node (ENG-11)", body: "" },
+				{ sha: "e3", subject: "fix(map): keep circles anchored (ENG-12) (#101)", body: "" },
+				{ sha: "e2", subject: "feat(map): show a spinner while cities load (ENG-10)", body: "" },
+				{ sha: "e1", subject: "feat(map): find cities outside our markets (ENG-10)", body: "" },
+				{ sha: "e0", subject: "fix: tooltip", body: "" },
+			],
+		});
+
+		assert.equal(
+			notes,
+			[
+				"## Features",
+				"",
+				"* Find cities outside our markets. ([ENG-10](https://linear.app/plei/issue/ENG-10))",
+				"",
+				"## Fixes",
+				"",
+				"* Tooltip.",
+				"* Keep circles anchored. ([ENG-12](https://linear.app/plei/issue/ENG-12))",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("lists breaking changes first and says when nothing user-facing shipped", () => {
+		assert.match(
+			buildReleaseNotes({ commits: [{ sha: "a", subject: "feat!: drop v1", body: "" }] }),
+			/^## Breaking changes\n\n\* Drop v1\.\n$/,
+		);
+		assert.equal(
+			buildReleaseNotes({ commits: [{ sha: "b", subject: "chore: deps", body: "" }] }),
+			"No user-facing changes in this release.\n",
+		);
 	});
 });
