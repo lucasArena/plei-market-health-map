@@ -31,7 +31,7 @@ export const es: Messages = {
 		registrationHeatmapValue: "{count} registros en un mercado",
 		registrationHeatmapHighValue: "{count}+ registros en un mercado",
 
-		layersGames: "Partidos · últimos 28 días",
+		layersGames: "Partidos",
 		title: "Mapa de sedes",
 		loading: "Cargando sedes…",
 		failed: "No se pudieron cargar las sedes.",

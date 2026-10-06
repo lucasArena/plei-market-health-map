@@ -28,7 +28,7 @@ export const en: Messages = {
 		registrationHeatmapValue: "{count} registrations in a market",
 		registrationHeatmapHighValue: "{count}+ registrations in a market",
 
-		layersGames: "Games · last 28 days",
+		layersGames: "Games",
 		title: "Facilities map",
 		loading: "Loading facilities…",
 		failed: "Could not load facilities.",

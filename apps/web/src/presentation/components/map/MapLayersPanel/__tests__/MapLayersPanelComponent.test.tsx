@@ -406,7 +406,7 @@ describe("MapLayersPanel reset", () => {
 		const toggle = screen.getByRole("button", { name: "Hide layers" });
 
 		fireEvent.click(switchByName("App sessions"));
-		fireEvent.click(switchByName("Games · last 28 days"));
+		fireEvent.click(switchByName("Games"));
 		fireEvent.click(switchByName("Inactive facilities"));
 		fireEvent.click(screen.getByRole("button", { name: "Set cohort" }));
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(
@@ -423,7 +423,7 @@ describe("MapLayersPanel reset", () => {
 
 		expect(screen.getByTestId("layers-state")).toHaveTextContent(DEFAULT_STATE);
 		expect(switchByName("App sessions")).toHaveAttribute("aria-checked", "true");
-		expect(switchByName("Games · last 28 days")).toHaveAttribute("aria-checked", "true");
+		expect(switchByName("Games")).toHaveAttribute("aria-checked", "true");
 		expect(switchByName("Inactive facilities")).toHaveAttribute("aria-checked", "true");
 		expect(toggle).toHaveAttribute("data-active", "false");
 		expect(screen.queryByTestId("layers-indicator")).not.toBeInTheDocument();
@@ -583,10 +583,10 @@ it("defaults to Games and resets supply back to Games", () => {
 		</MapLayersProvider>,
 	);
 	const trigger = screen.getByRole("button", { name: "Supply" });
-	expect(trigger).toHaveTextContent("Games · last 28 days");
+	expect(trigger).toHaveTextContent("Games");
 	fireEvent.keyDown(trigger, { key: "ArrowDown" });
 	const active = screen.getByRole("option", { name: "Active facilities" });
-	const games = screen.getByRole("option", { name: "Games · last 28 days" });
+	const games = screen.getByRole("option", { name: "Games" });
 	expect(games).toHaveFocus();
 	fireEvent.keyDown(games, { key: "Home" });
 	expect(active).toHaveFocus();
@@ -608,6 +608,6 @@ it("defaults to Games and resets supply back to Games", () => {
 	expect(trigger).toHaveFocus();
 	expect(switchByName("Active facilities")).toHaveAttribute("aria-checked", "true");
 	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Games · last 28 days");
+	expect(screen.getByRole("button", { name: "Supply" })).toHaveTextContent("Games");
 	mockFeatureFlag.mockReturnValue(false);
 });

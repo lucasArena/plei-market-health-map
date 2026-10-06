@@ -30,7 +30,7 @@ export const ptBR: Messages = {
 		registrationHeatmapValue: "{count} cadastros em um mercado",
 		registrationHeatmapHighValue: "{count}+ cadastros em um mercado",
 
-		layersGames: "Jogos · últimos 28 dias",
+		layersGames: "Jogos",
 		title: "Mapa de instalações",
 		loading: "Carregando instalações…",
 		failed: "Não foi possível carregar as instalações.",
