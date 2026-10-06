@@ -56,7 +56,7 @@ Skill choices follow Beginner, Intermediate, Advanced, Expert progression while 
 Cluster circles follow map projection immediately during camera movement. Only hover scale animates; geographic positions must never ease behind a drag.
 
 Glass circles synchronize inside the map render callback, without scheduling another animation frame, so overlays and the map paint together.
-Games trend markers use a translucent glass circle with a 35px green ring inset in a 41px glass disc. A 16px white circular badge overlaps the top-right edge, carrying a rounded green upward arrow, red downward arrow, or gray rightward arrow for unchanged counts. The 14px semibold count remains centered and the badge stays pointer-transparent.
+Games trend markers use a translucent glass circle with a 35px green ring inset in a 41px glass disc. A 16px white circular badge overlaps the top-right edge, carrying a rounded green upward arrow, red downward arrow, or gray rightward arrow for unchanged counts. The 12px semibold count remains centered and the badge stays pointer-transparent.
 
 Trend-enabled clusters and individual games markers share a 45px marker box and identical ring geometry, giving abbreviated counts more space and avoiding size changes between grouped and individual markers.
 

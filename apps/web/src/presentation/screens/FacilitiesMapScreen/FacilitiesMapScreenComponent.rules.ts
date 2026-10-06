@@ -715,7 +715,7 @@ export function clusterMarkerTransform(engaged: boolean) {
 
 export function createClusterGlassNode() {
 	const node = document.createElement("div");
-	node.classList.add(CLUSTER_MARKER_CLASS);
+	node.classList.add(CLUSTER_MARKER_CLASS, "games-count-circle");
 	applyGlassDisc(node, CLUSTER_OUTER_DIAMETER, CLUSTER_GLASS_SHADOW);
 	const ring = document.createElement("span");
 	ring.dataset.testid = "cluster-glass-stroke";
@@ -899,6 +899,7 @@ export function syncFacilityGlass(
 		const logo = current.querySelector("[data-testid='facility-glass-core']");
 		const label = current.querySelector("[data-testid='facility-glass-label']");
 		const showCount = badge.label !== undefined;
+		current.classList.toggle("games-count-circle", showCount);
 		if (logo instanceof HTMLElement) logo.style.display = showCount ? "none" : "";
 		if (label instanceof HTMLElement) {
 			label.textContent = badge.label ?? "";
