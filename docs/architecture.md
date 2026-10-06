@@ -162,17 +162,17 @@ Flags turn a feature on or off for everyone without a deploy. The keys live in c
 
 ```
 web useFeatureFlag(key)  ->  GET /api/v1/feature-flags             -> { enabled: [...] }   (any signed-in user)
-/feature-flags screen    ->  GET /api/v1/feature-flags/all         -> every flag in code    (admins only)
+/admin/feature-flags     ->  GET /api/v1/feature-flags/all         -> every flag in code    (admins only)
                          ->  PUT /api/v1/feature-flags/:key        { enabled }              (admins only)
   -> feature-flags-controller -> listEnabledFeatureFlags / listFeatureFlags / setFeatureFlag (core)
   -> CachedFeatureFlagRepository (30 s, cleared on every switch) -> PrismaFeatureFlagRepository
 ```
 
-Admins are the people in `ADMIN_EMAILS`. The `/feature-flags` page and `/metrics` share the `AdminTabs` bar and answer 404 for anyone else, and their APIs answer 403 (`require-admin.ts`). Each server instance caches the flags for 30 seconds and each browser refetches them after 30 seconds, so a switch reaches everyone within about a minute. How agents add and remove flags is in `AGENTS.md` → *Feature flags*.
+Admins are the people in `ADMIN_EMAILS`. The avatar menu shows them one **Admin controls** link that opens `/admin/metrics`; it and `/admin/feature-flags` share the `AdminTabs` bar to switch between them (`/admin` redirects to metrics, and the old `/metrics` and `/feature-flags` URLs redirect permanently from `next.config.ts`). The pages answer 404 for anyone else, and their APIs answer 403 (`require-admin.ts`). Each server instance caches the flags for 30 seconds and each browser refetches them after 30 seconds, so a switch reaches everyone within about a minute. How agents add and remove flags is in `AGENTS.md` → *Feature flags*.
 
 ## App metrics (project success tracking)
 
-The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/metrics`, from the avatar menu) measures it. Only the people in `ADMIN_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
+The project goal is that **at least 75% of the target users use the tool every week** (9 of the 11 in `TARGET_USER_EMAILS`). The **App metrics** page (`/admin/metrics`, from Admin controls in the avatar menu) measures it. Only the people in `ADMIN_EMAILS` see the menu link; the page answers 404 and the API 403 for everyone else.
 
 ```
 ActivityTracker (web, every signed-in page)  ->  POST /api/v1/activity   (activity-controller)
@@ -196,12 +196,12 @@ AppMetricsScreen  ->  GET /api/v1/metrics, GET /api/v1/metrics/people?page=   (m
 | `type` | `improvement` or `bug` (required) |
 | `message` | Required, trimmed, at most 5000 characters |
 | `images` | Repeat the field once per file: 0 to 5 files, `image/png`, `image/jpeg`, `image/webp` or `image/gif`, 10 MB each |
-| `pageUrl`, `view` | Optional strings, at most 2048 characters |
+| `pageUrl`, `view`, `appVersion` | Optional strings, at most 2048 characters. The web client sends the version it is running (`getAppVersion()`, the same value as the account hub footer) |
 | Whole request | At most 4 MB (`MAX_FEEDBACK_REQUEST_BYTES` in `packages/core/src/application/dtos/feedback-dto.ts`), below Vercel's 4.5 MB cap. The client compresses screenshots to stay under it |
 
 It answers `201 { data: { identifier, url } }`. Errors use the usual envelope: `400 VALIDATION_ERROR` (with Zod `details`), `413 PAYLOAD_TOO_LARGE` when the request is over 4 MB, `502 ISSUE_TRACKER_FAILED` when Linear fails, and `503 FEEDBACK_NOT_CONFIGURED` when there are no Linear credentials.
 
-`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue. The title is "Bug Report from <name>" for bugs and "Feedback from <name>" for improvements, using the session name. It uses the email when there is no name, and just "Bug Report" or "Feedback" when there is neither. The request body holds the full message, the submitter's name and email from the session ("Submitted by"), the page and view, an ISO timestamp, and every screenshot inline as `![](assetUrl)`; the issue description stays empty. `LinearIssueTracker` (`apps/server/src/infrastructure/providers/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and calls `issueCreate`. Improvements then link the body to the returned issue identifier with `customerNeedCreate`; bugs do not create customer requests. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
+`makeSubmitFeedback` (core) validates the form, uploads each screenshot one at a time through the `IssueTracker` port, and builds the issue. The title is "Bug Report from <name>" for bugs and "Feedback from <name>" for improvements, using the session name. It uses the email when there is no name, and just "Bug Report" or "Feedback" when there is neither. The request body holds the full message, the submitter's name and email from the session ("Submitted by"), the page, view and app version, an ISO timestamp, and every screenshot inline as `![](assetUrl)`; the issue description stays empty. `LinearIssueTracker` (`apps/server/src/infrastructure/providers/linear/`) calls Linear's GraphQL `fileUpload` mutation, PUTs the bytes to the signed `uploadUrl` with the returned headers plus `Content-Type` and `Cache-Control`, and calls `issueCreate`. Improvements then link the body to the returned issue identifier with `customerNeedCreate`; bugs do not create customer requests. The team, Triage state, label and project IDs live in `DEFAULT_LINEAR_FEEDBACK_CONFIG` (`linear-feedback-config.ts`): improvements go to Requests, bugs go to Engineering with the `bug` label, and both land in the Market health map project.
 
 `container.ts` picks the adapter from the environment:
 
@@ -234,7 +234,7 @@ The map layers control groups App sessions under Demand and independent Active f
 
 ### App session demographic filters
 
-Enable `player-demographic-filters` in the admin Feature flags page to expose Player filters under App sessions. The flag starts off. Gender and skill options are the distinct nonempty stored `dim_player.gender` and `dim_player.skill_description` values for accounts with activity in the same 28 completed days. They load independently of session aggregates. Age filtering uses optional inclusive minimum and maximum whole-year bounds from 0 through 120. Either bound can be left blank. This is a current-profile filter, not age or profile at session time. Each field defaults to All; selected values within gender or skill combine with OR, and separate fields combine with AND. Missing profile values remain included for unrestricted fields and are excluded when that field is selected. No additional account eligibility or game participation restriction is introduced.
+Enable `player-demographic-filters` in Admin controls → Feature flags to expose Player filters under App sessions. The flag starts off. Gender and skill options are the distinct nonempty stored `dim_player.gender` and `dim_player.skill_description` values for accounts with activity in the same 28 completed days. They load independently of session aggregates. Age filtering uses optional inclusive minimum and maximum whole-year bounds from 0 through 120. Either bound can be left blank. This is a current-profile filter, not age or profile at session time. Each field defaults to All; selected values within gender or skill combine with OR, and separate fields combine with AND. Missing profile values remain included for unrestricted fields and are excluded when that field is selected. No additional account eligibility or game participation restriction is introduced.
 
 `AppSessionFilters` starts with Add filter, whose custom glass menu offers the remaining demographic fields. Added fields render as removable chips; each chip opens a styled option list instead of a native select. Keyboard arrows, Home, End and Escape operate the lists, with focus restored to the trigger. Profile choices load only when a gender, skill or age menu is opened. Edits stay local until Apply updates the `MapLayersProvider` cohort. Reset immediately returns to all players. Hiding App sessions disables editing, pauses requests and retains applied filters. Disabling the feature flag clears the cohort. The map legend displays the applied cohort, and clears stale data and scale values while another cohort loads. Failures surface in the filter menu.
 

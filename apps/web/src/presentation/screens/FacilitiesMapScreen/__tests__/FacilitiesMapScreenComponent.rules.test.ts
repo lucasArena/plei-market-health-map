@@ -882,19 +882,23 @@ describe("useFacilitiesMapScreenRules", () => {
 			isPending: false,
 			isError: false,
 		});
-		const { rerender } = renderRules();
+		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
 		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([FACILITY]));
+		expect(result.current.shownFacilities).toEqual([FACILITY]);
+		expect(result.current.facilities).toEqual([FACILITY, inactive]);
 		layersState.showActiveFacilities = false;
 		layersState.showInactiveFacilities = true;
 		rerender();
 		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([inactive]));
+		expect(result.current.shownFacilities).toEqual([inactive]);
 		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([]));
+		expect(result.current.shownFacilities).toEqual([]);
 		layersState.showActiveFacilities = true;
 		layersState.showInactiveFacilities = true;
 		rerender();

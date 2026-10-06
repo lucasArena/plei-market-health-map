@@ -13,8 +13,8 @@ export interface Messages {
 		accountMenu: string;
 		version: string;
 		signOut: string;
-		appMetrics: string;
-		featureFlags: string;
+		adminControls: string;
+		adminControlsDescription: string;
 	};
 	map: {
 		gameDepartment: string;
@@ -30,6 +30,7 @@ export interface Messages {
 		markets: string;
 		facilities: string;
 		facilityCount: string;
+		facilityCountOne: string;
 		noSearchResults: string;
 		clusterCount: string;
 		moreFacilities: string;

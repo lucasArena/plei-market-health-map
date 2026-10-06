@@ -105,7 +105,7 @@ describe("MarketSummaryToggle", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Market summary" }));
 		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
 
-		mockPathname.mockReturnValue("/metrics");
+		mockPathname.mockReturnValue("/admin/metrics");
 		rerender(<MarketSummaryToggle />);
 
 		expect(screen.queryByRole("button", { name: "Market summary" })).not.toBeInTheDocument();

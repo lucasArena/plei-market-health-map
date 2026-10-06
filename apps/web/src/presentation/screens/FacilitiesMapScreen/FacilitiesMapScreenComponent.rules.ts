@@ -856,7 +856,7 @@ export function useFacilitiesMapScreenRules() {
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
 	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
-	const featureCollection = useMemo(() => {
+	const shownFacilities = useMemo(() => {
 		const filteredFacilities = facilities
 			.map((facility) => {
 				if (!gameDepartments?.length) return facility;
@@ -874,9 +874,13 @@ export function useFacilitiesMapScreenRules() {
 				if (showGames) return showActiveFacilities && (facility.gamesLast28Days ?? 0) > 0;
 				return facility.isActive ? showActiveFacilities : showInactiveFacilities;
 			});
-		return toFacilityFeatureCollection(filteredFacilities);
+		return filteredFacilities;
 	}, [facilities, showActiveFacilities, showInactiveFacilities, showGames, gameDepartments]);
 
+	const featureCollection = useMemo(
+		() => toFacilityFeatureCollection(shownFacilities),
+		[shownFacilities],
+	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
 			heatmapQuery.isError || !heatmapQuery.data
@@ -1495,6 +1499,7 @@ export function useFacilitiesMapScreenRules() {
 		selectedFacilityId,
 		selectSearchFacility,
 		selectSearchMarket,
+		shownFacilities,
 		status,
 	};
 }

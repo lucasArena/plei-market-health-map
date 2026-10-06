@@ -44,7 +44,7 @@ function finishClosing() {
 
 describe("Feedback", () => {
 	it.each([true, false])(
-		"shows the admin links only to admins and ends with sign-out and the version (%s)",
+		"shows Admin controls only to admins and ends with sign-out and the version (%s)",
 		(isAdmin) => {
 			renderWidget(
 				<Feedback user={{ name: "Stefano", email: "stefano@plei.com", image: null, isAdmin }} />,
@@ -56,15 +56,15 @@ describe("Feedback", () => {
 			expect(footer?.lastElementChild?.previousElementSibling?.previousElementSibling).toBe(
 				signOut.closest("form"),
 			);
-			const metrics = screen.queryByRole("link", { name: "App metrics" });
-			const flags = screen.queryByRole("link", { name: "Feature flags" });
+			const adminControls = screen.queryByRole("link", { name: /^Admin controls/ });
 			if (isAdmin) {
-				expect(metrics).toHaveAttribute("href", "/metrics");
-				expect(flags).toHaveAttribute("href", "/feature-flags");
+				expect(adminControls).toHaveAttribute("href", "/admin/metrics");
+				expect(adminControls).toHaveTextContent("Usage metrics and feature flags.");
 			} else {
-				expect(metrics).not.toBeInTheDocument();
-				expect(flags).not.toBeInTheDocument();
+				expect(adminControls).not.toBeInTheDocument();
 			}
+			expect(screen.queryByRole("link", { name: "App metrics" })).not.toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: "Feature flags" })).not.toBeInTheDocument();
 		},
 	);
 
@@ -119,6 +119,7 @@ describe("Feedback", () => {
 
 	afterEach(() => {
 		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
 		createObjectURL.mockClear();
 		revokeObjectURL.mockClear();
 	});
@@ -299,6 +300,7 @@ describe("Feedback", () => {
 	});
 
 	it("submits the feedback and shows the Linear ticket", async () => {
+		vi.stubEnv("NEXT_PUBLIC_APP_VERSION", "0.47.0");
 		let respond: (value: unknown) => void = () => undefined;
 		const fetchMock = vi.fn(
 			() =>
@@ -337,6 +339,7 @@ describe("Feedback", () => {
 		expect((body.get("images") as File).name).toBe("bug.png");
 		expect(body.get("pageUrl")).toBe(window.location.href);
 		expect(body.get("view")).toBe("facilities-map (facility 889)");
+		expect(body.get("appVersion")).toBe("0.47.0");
 
 		fireEvent.keyDown(window, { key: "Escape" });
 		finishClosing();

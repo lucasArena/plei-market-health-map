@@ -38,6 +38,7 @@ describe("toFeedbackFormData", () => {
 			images: [image, image],
 			pageUrl: "http://localhost:3000/",
 			view: "facilities-map",
+			appVersion: "0.47.0",
 		});
 
 		expect(form.get("type")).toBe("bug");
@@ -45,6 +46,7 @@ describe("toFeedbackFormData", () => {
 		expect(form.getAll("images")).toHaveLength(2);
 		expect(form.get("pageUrl")).toBe("http://localhost:3000/");
 		expect(form.get("view")).toBe("facilities-map");
+		expect(form.get("appVersion")).toBe("0.47.0");
 	});
 
 	it("leaves out the optional context when it is missing", () => {
@@ -52,6 +54,7 @@ describe("toFeedbackFormData", () => {
 
 		expect(form.has("pageUrl")).toBe(false);
 		expect(form.has("view")).toBe(false);
+		expect(form.has("appVersion")).toBe(false);
 		expect(form.getAll("images")).toEqual([]);
 	});
 });
