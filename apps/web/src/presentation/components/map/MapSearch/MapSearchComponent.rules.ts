@@ -8,6 +8,7 @@ import type {
 	MapSearchProps,
 	MarketSearchResult,
 } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
@@ -40,6 +41,7 @@ export function useMapSearchRules({
 	onMarketSelect,
 	onClear,
 }: MapSearchProps) {
+	const { period } = useMapScope();
 	const [query, setQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isOpen);
@@ -90,7 +92,7 @@ export function useMapSearchRules({
 
 	const prefetchMarket = (market: MarketSearchResult) =>
 		intent.schedule(() => {
-			void prefetchMarketSummary(queryClient, market.id).catch(() => undefined);
+			void prefetchMarketSummary(queryClient, market.id, period).catch(() => undefined);
 		});
 
 	const prefetchFacility = (facility: MapSearchProps["facilities"][number]) =>

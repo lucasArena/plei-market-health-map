@@ -27,7 +27,7 @@ describe("prefetchMarketSummary", () => {
 		expect(order).toEqual([
 			"/api/v1/market-summary?market=m%201",
 			"/api/v1/market-summary/players?market=m%201",
-			"/api/v1/market-summary/insights?market=m%201",
+			"/api/v1/market-summary/insights?period=week&market=m+1",
 		]);
 		expect(maxInFlight).toBe(1);
 	});

@@ -24,6 +24,7 @@ function facility(id: string, name: string) {
 		name,
 		avatarUrl: null,
 		isActive: true,
+		isActiveLastWeek: true,
 		location: { latitude: 30.27, longitude: -97.74 },
 	};
 }
@@ -340,7 +341,7 @@ describe("FacilityHoverCard", () => {
 					...clusterHover(7, 640, 2),
 					facilities: [
 						facility("a", "Active Dome"),
-						{ ...facility("b", "Quiet Dome"), isActive: false },
+						{ ...facility("b", "Quiet Dome"), isActive: false, isActiveLastWeek: false },
 					],
 				}}
 				messages={EN_MESSAGES.map}

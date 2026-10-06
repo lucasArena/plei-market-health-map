@@ -23,6 +23,7 @@ import {
 	FACILITY_LAYER_ENTER_MS,
 	FACILITY_LAYER_EXIT_MS,
 	facilitiesForIds,
+	facilitiesForPeriod,
 	marketBounds,
 	placeHover,
 	readClusterGlassBadges,
@@ -165,6 +166,7 @@ const FACILITY = {
 	name: "Eastside Futsal Arena",
 	avatarUrl: null,
 	isActive: true,
+	isActiveLastWeek: true,
 	location: { latitude: 30.27, longitude: -97.74 },
 };
 
@@ -199,7 +201,7 @@ describe("active cluster reveal", () => {
 				}
 				return [
 					{
-						properties: { id: "live", isActive: true },
+						properties: { id: "live", isActive: true, isActiveLastWeek: true },
 						geometry: { coordinates: [-97.1, 30.4] },
 					},
 					{
@@ -212,18 +214,18 @@ describe("active cluster reveal", () => {
 				if (clusterId === 8) {
 					return [
 						{
-							properties: { id: "live", isActive: true },
+							properties: { id: "live", isActive: true, isActiveLastWeek: true },
 							geometry: { coordinates: [-97.1, 30.4] },
 						},
 					];
 				}
 				return [
 					{
-						properties: { id: "far", isActive: true },
+						properties: { id: "far", isActive: true, isActiveLastWeek: true },
 						geometry: { coordinates: [-80, 25] },
 					},
 					{
-						properties: { id: "live", isActive: true },
+						properties: { id: "live", isActive: true, isActiveLastWeek: true },
 						geometry: { coordinates: [-97.1, 30.4] },
 					},
 					{
@@ -252,19 +254,28 @@ describe("active cluster reveal", () => {
 
 	it("ignores leaves that cannot be drawn and stops when the active facility never separates", async () => {
 		const leaves = [
-			{ properties: { isActive: true }, geometry: { coordinates: [1, 2] } },
-			{ properties: { id: "dead", isActive: null }, geometry: { coordinates: [0, 0] } },
+			{ properties: { isActive: true, isActiveLastWeek: true }, geometry: { coordinates: [1, 2] } },
+			{
+				properties: { id: "dead", isActive: null, isActiveLastWeek: null },
+				geometry: { coordinates: [0, 0] },
+			},
 			{ properties: { id: "zero", isActive: 0 }, geometry: { coordinates: [0, 0] } },
 			{ properties: { id: "text", isActive: "false" }, geometry: { coordinates: [0, 0] } },
-			{ properties: { id: "missing", isActive: true } },
-			{ properties: { id: "short", isActive: true }, geometry: { coordinates: [1] } },
-			{ properties: { id: "words", isActive: true }, geometry: { coordinates: ["x", "y"] } },
+			{ properties: { id: "missing", isActive: true, isActiveLastWeek: true } },
+			{
+				properties: { id: "short", isActive: true, isActiveLastWeek: true },
+				geometry: { coordinates: [1] },
+			},
+			{
+				properties: { id: "words", isActive: true, isActiveLastWeek: true },
+				geometry: { coordinates: ["x", "y"] },
+			},
 			{
 				properties: { id: 9, isActive: "1" },
 				geometry: { coordinates: [-97.2, 30.2] },
 			},
 			{
-				properties: { id: "near", isActive: true },
+				properties: { id: "near", isActive: true, isActiveLastWeek: true },
 				geometry: { coordinates: [-97.5, 30.3] },
 			},
 		];
@@ -284,7 +295,7 @@ describe("active cluster reveal", () => {
 				if (clusterId === 2) {
 					return [
 						{
-							properties: { id: "other", isActive: true },
+							properties: { id: "other", isActive: true, isActiveLastWeek: true },
 							geometry: { coordinates: [1, 2] },
 						},
 					];
@@ -499,7 +510,7 @@ describe("facility glass", () => {
 				return [
 					{
 						geometry: { coordinates: [3, 4] },
-						properties: { id: "f1", isActive: true },
+						properties: { id: "f1", isActive: true, isActiveLastWeek: true },
 					},
 					{
 						geometry: { coordinates: [5, 6] },
@@ -593,10 +604,10 @@ describe("toFacilityFeatureCollection stacking", () => {
 	it("puts inactive facilities first and active last so the active one renders and is picked on top", () => {
 		const location = { latitude: 39.96, longitude: -75.15 };
 		const facilities = [
-			{ ...FACILITY, id: "a1", isActive: true, location },
-			{ ...FACILITY, id: "i1", isActive: false, location },
-			{ ...FACILITY, id: "a2", isActive: true, location },
-			{ ...FACILITY, id: "i2", isActive: false, location },
+			{ ...FACILITY, id: "a1", isActive: true, isActiveLastWeek: true, location },
+			{ ...FACILITY, id: "i1", isActive: false, isActiveLastWeek: false, location },
+			{ ...FACILITY, id: "a2", isActive: true, isActiveLastWeek: true, location },
+			{ ...FACILITY, id: "i2", isActive: false, isActiveLastWeek: false, location },
 		];
 
 		const collection = toFacilityFeatureCollection(facilities);
@@ -769,9 +780,9 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
 	});
 
-	it("shows both facility statuses when there is no layers provider", async () => {
+	it("shows only active facilities when there is no layers provider", async () => {
 		layersState.hasProvider = false;
-		const inactive = { ...FACILITY, id: "inactive", isActive: false };
+		const inactive = { ...FACILITY, id: "inactive", isActive: false, isActiveLastWeek: false };
 		mockUseFacilities.mockReturnValue({
 			data: [FACILITY, inactive],
 			isPending: false,
@@ -780,13 +791,11 @@ describe("useFacilitiesMapScreenRules", () => {
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		act(() => mapState.handlers.get("load")?.());
-		expect(mapState.setData).toHaveBeenCalledWith(
-			toFacilityFeatureCollection([FACILITY, inactive]),
-		);
+		expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([FACILITY]));
 	});
 
 	it("filters facilities before clustering for each supply selection", async () => {
-		const inactive = { ...FACILITY, id: "inactive", isActive: false };
+		const inactive = { ...FACILITY, id: "inactive", isActive: false, isActiveLastWeek: false };
 		mockUseFacilities.mockReturnValue({
 			data: [FACILITY, inactive],
 			isPending: false,
@@ -1187,13 +1196,13 @@ describe("useFacilitiesMapScreenRules", () => {
 
 		mapState.getClusterLeaves.mockResolvedValue([
 			{
-				properties: { id: "f1", isActive: true },
+				properties: { id: "f1", isActive: true, isActiveLastWeek: true },
 				geometry: { coordinates: [-97.1, 30.4] },
 			},
 		]);
 		mapState.getClusterChildren.mockResolvedValue([
 			{
-				properties: { id: "f1", isActive: true },
+				properties: { id: "f1", isActive: true, isActiveLastWeek: true },
 				geometry: { coordinates: [-97.1, 30.4] },
 			},
 		]);
@@ -1579,9 +1588,11 @@ describe("useFacilitiesMapScreenRules", () => {
 		act(() => mapState.handlers.get("load")?.());
 		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
 			{ gender: "Female", ageMin: 18, metric: "registrations" },
+			"week",
 			true,
 		);
 		expect(result.current.messages.sessionHeatmapLegend).toContain("Registrations per market");
+		expect(result.current.sessionHeatmapLegend).toBe(EN_MESSAGES.map.registrationHeatmapLegend);
 		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
 			APP_SESSION_HEATMAP_LAYER_ID,
 			"heatmap-intensity",
@@ -1595,7 +1606,11 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.isLegendShown).toBe(true);
 		mockDemandFlag.mockReturnValue(false);
 		rerender();
-		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(layersState.sessionFilters, true);
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
+			layersState.sessionFilters,
+			"week",
+			true,
+		);
 		expect(result.current.messages.sessionHeatmapLegend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
 		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
 			APP_SESSION_HEATMAP_LAYER_ID,
@@ -1619,4 +1634,26 @@ it("uses individual market counts for registrations even when markets share a vi
 	};
 	expect(appSessionHeatmapScale(cells, bounds)).toEqual({ low: 300, high: 300 });
 	expect(appSessionHeatmapScale(cells, bounds, false)).toEqual({ low: 100, high: 200 });
+});
+
+describe("facilitiesForPeriod", () => {
+	it("marks facilities active by last week's games for the week and keeps 28 days otherwise", () => {
+		const quietLastWeek = { ...FACILITY, isActive: true, isActiveLastWeek: false };
+
+		expect(facilitiesForPeriod([quietLastWeek], "week")[0]?.isActive).toBe(false);
+		expect(facilitiesForPeriod([quietLastWeek], "month")[0]?.isActive).toBe(true);
+	});
+});
+
+describe("period-aware map data", () => {
+	it("asks for the selected period's sessions and names it in the legend", () => {
+		const { result } = renderRules();
+
+		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
+			expect.anything(),
+			"week",
+			expect.any(Boolean),
+		);
+		expect(result.current.sessionHeatmapLegend).toBe("Sessions per shaded area · last week");
+	});
 });

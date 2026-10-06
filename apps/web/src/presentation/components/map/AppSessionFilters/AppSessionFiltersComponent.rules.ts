@@ -8,6 +8,7 @@ import type {
 	SessionFilterMenu,
 } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.types";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import {
 	useAppSessionFilterOptions,
@@ -17,6 +18,7 @@ import {
 export function useAppSessionFiltersRules(showSessions: boolean) {
 	const layers = useMapLayers();
 	const { messages } = useMessages();
+	const { period } = useMapScope();
 	const copy = messages.map.sessionFilters;
 	const applied = layers?.sessionFilters ?? {};
 	const [draft, setDraft] = useState<AppSessionFilters>(applied);
@@ -51,6 +53,7 @@ export function useAppSessionFiltersRules(showSessions: boolean) {
 	}, [showSessions]);
 	const sessions = useAppSessionHeatmap(
 		layers?.demandMetric === "registrations" ? { ...applied, metric: "registrations" } : applied,
+		period,
 		showSessions,
 	);
 	function ageLabel(filters: AppSessionFilters) {

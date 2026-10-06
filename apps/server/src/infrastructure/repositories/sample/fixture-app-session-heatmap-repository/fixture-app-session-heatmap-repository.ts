@@ -5,6 +5,7 @@ import type {
 	AppSessionFilters,
 	AppSessionHeatmapCellView,
 	AppSessionHeatmapRepository,
+	StatsPeriod,
 } from "@market-health-map/core/application";
 
 export const DEFAULT_APP_SESSION_HEATMAP_FIXTURE_PATH = join(
@@ -46,7 +47,10 @@ export class FixtureAppSessionHeatmapRepository implements AppSessionHeatmapRepo
 		return { genders: [], skills: [], ages: [] };
 	}
 
-	async listLast28Days(filters: AppSessionFilters = {}): Promise<AppSessionHeatmapCellView[]> {
+	async listSessions(
+		_period: StatsPeriod,
+		filters: AppSessionFilters = {},
+	): Promise<AppSessionHeatmapCellView[]> {
 		if (Object.keys(filters).length) return [];
 		this.cells ??= parseAppSessionHeatmapCsv(readFileSync(this.fixturePath, "utf8"));
 		return [...this.cells];

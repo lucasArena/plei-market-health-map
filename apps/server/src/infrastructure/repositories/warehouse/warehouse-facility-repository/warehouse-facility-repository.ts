@@ -12,10 +12,14 @@ import type {
 
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
-  select current_date as today
+  select current_date as today, date_trunc('week', current_date)::date as this_week
 ),
 facility_activity as (
-  select r.location_id, count(distinct r.reservation_id) as played_last_28_days
+  select r.location_id,
+    count(distinct r.reservation_id) as played_last_28_days,
+    count(distinct r.reservation_id) filter (
+      where r.date_with_time::date >= b.this_week - 7 and r.date_with_time::date < b.this_week
+    ) as played_last_week
   from plei_gold.dim_reservation r
   cross join bounds b
   where r.reservation_type = 'OpenReservation'
@@ -28,6 +32,7 @@ facility_activity as (
 select l.location_id, l.location_name, l.address, l.city, l.state,
        l.region_id, r.region_name, l.location_latitude, l.location_longitude,
        coalesce(a.played_last_28_days, 0) as played_last_28_days,
+       coalesce(a.played_last_week, 0) as played_last_week,
        c.id as company_id, c.logo as company_logo
 from plei_gold.dim_location l
 left join plei_gold.dim_region r on r.region_id = l.region_id
@@ -72,7 +77,7 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 			avatarUrl: companyLogoUrl(row.company_id, row.company_logo),
 			metrics: {
 				activePlayers: 0,
-				gamesLastWeek: 0,
+				gamesLastWeek: Number(row.played_last_week),
 				gamesLast28Days: Number(row.played_last_28_days),
 				utilization: 0,
 			},

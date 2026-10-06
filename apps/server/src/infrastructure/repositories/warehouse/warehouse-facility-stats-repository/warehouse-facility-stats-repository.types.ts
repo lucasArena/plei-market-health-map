@@ -9,6 +9,7 @@ export interface WarehouseFacilityReservationStatsRow {
 	scheduled_last_28_days: string | number;
 	scheduled_previous_28_days: string | number;
 	scheduled_last_week: string | number;
+	scheduled_previous_week: string | number;
 	cancelled_last_week: string | number;
 	upcoming_next_seven_days: string | number;
 	last_played_date: string | null;
@@ -17,6 +18,10 @@ export interface WarehouseFacilityReservationStatsRow {
 }
 
 export interface WarehouseFacilityPlayerStatsRow {
+	unique_players_last_week: string | number;
+	unique_players_previous_week: string | number;
+	activated_players_last_week: string | number;
+	activated_players_previous_week: string | number;
 	unique_players_last_28_days: string | number;
 	unique_players_previous_28_days: string | number;
 	activated_players_last_28_days: string | number;
@@ -40,6 +45,8 @@ export interface WarehouseParameterizedQueryable {
 
 export interface WarehouseFacilityGameComparisonRow {
 	location_id: number;
+	played_last_week: string | number;
+	played_previous_week: string | number;
 	played_last_28_days: string | number;
 	played_previous_28_days: string | number;
 }

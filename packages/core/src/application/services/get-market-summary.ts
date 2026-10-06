@@ -8,9 +8,7 @@ import { toFacilityReservationStatsView } from "@core/application/mappers/facili
 import {
 	selectMarketFacilities,
 	toMarketMemberIds,
-	toMarketSummaryScope,
-	toTopFacilities,
-	toTopMarkets,
+	toMarketSummaryPeriod,
 } from "@core/application/mappers/market-summary-mapper";
 import type { GetMarketSummaryDeps } from "@core/application/services/get-market-summary.types";
 
@@ -23,10 +21,11 @@ export function makeGetMarketSummary({ facilities, stats }: GetMarketSummaryDeps
 		const visible = selectMarketFacilities(await facilities.listAll(), parsed.data.market);
 		const reservationStats = await stats.getReservationStats(toMarketMemberIds(visible));
 		return {
-			scope: toMarketSummaryScope(visible),
 			stats: toFacilityReservationStatsView(reservationStats),
-			topFacilities: toTopFacilities(visible),
-			topMarkets: toTopMarkets(visible),
+			periods: {
+				week: toMarketSummaryPeriod(visible, "week"),
+				month: toMarketSummaryPeriod(visible, "month"),
+			},
 		};
 	};
 }

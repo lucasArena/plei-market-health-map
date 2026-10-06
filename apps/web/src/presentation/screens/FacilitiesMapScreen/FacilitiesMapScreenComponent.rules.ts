@@ -1,12 +1,14 @@
 "use client";
 
-import type { FacilityPointView } from "@market-health-map/core/application";
+import type { FacilityPointView, StatsPeriod } from "@market-health-map/core/application";
+import { formatMessage } from "@market-health-map/core/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLEI_LOGO_URL, PLEI_LOGO_WHITE_URL } from "@/application/constants/plei-logo";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type { MarketSearchResult } from "@/presentation/components/map/MapSearch/MapSearchComponent.types";
 import {
 	ALL_MARKETS_SCOPE,
@@ -97,6 +99,14 @@ import type {
 	SessionHeatmapScale,
 	SessionLegendState,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
+
+export function facilitiesForPeriod(
+	facilities: FacilityPointView[],
+	period: StatsPeriod,
+): FacilityPointView[] {
+	if (period === "month") return facilities;
+	return facilities.map((facility) => ({ ...facility, isActive: facility.isActiveLastWeek }));
+}
 
 function byActiveLast(a: FacilityPointView, b: FacilityPointView): number {
 	return Number(a.isActive) - Number(b.isActive);
@@ -743,9 +753,13 @@ export function bindFacilityGlass(
 
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
-	const { setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
+	const { period, setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
+	const facilities = useMemo(
+		() => facilitiesForPeriod(query.data ?? [], period),
+		[query.data, period],
+	);
 	const mapLayers = useMapLayers();
 	const showDemographics = useFeatureFlag("player-demographic-filters");
 	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
@@ -753,6 +767,7 @@ export function useFacilitiesMapScreenRules() {
 		isRegistrations
 			? { ...mapLayers?.sessionFilters, metric: "registrations" }
 			: mapLayers?.sessionFilters,
+		period,
 		mapLayers?.showSessions ?? true,
 	);
 	const [isMapReady, setIsMapReady] = useState(false);
@@ -767,10 +782,12 @@ export function useFacilitiesMapScreenRules() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const selectedFacilityIdRef = useRef<string | null>(null);
-	const showActiveFacilities = mapLayers?.showActiveFacilities ?? true;
-	const showInactiveFacilities = mapLayers?.showInactiveFacilities ?? true;
+	const showActiveFacilities =
+		mapLayers?.showActiveFacilities ?? MAP_LAYERS_DEFAULTS.showActiveFacilities;
+	const showInactiveFacilities =
+		mapLayers?.showInactiveFacilities ?? MAP_LAYERS_DEFAULTS.showInactiveFacilities;
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
-	const showSessions = mapLayers?.showSessions ?? true;
+	const showSessions = mapLayers?.showSessions ?? MAP_LAYERS_DEFAULTS.showSessions;
 	const filters = mapLayers?.sessionFilters;
 	const ageLabel =
 		filters?.ageMin === filters?.ageMax
@@ -802,11 +819,11 @@ export function useFacilitiesMapScreenRules() {
 	const featureCollection = useMemo(
 		() =>
 			toFacilityFeatureCollection(
-				(query.data ?? []).filter((facility) =>
+				facilities.filter((facility) =>
 					facility.isActive ? showActiveFacilities : showInactiveFacilities,
 				),
 			),
-		[query.data, showActiveFacilities, showInactiveFacilities],
+		[facilities, showActiveFacilities, showInactiveFacilities],
 	);
 	const heatmapFeatureCollection = useMemo(
 		() =>
@@ -816,8 +833,8 @@ export function useFacilitiesMapScreenRules() {
 		[heatmapQuery.data, heatmapQuery.isError],
 	);
 	const facilitiesById = useMemo(
-		() => new Map((query.data ?? []).map((facility) => [facility.id, facility])),
-		[query.data],
+		() => new Map(facilities.map((facility) => [facility.id, facility])),
+		[facilities],
 	);
 	const status = resolveMapStatus(query.isPending, query.isError);
 
@@ -1380,7 +1397,12 @@ export function useFacilitiesMapScreenRules() {
 		clearSearchScope,
 		closePanel,
 		containerRef,
-		facilities: query.data ?? [],
+		facilities,
+		sessionHeatmapLegend: isRegistrations
+			? messages.map.registrationHeatmapLegend
+			: formatMessage(messages.map.sessionHeatmapLegend, {
+					span: messages.statsPeriods[period].span,
+				}),
 		finishLegendMotion,
 		hasSessionHeatmap,
 		handlePanelClosed,

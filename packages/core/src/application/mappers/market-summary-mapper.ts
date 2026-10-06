@@ -1,6 +1,8 @@
+import type { StatsPeriod } from "@core/application/dtos/facility-detail-dto.types";
 import type {
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
+	MarketSummaryPeriodView,
 	MarketSummaryScopeView,
 } from "@core/application/dtos/market-summary-dto.types";
 import { NotFoundError } from "@core/application/errors/not-found-error";
@@ -8,15 +10,16 @@ import type { EntityId, Facility } from "@core/domain";
 
 export const MARKET_SUMMARY_RANK_LIMIT = 5;
 
-function gamesOf(facility: Facility): number {
-	return facility.toJSON().metrics.gamesLast28Days;
+function gamesOf(facility: Facility, period: StatsPeriod): number {
+	const { metrics } = facility.toJSON();
+	return period === "week" ? metrics.gamesLastWeek : metrics.gamesLast28Days;
 }
 
-function byGamesThenName<Rank extends { gamesLast28Days: number; name: string }>(
+function byGamesThenName<Rank extends { games: number; name: string }>(
 	left: Rank,
 	right: Rank,
 ): number {
-	return right.gamesLast28Days - left.gamesLast28Days || left.name.localeCompare(right.name);
+	return right.games - left.games || left.name.localeCompare(right.name);
 }
 
 export function toMarketMemberIds(facilities: Facility[]): EntityId[] {
@@ -30,8 +33,11 @@ export function selectMarketFacilities(facilities: Facility[], market?: string):
 	return selected;
 }
 
-export function toMarketSummaryScope(facilities: Facility[]): MarketSummaryScopeView {
-	const active = facilities.filter((facility) => gamesOf(facility) > 0);
+export function toMarketSummaryScope(
+	facilities: Facility[],
+	period: StatsPeriod,
+): MarketSummaryScopeView {
+	const active = facilities.filter((facility) => gamesOf(facility, period) > 0);
 	return {
 		facilityCount: facilities.length,
 		activeFacilityCount: active.length,
@@ -42,6 +48,7 @@ export function toMarketSummaryScope(facilities: Facility[]): MarketSummaryScope
 
 export function toTopFacilities(
 	facilities: Facility[],
+	period: StatsPeriod,
 	limit: number = MARKET_SUMMARY_RANK_LIMIT,
 ): MarketSummaryFacilityRankView[] {
 	return facilities
@@ -49,36 +56,48 @@ export function toTopFacilities(
 			id: facility.id,
 			name: facility.toJSON().name,
 			marketName: facility.marketName,
-			gamesLast28Days: gamesOf(facility),
+			games: gamesOf(facility, period),
 		}))
-		.filter((rank) => rank.gamesLast28Days > 0)
+		.filter((rank) => rank.games > 0)
 		.sort(byGamesThenName)
 		.slice(0, limit);
 }
 
 export function toTopMarkets(
 	facilities: Facility[],
+	period: StatsPeriod,
 	limit: number = MARKET_SUMMARY_RANK_LIMIT,
 ): MarketSummaryMarketRankView[] {
 	const markets = new Map<string, MarketSummaryMarketRankView>();
 	for (const facility of facilities) {
-		const games = gamesOf(facility);
+		const games = gamesOf(facility, period);
 		const current = markets.get(facility.marketId) ?? {
 			id: facility.marketId,
 			name: facility.marketName,
 			facilityCount: 0,
 			activeFacilityCount: 0,
-			gamesLast28Days: 0,
+			games: 0,
 		};
 		markets.set(facility.marketId, {
 			...current,
 			facilityCount: current.facilityCount + 1,
 			activeFacilityCount: current.activeFacilityCount + Number(games > 0),
-			gamesLast28Days: current.gamesLast28Days + games,
+			games: current.games + games,
 		});
 	}
 	return [...markets.values()]
-		.filter((rank) => rank.gamesLast28Days > 0)
+		.filter((rank) => rank.games > 0)
 		.sort(byGamesThenName)
 		.slice(0, limit);
+}
+
+export function toMarketSummaryPeriod(
+	facilities: Facility[],
+	period: StatsPeriod,
+): MarketSummaryPeriodView {
+	return {
+		scope: toMarketSummaryScope(facilities, period),
+		topFacilities: toTopFacilities(facilities, period),
+		topMarkets: toTopMarkets(facilities, period),
+	};
 }

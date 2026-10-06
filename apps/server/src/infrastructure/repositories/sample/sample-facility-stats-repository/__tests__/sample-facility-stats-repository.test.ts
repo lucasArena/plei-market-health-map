@@ -58,6 +58,8 @@ describe("sample game comparisons", () => {
 		expect(comparisons).toEqual([
 			{
 				facilityId: ids[0],
+				playedLastWeek: stats.playedLastWeek,
+				playedPreviousWeek: stats.playedPreviousWeek,
 				playedLast28Days: stats.playedLast28Days,
 				playedPrevious28Days: stats.playedPrevious28Days,
 			},
