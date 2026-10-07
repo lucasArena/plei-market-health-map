@@ -12,7 +12,7 @@ import {
 } from "./next-version.mjs";
 
 export const LINEAR_ISSUE_PATTERN = /\b[A-Z][A-Z0-9]{1,9}-\d+\b/g;
-export const NO_ISSUES_PATTERN = "$^";
+export const NO_ISSUES_PATTERN = "($^)";
 
 const FIELD_SEPARATOR = "\u001f";
 const RECORD_SEPARATOR = "\u001e";

@@ -88,7 +88,7 @@ Rules:
    - `refactor/<slug>`: internal changes with no behavior change (no bump)
    - `chore/<slug>`: tooling, deps and docs (no bump)
 2. Open a PR **into `staging`**. `ci.pr.yml` checks the branch name and runs the unit tests, and both must pass.
-3. Promote to production with a PR from **`staging` into `main`**, merged with a **merge commit** (not squash). That is the only branch allowed without a prefix. Feature and hotfix PRs into `staging` should be **squashed**.
+3. Promote to production through a **`release/YYYY-MM-DD-N` branch** cut from `staging` (`pnpm release:branch`), with a PR from it **into `main`**, merged with a **merge commit** (not squash). Never open the promotion with `staging` itself as the head: "Automatically delete head branches" is on, so merging would delete `staging`. Feature and hotfix PRs into `staging` should be **squashed**.
 4. After a production release, merge `main` back into `staging`.
 
 The full procedure is under *Release workflow (step by step)* below.
@@ -164,9 +164,12 @@ chore(ci): add a deploy timeout
 - `cd.staging.yml` then deploys the branch head to **https://plei-market-health-map-staging.vercel.app**. Staging never bumps the version or creates a tag.
 - Verify the change on staging before promoting it.
 
-### 4. Promote `staging` into `main` with a **merge commit**
+### 4. Promote `staging` into `main` through a release branch, with a **merge commit**
 
-- Open a PR from `staging` into `main`. `staging` is the only branch allowed without a prefix, and only into `main`.
+- Cut the release branch from `staging` with `pnpm release:branch`. It fetches `staging`, names the branch `release/<today's date>-<N>` (N is 1 for the day's first promotion, then 2, 3…), pushes it, and prints the name.
+- Open the PR from that branch into `main`, e.g. `gh pr create --base main --head release/2026-10-07-1 --title "chore(release): promote staging to production (ENG-1234)"`. `ci.pr.yml` accepts `release/YYYY-MM-DD-N` only into `main`.
+- **Never use `staging` itself as the PR head.** "Automatically delete head branches" is on, so merging a PR deletes its head branch: with `staging` as the head, `staging` disappears. The release branch is deleted instead, and `staging` stays. If `staging` is ever deleted, recreate it from `main` (`git push origin origin/main:refs/heads/staging`).
+- Make sure feature and hotfix PRs target `staging`. One that targets `main` ships straight to production when merged, as #111 did.
 - Merge with **Create a merge commit**, never squash. Squashing rewrites staging's commits and makes the two branches diverge.
 - `cd.production.yml` then:
   1. counts the non-merge commits since the last `vX.Y.Z` tag (see *Versioning and releases*);
@@ -177,7 +180,7 @@ chore(ci): add a deploy timeout
 
 ### 5. Merge `main` back into `staging`
 
-Open a PR from `main` into `staging` and merge it with **Create a merge commit**. That brings the `ci: bump new version` commit into staging, so the version and history match on both branches and the next promotion has no conflicts.
+Open a PR from `main` into `staging` and merge it with **Create a merge commit**. `main` is the default branch, so auto-delete never removes it. That brings the `ci: bump new version` commit into staging, so the version and history match on both branches and the next promotion has no conflicts.
 
 ### Hotfixes for production
 
