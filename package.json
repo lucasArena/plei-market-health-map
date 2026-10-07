@@ -20,7 +20,8 @@
 		"db:deploy": "pnpm --filter @market-health-map/server db:deploy",
 		"check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run test:scripts",
 		"prepare": "simple-git-hooks",
-		"test:scripts": "node --test \".github/scripts/**/*.test.mjs\""
+		"test:scripts": "node --test \".github/scripts/**/*.test.mjs\"",
+		"release:branch": "node .github/scripts/release/release-branch.mjs"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm exec lint-staged",
