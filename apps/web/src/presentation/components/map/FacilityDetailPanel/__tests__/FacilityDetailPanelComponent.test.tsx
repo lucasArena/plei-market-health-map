@@ -169,7 +169,9 @@ describe("FacilityDetailPanel", () => {
 		mockRules.mockReturnValue(rules);
 
 		render(<FacilityDetailPanel {...PROPS} isClosing />);
-		expect(screen.queryByRole("button", { name: "Close facility details" })).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Close facility details" }),
+		).not.toBeInTheDocument();
 		const panel = screen.getByRole("complementary");
 		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
 
