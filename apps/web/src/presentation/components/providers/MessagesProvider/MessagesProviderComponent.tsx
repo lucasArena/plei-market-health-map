@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext } from "react";
+import { useMessagesProviderRules } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent.rules";
 import type {
 	MessagesContextValue,
 	MessagesProviderProps,
@@ -9,7 +10,7 @@ import type {
 const MessagesContext = createContext<MessagesContextValue | undefined>(undefined);
 
 export function MessagesProvider({ locale, messages, children }: Readonly<MessagesProviderProps>) {
-	const value = useMemo(() => ({ locale, messages }), [locale, messages]);
+	const value = useMessagesProviderRules(locale, messages);
 	return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;
 }
 

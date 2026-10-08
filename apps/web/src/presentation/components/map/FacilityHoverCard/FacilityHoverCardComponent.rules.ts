@@ -15,6 +15,7 @@ import type {
 	ClusterHoverCardPlacement,
 	ClusterHoverCardPlacementInput,
 	ClusterHoverSide,
+	HoverTrendMessages,
 } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
@@ -70,10 +71,7 @@ export function clusterFacilitiesByName(facilities: readonly FacilityPointView[]
 }
 
 export const HOVER_TREND_LINE_HEIGHT = 16;
-/** The facility card trend line usually wraps to two lines beside the avatar. */
 export const FACILITY_HOVER_TREND_HEIGHT = 32;
-
-type TrendMessages = Messages["map"]["trend"];
 
 function changeTemplate(trend: GamesTrend, templates: Record<GamesTrend["level"], string>) {
 	if (trend.change > 0) return templates.up;
@@ -86,20 +84,17 @@ const hoverGamesBadgeFormatter = new Intl.NumberFormat("en", {
 	maximumFractionDigits: 1,
 });
 
-/** Compact games count for hover rows, matching map badge notation. */
 export function formatHoverGamesBadge(count: number) {
 	return count >= 1000 ? hoverGamesBadgeFormatter.format(count) : String(count);
 }
 
-/** "42 games": what Games mode hovers read in place of a facility count. */
-export function formatGamesCount(count: number, messages: TrendMessages) {
+export function formatGamesCount(count: number, messages: HoverTrendMessages) {
 	return formatMessage(count === 1 ? messages.gamesOne : messages.gamesOther, { count });
 }
 
-/** "Down 9 from the previous 28 days": the games change alone, for right under a games count. */
 export function formatGamesChange(
 	trend: GamesTrend,
-	messages: TrendMessages,
+	messages: HoverTrendMessages,
 	days = GAMES_WINDOW_DAYS,
 ) {
 	const template = changeTemplate(trend, {
@@ -112,7 +107,7 @@ export function formatGamesChange(
 
 export function formatGamesTrend(
 	trend: GamesTrend,
-	messages: TrendMessages,
+	messages: HoverTrendMessages,
 	days = GAMES_WINDOW_DAYS,
 ) {
 	const games = formatGamesCount(trend.current, messages);
@@ -134,7 +129,6 @@ export function clusterLabels(
 	days = GAMES_WINDOW_DAYS,
 ) {
 	if (hover.games !== undefined) {
-		// Games mode reads in games only: the count, then the change under it while trend is on.
 		return {
 			title: formatGamesCount(hover.games, messages.trend),
 			trend: hover.trend ? formatGamesChange(hover.trend, messages.trend, days) : null,
@@ -225,7 +219,6 @@ export function facilityHoverCardHeight(hasTrend = false) {
 	return 12 + 32 + line;
 }
 
-/** The line under a facility name: games change while trend is on in Games mode. */
 export function facilityTrendLine(
 	hover: MapHover | null,
 	messages: Messages["map"],

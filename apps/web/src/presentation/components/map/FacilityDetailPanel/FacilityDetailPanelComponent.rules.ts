@@ -318,7 +318,6 @@ export function resolveDetailStatus(isPending: boolean, isError: boolean): Facil
 	return (status ?? "loading") as FacilityDetailStatus;
 }
 
-/** Side panel trend copy: current and previous games and the percent change. */
 export function formatGamesTrendPanel(
 	trend: GamesTrend,
 	messages: Messages["map"]["trend"],

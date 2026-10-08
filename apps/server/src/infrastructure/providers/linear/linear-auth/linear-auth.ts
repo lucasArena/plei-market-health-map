@@ -1,5 +1,6 @@
 import { IssueTrackerError } from "@market-health-map/core/application";
 import type {
+	CachedToken,
 	LinearAppAuthOptions,
 	LinearAuth,
 } from "@server/infrastructure/providers/linear/linear-auth/linear-auth.types";
@@ -24,11 +25,6 @@ export class LinearApiKeyAuth implements LinearAuth {
 	}
 
 	invalidate(): void {}
-}
-
-interface CachedToken {
-	accessToken: string;
-	expiresAt: number;
 }
 
 export class LinearAppAuth implements LinearAuth {

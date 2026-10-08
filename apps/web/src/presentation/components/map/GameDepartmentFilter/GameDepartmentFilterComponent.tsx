@@ -5,14 +5,13 @@ import { useGameDepartmentFiltersRules } from "@/presentation/components/map/Gam
 import type {
 	DepartmentCheckMarkProps,
 	GameDepartmentFiltersProps,
+	GameDepartmentRules,
 } from "@/presentation/components/map/GameDepartmentFilter/GameDepartmentFilterComponent.types";
 import {
 	MapFilterAddButton,
 	MapFilterChevron,
 } from "@/presentation/components/map/MapFilterAdd/MapFilterAddComponent";
 import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
-
-type GameDepartmentRules = ReturnType<typeof useGameDepartmentFiltersRules>;
 
 const GameDepartmentFiltersContext = createContext<GameDepartmentRules | null>(null);
 
