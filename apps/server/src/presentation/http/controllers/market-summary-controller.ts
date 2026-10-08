@@ -43,6 +43,7 @@ export function marketSummaryController(services: () => ApiServices) {
 			ok(
 				await services().getMarketPlayerStats({
 					market: context.req.query("market"),
+					...departmentsFrom(context),
 					...statsTimeZoneFrom(context),
 				}),
 			),

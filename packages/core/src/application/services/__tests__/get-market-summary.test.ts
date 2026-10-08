@@ -359,6 +359,29 @@ describe("market summary game department filter", () => {
 		expect(omitted.periods.month.scope.activeFacilityCount).toBe(3);
 	});
 
+	it("asks for player stats with only the selected departments", async () => {
+		const { getMarketPlayerStats, stats } = setup(facilities());
+
+		await getMarketPlayerStats({ departments: ["partnerships", "magic"], market: "philly" });
+
+		expect(stats.playerFilters).toEqual([{ departments: ["magic", "partnerships"] }]);
+		expect(stats.playerRequested).toEqual([["1", "2"]]);
+	});
+
+	it("keeps the unfiltered player request when no department or every department is picked", async () => {
+		const { getMarketPlayerStats, stats } = setup(facilities());
+
+		const all = await getMarketPlayerStats({
+			departments: ["magic", "organizers", "partnerships"],
+		});
+		const none = await getMarketPlayerStats({ departments: [] });
+		const omitted = await getMarketPlayerStats();
+
+		expect(stats.playerFilters).toEqual([undefined, undefined, undefined]);
+		expect(all).toEqual(omitted);
+		expect(none).toEqual(omitted);
+	});
+
 	it("rejects an unknown department as an invalid request", async () => {
 		const { getMarketSummary, stats } = setup(facilities());
 

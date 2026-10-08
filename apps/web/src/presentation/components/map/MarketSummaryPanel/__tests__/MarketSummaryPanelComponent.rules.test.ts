@@ -342,11 +342,11 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(result.current.messages).toBe(messages);
 		expect(result.current.heading.title).toBe("All markets");
 		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, true, []);
-		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true, []);
 		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith(null);
 	});
 
-	it("asks for the summary and insights with the Layers department filter", () => {
+	it("asks for the summary, insights and players with the Layers department filter", () => {
 		mockDepartments = ["magic", "organizers"];
 		const { result } = renderRules();
 
@@ -355,7 +355,7 @@ describe("useMarketSummaryPanelRules", () => {
 			"magic",
 			"organizers",
 		]);
-		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true, ["magic", "organizers"]);
 		expect(result.current.aiContext?.cacheKey).toContain("all-markets-all~magic+organizers-month");
 	});
 
@@ -381,7 +381,7 @@ describe("useMarketSummaryPanelRules", () => {
 		rerender({ isClosing: false });
 
 		expect(mockUseMarketSummary).toHaveBeenLastCalledWith("houston", true, []);
-		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith("houston", true);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith("houston", true, []);
 		expect(result.current.heading.title).toBe("Houston");
 		expect(result.current.view?.topMarkets).toBeNull();
 		expect(result.current.view?.scopeTiles).toHaveLength(0);
@@ -403,7 +403,7 @@ describe("useMarketSummaryPanelRules", () => {
 		const { result } = renderRules();
 
 		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, false, []);
-		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, false);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, false, []);
 		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith("889");
 		expect(mockUseFacilityPlayerStats).toHaveBeenLastCalledWith("889");
 		expect(result.current.status).toBe("ready");

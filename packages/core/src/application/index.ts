@@ -166,6 +166,7 @@ export type {
 	FacilityGameComparison,
 	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
+	FacilityPlayerStatsFilters,
 	FacilityPlayerStatsRepository,
 	FacilityReservationStats,
 	FacilityReservationStatsFilters,

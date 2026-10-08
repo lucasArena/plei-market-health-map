@@ -360,7 +360,7 @@ export function useMarketSummaryPanelRules({
 		isMarketScope && !!summaryQuery.data,
 		departments,
 	);
-	const marketPlayerQuery = useMarketPlayerStats(marketId, isMarketScope);
+	const marketPlayerQuery = useMarketPlayerStats(marketId, isMarketScope, departments);
 	const facilityQuery = useFacilityReservationStats(facilityId);
 	const facilityPlayerQuery = useFacilityPlayerStats(facilityId);
 	const reportQuery = isMarketScope ? summaryQuery : facilityQuery;

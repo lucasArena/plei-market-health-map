@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import {
+	FACILITY_PLAYER_STATS_BY_DEPARTMENT_SQL,
 	FACILITY_PLAYER_STATS_SQL,
 	FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL,
 	FACILITY_RESERVATION_STATS_SQL,
@@ -8,6 +10,9 @@ import {
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
 
 const TODAY = "2026-10-08";
+
+const ROLLING_PERIODS_PLAYER_SQL_SHA256 =
+	"10a04b29aee699ac03084d2570aed9f345fddc6e5d611f27754f3cfb25d467f5";
 
 const RESERVATION_ROW = {
 	period_start: "2026-09-03",
@@ -122,6 +127,32 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("dim_reservation");
 	});
 
+	it("keeps the unfiltered player query byte for byte as it was", () => {
+		expect(createHash("sha256").update(FACILITY_PLAYER_STATS_SQL).digest("hex")).toBe(
+			ROLLING_PERIODS_PLAYER_SQL_SHA256,
+		);
+		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("$3");
+		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("organizer_partners");
+	});
+
+	it("filters players by the games' department with the map's rule, same windows otherwise", () => {
+		const sql = FACILITY_PLAYER_STATS_BY_DEPARTMENT_SQL;
+		expect(sql).toContain("select distinct partner_id from plei_gold.fct_terms");
+		expect(sql).toContain("left join organizer_partners op on op.partner_id = r.partner_id");
+		expect(sql).toContain("when r.partner_id in (6, 52, 62) then 'magic'");
+		expect(sql).toContain("else 'partnerships' end = any($3::text[])");
+		expect(sql).toContain("and f.reservation_id in (select reservation_id from department_games)");
+		expect(sql).toContain("r.location_id = any($1::int[])");
+		expect(sql).toContain("r.date_with_time::date >= $2::date - 56");
+		expect(sql).toContain("r.date_with_time::date < $2::date");
+		expect(sql).toContain("player_lifecycle = 'Activated'");
+		expect(sql).not.toContain("current_date");
+		const withoutDepartments = sql
+			.replace(/organizer_partners as \([\s\S]*?\n\),\ndepartment_games as \([\s\S]*?\n\),\n/, "")
+			.replace("\n    and f.reservation_id in (select reservation_id from department_games)", "");
+		expect(withoutDepartments).toBe(FACILITY_PLAYER_STATS_SQL);
+	});
+
 	it("uses rolling completed-day windows outside the weekly chart", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
 			"g.game_date >= b.today - 28 and g.game_date < b.today",
@@ -221,6 +252,27 @@ describe("WarehouseFacilityStatsRepository", () => {
 		);
 
 		expect(query).toHaveBeenCalledWith(FACILITY_PLAYER_STATS_SQL, [[292, 698], TODAY]);
+	});
+
+	it("counts only players in the selected departments' games, with the departments as $3", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [PLAYER_ROW] });
+		const repository = new WarehouseFacilityStatsRepository({ query });
+
+		await repository.getPlayerStats(["292" as never, "698" as never], TODAY, {
+			departments: ["partnerships", "magic"],
+		});
+		await repository.getPlayerStats(["889" as never], TODAY, { departments: [] });
+		await repository.getPlayerStats(["889" as never], TODAY, {
+			departments: ["magic", "organizers", "partnerships"],
+		});
+
+		expect(query).toHaveBeenNthCalledWith(1, FACILITY_PLAYER_STATS_BY_DEPARTMENT_SQL, [
+			[292, 698],
+			TODAY,
+			["magic", "partnerships"],
+		]);
+		expect(query).toHaveBeenNthCalledWith(2, FACILITY_PLAYER_STATS_SQL, [[889], TODAY]);
+		expect(query).toHaveBeenNthCalledWith(3, FACILITY_PLAYER_STATS_SQL, [[889], TODAY]);
 	});
 
 	it("fails loudly if the warehouse returns no row", async () => {

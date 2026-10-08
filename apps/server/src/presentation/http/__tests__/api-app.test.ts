@@ -175,13 +175,14 @@ describe("places route", () => {
 });
 
 describe("market insights route", () => {
-	it("passes a game department filter to the summary and insights, never to players", async () => {
+	it("passes a game department filter to the summary, insights and players", async () => {
 		const { get, services } = setup();
 
 		await get("/market-summary?departments=magic,%20organizers");
 		await get("/market-summary/insights?period=week&departments=partnerships");
 		await get("/market-summary/players?departments=magic");
 		await get("/market-summary?departments=");
+		await get("/market-summary/players");
 
 		expect(services.getMarketSummary).toHaveBeenNthCalledWith(1, {
 			market: undefined,
@@ -192,7 +193,11 @@ describe("market insights route", () => {
 			period: "week",
 			departments: ["partnerships"],
 		});
-		expect(services.getMarketPlayerStats).toHaveBeenCalledWith({ market: undefined });
+		expect(services.getMarketPlayerStats).toHaveBeenNthCalledWith(1, {
+			market: undefined,
+			departments: ["magic"],
+		});
+		expect(services.getMarketPlayerStats).toHaveBeenNthCalledWith(2, { market: undefined });
 		expect(services.getMarketSummary).toHaveBeenNthCalledWith(2, {
 			market: undefined,
 			departments: [],

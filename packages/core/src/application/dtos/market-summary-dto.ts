@@ -11,11 +11,10 @@ export const gameDepartmentsSchema = z
 export const getMarketPlayerStatsSchema = z.object({
 	market: z.string().trim().min(1).max(64).optional(),
 	timeZone: statsTimeZoneSchema,
-});
-
-export const getMarketSummarySchema = getMarketPlayerStatsSchema.extend({
 	departments: gameDepartmentsSchema,
 });
+
+export const getMarketSummarySchema = getMarketPlayerStatsSchema;
 
 export const getMarketGameInsightsSchema = getMarketSummarySchema.extend({
 	period: z.enum(STATS_PERIODS).default("week"),
