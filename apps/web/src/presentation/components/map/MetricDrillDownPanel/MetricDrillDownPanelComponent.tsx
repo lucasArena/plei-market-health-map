@@ -45,6 +45,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 				</div>
 				<div className="flex items-center gap-1">
 					<button
+						ref={rules.expandButtonRef}
 						type="button"
 						onClick={rules.toggleExpanded}
 						aria-label={rules.isExpanded ? m.collapse : m.expand}
@@ -68,15 +69,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 								}
 							/>
 						</svg>
-					</button>
-					<button
-						ref={rules.closeButtonRef}
-						type="button"
-						onClick={rules.close}
-						aria-label={m.close}
-						className="size-8 shrink-0 cursor-pointer rounded-full text-lg hover:bg-foreground/5"
-					>
-						×
 					</button>
 				</div>
 			</div>
