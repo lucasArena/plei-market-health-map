@@ -1,18 +1,38 @@
-import type { GetMarketGameInsightsInput } from "@market-health-map/core/application";
+import type {
+	GetMarketGameInsightsInput,
+	GetMarketSummaryInput,
+} from "@market-health-map/core/application";
 import type { ApiServices } from "@server/presentation/http/api-app.types";
 import { ok } from "@server/presentation/http/respond";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
+
+function departmentsFrom(context: Context): Pick<GetMarketSummaryInput, "departments"> {
+	const departments = context.req.query("departments");
+	if (departments === undefined) return {};
+	return {
+		departments: departments
+			.split(",")
+			.map((department) => department.trim())
+			.filter(Boolean) as GetMarketSummaryInput["departments"],
+	};
+}
 
 export function marketSummaryController(services: () => ApiServices) {
 	return new Hono()
 		.get("/", async (context) =>
-			ok(await services().getMarketSummary({ market: context.req.query("market") })),
+			ok(
+				await services().getMarketSummary({
+					market: context.req.query("market"),
+					...departmentsFrom(context),
+				}),
+			),
 		)
 		.get("/insights", async (context) =>
 			ok(
 				await services().getMarketGameInsights({
 					market: context.req.query("market"),
 					period: context.req.query("period") as GetMarketGameInsightsInput["period"],
+					...departmentsFrom(context),
 				}),
 			),
 		)

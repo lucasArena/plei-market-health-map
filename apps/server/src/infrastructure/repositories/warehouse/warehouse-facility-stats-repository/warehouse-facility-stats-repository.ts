@@ -2,9 +2,15 @@ import type {
 	FacilityGameComparison,
 	FacilityPlayerStats,
 	FacilityReservationStats,
+	FacilityReservationStatsFilters,
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
-import type { EntityId } from "@market-health-map/core/domain";
+import { type EntityId, normalizeGameDepartments } from "@market-health-map/core/domain";
+import {
+	gameDepartmentCase,
+	ORGANIZER_PARTNERS_CTE,
+	organizerPartnersJoin,
+} from "@server/infrastructure/repositories/warehouse/game-department-sql/game-department-sql";
 import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseFacilityGameComparisonRow,
@@ -35,14 +41,19 @@ where r.location_id = any($1::int[])
  and r.date_with_time::date < b.today
 group by r.location_id`;
 
-export const FACILITY_RESERVATION_STATS_SQL = `
+function reservationStatsSql(byDepartment: boolean): string {
+	const organizerPartners = byDepartment ? `${ORGANIZER_PARTNERS_CTE},\n` : "";
+	const join = (indent: string) => (byDepartment ? `\n${indent}${organizerPartnersJoin("r")}` : "");
+	const filter = (indent: string) =>
+		byDepartment ? `\n${indent}and ${gameDepartmentCase("r")} = any($2::text[])` : "";
+	return `
 with bounds as (
   select date_trunc('week', current_date)::date as this_week, current_date as today
 ),
-games as (
+${organizerPartners}games as (
   select r.reservation_id, r.date_with_time as game_time, r.date_with_time::date as game_date,
     r.status, r.confirmed
-  from plei_gold.dim_reservation r
+  from plei_gold.dim_reservation r${join("  ")}
   where r.location_id = any($1::int[])
     and r.reservation_type = 'OpenReservation'
     and r.date_with_time::date >= (select today - 56 from bounds)
@@ -50,7 +61,7 @@ games as (
     and not (
       r.status = 'cancelled'
       and r.cancellation_reason in ('Recurring game series', 'Operational changes')
-    )
+    )${filter("    ")}
 ),
 last_played as (
   select coalesce(
@@ -61,12 +72,12 @@ last_played as (
     ),
     (
       select max(r.date_with_time::date)
-      from plei_gold.dim_reservation r
+      from plei_gold.dim_reservation r${join("      ")}
       where r.location_id = any($1::int[])
         and r.reservation_type = 'OpenReservation'
         and r.confirmed
         and r.status <> 'cancelled'
-        and r.date_with_time::date < current_date
+        and r.date_with_time::date < current_date${filter("        ")}
     )
   )::text as game_date
 ),
@@ -159,6 +170,11 @@ select
 from bounds b
 left join games g on true
 group by b.this_week, b.today`;
+}
+
+export const FACILITY_RESERVATION_STATS_SQL = reservationStatsSql(false);
+
+export const FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL = reservationStatsSql(true);
 
 export const FACILITY_PLAYER_STATS_SQL = `
 with bounds as (
@@ -256,11 +272,20 @@ export function toPlayerStats(row: WarehouseFacilityPlayerStatsRow): FacilityPla
 export class WarehouseFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly warehouse: WarehouseParameterizedQueryable) {}
 
-	async getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
-		const { rows } = await this.warehouse.query<WarehouseFacilityReservationStatsRow>(
-			FACILITY_RESERVATION_STATS_SQL,
-			[facilityIds.map(Number)],
-		);
+	async getReservationStats(
+		facilityIds: EntityId[],
+		filters?: FacilityReservationStatsFilters,
+	): Promise<FacilityReservationStats> {
+		const departments = normalizeGameDepartments(filters?.departments);
+		const ids = facilityIds.map(Number);
+		const { rows } = await (departments.length > 0
+			? this.warehouse.query<WarehouseFacilityReservationStatsRow>(
+					FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL,
+					[ids, departments],
+				)
+			: this.warehouse.query<WarehouseFacilityReservationStatsRow>(FACILITY_RESERVATION_STATS_SQL, [
+					ids,
+				]));
 		const [row] = rows;
 		if (!row) {
 			throw new Error(`No reservation stats row returned for facility ${facilityIds.join(", ")}.`);

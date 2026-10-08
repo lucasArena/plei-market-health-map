@@ -2,6 +2,7 @@ import type {
 	FacilityGameComparison,
 	FacilityPlayerStats,
 	FacilityReservationStats,
+	FacilityReservationStatsFilters,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
@@ -9,6 +10,7 @@ import type { EntityId } from "@core/domain";
 
 export class InMemoryFacilityStatsRepository implements FacilityStatsRepository {
 	readonly reservationRequested: EntityId[][] = [];
+	readonly reservationFilters: (FacilityReservationStatsFilters | undefined)[] = [];
 	readonly playerRequested: EntityId[][] = [];
 
 	constructor(
@@ -16,8 +18,12 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 		private readonly comparisons: FacilityGameComparison[] = [],
 	) {}
 
-	async getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
+	async getReservationStats(
+		facilityIds: EntityId[],
+		filters?: FacilityReservationStatsFilters,
+	): Promise<FacilityReservationStats> {
 		this.reservationRequested.push([...facilityIds]);
+		this.reservationFilters.push(filters);
 		const {
 			uniquePlayersLastWeek: _uniquePlayersLastWeek,
 			uniquePlayersPreviousWeek: _uniquePlayersPreviousWeek,

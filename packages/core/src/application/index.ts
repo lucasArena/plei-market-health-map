@@ -87,12 +87,15 @@ export type {
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
 export {
+	gameDepartmentsSchema,
 	getMarketGameInsightsSchema,
+	getMarketPlayerStatsSchema,
 	getMarketSummarySchema,
 } from "@core/application/dtos/market-summary-dto";
 export type {
 	FacilityGameChangeView,
 	GetMarketGameInsightsInput,
+	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
 	MarketGameChangeView,
 	MarketPlayerStatsView,
@@ -163,6 +166,7 @@ export type {
 	FacilityPlayerStats,
 	FacilityPlayerStatsRepository,
 	FacilityReservationStats,
+	FacilityReservationStatsFilters,
 	FacilityReservationStatsRepository,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,

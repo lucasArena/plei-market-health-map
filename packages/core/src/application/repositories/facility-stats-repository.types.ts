@@ -1,4 +1,4 @@
-import type { EntityId } from "@core/domain";
+import type { EntityId, GameDepartment } from "@core/domain";
 
 export interface FacilityWeeklyActivity {
 	weekStart: string;
@@ -43,8 +43,15 @@ export interface FacilityPlayerStats {
 
 export interface FacilityWeeklyCounts extends FacilityReservationStats, FacilityPlayerStats {}
 
+export interface FacilityReservationStatsFilters {
+	departments?: readonly GameDepartment[];
+}
+
 export interface FacilityReservationStatsRepository {
-	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats>;
+	getReservationStats(
+		facilityIds: EntityId[],
+		filters?: FacilityReservationStatsFilters,
+	): Promise<FacilityReservationStats>;
 }
 
 export interface FacilityPlayerStatsRepository {

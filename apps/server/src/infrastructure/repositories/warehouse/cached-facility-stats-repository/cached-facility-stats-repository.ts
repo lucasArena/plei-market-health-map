@@ -4,9 +4,10 @@ import type {
 	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
 	FacilityReservationStats,
+	FacilityReservationStatsFilters,
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
-import type { EntityId } from "@market-health-map/core/domain";
+import { type EntityId, normalizeGameDepartments } from "@market-health-map/core/domain";
 import {
 	isExpired,
 	remember,
@@ -28,12 +29,19 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		private readonly playerTtlMs: number = FACILITY_PLAYER_STATS_CACHE_TTL_MS,
 	) {}
 
-	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
+	getReservationStats(
+		facilityIds: EntityId[],
+		filters?: FacilityReservationStatsFilters,
+	): Promise<FacilityReservationStats> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds);
+		const departments = normalizeGameDepartments(filters?.departments);
+		const key = this.reservationKeyFor(facilityIds, departments);
 		const cached = this.reservationCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getReservationStats(facilityIds);
+			const fromWarehouse =
+				departments.length > 0
+					? this.inner.getReservationStats(facilityIds, { departments })
+					: this.inner.getReservationStats(facilityIds);
 			return remember(this.reservationCache, key, fromWarehouse, now + this.ttlMs);
 		}
 		return cached.value;
@@ -63,5 +71,10 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 
 	private keyFor(facilityIds: EntityId[]): string {
 		return [...facilityIds].sort().join(",");
+	}
+
+	private reservationKeyFor(facilityIds: EntityId[], departments: readonly string[]): string {
+		const ids = this.keyFor(facilityIds);
+		return departments.length > 0 ? `${ids}|departments=${departments.join(",")}` : ids;
 	}
 }

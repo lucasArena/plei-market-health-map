@@ -1,6 +1,6 @@
-import { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
+import { getMarketPlayerStatsSchema } from "@core/application/dtos/market-summary-dto";
 import type {
-	GetMarketSummaryInput,
+	GetMarketPlayerStatsInput,
 	MarketPlayerStatsView,
 } from "@core/application/dtos/market-summary-dto.types";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -13,9 +13,9 @@ import type { GetMarketPlayerStatsDeps } from "@core/application/services/get-ma
 
 export function makeGetMarketPlayerStats({ facilities, stats }: GetMarketPlayerStatsDeps) {
 	return async function getMarketPlayerStats(
-		input: GetMarketSummaryInput = {},
+		input: GetMarketPlayerStatsInput = {},
 	): Promise<MarketPlayerStatsView> {
-		const parsed = getMarketSummarySchema.safeParse(input);
+		const parsed = getMarketPlayerStatsSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
 		const visible = selectMarketFacilities(await facilities.listAll(), parsed.data.market);
 		return toFacilityPlayerStatsView(await stats.getPlayerStats(toMarketMemberIds(visible)));

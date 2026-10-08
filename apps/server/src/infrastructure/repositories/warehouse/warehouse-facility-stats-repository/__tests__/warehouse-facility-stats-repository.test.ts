@@ -1,5 +1,6 @@
 import {
 	FACILITY_PLAYER_STATS_SQL,
+	FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL,
 	FACILITY_RESERVATION_STATS_SQL,
 	toPlayerStats,
 	toReservationStats,
@@ -42,6 +43,19 @@ const PLAYER_ROW = {
 };
 
 describe("facility stats SQL", () => {
+	it("filters every reservation scan by department only in the department variant", () => {
+		const departmentFilter = "else 'partnerships' end = any($2::text[])";
+		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("organizer_partners");
+		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("$2");
+		expect(FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL).toContain("organizer_partners as (");
+		expect(FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL.split(departmentFilter)).toHaveLength(3);
+		expect(
+			FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL.match(
+				/left join organizer_partners op on op.partner_id = r.partner_id/g,
+			),
+		).toHaveLength(2);
+	});
+
 	it("keeps reservation analytics bounded and free of player joins", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain("r.reservation_type = 'OpenReservation'");
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
@@ -148,6 +162,22 @@ describe("warehouse facility stats mappers", () => {
 });
 
 describe("WarehouseFacilityStatsRepository", () => {
+	it("counts only the selected departments' games, with the departments bound as $2", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [RESERVATION_ROW] });
+		const repository = new WarehouseFacilityStatsRepository({ query });
+
+		await repository.getReservationStats(["889" as never], {
+			departments: ["organizers", "magic"],
+		});
+		await repository.getReservationStats(["889" as never], { departments: [] });
+
+		expect(query).toHaveBeenNthCalledWith(1, FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL, [
+			[889],
+			["magic", "organizers"],
+		]);
+		expect(query).toHaveBeenNthCalledWith(2, FACILITY_RESERVATION_STATS_SQL, [[889]]);
+	});
+
 	it("queries one facility with a bound parameter", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [RESERVATION_ROW] });
 
