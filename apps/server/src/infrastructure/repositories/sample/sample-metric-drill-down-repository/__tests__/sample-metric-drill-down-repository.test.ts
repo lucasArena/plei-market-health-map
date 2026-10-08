@@ -35,5 +35,25 @@ describe("SampleMetricDrillDownRepository", () => {
 			grain: "range",
 		});
 		expect(week.range).toBe("7d");
+		const scheduled = await repository.group({
+			measure: "scheduled-games",
+			range: "28d",
+			slice: "market",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(scheduled.kind).toBe("count");
+		expect(scheduled.measure).toBe("scheduled-games");
+		const rate = await repository.group({
+			measure: "confirmation-rate",
+			range: "7d",
+			slice: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(rate.kind).toBe("rate");
+		expect(rate.rows.every((row) => row.value === null || row.value === 100)).toBe(true);
 	});
 });

@@ -16,6 +16,24 @@ export interface WarehouseDrillDownLocationRow {
 	company_logo: string | null;
 }
 
+export interface WarehouseDrillDownReservationRow {
+	location_id: number | string;
+	scheduled: number | string;
+	played: number | string;
+	scheduled_magic: number | string;
+	scheduled_organizers: number | string;
+	scheduled_partnerships: number | string;
+	played_magic: number | string;
+	played_organizers: number | string;
+	played_partnerships: number | string;
+}
+
+export interface WarehouseDrillDownPlayerRow {
+	location_id: number | string;
+	player_id: number | string;
+	department: string | null;
+}
+
 export interface WarehouseQueryable {
 	query<Row>(sql: string, values?: unknown[]): Promise<{ rows: Row[] }>;
 }

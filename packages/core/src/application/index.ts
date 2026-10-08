@@ -108,6 +108,8 @@ export type {
 	MarketSummaryView,
 } from "@core/application/dtos/market-summary-dto.types";
 export {
+	canSegmentDrillDown,
+	canSliceDrillDownByDepartment,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_MEASURE_KINDS,
@@ -149,6 +151,7 @@ export { PayloadTooLargeError } from "@core/application/errors/payload-too-large
 export { UnauthorizedError } from "@core/application/errors/unauthorized-error";
 export { toFacilityPointView } from "@core/application/mappers/facility-mapper";
 export {
+	confirmationRate,
 	toFacilityPlayerStatsView,
 	toFacilityReservationStatsView,
 	toFacilityStatsView,
@@ -218,13 +221,18 @@ export { makeGetMarketSummary } from "@core/application/services/get-market-summ
 export {
 	aggregateCountDrillDown,
 	aggregateDistinctCountDrillDown,
+	aggregateDrillDownFromFacts,
 	aggregateRateDrillDown,
 	DRILL_DOWN_DEPARTMENTS,
+	distinctContributionsFromFacts,
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
 	makeGetMetricDrillDown,
+	measureRateValue,
+	rateContributionsFromFacts,
 	rateValue,
+	scheduledFactsFrom,
 } from "@core/application/services/get-metric-drill-down";
 export type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";

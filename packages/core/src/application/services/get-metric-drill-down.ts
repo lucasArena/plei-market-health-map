@@ -11,12 +11,17 @@ import { statsToday } from "@core/application/services/stats-today";
 export {
 	aggregateCountDrillDown,
 	aggregateDistinctCountDrillDown,
+	aggregateDrillDownFromFacts,
 	aggregateRateDrillDown,
 	DRILL_DOWN_DEPARTMENTS,
+	distinctContributionsFromFacts,
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	measureRateValue,
+	rateContributionsFromFacts,
 	rateValue,
+	scheduledFactsFrom,
 } from "@core/application/services/aggregate-metric-drill-down";
 
 export function makeGetMetricDrillDown({

@@ -1,5 +1,5 @@
 import {
-	aggregateCountDrillDown,
+	aggregateDrillDownFromFacts,
 	DRILL_DOWN_RANGE_DAYS,
 	type FacilityRepository,
 	factsFromFacilityPoints,
@@ -17,8 +17,14 @@ export class SampleMetricDrillDownRepository implements MetricDrillDownRepositor
 		const days = DRILL_DOWN_RANGE_DAYS[query.range];
 		const { start, end } = statsWindow(query.today, days);
 		const points = (await this.facilities.listAll(query.today)).map(toFacilityPointView);
-		const facts = factsFromFacilityPoints(points, query.range === "7d" ? "7d" : "28d");
-		return aggregateCountDrillDown({
+		const facts = factsFromFacilityPoints(points, query.range === "7d" ? "7d" : "28d").map(
+			(facility) => ({
+				...facility,
+				scheduled: facility.games,
+				scheduledByDepartment: facility.gamesByDepartment,
+			}),
+		);
+		return aggregateDrillDownFromFacts({
 			facilities: facts,
 			measure: query.measure,
 			slice: query.slice,

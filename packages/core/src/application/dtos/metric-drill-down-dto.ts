@@ -6,6 +6,7 @@ import {
 	DRILL_DOWN_RANGES,
 	DRILL_DOWN_SEGMENTS,
 	DRILL_DOWN_SLICES,
+	type DrillDownMeasure,
 } from "@core/application/dtos/metric-drill-down-dto.types";
 import { GAME_DEPARTMENTS } from "@core/domain";
 import { z } from "zod";
@@ -35,7 +36,7 @@ export const getMetricDrillDownSchema = z
 		grain: z.enum(DRILL_DOWN_GRAINS).default("range"),
 	})
 	.superRefine((value, context) => {
-		if (value.measure === "active-facilities" && value.slice === "department") {
+		if (!canSliceDrillDownByDepartment(value.measure) && value.slice === "department") {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["slice"],
@@ -43,3 +44,14 @@ export const getMetricDrillDownSchema = z
 			});
 		}
 	});
+
+export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolean {
+	return measure !== "active-facilities";
+}
+
+export function canSegmentDrillDown(
+	measure: DrillDownMeasure,
+	slice: (typeof DRILL_DOWN_SLICES)[number],
+): boolean {
+	return canSliceDrillDownByDepartment(measure) && slice !== "department";
+}

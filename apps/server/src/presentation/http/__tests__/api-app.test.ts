@@ -281,6 +281,20 @@ describe("metric drill-down route", () => {
 			grain: "range",
 			departments: ["magic", "organizers"],
 		});
+		await get(
+			"/metric-drill-down?measure=confirmation-rate&range=7d&slice=department&departments=magic",
+		);
+		expect(services.getMetricDrillDown).toHaveBeenLastCalledWith({
+			measure: "confirmation-rate",
+			range: "7d",
+			slice: "department",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			departments: ["magic"],
+		});
 		await get("/metric-drill-down?measure=games&range=28d&slice=market&departments=");
 		expect(services.getMetricDrillDown).toHaveBeenLastCalledWith({
 			measure: "games",

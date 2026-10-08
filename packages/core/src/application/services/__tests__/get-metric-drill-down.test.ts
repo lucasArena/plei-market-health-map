@@ -21,6 +21,12 @@ const facility: DrillDownFacilityFact = {
 	marketName: "Miami",
 	games: 10,
 	gamesByDepartment: { magic: 2, organizers: 3, partnerships: 5 },
+	scheduled: 12,
+	scheduledByDepartment: { magic: 3, organizers: 3, partnerships: 6 },
+	uniquePlayerIds: ["p1", "p2"],
+	uniquePlayerIdsByDepartment: { magic: ["p1"], organizers: ["p2"], partnerships: [] },
+	activatedPlayerIds: ["p2"],
+	activatedPlayerIdsByDepartment: { magic: [], organizers: ["p2"], partnerships: [] },
 };
 
 const weekFacility: DrillDownFacilityFact = {
@@ -147,6 +153,78 @@ describe("getMetricDrillDown", () => {
 		).resolves.toMatchObject({ total: 2 });
 	});
 
+	it("groups scheduled games, confirmation rate and distinct players", async () => {
+		const other: DrillDownFacilityFact = {
+			...facility,
+			id: "b",
+			name: "Bay",
+			games: 45,
+			scheduled: 60,
+			gamesByDepartment: { magic: 10, organizers: 15, partnerships: 20 },
+			scheduledByDepartment: { magic: 12, organizers: 20, partnerships: 28 },
+			uniquePlayerIds: ["p1", "p3"],
+			uniquePlayerIdsByDepartment: { magic: ["p1"], organizers: ["p3"], partnerships: [] },
+			activatedPlayerIds: ["p3"],
+			activatedPlayerIdsByDepartment: { magic: [], organizers: ["p3"], partnerships: [] },
+		};
+		const { getMetricDrillDown } = setup([facility, other]);
+		await expect(
+			getMetricDrillDown({ measure: "scheduled-games", range: "28d", slice: "facility" }),
+		).resolves.toMatchObject({
+			total: 72,
+			kind: "count",
+			measure: "scheduled-games",
+			rows: [
+				{ id: "a", value: 12 },
+				{ id: "b", value: 60 },
+			],
+		});
+		const rate = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "7d",
+			slice: "facility",
+			facilityId: "b",
+		});
+		expect(rate.total).toBe(75);
+		expect(rate.kind).toBe("rate");
+		expect(rate.rows[0]?.value).toBe(75);
+		expect(rate.total).not.toBe(1 - 15 / 60);
+		const empty = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(empty.rows.find((row) => row.id === "a")?.value).toBe(83.3);
+		const zeroScheduled: DrillDownFacilityFact = {
+			...facility,
+			id: "c",
+			scheduled: 0,
+			games: 0,
+			scheduledByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+			gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+		};
+		const { getMetricDrillDown: none } = setup([zeroScheduled]);
+		await expect(
+			none({ measure: "confirmation-rate", range: "28d", slice: "facility" }),
+		).resolves.toMatchObject({ total: null, rows: [{ value: null }] });
+		const unique = await getMetricDrillDown({
+			measure: "unique-players",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(unique.rows.map((row) => row.value)).toEqual([2, 2]);
+		expect(unique.total).toBe(3);
+		expect(unique.kind).toBe("distinct-count");
+		const activated = await getMetricDrillDown({
+			measure: "activated-players",
+			range: "28d",
+			slice: "market",
+			departments: ["organizers"],
+		});
+		expect(activated.total).toBe(2);
+		expect(activated.rows[0]?.value).toBe(2);
+	});
+
 	it("preserves missing counts and rejects invalid or disabled requests", async () => {
 		const unknown = { ...facility, id: "b", games: null, gamesByDepartment: null };
 		const { getMetricDrillDown } = setup([facility, unknown]);
@@ -188,6 +266,29 @@ describe("aggregateDistinctCountDrillDown", () => {
 		expect(result.total).toBe(3);
 		expect(result.total).not.toBe(4);
 		expect(result.kind).toBe("distinct-count");
+	});
+
+	it("keeps department segments as distinct counts per department", () => {
+		const result = aggregateDistinctCountDrillDown({
+			contributions: [
+				{
+					id: "a",
+					name: "Arena",
+					memberKeys: ["player-1", "player-2"],
+					departments: { magic: ["player-1"], organizers: ["player-2"] },
+				},
+			],
+			sliceKeys: (contribution) => [{ id: contribution.id, name: contribution.name }],
+			measure: "unique-players",
+			range: "28d",
+			start: "2026-09-10",
+			end: "2026-10-07",
+		});
+		expect(result.rows[0]?.departments).toEqual({
+			magic: 1,
+			organizers: 1,
+			partnerships: 0,
+		});
 	});
 
 	it("narrows distinct keys to a selected department", () => {

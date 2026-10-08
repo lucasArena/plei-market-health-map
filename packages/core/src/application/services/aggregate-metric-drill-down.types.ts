@@ -13,6 +13,12 @@ export interface DrillDownFacilityFact {
 	marketName: string;
 	games: number | null;
 	gamesByDepartment: GameDepartmentCounts | null;
+	scheduled?: number | null;
+	scheduledByDepartment?: GameDepartmentCounts | null;
+	uniquePlayerIds?: readonly string[];
+	uniquePlayerIdsByDepartment?: Partial<Record<GameDepartment, readonly string[]>> | null;
+	activatedPlayerIds?: readonly string[];
+	activatedPlayerIdsByDepartment?: Partial<Record<GameDepartment, readonly string[]>> | null;
 }
 
 export interface AggregateCountDrillDownInput {

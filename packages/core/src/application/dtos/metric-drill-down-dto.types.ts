@@ -1,4 +1,4 @@
-import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
+import type { GameDepartment } from "@core/domain";
 
 export const DRILL_DOWN_RANGES = ["7d", "28d", "90d", "6m", "12m"] as const;
 export type DrillDownRange = (typeof DRILL_DOWN_RANGES)[number];
@@ -11,7 +11,14 @@ export const DRILL_DOWN_RANGE_DAYS = {
 	"12m": 365,
 } as const satisfies Record<DrillDownRange, number>;
 
-export const DRILL_DOWN_MEASURES = ["games", "active-facilities"] as const;
+export const DRILL_DOWN_MEASURES = [
+	"games",
+	"active-facilities",
+	"scheduled-games",
+	"confirmation-rate",
+	"unique-players",
+	"activated-players",
+] as const;
 export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
 
 export const DRILL_DOWN_SLICES = ["market", "facility", "department"] as const;
@@ -26,6 +33,10 @@ export type DrillDownMeasureKind = (typeof DRILL_DOWN_MEASURE_KINDS)[number];
 export const DRILL_DOWN_MEASURE_KIND = {
 	games: "count",
 	"active-facilities": "count",
+	"scheduled-games": "count",
+	"confirmation-rate": "rate",
+	"unique-players": "distinct-count",
+	"activated-players": "distinct-count",
 } as const satisfies Record<DrillDownMeasure, DrillDownMeasureKind>;
 
 export const DRILL_DOWN_GRAINS = ["range"] as const;
@@ -48,7 +59,7 @@ export interface MetricDrillDownRow {
 	id: string;
 	name: string;
 	value: number | null;
-	departments: GameDepartmentCounts | null;
+	departments: Record<GameDepartment, number | null> | null;
 	numerator?: number | null;
 	denominator?: number | null;
 }
