@@ -25,6 +25,7 @@ const input: MetricDrillDownInput = {
 	slice: "market",
 	segment: "none",
 	now: new Date("2026-10-08T12:00:00Z"),
+	timeZone: "America/New_York",
 };
 describe("getMetricDrillDown", () => {
 	it("applies department filters to totals, groups and segments in both periods", () => {
@@ -66,16 +67,19 @@ describe("getMetricDrillDown", () => {
 		).toBeNull();
 	});
 
-	it("matches the warehouse calendar before Honolulu midnight, including Monday boundaries", () => {
+	it("ends every window the day before the viewer's local today", () => {
 		const now = new Date("2026-10-05T08:00:00Z");
 		expect(getMetricDrillDown({ ...input, now })).toMatchObject({
-			start: "2026-09-06",
-			end: "2026-10-03",
+			start: "2026-09-07",
+			end: "2026-10-04",
 		});
 		expect(getMetricDrillDown({ ...input, now, period: "week" })).toMatchObject({
-			start: "2026-09-21",
-			end: "2026-09-27",
+			start: "2026-09-28",
+			end: "2026-10-04",
 		});
+		expect(
+			getMetricDrillDown({ ...input, now, period: "week", timeZone: "Pacific/Honolulu" }),
+		).toMatchObject({ start: "2026-09-27", end: "2026-10-03" });
 	});
 
 	it("groups games by market and returns the completed rolling window", () => {
@@ -93,11 +97,11 @@ describe("getMetricDrillDown", () => {
 			],
 		});
 	});
-	it("uses the last completed Monday–Sunday week and its department counts", () => {
+	it("uses the 7 days ending yesterday and their department counts", () => {
 		expect(getMetricDrillDown({ ...input, period: "week", slice: "facility" })).toMatchObject({
 			total: 0,
-			start: "2026-09-28",
-			end: "2026-10-04",
+			start: "2026-10-01",
+			end: "2026-10-07",
 			rows: [
 				{
 					id: "a",

@@ -1,6 +1,6 @@
-import { getMarketSummarySchema } from "@core/application/dtos/market-summary-dto";
+import { getMarketPlayerStatsSchema } from "@core/application/dtos/market-summary-dto";
 import type {
-	GetMarketSummaryInput,
+	GetMarketPlayerStatsInput,
 	MarketPlayerStatsView,
 } from "@core/application/dtos/market-summary-dto.types";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -10,14 +10,23 @@ import {
 	toMarketMemberIds,
 } from "@core/application/mappers/market-summary-mapper";
 import type { GetMarketPlayerStatsDeps } from "@core/application/services/get-market-player-stats.types";
+import { statsToday } from "@core/application/services/stats-today";
 
-export function makeGetMarketPlayerStats({ facilities, stats }: GetMarketPlayerStatsDeps) {
+export function makeGetMarketPlayerStats({ facilities, stats, clock }: GetMarketPlayerStatsDeps) {
 	return async function getMarketPlayerStats(
-		input: GetMarketSummaryInput = {},
+		input: GetMarketPlayerStatsInput = {},
 	): Promise<MarketPlayerStatsView> {
-		const parsed = getMarketSummarySchema.safeParse(input);
+		const parsed = getMarketPlayerStatsSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
-		const visible = selectMarketFacilities(await facilities.listAll(), parsed.data.market);
-		return toFacilityPlayerStatsView(await stats.getPlayerStats(toMarketMemberIds(visible)));
+		const { departments, market, timeZone } = parsed.data;
+		const today = statsToday(clock, timeZone);
+		const memberIds = toMarketMemberIds(
+			selectMarketFacilities(await facilities.listAll(today), market),
+		);
+		return toFacilityPlayerStatsView(
+			await (departments.length > 0
+				? stats.getPlayerStats(memberIds, today, { departments })
+				: stats.getPlayerStats(memberIds, today)),
+		);
 	};
 }

@@ -77,17 +77,17 @@ describe("ActivitySummaryPrompt", () => {
 		);
 		expect(content).toContain("Confirmation rate: 84.8%, unchanged from the previous 28 days.");
 	});
-	it("compares last week with the week before when the week is selected", () => {
+	it("compares the last 7 days with the 7 days before when the week is selected", () => {
 		const messages = prompt.build(facilitySubject(FACILITY_WEEK_ACTIVITY), "pt-BR");
 		const facts = messages.at(-1)?.content ?? "";
 
-		expect(messages[0]?.content).toContain("Identify the most useful signals in last week");
-		expect(messages[1]?.content).toContain("Period: last week (Aug 24 to Aug 30, 2026)");
-		expect(messages[2]?.content).toContain("em relação à semana anterior");
-		expect(facts).toContain("compared with the previous week.");
-		expect(facts).toContain("Pickup games played: 51 → 55, up 7.8% from the previous week.");
+		expect(messages[0]?.content).toContain("Identify the most useful signals in the last 7 days");
+		expect(messages[1]?.content).toContain("Period: the last 7 days (Aug 24 to Aug 30, 2026)");
+		expect(messages[2]?.content).toContain("em relação aos 7 dias anteriores");
+		expect(facts).toContain("compared with the previous 7 days.");
+		expect(facts).toContain("Pickup games played: 51 → 55, up 7.8% from the previous 7 days.");
 		expect(prompt.build(facilitySubject(FACILITY_WEEK_ACTIVITY), "fr")[2]?.content).toContain(
-			"versus the previous week",
+			"versus the previous 7 days",
 		);
 	});
 	it("uses the viewer language with English fallback", () => {
@@ -159,4 +159,24 @@ it("grounds AI wording in the independently computed contributors", () => {
 	);
 	expect(content[0]?.content).toContain("All markets names markets only");
 	expect(content[0]?.content).toContain("plain overall-change opening paragraph");
+});
+
+it("says which game departments the facts cover when the Layers filter is on", () => {
+	const subject = {
+		kind: "all-markets" as const,
+		id: "all~magic+organizers",
+		name: "All markets",
+		stats: FACILITY_MONTH_ACTIVITY,
+	};
+
+	const filtered = prompt
+		.build({ ...subject, gameDepartments: ["magic", "organizers"] }, "en")
+		.at(-1)?.content;
+	const unfiltered = prompt.build(subject, "en").at(-1)?.content;
+
+	expect(filtered).toContain("Game departments: Magic, Organizers only.");
+	expect(filtered).toContain("contributors and players count only these departments");
+	expect(filtered).toContain("newly activated players had their first game in one of them");
+	expect(filtered).not.toContain("every department");
+	expect(unfiltered).not.toContain("Game departments");
 });

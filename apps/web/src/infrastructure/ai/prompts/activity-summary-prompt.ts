@@ -1,3 +1,4 @@
+import type { GameDepartment } from "@market-health-map/core/domain";
 import type { LlmMessage } from "@/infrastructure/ai/browser-llm/browser-llm.types";
 import type {
 	ActivitySummarySubject,
@@ -8,18 +9,24 @@ const DEFAULT_LANGUAGE = "English";
 const DEFAULT_EXAMPLE_SUMMARY =
 	"- New player activation fell 29% versus {previous}, while games fell 10%.\n- Activation is weakening faster than game activity; investigate the gap.";
 
+const DEPARTMENT_NAMES: Record<GameDepartment, string> = {
+	magic: "Magic",
+	organizers: "Organizers",
+	partnerships: "Partnerships",
+};
+
 const PERIOD_TEXT: PromptPeriodTexts = {
-	week: { current: "last week", previous: "the previous week" },
+	week: { current: "the last 7 days", previous: "the previous 7 days" },
 	month: { current: "the last 28 days", previous: "the previous 28 days" },
 };
 
 const EXAMPLE_PREVIOUS_BY_LOCALE: Record<string, PromptPeriodTexts> = {
 	"pt-BR": {
-		week: { current: "semana passada", previous: "à semana anterior" },
+		week: { current: "últimos 7 dias", previous: "aos 7 dias anteriores" },
 		month: { current: "últimos 28 dias", previous: "aos 28 dias anteriores" },
 	},
 	es: {
-		week: { current: "la semana pasada", previous: "la semana anterior" },
+		week: { current: "los últimos 7 días", previous: "los 7 días anteriores" },
 		month: { current: "los últimos 28 días", previous: "los 28 días anteriores" },
 	},
 };
@@ -120,6 +127,14 @@ export class ActivitySummaryPrompt {
 		return [facilities, `Active markets: ${scope.activeMarketCount} of ${scope.marketCount}.`];
 	}
 
+	private departmentFacts({ gameDepartments }: ActivitySummarySubject): string[] {
+		if (!gameDepartments?.length) return [];
+		const names = gameDepartments.map((department) => DEPARTMENT_NAMES[department]).join(", ");
+		return [
+			`Game departments: ${names} only. Games, active facilities, contributors and players count only these departments: unique players played at least one of their games, and newly activated players had their first game in one of them.`,
+		];
+	}
+
 	private factsFor(subject: ActivitySummarySubject, locale: string): string[] {
 		const { stats } = subject;
 		const { current, previous } = PERIOD_TEXT[stats.period];
@@ -128,6 +143,7 @@ export class ActivitySummaryPrompt {
 		return [
 			this.subjectFact(subject),
 			...this.scopeFacts(subject),
+			...this.departmentFacts(subject),
 			...(subject.insightFacts
 				? [
 						`Largest contributors to the games change (preserve their names and counts): ${subject.insightFacts}`,

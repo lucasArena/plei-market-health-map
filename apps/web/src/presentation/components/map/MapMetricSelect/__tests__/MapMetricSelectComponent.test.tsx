@@ -20,8 +20,15 @@ describe("MapMetricSelect", () => {
 		const trigger = screen.getByRole("combobox");
 		expect(trigger).toHaveAttribute("title", "Choose metric");
 		fireEvent.click(trigger);
-		expect(screen.getByRole("listbox")).toHaveClass("map-glass");
-		expect(screen.getByRole("option", { name: "Alpha" })).toHaveFocus();
+		const listbox = screen.getByRole("listbox");
+		const alpha = screen.getByRole("option", { name: "Alpha" });
+		const beta = screen.getByRole("option", { name: "Beta" });
+		expect(listbox).toHaveClass("map-glass");
+		expect(listbox).not.toHaveAttribute("style");
+		expect(alpha).toHaveFocus();
+		expect(alpha.querySelector("svg")).toHaveClass("size-3", "text-muted-foreground");
+		expect(alpha.querySelector("path")).toHaveAttribute("d", "m3.5 8.5 3 3 6-6.5");
+		expect(beta.querySelector("svg")).toHaveClass("invisible");
 		fireEvent.click(screen.getByRole("option", { name: "Beta" }));
 		expect(onChange).toHaveBeenCalledWith("b");
 		expect(trigger).toHaveFocus();

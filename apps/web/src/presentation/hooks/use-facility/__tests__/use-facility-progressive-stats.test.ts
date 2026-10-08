@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
+import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import {
 	facilityPlayerStatsQueryKey,
@@ -27,12 +28,15 @@ describe("progressive facility stats hooks", () => {
 		});
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/facilities/889/reservations");
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(
+			withStatsTimeZone("/api/v1/facilities/889/reservations"),
+		);
 		expect(facilityReservationStatsQueryKey("889")).toEqual([
 			"facilities",
 			"detail",
 			"889",
 			"reservations",
+			statsDayKey(),
 		]);
 	});
 
@@ -48,8 +52,14 @@ describe("progressive facility stats hooks", () => {
 		const { result } = renderHook(() => useFacilityPlayerStats("889"), { wrapper: Wrapper });
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/facilities/889/players");
-		expect(facilityPlayerStatsQueryKey("889")).toEqual(["facilities", "detail", "889", "players"]);
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(withStatsTimeZone("/api/v1/facilities/889/players"));
+		expect(facilityPlayerStatsQueryKey("889")).toEqual([
+			"facilities",
+			"detail",
+			"889",
+			"players",
+			statsDayKey(),
+		]);
 	});
 
 	it("prefetches reservation and player analytics together and stays idle without a selection", async () => {
@@ -72,8 +82,8 @@ describe("progressive facility stats hooks", () => {
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 		expect(fetchMock.mock.calls.map(([url]) => url).sort()).toEqual([
-			"/api/v1/facilities/889/players",
-			"/api/v1/facilities/889/reservations",
+			withStatsTimeZone("/api/v1/facilities/889/players"),
+			withStatsTimeZone("/api/v1/facilities/889/reservations"),
 		]);
 		expect(client.getQueryData(facilityPlayerStatsQueryKey("889"))).toBeDefined();
 		expect(client.getQueryData(facilityReservationStatsQueryKey("889"))).toEqual({

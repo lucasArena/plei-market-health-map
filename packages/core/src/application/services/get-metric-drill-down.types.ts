@@ -16,6 +16,7 @@ export interface MetricDrillDownInput {
 	department?: GameDepartment;
 	gameDepartments?: readonly GameDepartment[];
 	now: Date;
+	timeZone: string;
 }
 export interface MetricDrillDownRow {
 	id: string;

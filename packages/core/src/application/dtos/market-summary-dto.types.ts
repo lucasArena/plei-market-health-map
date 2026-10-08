@@ -5,6 +5,7 @@ import type {
 } from "@core/application/dtos/facility-detail-dto.types";
 import type {
 	getMarketGameInsightsSchema,
+	getMarketPlayerStatsSchema,
 	getMarketSummarySchema,
 } from "@core/application/dtos/market-summary-dto";
 import type { z } from "zod";
@@ -12,6 +13,8 @@ import type { z } from "zod";
 export type GetMarketSummaryInput = z.input<typeof getMarketSummarySchema>;
 
 export type GetMarketGameInsightsInput = z.input<typeof getMarketGameInsightsSchema>;
+
+export type GetMarketPlayerStatsInput = z.input<typeof getMarketPlayerStatsSchema>;
 
 export interface MarketSummaryScopeView {
 	facilityCount: number;

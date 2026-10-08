@@ -1865,7 +1865,7 @@ describe("period-aware map data", () => {
 			"week",
 			expect.any(Boolean),
 		);
-		expect(result.current.sessionHeatmapLegend).toBe("App session density · last week");
+		expect(result.current.sessionHeatmapLegend).toBe("App session density · last 7 days");
 	});
 
 	it("leaves the session reference status empty while demand data is ready", () => {

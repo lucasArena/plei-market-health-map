@@ -39,7 +39,6 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 					id={rules.id}
 					role="listbox"
 					aria-label={props.label}
-					style={{ backgroundColor: "color-mix(in oklch, var(--background) 94%, transparent)" }}
 					className={`${MAP_MENU_SURFACE_CLASS} ${props.alignRight ? "right-0" : "left-0"} z-50 min-w-48`}
 				>
 					{props.options.map((option) => (
@@ -52,12 +51,20 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 							className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs aria-selected:bg-foreground/[0.05] ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
 						>
 							{option.label}
-							<span
+							<svg
 								aria-hidden="true"
-								className={option.value === props.value ? "text-muted-foreground" : "invisible"}
+								viewBox="0 0 16 16"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className={`size-3 shrink-0 text-muted-foreground ${
+									option.value === props.value ? "" : "invisible"
+								}`}
 							>
-								✓
-							</span>
+								<path d="m3.5 8.5 3 3 6-6.5" />
+							</svg>
 						</button>
 					))}
 				</div>

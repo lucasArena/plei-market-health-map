@@ -1,9 +1,12 @@
 import { NotFoundError } from "@core/application/errors/not-found-error";
 import { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
 import { makeGetFacilityReservationStats } from "@core/application/services/get-facility-reservation-stats";
+import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { asEntityId, Facility } from "@core/domain";
+
+const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 const FACILITY = Facility.create({
 	id: asEntityId("292"),
@@ -48,8 +51,8 @@ function setup() {
 	const stats = new InMemoryFacilityStatsRepository(COUNTS);
 	return {
 		stats,
-		getReservationStats: makeGetFacilityReservationStats({ facilities, stats }),
-		getPlayerStats: makeGetFacilityPlayerStats({ facilities, stats }),
+		getReservationStats: makeGetFacilityReservationStats({ clock: TEST_CLOCK, facilities, stats }),
+		getPlayerStats: makeGetFacilityPlayerStats({ clock: TEST_CLOCK, facilities, stats }),
 	};
 }
 
