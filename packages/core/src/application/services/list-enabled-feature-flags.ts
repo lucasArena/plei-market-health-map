@@ -6,7 +6,6 @@ import type { EnabledFeatureFlagsView } from "@core/application/dtos/feature-fla
 import { isFeatureFlagInEffect, recordsByKey } from "@core/application/mappers/feature-flag-mapper";
 import type { FeatureFlagsDeps } from "@core/application/services/feature-flags.types";
 
-/** Lists the flags in effect: a flag that requires another is only listed while both are on. */
 export function makeListEnabledFeatureFlags({
 	featureFlags,
 	keys = FEATURE_FLAG_KEYS,

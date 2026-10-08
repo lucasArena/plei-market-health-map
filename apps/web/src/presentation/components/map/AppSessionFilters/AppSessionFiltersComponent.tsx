@@ -7,12 +7,11 @@ import type {
 	AppSessionFiltersProps,
 	CheckMarkProps,
 	FilterChevronProps,
+	SessionFilterRules,
 	StepChevronProps,
 } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.types";
 import { MapFilterAddButton } from "@/presentation/components/map/MapFilterAdd/MapFilterAddComponent";
 import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
-
-type SessionFilterRules = ReturnType<typeof useAppSessionFiltersRules>;
 
 const SessionFiltersContext = createContext<SessionFilterRules | null>(null);
 

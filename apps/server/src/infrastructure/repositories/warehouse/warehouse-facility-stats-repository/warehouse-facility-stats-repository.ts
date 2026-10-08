@@ -41,7 +41,6 @@ where r.location_id = any($1::int[])
  and r.date_with_time::date < b.today
 group by r.location_id`;
 
-/** With a department filter, `$2` holds the departments and only their games are counted. */
 function reservationStatsSql(byDepartment: boolean): string {
 	const organizerPartners = byDepartment ? `${ORGANIZER_PARTNERS_CTE},\n` : "";
 	const join = (indent: string) => (byDepartment ? `\n${indent}${organizerPartnersJoin("r")}` : "");
@@ -175,7 +174,6 @@ group by b.this_week, b.today`;
 
 export const FACILITY_RESERVATION_STATS_SQL = reservationStatsSql(false);
 
-/** The same stats, counting only games from the departments passed as `$2`. */
 export const FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL = reservationStatsSql(true);
 
 export const FACILITY_PLAYER_STATS_SQL = `

@@ -6,7 +6,6 @@ import type { ListFacilitiesDeps } from "@core/application/services/list-facilit
 const GAMES_FLAG: FeatureFlagKey = "facility-games-layer";
 const GAMES_TREND_FLAG: FeatureFlagKey = "facility-games-trend";
 
-/** Drops the games fields while games are off, and the previous windows while the trend is off. */
 function gateFacilityPoint(
 	point: FacilityPointView,
 	showGames: boolean,
