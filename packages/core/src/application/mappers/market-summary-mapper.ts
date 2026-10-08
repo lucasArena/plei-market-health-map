@@ -6,12 +6,27 @@ import type {
 	MarketSummaryScopeView,
 } from "@core/application/dtos/market-summary-dto.types";
 import { NotFoundError } from "@core/application/errors/not-found-error";
-import type { EntityId, Facility } from "@core/domain";
+import {
+	type EntityId,
+	type Facility,
+	type GameDepartment,
+	sumGameDepartments,
+} from "@core/domain";
 
 export const MARKET_SUMMARY_RANK_LIMIT = 5;
 
-function gamesOf(facility: Facility, period: StatsPeriod): number {
+/** A facility's games in the period, only from the selected departments when there are any. */
+function gamesOf(
+	facility: Facility,
+	period: StatsPeriod,
+	departments: readonly GameDepartment[] = [],
+): number {
 	const { metrics } = facility.toJSON();
+	if (departments.length > 0) {
+		const counts =
+			period === "week" ? metrics.gamesLastWeekByDepartment : metrics.gamesByDepartment;
+		return sumGameDepartments(counts, departments);
+	}
 	return period === "week" ? metrics.gamesLastWeek : metrics.gamesLast28Days;
 }
 
@@ -36,8 +51,9 @@ export function selectMarketFacilities(facilities: Facility[], market?: string):
 export function toMarketSummaryScope(
 	facilities: Facility[],
 	period: StatsPeriod,
+	departments: readonly GameDepartment[] = [],
 ): MarketSummaryScopeView {
-	const active = facilities.filter((facility) => gamesOf(facility, period) > 0);
+	const active = facilities.filter((facility) => gamesOf(facility, period, departments) > 0);
 	return {
 		facilityCount: facilities.length,
 		activeFacilityCount: active.length,
@@ -50,13 +66,14 @@ export function toTopFacilities(
 	facilities: Facility[],
 	period: StatsPeriod,
 	limit: number = MARKET_SUMMARY_RANK_LIMIT,
+	departments: readonly GameDepartment[] = [],
 ): MarketSummaryFacilityRankView[] {
 	return facilities
 		.map((facility) => ({
 			id: facility.id,
 			name: facility.toJSON().name,
 			marketName: facility.marketName,
-			games: gamesOf(facility, period),
+			games: gamesOf(facility, period, departments),
 		}))
 		.filter((rank) => rank.games > 0)
 		.sort(byGamesThenName)
@@ -67,10 +84,11 @@ export function toTopMarkets(
 	facilities: Facility[],
 	period: StatsPeriod,
 	limit: number = MARKET_SUMMARY_RANK_LIMIT,
+	departments: readonly GameDepartment[] = [],
 ): MarketSummaryMarketRankView[] {
 	const markets = new Map<string, MarketSummaryMarketRankView>();
 	for (const facility of facilities) {
-		const games = gamesOf(facility, period);
+		const games = gamesOf(facility, period, departments);
 		const current = markets.get(facility.marketId) ?? {
 			id: facility.marketId,
 			name: facility.marketName,
@@ -94,10 +112,11 @@ export function toTopMarkets(
 export function toMarketSummaryPeriod(
 	facilities: Facility[],
 	period: StatsPeriod,
+	departments: readonly GameDepartment[] = [],
 ): MarketSummaryPeriodView {
 	return {
-		scope: toMarketSummaryScope(facilities, period),
-		topFacilities: toTopFacilities(facilities, period),
-		topMarkets: toTopMarkets(facilities, period),
+		scope: toMarketSummaryScope(facilities, period, departments),
+		topFacilities: toTopFacilities(facilities, period, MARKET_SUMMARY_RANK_LIMIT, departments),
+		topMarkets: toTopMarkets(facilities, period, MARKET_SUMMARY_RANK_LIMIT, departments),
 	};
 }

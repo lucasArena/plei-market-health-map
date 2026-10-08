@@ -1,7 +1,7 @@
 import type { StatsPeriod } from "@core/application/dtos/facility-detail-dto.types";
 import type { MarketGameChangeView } from "@core/application/dtos/market-summary-dto.types";
 import type { FacilityGameComparison } from "@core/application/repositories/facility-stats-repository.types";
-import type { Facility } from "@core/domain";
+import { type Facility, type GameDepartment, sumGameDepartments } from "@core/domain";
 
 function currentGames(row: FacilityGameComparison | undefined, period: StatsPeriod): number {
 	if (!row) return 0;
@@ -11,6 +11,27 @@ function currentGames(row: FacilityGameComparison | undefined, period: StatsPeri
 function previousGames(row: FacilityGameComparison | undefined, period: StatsPeriod): number {
 	if (!row) return 0;
 	return period === "week" ? row.playedPreviousWeek : row.playedPrevious28Days;
+}
+
+/**
+ * Game comparisons for the selected departments, read from the per department windows on
+ * the cached facility list instead of the warehouse. Each row is keyed by the facility id,
+ * which is one of its member ids, so co-located twins are counted once.
+ */
+export function toDepartmentGameComparisons(
+	facilities: Facility[],
+	departments: readonly GameDepartment[],
+): FacilityGameComparison[] {
+	return facilities.map((facility) => {
+		const { metrics } = facility.toJSON();
+		return {
+			facilityId: facility.id,
+			playedLastWeek: sumGameDepartments(metrics.gamesLastWeekByDepartment, departments),
+			playedPreviousWeek: sumGameDepartments(metrics.gamesPreviousWeekByDepartment, departments),
+			playedLast28Days: sumGameDepartments(metrics.gamesByDepartment, departments),
+			playedPrevious28Days: sumGameDepartments(metrics.gamesPreviousByDepartment, departments),
+		};
+	});
 }
 
 export function toMarketGameChanges(

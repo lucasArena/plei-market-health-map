@@ -5,7 +5,7 @@ import { makeGetMarketPlayerStats } from "@core/application/services/get-market-
 import { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
-import { asEntityId, Facility } from "@core/domain";
+import { asEntityId, Facility, type GameDepartmentCounts } from "@core/domain";
 
 function facility(
 	id: string,
@@ -263,4 +263,123 @@ it("validates insight scope before requesting comparisons", async () => {
 	await expect(insights({ market: "unknown" })).rejects.toBeInstanceOf(NotFoundError);
 	await expect(insights({ period: "year" as never })).rejects.toBeInstanceOf(InvalidRequestError);
 	expect(comparisons).not.toHaveBeenCalled();
+});
+
+function departments(
+	magic: number,
+	organizers: number,
+	partnerships: number,
+): GameDepartmentCounts {
+	return { magic, organizers, partnerships };
+}
+
+/** A facility with every per department window filled in, as the warehouse returns it. */
+function departmentFacility(id: string, marketId: string, month: GameDepartmentCounts) {
+	const total = month.magic + month.organizers + month.partnerships;
+	return Facility.create({
+		id: asEntityId(id),
+		marketId: asEntityId(marketId),
+		marketName: `Market ${marketId}`,
+		name: `Facility ${id}`,
+		address: "1 Main St",
+		location: { latitude: 39.96, longitude: -75.15 },
+		avatarUrl: null,
+		metrics: {
+			activePlayers: 0,
+			gamesLastWeek: Math.round(total / 4),
+			gamesLast28Days: total,
+			gamesByDepartment: month,
+			gamesPrevious28Days: total * 2,
+			gamesPreviousByDepartment: departments(
+				month.magic * 2,
+				month.organizers * 2,
+				month.partnerships * 2,
+			),
+			gamesLastWeekByDepartment: departments(
+				Math.round(month.magic / 4),
+				Math.round(month.organizers / 4),
+				Math.round(month.partnerships / 4),
+			),
+			gamesPreviousWeek: 0,
+			gamesPreviousWeekByDepartment: departments(0, 0, 0),
+			utilization: 0,
+		},
+	});
+}
+
+describe("market summary game department filter", () => {
+	const facilities = () => [
+		departmentFacility("1", "philly", departments(8, 0, 4)),
+		departmentFacility("2", "philly", departments(0, 12, 0)),
+		departmentFacility("3", "houston", departments(0, 0, 20)),
+	];
+
+	it("counts, ranks and asks for reservation stats with only the selected departments", async () => {
+		const { getMarketSummary, stats } = setup(facilities());
+
+		const summary = await getMarketSummary({ departments: ["organizers", "magic"] });
+
+		expect(stats.reservationFilters).toEqual([{ departments: ["magic", "organizers"] }]);
+		expect(stats.reservationRequested).toEqual([["1", "2", "3"]]);
+		expect(summary.periods.month.scope).toEqual({
+			facilityCount: 3,
+			activeFacilityCount: 2,
+			marketCount: 2,
+			activeMarketCount: 1,
+		});
+		expect(summary.periods.month.topFacilities.map((rank) => [rank.id, rank.games])).toEqual([
+			["2", 12],
+			["1", 8],
+		]);
+		expect(summary.periods.month.topMarkets).toEqual([
+			{ id: "philly", name: "Market philly", facilityCount: 2, activeFacilityCount: 2, games: 20 },
+		]);
+		expect(summary.periods.week.topFacilities.map((rank) => [rank.id, rank.games])).toEqual([
+			["2", 3],
+			["1", 2],
+		]);
+	});
+
+	it("keeps the unfiltered request when no department or every department is picked", async () => {
+		const { getMarketSummary, stats } = setup(facilities());
+
+		const all = await getMarketSummary({ departments: ["magic", "organizers", "partnerships"] });
+		const none = await getMarketSummary({ departments: [] });
+		const omitted = await getMarketSummary();
+
+		expect(stats.reservationFilters).toEqual([undefined, undefined, undefined]);
+		expect(all).toEqual(omitted);
+		expect(none).toEqual(omitted);
+		expect(omitted.periods.month.scope.activeFacilityCount).toBe(3);
+	});
+
+	it("rejects an unknown department as an invalid request", async () => {
+		const { getMarketSummary, stats } = setup(facilities());
+
+		await expect(getMarketSummary({ departments: ["chess" as never] })).rejects.toBeInstanceOf(
+			InvalidRequestError,
+		);
+		expect(stats.reservationRequested).toEqual([]);
+	});
+
+	it("builds insights from the department windows without the warehouse comparison", async () => {
+		const repository = new InMemoryFacilityRepository(facilities());
+		const stats = new InMemoryFacilityStatsRepository(COUNTS);
+		const comparisons = vi.spyOn(stats, "getGameComparisons");
+		const insights = makeGetMarketGameInsights({ facilities: repository, stats });
+
+		const month = await insights({ period: "month", departments: ["partnerships"] });
+
+		expect(comparisons).not.toHaveBeenCalled();
+		expect(month).toMatchObject([
+			{ id: "philly", played: 4, playedPrevious: 8, change: -4, changePercent: -50 },
+			{ id: "houston", played: 20, playedPrevious: 40, change: -20, changePercent: -50 },
+		]);
+		const [philly] = await insights({ period: "week", departments: ["magic"], market: "philly" });
+		expect(philly).toMatchObject({ id: "philly", played: 2, playedPrevious: 0 });
+		expect(philly?.facilities.map((row) => [row.id, row.played])).toEqual([
+			["1", 2],
+			["2", 0],
+		]);
+	});
 });

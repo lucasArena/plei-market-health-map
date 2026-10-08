@@ -4,7 +4,10 @@ import type {
 	MarketGameChangeView,
 } from "@core/application/dtos/market-summary-dto.types";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
-import { toMarketGameChanges } from "@core/application/mappers/market-game-changes";
+import {
+	toDepartmentGameComparisons,
+	toMarketGameChanges,
+} from "@core/application/mappers/market-game-changes";
 import {
 	selectMarketFacilities,
 	toMarketMemberIds,
@@ -17,8 +20,12 @@ export function makeGetMarketGameInsights({ facilities, stats }: GetMarketGameIn
 	): Promise<MarketGameChangeView[]> {
 		const parsed = getMarketGameInsightsSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
-		const visible = selectMarketFacilities(await facilities.listAll(), parsed.data.market);
-		const comparisons = await stats.getGameComparisons(toMarketMemberIds(visible));
-		return toMarketGameChanges(visible, comparisons, parsed.data.period);
+		const { departments, market, period } = parsed.data;
+		const visible = selectMarketFacilities(await facilities.listAll(), market);
+		const comparisons =
+			departments.length > 0
+				? toDepartmentGameComparisons(visible, departments)
+				: await stats.getGameComparisons(toMarketMemberIds(visible));
+		return toMarketGameChanges(visible, comparisons, period);
 	};
 }

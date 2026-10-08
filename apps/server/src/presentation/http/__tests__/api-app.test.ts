@@ -175,6 +175,30 @@ describe("places route", () => {
 });
 
 describe("market insights route", () => {
+	it("passes a game department filter to the summary and insights, never to players", async () => {
+		const { get, services } = setup();
+
+		await get("/market-summary?departments=magic,%20organizers");
+		await get("/market-summary/insights?period=week&departments=partnerships");
+		await get("/market-summary/players?departments=magic");
+		await get("/market-summary?departments=");
+
+		expect(services.getMarketSummary).toHaveBeenNthCalledWith(1, {
+			market: undefined,
+			departments: ["magic", "organizers"],
+		});
+		expect(services.getMarketGameInsights).toHaveBeenCalledWith({
+			market: undefined,
+			period: "week",
+			departments: ["partnerships"],
+		});
+		expect(services.getMarketPlayerStats).toHaveBeenCalledWith({ market: undefined });
+		expect(services.getMarketSummary).toHaveBeenNthCalledWith(2, {
+			market: undefined,
+			departments: [],
+		});
+	});
+
 	it("loads insights through their own authenticated scoped endpoint", async () => {
 		const { get, services } = setup();
 		expect(await get("/market-summary/insights?market=houston&period=month")).toEqual({

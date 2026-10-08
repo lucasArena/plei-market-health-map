@@ -3,6 +3,7 @@ import type {
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
 	GetMarketGameInsightsInput,
+	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
 	IssueTracker,
 	ListAppMetricsPeopleInput,
@@ -304,7 +305,7 @@ const container = {
 	getMarketGameInsights: (input?: GetMarketGameInsightsInput) =>
 		facilityModule().getMarketGameInsights(input),
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
-	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>
+	getMarketPlayerStats: (input?: GetMarketPlayerStatsInput) =>
 		facilityModule().getMarketPlayerStats(input),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
 	recordDailyActivity: (input: RecordDailyActivityInput) =>

@@ -6,6 +6,11 @@ export type {
 	GameDepartmentCounts,
 } from "@core/domain/entities/facility/facility.types";
 export {
+	GAME_DEPARTMENTS,
+	normalizeGameDepartments,
+	sumGameDepartments,
+} from "@core/domain/entities/game-department/game-department";
+export {
 	classifyGamesTrend,
 	GAMES_WINDOW_DAYS,
 	gamesTrend,

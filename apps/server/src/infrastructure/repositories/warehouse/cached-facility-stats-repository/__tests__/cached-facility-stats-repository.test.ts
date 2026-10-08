@@ -53,6 +53,29 @@ function setup() {
 }
 
 describe("CachedFacilityStatsRepository", () => {
+	it("keeps a separate reservation entry per department filter, in any order", async () => {
+		const { repository, getReservationStats } = setup();
+		const ids = ["292" as never, "698" as never];
+
+		await repository.getReservationStats(ids);
+		await repository.getReservationStats(ids, { departments: [] });
+		await repository.getReservationStats(ids, { departments: ["organizers", "magic"] });
+		await repository.getReservationStats([...ids].reverse(), {
+			departments: ["magic", "organizers"],
+		});
+		await repository.getReservationStats(ids, { departments: ["partnerships"] });
+		await repository.getReservationStats(ids, {
+			departments: ["magic", "organizers", "partnerships"],
+		});
+
+		expect(getReservationStats).toHaveBeenCalledTimes(3);
+		expect(getReservationStats).toHaveBeenNthCalledWith(1, ids);
+		expect(getReservationStats).toHaveBeenNthCalledWith(2, ids, {
+			departments: ["magic", "organizers"],
+		});
+		expect(getReservationStats).toHaveBeenNthCalledWith(3, ids, { departments: ["partnerships"] });
+	});
+
 	it("caches each analytics kind independently per facility", async () => {
 		const { repository, getReservationStats, getPlayerStats } = setup();
 		const firstIds = ["292" as never, "698" as never];

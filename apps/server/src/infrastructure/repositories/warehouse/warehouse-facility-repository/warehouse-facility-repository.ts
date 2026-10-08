@@ -1,6 +1,11 @@
 import type { FacilityRepository } from "@market-health-map/core/application";
 import { asEntityId, Facility, GAMES_WINDOW_DAYS } from "@market-health-map/core/domain";
 import { companyLogoUrl } from "@server/infrastructure/repositories/warehouse/company-logo-url/company-logo-url";
+import {
+	gameDepartmentCase,
+	ORGANIZER_PARTNERS_CTE,
+	organizerPartnersJoin,
+} from "@server/infrastructure/repositories/warehouse/game-department-sql/game-department-sql";
 import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse/is-ignored-facility/is-ignored-facility";
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
@@ -15,17 +20,11 @@ export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
   select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
 ),
-organizer_partners as (
-  select distinct partner_id from plei_gold.fct_terms
-  where name ilike '%Organizer Program%' and deleted_at is null
-),
+${ORGANIZER_PARTNERS_CTE},
 classified_games as (
-  select r.*, case
-    when r.partner_id in (6, 52, 62) then 'magic'
-    when op.partner_id is not null then 'organizers'
-    else 'partnerships' end as department
+  select r.*, ${gameDepartmentCase("r")} as department
   from plei_gold.dim_reservation r
-  left join organizer_partners op on op.partner_id = r.partner_id
+  ${organizerPartnersJoin("r")}
 ),
 facility_activity as (
   /* One pass over both windows: the last ${GAMES_WINDOW_DAYS} full days and the equal length window
