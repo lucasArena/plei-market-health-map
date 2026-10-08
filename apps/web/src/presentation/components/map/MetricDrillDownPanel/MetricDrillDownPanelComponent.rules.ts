@@ -51,7 +51,6 @@ export function useMetricDrillDownPanelRules({
 	if (previousDepartments !== departmentKey) {
 		setPreviousDepartments(departmentKey);
 		setFocus(null);
-		setSelection((current) => ({ ...current, department: undefined }));
 	}
 	const [previousScope, setPreviousScope] = useState(scopeKey);
 	if (previousScope !== scopeKey) {
@@ -97,7 +96,7 @@ export function useMetricDrillDownPanelRules({
 				gameDepartments,
 				period,
 				...selection,
-				marketId: selection.marketId ?? (scope.kind === "market" ? scope.id : undefined),
+				marketId: scope.kind === "market" ? scope.id : undefined,
 				facilityId: scope.kind === "facility" ? scope.id : undefined,
 				now: new Date(),
 			}),
@@ -109,7 +108,7 @@ export function useMetricDrillDownPanelRules({
 		: (focusedRow?.value ?? null);
 	const hasFocus = !!focusedRow;
 	useEffect(() => {
-		if (!focusedRow && !selection.marketId && !selection.department) {
+		if (!focusedRow) {
 			setMetricFocus(null);
 			return;
 		}
@@ -118,26 +117,14 @@ export function useMetricDrillDownPanelRules({
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
 					(scope.kind !== "facility" || facility.id === scope.id) &&
-					(!selection.marketId || facility.marketId === selection.marketId) &&
-					(!focusedRow || selection.slice !== "market" || facility.marketId === focusedRow.id) &&
-					(!focusedRow || selection.slice !== "facility" || facility.id === focusedRow.id),
+					(selection.slice !== "market" || facility.marketId === focusedRow.id) &&
+					(selection.slice !== "facility" || facility.id === focusedRow.id),
 			)
 			.map((facility) => facility.id);
 		const department =
-			selection.slice === "department" && focusedRow
-				? (focusedRow.id as GameDepartment)
-				: (focus?.department ?? selection.department);
+			selection.slice === "department" ? (focusedRow.id as GameDepartment) : focus?.department;
 		setMetricFocus({ facilityIds, department });
-	}, [
-		focusedRow,
-		query.data,
-		scope,
-		selection.marketId,
-		selection.department,
-		selection.slice,
-		focus?.department,
-		setMetricFocus,
-	]);
+	}, [focusedRow, query.data, scope, selection.slice, focus?.department, setMetricFocus]);
 	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
 	function toggleFocus(row: MetricDrillDownRow, department?: GameDepartment) {
 		setFocus((current) =>
@@ -148,14 +135,7 @@ export function useMetricDrillDownPanelRules({
 	}
 	const isSelected = (row: MetricDrillDownRow, department?: GameDepartment) =>
 		focus?.rowId === row.id && (department === undefined || focus.department === department);
-	const isDimmed = (row: MetricDrillDownRow, department?: GameDepartment) =>
-		hasFocus &&
-		(!isSelected(row) ||
-			(department !== undefined &&
-				focus?.department !== undefined &&
-				focus.department !== department));
-	const canSegment =
-		selection.measure === "games" && selection.slice !== "department" && !selection.department;
+	const canSegment = selection.measure === "games" && selection.slice !== "department";
 	const segment = canSegment ? selection.segment : "none";
 	const number = new Intl.NumberFormat(locale);
 	const date = new Intl.DateTimeFormat(locale, {
@@ -173,7 +153,8 @@ export function useMetricDrillDownPanelRules({
 	};
 	const rowName = (row: MetricDrillDownRow) =>
 		selection.slice === "department" ? departmentNames[row.id as GameDepartment] : row.name;
-	const rows = [...view.rows].sort((a, b) => {
+	const visibleRows = hasFocus ? [{ ...focusedRow, value: focusedValue }] : view.rows;
+	const rows = [...visibleRows].sort((a, b) => {
 		if (sort === "name-asc") return rowName(a).localeCompare(rowName(b), locale);
 		if (sort === "name-desc") return rowName(b).localeCompare(rowName(a), locale);
 		if (a.value === null && b.value === null) return 0;
@@ -182,14 +163,16 @@ export function useMetricDrillDownPanelRules({
 		const delta = a.value - b.value;
 		return (sort === "count-asc" ? delta : -delta) || rowName(a).localeCompare(rowName(b), locale);
 	});
-	const topRows = [...view.rows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
+	const topRows = [...visibleRows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
 	const largest = Math.max(1, ...topRows.map((row) => row.value ?? 0));
 	const magnitude = 10 ** Math.floor(Math.log10(largest / 5));
 	const step = Math.max(1, Math.ceil(largest / magnitude / 5) * magnitude);
 	const max = Math.ceil(largest / step) * step;
 	const ticks = Array.from({ length: Math.ceil(max / step) + 1 }, (_, index) => index * step);
 
-	const selectedDepartments = gameDepartments?.length ? gameDepartments : DRILL_DOWN_DEPARTMENTS;
+	const appliedDepartments = gameDepartments?.length ? gameDepartments : DRILL_DOWN_DEPARTMENTS;
+	const selectedDepartments =
+		hasFocus && focus?.department ? [focus.department] : appliedDepartments;
 	const chartRows: DrillDownChartRow[] = topRows.map((row) => {
 		if (row.value === null) return { ...row, bars: [] };
 		if (segment === "department") {
@@ -233,7 +216,6 @@ export function useMetricDrillDownPanelRules({
 				measure === "active-facilities" && current.slice === "department"
 					? "market"
 					: current.slice,
-			department: undefined,
 			segment: measure === "active-facilities" ? "none" : current.segment,
 		}));
 	}
@@ -242,7 +224,6 @@ export function useMetricDrillDownPanelRules({
 		setSelection((current) => ({
 			...current,
 			slice,
-			department: undefined,
 			segment: slice === "department" ? "none" : current.segment,
 		}));
 	}
@@ -250,53 +231,23 @@ export function useMetricDrillDownPanelRules({
 		setFocus(null);
 		setSelection((current) => ({ ...current, segment: next }));
 	}
-	function explore(
-		row: MetricDrillDownRow,
-		department = focus?.rowId === row.id ? focus.department : undefined,
-	) {
-		if (selection.slice !== "market") return;
-		setFocus(null);
-		setSelection((current) => ({
-			...current,
-			marketId: row.id,
-			marketName: row.name,
-			slice: "facility",
-			department,
-		}));
-	}
-	function back() {
-		setFocus(null);
-		setSelection((current) => ({
-			...current,
-			marketId: undefined,
-			marketName: undefined,
-			department: undefined,
-			slice: "market",
-		}));
-	}
 	function viewOnMap(row: MetricDrillDownRow) {
-		if (selection.slice === "department") return;
-		if (selection.slice === "market") {
-			setMapNavigation({ kind: "market", id: row.id, name: row.name });
-			return;
-		} else {
-			const facility = query.data?.find((item) => item.id === row.id);
-			if (!facility) return;
-			setMapNavigation({
-				kind: "facility",
-				id: facility.id,
-				name: facility.name,
-				marketName: facility.marketName,
-			});
-		}
-		onClose();
+		const facilityIds = (query.data ?? [])
+			.filter(
+				(facility) =>
+					(scope.kind !== "market" || facility.marketId === scope.id) &&
+					(scope.kind !== "facility" || facility.id === scope.id) &&
+					(selection.slice === "market" ? facility.marketId === row.id : facility.id === row.id),
+			)
+			.map((facility) => facility.id);
+		setMapNavigation({ kind: "metric-focus", facilityIds });
 	}
+
 	function close() {
 		onClose();
 		triggerRef.current?.focus();
 	}
-	const heading =
-		selection.marketName ?? (scope.kind === "all" ? messages.drillDown.allMarkets : scope.name);
+	const heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
 	return {
 		messages: messages.drillDown,
 		selection,
@@ -314,14 +265,14 @@ export function useMetricDrillDownPanelRules({
 		toggleExpanded,
 		handleAnimationEnd,
 		view,
+		chartTruncated: !hasFocus && view.rows.length > 10,
 		headlineValue: hasFocus ? focusedValue : view.total,
 		focusLabel: hasFocus
 			? `${rowName(focusedRow)}${focus?.department ? ` · ${departmentNames[focus.department]}` : ""}`
 			: undefined,
 		toggleFocus,
 		isSelected,
-		isDimmed,
-		showScopeBack: scope.kind !== "all" && !selection.marketId,
+		showScopeBack: scope.kind !== "all",
 		clearScope: () => {
 			setFocus(null);
 			setMapNavigation({ kind: "all" });
@@ -332,8 +283,6 @@ export function useMetricDrillDownPanelRules({
 		departments: selectedDepartments,
 		filteredDepartments: gameDepartments ?? [],
 		showSupply,
-		explore,
-		back,
 		viewOnMap,
 		heading,
 		close,

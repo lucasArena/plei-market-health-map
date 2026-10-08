@@ -1138,6 +1138,54 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.rules.shownFacilities).toHaveLength(2);
 	});
 
+	it("zooms from metric map icons without changing scope or opening detail", async () => {
+		const other = { ...FACILITY, id: "other", location: { latitude: 31, longitude: -97 } };
+		mockUseFacilities.mockReturnValue({
+			data: [FACILITY, other],
+			isPending: false,
+			isError: false,
+		});
+		const container = document.createElement("div");
+		const { result } = renderHook(
+			() => {
+				const rules = useFacilitiesMapScreenRules();
+				rules.containerRef.current ??= container;
+				return { rules, context: useMapScope() };
+			},
+			{
+				wrapper: ({ children }: { children: ReactNode }) =>
+					wrapper({ children: createElement(MapScopeProvider, null, children) }),
+			},
+		);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		const camera = mapState.instances[0];
+		camera?.easeTo?.mockClear();
+		camera?.fitBounds?.mockClear();
+		act(() => result.current.context.setMetricFocus({ facilityIds: ["f1"] }));
+		expect(camera?.easeTo).not.toHaveBeenCalled();
+		expect(camera?.fitBounds).not.toHaveBeenCalled();
+		act(() =>
+			result.current.context.setMapNavigation({ kind: "metric-focus", facilityIds: ["f1"] }),
+		);
+		expect(camera?.easeTo).toHaveBeenCalledWith(expect.objectContaining({ zoom: 14 }));
+		expect(result.current.context.scope).toEqual({ kind: "all" });
+		expect(result.current.rules.selectedFacilityId).toBeNull();
+		act(() =>
+			result.current.context.setMapNavigation({
+				kind: "metric-focus",
+				facilityIds: ["f1", "other"],
+			}),
+		);
+		expect(camera?.fitBounds).toHaveBeenCalled();
+		const calls = camera?.fitBounds?.mock.calls.length;
+		act(() =>
+			result.current.context.setMapNavigation({ kind: "metric-focus", facilityIds: ["missing"] }),
+		);
+		expect(camera?.fitBounds?.mock.calls).toHaveLength(calls ?? 0);
+		expect(result.current.context.mapNavigation).toBeNull();
+	});
+
 	it("consumes drill-down map navigation requests through the existing search behavior", async () => {
 		const container = document.createElement("div");
 		const { result } = renderHook(

@@ -1481,6 +1481,29 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		if (!mapNavigation || !isMapReady) return;
+		if (mapNavigation.kind === "metric-focus") {
+			const targets = facilities.filter((facility) =>
+				mapNavigation.facilityIds.includes(facility.id),
+			);
+			const map = mapRef.current;
+			const bounds = marketBounds(targets);
+			if (map && targets.length === 1) {
+				const [target] = targets;
+				if (target)
+					map.easeTo({
+						center: [target.location.longitude, target.location.latitude],
+						zoom: 14,
+						padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
+						duration: 700,
+					});
+			} else if (map && bounds)
+				map.fitBounds(bounds, {
+					padding: { top: 72, bottom: 72, left: 72, right: DETAIL_PANEL_OFFSET + 72 },
+					maxZoom: 11,
+					duration: 700,
+				});
+		}
+
 		if (mapNavigation.kind === "all") {
 			setScope(ALL_MARKETS_SCOPE);
 			setSelectedFacilityId(null);

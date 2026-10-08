@@ -107,13 +107,14 @@ describe("MetricDrillDownPanel", () => {
 		navigate.mockClear();
 		retry.mockClear();
 	});
-	it("toggles selection between chart and table while retaining all comparison groups", () => {
+	it("filters chart and table by selection and restores groups when cleared", () => {
 		setup();
 		const bar = screen.getByRole("button", { name: "Miami: 14" });
 		fireEvent.click(bar);
 		expect(bar).toHaveAttribute("aria-pressed", "true");
 		expect(screen.getByText("14", { selector: "p" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Orlando: 2" }).style.opacity).toBe("0.2");
+		expect(screen.queryByRole("button", { name: "Orlando: 2" })).not.toBeInTheDocument();
+		expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(2);
 		expect(setMetricFocus).toHaveBeenLastCalledWith({
 			facilityIds: ["a", "b"],
 			department: undefined,
@@ -134,7 +135,7 @@ describe("MetricDrillDownPanel", () => {
 			department: "magic",
 		});
 		expect(screen.getByText("3", { selector: "p" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Miami · Organizers: 4" }).style.opacity).toBe("0.2");
+		expect(screen.queryByRole("button", { name: "Miami · Organizers: 4" })).not.toBeInTheDocument();
 		fireEvent.click(bar);
 		expect(setMetricFocus).toHaveBeenLastCalledWith(null);
 		select("Slice", "department");
@@ -162,7 +163,7 @@ describe("MetricDrillDownPanel", () => {
 		expect(screen.getByRole("button", { name: "Miami · Magic: 3" })).not.toHaveAttribute("title");
 		expect(screen.queryByRole("button", { name: /Organizers:/ })).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Miami · Magic: 3" }));
-		fireEvent.click(screen.getByRole("button", { name: "Explore facilities: Miami" }));
+		select("Slice", "facility");
 		gameDepartments = ["organizers"];
 		rerender(<MetricDrillDownPanel {...props} />);
 		expect(screen.getByRole("button", { name: "Arena · Organizers: 3" })).toBeInTheDocument();
@@ -246,28 +247,20 @@ describe("MetricDrillDownPanel", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
-	it("defaults to games by market and supports local drill and back", () => {
+	it("keeps grouping stable when filtering and hides removed textual actions", () => {
 		setup();
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Games played");
-		expect(screen.getByText("16")).toBeInTheDocument();
-		fireEvent.click(
-			within(screen.getByRole("table")).getByRole("button", { name: "Explore facilities: Miami" }),
+		fireEvent.click(screen.getByRole("button", { name: "Miami: 14" }));
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+		expect(screen.queryByRole("button", { name: /Explore facilities/ })).not.toBeInTheDocument();
+		const mapButton = screen.getByRole("button", { name: "View on map: Miami" });
+		expect(mapButton).not.toHaveTextContent("View on map");
+		expect(screen.getByRole("button", { name: /Count ↕/ })).toHaveClass(
+			"whitespace-nowrap",
+			"inline-flex",
 		);
 		expect(navigate).not.toHaveBeenCalled();
-		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Facility");
-		expect(screen.getByRole("button", { name: /Back to overview/ })).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /Back to overview/ }));
-		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 	});
-	it("keeps department segments on market drill and reports exact values", () => {
-		setup();
-		select("Segment", "department");
-		fireEvent.click(screen.getByRole("button", { name: "Miami · Magic: 3" }));
-		fireEvent.click(screen.getByRole("button", { name: "Explore facilities: Miami" }));
-		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Facility");
-		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
-		expect(within(screen.getByRole("table")).getByText("2")).toBeInTheDocument();
-	});
+
 	it("offers department slices only for games and disables overlapping facility segments", () => {
 		setup();
 		select("Slice", "department");
@@ -304,20 +297,18 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: /Market ↕/ }));
 		expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute("aria-sort", "descending");
 	});
-	it("requests explicit map navigation for market and facility", () => {
+	it("requests zoom only from the map icon without closing or changing metric scope", () => {
 		const { onClose } = setup();
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Miami" }));
-		expect(navigate).toHaveBeenLastCalledWith({ kind: "market", id: "miami", name: "Miami" });
+		expect(navigate).toHaveBeenLastCalledWith({ kind: "metric-focus", facilityIds: ["a", "b"] });
 		expect(onClose).not.toHaveBeenCalled();
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 		select("Slice", "facility");
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Arena" }));
-		expect(navigate).toHaveBeenLastCalledWith({
-			kind: "facility",
-			id: "a",
-			name: "Arena",
-			marketName: "Miami",
-		});
+		expect(navigate).toHaveBeenLastCalledWith({ kind: "metric-focus", facilityIds: ["a"] });
+		expect(onClose).not.toHaveBeenCalled();
 	});
+
 	it("resets navigation on scope changes and keeps valid choices on period changes", () => {
 		const { rerender, props } = setup();
 		select("Segment", "department");

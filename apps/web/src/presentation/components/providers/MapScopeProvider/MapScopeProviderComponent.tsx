@@ -3,6 +3,7 @@
 import { DEFAULT_STATS_PERIOD, type StatsPeriod } from "@market-health-map/core/application";
 import { createContext, useContext, useMemo, useState } from "react";
 import type {
+	MapNavigation,
 	MapScope,
 	MapScopeContextValue,
 	MapScopeProviderProps,
@@ -26,7 +27,7 @@ const MapScopeContext = createContext<MapScopeContextValue>({
 
 export function MapScopeProvider({ children }: Readonly<MapScopeProviderProps>) {
 	const [metricFocus, setMetricFocus] = useState<MetricMapFocus | null>(null);
-	const [mapNavigation, setMapNavigation] = useState<MapScope | null>(null);
+	const [mapNavigation, setMapNavigation] = useState<MapNavigation | null>(null);
 	const [scope, setScope] = useState<MapScope>(ALL_MARKETS_SCOPE);
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 	const [period, setPeriod] = useState<StatsPeriod>(DEFAULT_STATS_PERIOD);

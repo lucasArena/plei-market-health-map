@@ -7,6 +7,8 @@ export type MapScope =
 	| { kind: "market"; id: string; name: string }
 	| { kind: "facility"; id: string; name: string; marketName: string };
 
+export type MapNavigation = MapScope | { kind: "metric-focus"; facilityIds: readonly string[] };
+
 export interface MetricMapFocus {
 	facilityIds: readonly string[];
 	department?: GameDepartment;
@@ -16,8 +18,8 @@ export interface MapScopeContextValue {
 	metricFocus: MetricMapFocus | null;
 	setMetricFocus(focus: MetricMapFocus | null): void;
 	scope: MapScope;
-	mapNavigation: MapScope | null;
-	setMapNavigation(scope: MapScope | null): void;
+	mapNavigation: MapNavigation | null;
+	setMapNavigation(scope: MapNavigation | null): void;
 	selectedFacilityId: string | null;
 	setSelectedFacilityId(id: string | null): void;
 	setScope(scope: MapScope): void;

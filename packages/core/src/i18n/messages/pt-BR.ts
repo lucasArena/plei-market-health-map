@@ -203,7 +203,6 @@ export const ptBR: Messages = {
 		filteredBy: "Filtrado por",
 		supplyHidden: "Oferta está oculta. Ative-a em Filtros para ver os resultados.",
 		selectionHelp: "Clique em uma barra ou linha para selecionar. Clique novamente para limpar.",
-		exploreFacilities: "Explorar instalações",
 		measure: "Medida",
 		slice: "Agrupamento",
 		segment: "Segmento",

@@ -21,7 +21,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 		selection,
 		rows,
 		chartRows,
-		view,
 		segment,
 		formatValue,
 		rowName,
@@ -91,15 +90,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						← {m.allMarkets}
 					</button>
 				)}
-				{selection.marketId && (
-					<div className="flex flex-wrap items-center gap-2 text-xs">
-						<button type="button" onClick={rules.back} className="cursor-pointer underline">
-							← {m.back}
-						</button>
-						<span>{selection.marketName}</span>
-						{selection.department && <span>· {departmentNames[selection.department]}</span>}
-					</div>
-				)}
 				<div>
 					<p className="text-3xl font-semibold tabular-nums">
 						{rules.isLoading || rules.isError ? "—" : formatValue(rules.headlineValue)}
@@ -167,7 +157,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 				{!rules.showSupply && <p className="text-xs text-muted-foreground">{m.supplyHidden}</p>}
 				{!rules.canSegment && (
 					<p id="drill-down-segment-help" className="text-xs text-muted-foreground">
-						{selection.department ? m.selectedDepartmentHelp : m.segmentUnavailable}
+						{m.segmentUnavailable}
 					</p>
 				)}
 				{rules.isLoading && (
@@ -197,7 +187,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						)}
 						{!rules.isEmpty && (
 							<section aria-label={m.chart} className="space-y-3">
-								{view.rows.length > 10 && (
+								{rules.chartTruncated && (
 									<p className="text-xs text-muted-foreground">{m.topTen}</p>
 								)}
 								{segment === "department" && (
@@ -253,7 +243,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 																aria-label={bar.label}
 																style={{
 																	height: `${bar.height}%`,
-																	opacity: rules.isDimmed(row, bar.department) ? 0.2 : 1,
 																	backgroundColor:
 																		bar.value === 0
 																			? "transparent"
@@ -308,7 +297,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													onClick={() =>
 														rules.setSort(rules.sort === "name-asc" ? "name-desc" : "name-asc")
 													}
-													className="cursor-pointer"
+													className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap"
 												>
 													{m[selection.slice]} ↕
 												</button>
@@ -321,14 +310,14 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 															]
 														: "none"
 												}
-												className="text-right"
+												className="whitespace-nowrap text-right"
 											>
 												<button
 													type="button"
 													onClick={() =>
 														rules.setSort(rules.sort === "count-desc" ? "count-asc" : "count-desc")
 													}
-													className="cursor-pointer"
+													className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap"
 												>
 													{m.value} ↕
 												</button>
@@ -351,7 +340,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 											<tr
 												key={row.id}
 												className={`border-b border-border/50 transition-opacity ${rules.isSelected(row) ? "bg-primary/10 outline-1 outline-primary -outline-offset-1" : ""}`}
-												style={{ opacity: rules.isDimmed(row) ? 0.35 : 1 }}
 											>
 												<td className="py-2 pr-2">
 													<button
@@ -372,23 +360,23 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													))}
 												{selection.slice !== "department" && (
 													<td className="py-2 pl-3 text-right">
-														{selection.slice === "market" && (
-															<button
-																type="button"
-																onClick={() => rules.explore(row)}
-																aria-label={`${m.exploreFacilities}: ${rowName(row)}`}
-																className="mr-3 cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline"
-															>
-																{m.exploreFacilities}
-															</button>
-														)}
 														<button
 															type="button"
 															onClick={() => rules.viewOnMap(row)}
 															aria-label={`${m.viewOnMap}: ${rowName(row)}`}
-															className="cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline"
+															title={`${m.viewOnMap}: ${rowName(row)}`}
+															className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/[0.07] hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
 														>
-															{m.viewOnMap}
+															<svg
+																aria-hidden="true"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																strokeWidth="1.5"
+																className="size-4"
+															>
+																<path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0-15v15m6-12v15" />
+															</svg>
 														</button>
 													</td>
 												)}

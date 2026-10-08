@@ -182,7 +182,6 @@ export interface Messages {
 		filteredBy: string;
 		supplyHidden: string;
 		selectionHelp: string;
-		exploreFacilities: string;
 		measure: string;
 		slice: string;
 		segment: string;

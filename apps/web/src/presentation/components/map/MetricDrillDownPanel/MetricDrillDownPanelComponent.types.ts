@@ -18,9 +18,6 @@ export interface MetricDrillDownSelection {
 	measure: DrillDownMeasure;
 	slice: DrillDownSlice;
 	segment: DrillDownSegment;
-	marketId?: string;
-	marketName?: string;
-	department?: GameDepartment;
 }
 export interface MetricDrillDownFocus {
 	rowId: string;
