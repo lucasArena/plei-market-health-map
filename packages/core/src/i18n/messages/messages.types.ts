@@ -244,12 +244,13 @@ export interface Messages {
 		sectionGames: string;
 		sectionUsers: string;
 		dataAsOf: string;
-		gamesThisPeriod: string;
-		gamesWeeklyRange: string;
+		gamesInPeriod: string;
+		metricConfirmation: string;
+		metricCancellation: string;
+		metricPosted: string;
+		metricVs: string;
+		changePoints: string;
 		gamesComparedWith: string;
-		gamesPriorAverage: string;
-		gamesPriorAverageHint: string;
-		gamesPerWeekRange: string;
 		gamesPointTooltip: string;
 		gamesPointLabel: string;
 		trendDeclining: string;

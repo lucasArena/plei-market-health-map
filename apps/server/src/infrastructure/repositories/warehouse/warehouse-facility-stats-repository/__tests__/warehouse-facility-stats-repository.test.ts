@@ -27,6 +27,9 @@ const RESERVATION_ROW = {
 	scheduled_last_week: "87",
 	scheduled_previous_week: "87",
 	cancelled_last_week: "32",
+	cancelled_previous_week: "30",
+	cancelled_last_28_days: "120",
+	cancelled_previous_28_days: "110",
 	upcoming_next_seven_days: "41",
 	last_played_date: "2026-09-28",
 	weekly_activity: [
@@ -190,6 +193,9 @@ describe("warehouse facility stats mappers", () => {
 			scheduledLastWeek: 87,
 			scheduledPreviousWeek: 87,
 			cancelledLastWeek: 32,
+			cancelledPreviousWeek: 30,
+			cancelledLast28Days: 120,
+			cancelledPrevious28Days: 110,
 			upcomingNextSevenDays: 41,
 			lastPlayedDate: "2026-09-28",
 			weeklyActivity: [

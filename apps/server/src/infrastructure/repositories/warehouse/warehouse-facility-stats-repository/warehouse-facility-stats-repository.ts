@@ -168,6 +168,18 @@ select
       and ${inLastDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as cancelled_last_week,
   count(distinct g.reservation_id) filter (
+    where g.status = 'cancelled'
+      and ${inPreviousDaysSql("g.game_date", "b.today", WEEK_DAYS)}
+  ) as cancelled_previous_week,
+  count(distinct g.reservation_id) filter (
+    where g.status = 'cancelled'
+      and g.game_date >= b.today - 28 and g.game_date < b.today
+  ) as cancelled_last_28_days,
+  count(distinct g.reservation_id) filter (
+    where g.status = 'cancelled'
+      and g.game_date >= b.today - 56 and g.game_date < b.today - 28
+  ) as cancelled_previous_28_days,
+  count(distinct g.reservation_id) filter (
     where g.status <> 'cancelled' and g.game_date > b.today and g.game_date <= b.today + 7
   ) as upcoming_next_seven_days,
   (select game_date from last_played) as last_played_date,
@@ -278,6 +290,9 @@ export function toReservationStats(
 		scheduledLastWeek: Number(row.scheduled_last_week),
 		scheduledPreviousWeek: Number(row.scheduled_previous_week),
 		cancelledLastWeek: Number(row.cancelled_last_week),
+		cancelledPreviousWeek: Number(row.cancelled_previous_week),
+		cancelledLast28Days: Number(row.cancelled_last_28_days),
+		cancelledPrevious28Days: Number(row.cancelled_previous_28_days),
 		upcomingNextSevenDays: Number(row.upcoming_next_seven_days),
 		lastPlayedDate: row.last_played_date,
 		weeklyActivity: row.weekly_activity.map((item) => ({

@@ -2,6 +2,9 @@
 
 import { useCallback, useId, useState } from "react";
 import {
+	AXIS_LABEL_CHAR_WIDTH,
+	AXIS_LABEL_PADDING,
+	CHART_AXIS,
 	CHART_BASELINE,
 	CHART_BOTTOM,
 	CHART_HEIGHT,
@@ -43,15 +46,22 @@ export function smoothPath(points: ChartPoint[]): string {
 	return [`M ${point(first)}`, ...segments].join(" ");
 }
 
-export function buildGeometry(values: number[], benchmark: number | null): GamesTrendGeometry {
-	const domain = benchmark === null ? values : [...values, benchmark];
-	const low = Math.min(...domain);
-	const high = Math.max(...domain);
+export function niceAxisMax(values: number[]): number | null {
+	const high = Math.max(0, ...values);
+	if (high <= 0) return null;
+	const step = Math.max(1, 10 ** Math.floor(Math.log10(high)) / 2);
+	return Math.ceil(high / step) * step;
+}
+
+export function buildGeometry(values: number[], axisMax: number | null): GamesTrendGeometry {
+	const low = Math.min(...values);
+	const high = axisMax ?? Math.max(...values);
+	const top = axisMax === null ? CHART_TOP : CHART_AXIS;
 	const span = high - low;
 	const toY = (value: number) =>
 		span === 0
 			? (CHART_TOP + CHART_BOTTOM) / 2
-			: CHART_BOTTOM - ((value - low) / span) * (CHART_BOTTOM - CHART_TOP);
+			: CHART_BOTTOM - ((value - low) / span) * (CHART_BOTTOM - top);
 	const points = values.map((value, index) => ({
 		x: ((index + 0.5) / values.length) * CHART_WIDTH,
 		y: toY(value),
@@ -63,7 +73,11 @@ export function buildGeometry(values: number[], benchmark: number | null): Games
 		first && last
 			? `${linePath} L ${round(last.x)} ${CHART_BASELINE} L ${round(first.x)} ${CHART_BASELINE} Z`
 			: "";
-	return { linePath, areaPath, benchmarkY: benchmark === null ? null : toY(benchmark), points };
+	return { linePath, areaPath, axisY: axisMax === null ? null : CHART_AXIS, points };
+}
+
+export function axisLineStart(label: string | null): number {
+	return label ? label.length * AXIS_LABEL_CHAR_WIDTH + AXIS_LABEL_PADDING : 0;
 }
 
 export function tooltipAlign(index: number, count: number): TooltipAlign {
@@ -78,7 +92,7 @@ export function useGamesTrendChartRules({ view }: GamesTrendChartProps) {
 	const [activeIndex, setActiveIndex] = useState(lastIndex);
 	const geometry = buildGeometry(
 		view.points.map((item) => item.value),
-		view.benchmark,
+		view.axisMax,
 	);
 	const index = Math.min(activeIndex, lastIndex);
 	const active = view.points[index];
@@ -90,6 +104,7 @@ export function useGamesTrendChartRules({ view }: GamesTrendChartProps) {
 		active,
 		activePoint,
 		align: tooltipAlign(index, view.points.length),
+		axisStart: axisLineStart(view.axisLabel),
 		chartHeight: CHART_HEIGHT,
 		chartWidth: CHART_WIDTH,
 		baselineY: CHART_BASELINE,

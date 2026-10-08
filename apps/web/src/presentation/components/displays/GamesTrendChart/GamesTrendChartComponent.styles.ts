@@ -1,4 +1,5 @@
 import type {
+	GamesMetricTone,
 	GamesTrendColors,
 	GamesTrendDirection,
 	TooltipAlign,
@@ -8,11 +9,19 @@ export const CHART_WIDTH = 376;
 
 export const CHART_HEIGHT = 96;
 
+export const CHART_AXIS = 15;
+
+export const AXIS_LEFT = 14;
+
+export const AXIS_LABEL_CHAR_WIDTH = 7;
+
+export const AXIS_LABEL_PADDING = 10;
+
 export const CHART_TOP = 22;
 
 export const CHART_BOTTOM = 65.5;
 
-export const CHART_BASELINE = 84.5;
+export const CHART_BASELINE = 85;
 
 export const GAMES_TREND_COLORS: Record<GamesTrendDirection, GamesTrendColors> = {
 	down: {
@@ -51,4 +60,10 @@ export const TOOLTIP_ALIGN_CLASS: Record<TooltipAlign, string> = {
 	start: "translate-x-0",
 	center: "-translate-x-1/2",
 	end: "-translate-x-full",
+};
+
+export const METRIC_PILL: Record<GamesMetricTone, string> = {
+	bad: "bg-[#fee2e2] text-[#b91c1c]",
+	good: "bg-[#dcfce7] text-[#166534]",
+	neutral: "bg-[rgba(118,118,128,0.12)] text-[#525866]",
 };

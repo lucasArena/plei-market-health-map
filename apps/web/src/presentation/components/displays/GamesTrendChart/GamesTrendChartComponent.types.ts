@@ -15,16 +15,31 @@ export interface GamesTrendChangeView {
 	direction: GamesTrendDirection;
 }
 
+export type GamesMetricTone = "good" | "bad" | "neutral";
+
+export interface GamesMetricChangeView {
+	label: string;
+	direction: GamesTrendDirection;
+	tone: GamesMetricTone;
+}
+
+export interface GamesMetricView {
+	key: string;
+	label: string;
+	value: string;
+	previous: string;
+	change: GamesMetricChangeView | null;
+}
+
 export interface GamesTrendView {
 	total: string;
 	change: GamesTrendChangeView | null;
 	comparison: string;
 	direction: GamesTrendDirection;
-	benchmark: number | null;
-	benchmarkLabel: string | null;
-	benchmarkHint: string;
-	rangeLabel: string | null;
+	axisMax: number | null;
+	axisLabel: string | null;
 	points: GamesTrendPointView[];
+	metrics: GamesMetricView[];
 }
 
 export interface GamesTrendChartProps {
@@ -39,7 +54,7 @@ export interface ChartPoint {
 export interface GamesTrendGeometry {
 	linePath: string;
 	areaPath: string;
-	benchmarkY: number | null;
+	axisY: number | null;
 	points: ChartPoint[];
 }
 

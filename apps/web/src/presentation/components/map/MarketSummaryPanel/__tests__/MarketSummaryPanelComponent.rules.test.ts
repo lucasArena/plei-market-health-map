@@ -21,8 +21,8 @@ import {
 	buildScopeLine,
 	buildScopeTiles,
 	contributorFactsFrom,
-	splitTilesBySection,
 	useMarketSummaryPanelRules,
+	userTiles,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
@@ -336,7 +336,7 @@ describe("redesigned panel header and footer", () => {
 		).toBe(heading.subtitle);
 	});
 
-	it("puts the confirmation tile under Games, player tiles under Users and charts games played", () => {
+	it("keeps only player tiles for Users, since games and confirmation live in the Games card", () => {
 		const tile = (key: string) => ({
 			key,
 			label: key,
@@ -345,10 +345,9 @@ describe("redesigned panel header and footer", () => {
 			hintDirection: ChangeDirection.flat,
 			isLoading: false,
 		});
-		const split = splitTilesBySection(["played", "confirmation", "players", "activated"].map(tile));
+		const users = userTiles(["played", "confirmation", "players", "activated"].map(tile));
 
-		expect(split.games.map((item) => item.key)).toEqual(["confirmation"]);
-		expect(split.users.map((item) => item.key)).toEqual(["players", "activated"]);
+		expect(users.map((item) => item.key)).toEqual(["players", "activated"]);
 	});
 
 	it("colors the All markets insight by the overall games trend", () => {
@@ -376,30 +375,61 @@ describe("redesigned panel header and footer", () => {
 		expect(buildInsightHeading(true, undefined, "week", messages).tone).toBe("neutral");
 	});
 
-	it("charts eight weeks with the current period highlighted against the prior average", () => {
+	it("charts eight weeks with the current period highlighted and lists the game rates", () => {
 		const weeklyActivity = [46, 45, 44, 43, 45, 44, 42, 41].map((gamesPlayed, index) => ({
 			weekStart: `2026-08-${String(12 + index).padStart(2, "0")}`,
 			gamesPlayed,
 		}));
 		const stats = {
 			...MARKET_SUMMARY.stats,
-			playedLast28Days: 172,
-			playedPrevious28Days: 178,
+			playedLast28Days: 150,
+			playedPrevious28Days: 160,
+			scheduledLast28Days: 200,
+			scheduledPrevious28Days: 192,
+			cancelledLast28Days: 22,
+			cancelledPrevious28Days: 12,
 			weeklyActivity,
 		};
-		const periodMessages = EN_MESSAGES.statsPeriods.month;
 
-		const view = buildGamesTrendView(stats, "month", messages, periodMessages, formatters);
+		const view = buildGamesTrendView(
+			stats,
+			"month",
+			messages,
+			EN_MESSAGES.statsPeriods.month,
+			formatters,
+		);
 
 		expect(view).toMatchObject({
-			total: "172",
-			change: { label: "−3%", direction: "down" },
-			comparison: "vs 178 in the previous 28 days",
+			total: "150",
+			change: { label: "−6%", direction: "down" },
+			comparison: "vs 160 in the previous 28 days",
 			direction: "down",
-			benchmark: 45,
-			benchmarkLabel: "Prior avg 45 games/wk",
-			rangeLabel: "46 to 41 per week",
+			axisMax: 50,
+			axisLabel: "50",
 		});
+		expect(view.metrics).toEqual([
+			{
+				key: "confirmation",
+				label: "Confirmation rate",
+				value: "75%",
+				previous: "vs 83%",
+				change: { label: "−8 pts", direction: "down", tone: "bad" },
+			},
+			{
+				key: "cancellation",
+				label: "Cancellation rate",
+				value: "11%",
+				previous: "vs 6%",
+				change: { label: "+5 pts", direction: "up", tone: "bad" },
+			},
+			{
+				key: "posted",
+				label: "Games posted",
+				value: "200",
+				previous: "vs 192",
+				change: { label: "+4%", direction: "up", tone: "good" },
+			},
+		]);
 		expect(view.points.map((item) => item.isCurrentPeriod)).toEqual([
 			false,
 			false,
@@ -426,52 +456,82 @@ describe("redesigned panel header and footer", () => {
 		).toHaveLength(1);
 	});
 
-	it("drops the benchmark and range without enough weeks and marks flat periods", () => {
-		const short = {
+	it("shows dashes without a baseline and gray pills for flat changes", () => {
+		const empty = {
 			...MARKET_SUMMARY.stats,
 			playedLast28Days: 0,
 			playedPrevious28Days: 0,
+			scheduledLast28Days: 0,
+			scheduledPrevious28Days: 0,
+			cancelledLast28Days: 0,
+			cancelledPrevious28Days: 0,
 			weeklyActivity: [{ weekStart: "2026-09-30", gamesPlayed: 0 }],
 		};
 		const view = buildGamesTrendView(
-			short,
+			empty,
 			"month",
 			messages,
 			EN_MESSAGES.statsPeriods.month,
 			formatters,
 		);
 
-		expect(view).toMatchObject({
-			benchmark: null,
-			benchmarkLabel: null,
-			rangeLabel: null,
-			change: null,
-			direction: "flat",
-		});
-		const growing = buildGamesTrendView(
-			{ ...short, playedLast28Days: 4 },
-			"month",
-			messages,
-			EN_MESSAGES.statsPeriods.month,
-			formatters,
-		);
-		expect(growing.direction).toBe("up");
+		expect(view).toMatchObject({ axisMax: null, axisLabel: null, change: null, direction: "flat" });
+		expect(view.metrics.map((metric) => [metric.value, metric.previous, metric.change])).toEqual([
+			["—", "vs —", null],
+			["—", "vs —", null],
+			["0", "vs 0", null],
+		]);
 		const level = buildGamesTrendView(
-			{ ...short, playedLast28Days: 10, playedPrevious28Days: 10 },
+			{
+				...empty,
+				playedLast28Days: 10,
+				playedPrevious28Days: 10,
+				scheduledLast28Days: 20,
+				scheduledPrevious28Days: 20,
+				cancelledLast28Days: 2,
+				cancelledPrevious28Days: 2,
+			},
 			"month",
 			messages,
 			EN_MESSAGES.statsPeriods.month,
 			formatters,
 		);
 		expect(level.change).toEqual({ label: "0%", direction: "flat" });
-		const up = buildGamesTrendView(
-			{ ...short, playedLast28Days: 12, playedPrevious28Days: 10 },
+		expect(level.metrics.map((metric) => metric.change)).toEqual([
+			{ label: "0 pts", direction: "flat", tone: "neutral" },
+			{ label: "0 pts", direction: "flat", tone: "neutral" },
+			{ label: "0%", direction: "flat", tone: "neutral" },
+		]);
+		const better = buildGamesTrendView(
+			{
+				...empty,
+				playedLast28Days: 18,
+				playedPrevious28Days: 10,
+				scheduledLast28Days: 20,
+				scheduledPrevious28Days: 20,
+				cancelledLast28Days: 1,
+				cancelledPrevious28Days: 4,
+			},
 			"month",
 			messages,
 			EN_MESSAGES.statsPeriods.month,
 			formatters,
 		);
-		expect(up.change).toEqual({ label: "+20%", direction: "up" });
+		expect(better.change).toEqual({ label: "+80%", direction: "up" });
+		expect(better.metrics.map((metric) => metric.change?.tone)).toEqual([
+			"good",
+			"good",
+			"neutral",
+		]);
+		expect(
+			buildGamesTrendView(
+				{ ...empty, playedLast28Days: 4 },
+				"month",
+				messages,
+				EN_MESSAGES.statsPeriods.month,
+				formatters,
+			).direction,
+		).toBe("up");
 	});
 
 	it("says when the data was loaded, and nothing before it loads", () => {

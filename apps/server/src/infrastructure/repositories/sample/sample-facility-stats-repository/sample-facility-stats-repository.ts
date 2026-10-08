@@ -57,6 +57,15 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 				0,
 			),
 			cancelledLastWeek: members.reduce((total, member) => total + member.cancelledLastWeek, 0),
+			cancelledPreviousWeek: members.reduce(
+				(total, member) => total + member.cancelledPreviousWeek,
+				0,
+			),
+			cancelledLast28Days: members.reduce((total, member) => total + member.cancelledLast28Days, 0),
+			cancelledPrevious28Days: members.reduce(
+				(total, member) => total + member.cancelledPrevious28Days,
+				0,
+			),
 			upcomingNextSevenDays: members.reduce(
 				(total, member) => total + member.upcomingNextSevenDays,
 				0,
@@ -163,6 +172,9 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			scheduledLastWeek,
 			scheduledPreviousWeek,
 			cancelledLastWeek,
+			cancelledPreviousWeek: scheduledPreviousWeek - playedPreviousWeek,
+			cancelledLast28Days: scheduledLast28Days - playedLast28Days,
+			cancelledPrevious28Days: scheduledPrevious28Days - playedPrevious28Days,
 			upcomingNextSevenDays: Math.round(random() * 30),
 			lastPlayedDate: month.end,
 			weeklyActivity: [...splitIntoWeeks(playedPrevious28Days), ...weeklyGames].map(

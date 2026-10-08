@@ -2,7 +2,9 @@
 
 import { useGamesTrendChartRules } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.rules";
 import {
+	AXIS_LEFT,
 	GAMES_TREND_COLORS,
+	METRIC_PILL,
 	TOOLTIP_ALIGN_CLASS,
 	TREND_ICON_PATH,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.styles";
@@ -14,6 +16,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 		active,
 		activePoint,
 		align,
+		axisStart,
 		baselineY,
 		chartHeight,
 		chartWidth,
@@ -55,19 +58,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 					<p className="text-xs text-[#525866]">{view.comparison}</p>
 				</div>
 			</div>
-			<div className="flex flex-col gap-1">
-				<div className="flex items-center justify-between gap-3 text-[11px] font-medium">
-					{view.benchmarkLabel && (
-						<span className="flex items-center gap-1.5 text-[#b45309]" title={view.benchmarkHint}>
-							<span
-								aria-hidden="true"
-								className="w-3.5 border-t-2 border-dashed border-[#f59e0b]"
-							/>
-							{view.benchmarkLabel}
-						</span>
-					)}
-					{view.rangeLabel && <span className={`ml-auto ${colors.text}`}>{view.rangeLabel}</span>}
-				</div>
+			<div className="flex flex-col gap-0.5">
 				<div className="relative h-24">
 					<svg
 						viewBox={`0 0 ${chartWidth} ${chartHeight}`}
@@ -82,7 +73,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							</linearGradient>
 						</defs>
 						<line
-							x1="0"
+							x1={AXIS_LEFT}
 							x2={chartWidth}
 							y1={baselineY}
 							y2={baselineY}
@@ -90,17 +81,15 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							strokeDasharray="3 3"
 							vectorEffect="non-scaling-stroke"
 						/>
-						{geometry.benchmarkY !== null && (
+						{geometry.axisY !== null && (
 							<line
-								data-testid="games-trend-benchmark"
-								x1="0"
+								data-testid="games-trend-axis"
+								x1={axisStart}
 								x2={chartWidth}
-								y1={geometry.benchmarkY}
-								y2={geometry.benchmarkY}
-								stroke="#f59e0b"
-								strokeOpacity="0.8"
-								strokeWidth="1.5"
-								strokeDasharray="4 3"
+								y1={geometry.axisY}
+								y2={geometry.axisY}
+								stroke="rgba(60,60,67,0.18)"
+								strokeDasharray="3 3"
 								vectorEffect="non-scaling-stroke"
 							/>
 						)}
@@ -114,6 +103,15 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							vectorEffect="non-scaling-stroke"
 						/>
 					</svg>
+					{view.axisLabel && geometry.axisY !== null && (
+						<span
+							aria-hidden="true"
+							className="absolute left-0 -translate-y-1/2 text-[11px] leading-[13px] text-[rgba(60,60,67,0.6)] tabular-nums"
+							style={{ top: geometry.axisY }}
+						>
+							{view.axisLabel}
+						</span>
+					)}
 					{activePoint && active && (
 						<>
 							<span
@@ -178,6 +176,47 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 					))}
 				</div>
 			</div>
+			{view.metrics.length > 0 && (
+				<dl className="flex flex-col gap-2" data-testid="games-metrics">
+					{view.metrics.map((metric) => (
+						<div key={metric.key} className="flex flex-col gap-2">
+							<span aria-hidden="true" className="h-px bg-[rgba(60,60,67,0.12)]" />
+							<div className="flex items-center gap-3">
+								<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+									<dt className="text-xs font-medium text-[#525866]">{metric.label}</dt>
+									<dd className="flex items-baseline gap-1.5">
+										<span className="text-base font-semibold text-[#1d1d1f] tabular-nums">
+											{metric.value}
+										</span>
+										<span className="text-[11px] text-[#525866] tabular-nums">
+											{metric.previous}
+										</span>
+									</dd>
+								</div>
+								{metric.change && (
+									<span
+										className={`flex shrink-0 items-center gap-1 rounded-full px-[7px] py-0.5 text-xs font-semibold whitespace-nowrap tabular-nums ${METRIC_PILL[metric.change.tone]}`}
+									>
+										<svg
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="2.5"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											aria-hidden="true"
+											className="size-3 shrink-0"
+										>
+											<path d={TREND_ICON_PATH[metric.change.direction]} />
+										</svg>
+										{metric.change.label}
+									</span>
+								)}
+							</div>
+						</div>
+					))}
+				</dl>
+			)}
 		</div>
 	);
 }

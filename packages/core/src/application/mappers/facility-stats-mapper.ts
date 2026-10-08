@@ -96,6 +96,8 @@ function reservationCounts(stats: FacilityReservationStats, period: StatsPeriod)
 			playedPrevious: stats.playedPreviousWeek,
 			scheduled: stats.scheduledLastWeek,
 			scheduledPrevious: stats.scheduledPreviousWeek,
+			cancelled: stats.cancelledLastWeek,
+			cancelledPrevious: stats.cancelledPreviousWeek,
 		};
 	}
 	return {
@@ -105,6 +107,8 @@ function reservationCounts(stats: FacilityReservationStats, period: StatsPeriod)
 		playedPrevious: stats.playedPrevious28Days,
 		scheduled: stats.scheduledLast28Days,
 		scheduledPrevious: stats.scheduledPrevious28Days,
+		cancelled: stats.cancelledLast28Days,
+		cancelledPrevious: stats.cancelledPrevious28Days,
 	};
 }
 
@@ -112,11 +116,20 @@ export function toReservationPeriodView(
 	stats: FacilityReservationStats,
 	period: StatsPeriod,
 ): ReservationPeriodView {
-	const { start, end, played, playedPrevious, scheduled, scheduledPrevious } = reservationCounts(
-		stats,
-		period,
-	);
+	const {
+		start,
+		end,
+		played,
+		playedPrevious,
+		scheduled,
+		scheduledPrevious,
+		cancelled,
+		cancelledPrevious,
+	} = reservationCounts(stats, period);
 	const current = confirmationRate(played, scheduled);
+	const previous = confirmationRate(playedPrevious, scheduledPrevious);
+	const cancellation = confirmationRate(cancelled, scheduled);
+	const cancellationPrevious = confirmationRate(cancelledPrevious, scheduledPrevious);
 	return {
 		period,
 		start,
@@ -125,10 +138,14 @@ export function toReservationPeriodView(
 		playedPrevious,
 		playedChangePercent: percentChange(played, playedPrevious),
 		confirmationRate: current,
-		confirmationRateChangePoints: changePoints(
-			current,
-			confirmationRate(playedPrevious, scheduledPrevious),
-		),
+		confirmationRatePrevious: previous,
+		confirmationRateChangePoints: changePoints(current, previous),
+		scheduled,
+		scheduledPrevious,
+		scheduledChangePercent: percentChange(scheduled, scheduledPrevious),
+		cancellationRate: cancellation,
+		cancellationRatePrevious: cancellationPrevious,
+		cancellationRateChangePoints: changePoints(cancellation, cancellationPrevious),
 	};
 }
 

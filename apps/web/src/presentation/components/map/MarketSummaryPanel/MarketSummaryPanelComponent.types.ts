@@ -76,13 +76,9 @@ export interface MarketSummaryMetricsProps {
 	isRedesigned: boolean;
 	messages: MarketSummaryMessages;
 	rankingsEmptyLabel: string;
-	tiles: MarketSummarySectionTiles;
+	gamesTitle: string;
+	userTiles: FacilityStatTile[];
 	view: MarketSummaryViewModel;
-}
-
-export interface MarketSummarySectionTiles {
-	games: FacilityStatTile[];
-	users: FacilityStatTile[];
 }
 
 export interface MarketSummaryHeaderProps {

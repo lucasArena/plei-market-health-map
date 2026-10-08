@@ -9,6 +9,7 @@ import {
 	type MarketSummaryScopeView,
 	type MarketSummaryView,
 	type OverallGamesTrend,
+	type ReservationPeriodView,
 	STATS_PERIOD_DAYS,
 	type StatsPeriod,
 	toGamesTrend,
@@ -21,8 +22,12 @@ import { useCallback, useEffect, useMemo } from "react";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
 import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
+import { niceAxisMax } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.rules";
 import type {
+	GamesMetricTone,
+	GamesMetricView,
 	GamesTrendChangeView,
+	GamesTrendDirection,
 	GamesTrendView,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
 import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
@@ -49,7 +54,6 @@ import type {
 	MarketSummaryInsightHeading,
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
-	MarketSummarySectionTiles,
 	MarketSummaryViewModel,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
@@ -322,29 +326,118 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
-const GAME_TILE_KEYS: readonly string[] = ["confirmation"];
+const GAMES_CARD_TILE_KEYS: readonly string[] = ["played", "confirmation"];
 
-const CHARTED_TILE_KEYS: readonly string[] = ["played"];
-
-export function splitTilesBySection(tiles: FacilityStatTile[]): MarketSummarySectionTiles {
-	const listed = tiles.filter((tile) => !CHARTED_TILE_KEYS.includes(tile.key));
-	return {
-		games: listed.filter((tile) => GAME_TILE_KEYS.includes(tile.key)),
-		users: listed.filter((tile) => !GAME_TILE_KEYS.includes(tile.key)),
-	};
+export function userTiles(tiles: FacilityStatTile[]): FacilityStatTile[] {
+	return tiles.filter((tile) => !GAMES_CARD_TILE_KEYS.includes(tile.key));
 }
 
 const CURRENT_WEEKS: Record<StatsPeriod, number> = { week: 1, month: 4 };
 
-const PRIOR_WEEKS = 4;
+function signed(value: number, magnitude: string): string {
+	if (value < 0) return `−${magnitude}`;
+	if (value > 0) return `+${magnitude}`;
+	return magnitude;
+}
+
+function directionOfChange(value: number): GamesTrendDirection {
+	if (value < 0) return "down";
+	if (value > 0) return "up";
+	return "flat";
+}
+
+const TONE_WHEN_HIGHER: Record<
+	"higherIsBetter" | "lowerIsBetter",
+	Record<GamesTrendDirection, GamesMetricTone>
+> = {
+	higherIsBetter: { up: "good", down: "bad", flat: "neutral" },
+	lowerIsBetter: { up: "bad", down: "good", flat: "neutral" },
+};
+
+function rateMetric(
+	key: string,
+	label: string,
+	rate: number | null,
+	previousRate: number | null,
+	changePoints: number | null,
+	polarity: keyof typeof TONE_WHEN_HIGHER,
+	messages: MarketSummaryMessages,
+): GamesMetricView {
+	const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value)}%`);
+	const rounded = changePoints === null ? null : Math.round(changePoints);
+	const direction = rounded === null ? null : directionOfChange(rounded);
+	return {
+		key,
+		label,
+		value: percent(rate),
+		previous: formatMessage(messages.metricVs, { value: percent(previousRate) }),
+		change:
+			rounded === null || direction === null
+				? null
+				: {
+						label: formatMessage(messages.changePoints, {
+							change: signed(rounded, String(Math.abs(rounded))),
+						}),
+						direction,
+						tone: TONE_WHEN_HIGHER[polarity][direction],
+					},
+	};
+}
 
 function changeView(percent: number | null, played: number): GamesTrendChangeView | null {
 	if (percent === null) return null;
 	const rounded = Math.round(percent);
-	const magnitude = Math.abs(rounded);
-	if (rounded < 0) return { label: `−${magnitude}%`, direction: "down" };
-	if (rounded > 0) return { label: `+${magnitude}%`, direction: "up" };
-	return { label: played > 0 ? "0%" : "—", direction: "flat" };
+	if (rounded === 0) return { label: played > 0 ? "0%" : "—", direction: "flat" };
+	return {
+		label: `${signed(rounded, String(Math.abs(rounded)))}%`,
+		direction: directionOfChange(rounded),
+	};
+}
+
+export function buildGamesMetrics(
+	games: ReservationPeriodView,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): GamesMetricView[] {
+	const postedChange =
+		games.scheduledChangePercent === null ? null : Math.round(games.scheduledChangePercent);
+	const postedDirection = postedChange === null ? null : directionOfChange(postedChange);
+	return [
+		rateMetric(
+			"confirmation",
+			messages.metricConfirmation,
+			games.confirmationRate,
+			games.confirmationRatePrevious,
+			games.confirmationRateChangePoints,
+			"higherIsBetter",
+			messages,
+		),
+		rateMetric(
+			"cancellation",
+			messages.metricCancellation,
+			games.cancellationRate,
+			games.cancellationRatePrevious,
+			games.cancellationRateChangePoints,
+			"lowerIsBetter",
+			messages,
+		),
+		{
+			key: "posted",
+			label: messages.metricPosted,
+			value: formatters.number.format(games.scheduled),
+			previous: formatMessage(messages.metricVs, {
+				value: formatters.number.format(games.scheduledPrevious),
+			}),
+			change:
+				postedChange === null || postedDirection === null
+					? null
+					: {
+							label: `${signed(postedChange, String(Math.abs(postedChange)))}%`,
+							direction: postedDirection,
+							tone: TONE_WHEN_HIGHER.higherIsBetter[postedDirection],
+						},
+		},
+	];
 }
 
 export function buildGamesTrendView(
@@ -358,13 +451,7 @@ export function buildGamesTrendView(
 	const change = changeView(games.playedChangePercent, games.played);
 	const weeks = stats.weeklyActivity;
 	const firstCurrent = weeks.length - CURRENT_WEEKS[period];
-	const prior = weeks.length >= PRIOR_WEEKS * 2 ? weeks.slice(0, PRIOR_WEEKS) : [];
-	const benchmark =
-		prior.length > 0
-			? Math.round(prior.reduce((sum, week) => sum + week.gamesPlayed, 0) / prior.length)
-			: null;
-	const first = weeks[0];
-	const last = weeks.at(-1);
+	const axisMax = niceAxisMax(weeks.map((week) => week.gamesPlayed));
 	return {
 		total: formatters.number.format(games.played),
 		change,
@@ -373,21 +460,9 @@ export function buildGamesTrendView(
 			comparison: periodMessages.comparison,
 		}),
 		direction: change?.direction ?? (games.played > 0 ? "up" : "flat"),
-		benchmark,
-		benchmarkLabel:
-			benchmark === null
-				? null
-				: formatMessage(messages.gamesPriorAverage, {
-						value: formatters.number.format(benchmark),
-					}),
-		benchmarkHint: messages.gamesPriorAverageHint,
-		rangeLabel:
-			first && last && weeks.length > 1
-				? formatMessage(messages.gamesPerWeekRange, {
-						first: formatters.number.format(first.gamesPlayed),
-						last: formatters.number.format(last.gamesPlayed),
-					})
-				: null,
+		axisMax,
+		axisLabel: axisMax === null ? null : formatters.number.format(axisMax),
+		metrics: buildGamesMetrics(games, messages, formatters),
 		points: weeks.map((week, index) => {
 			const weekLabel = formatters.week.format(utcDate(week.weekStart));
 			const valueLabel = formatters.number.format(week.gamesPlayed);
@@ -708,7 +783,8 @@ export function useMarketSummaryPanelRules({
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
-		sectionTiles: splitTilesBySection(insightsView?.tiles ?? []),
+		userTiles: userTiles(insightsView?.tiles ?? []),
+		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,
 		view: insightsView,
 	};

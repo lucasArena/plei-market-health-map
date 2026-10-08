@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMessage } from "@market-health-map/core/i18n";
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent";
 import { GamesTrendChart } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent";
@@ -120,16 +119,14 @@ function MarketSummaryHeader({
 
 function MarketSummaryMetrics({
 	detailMessages,
+	gamesTitle,
 	gamesTrend,
 	isRedesigned,
 	messages,
 	rankingsEmptyLabel,
-	tiles,
+	userTiles,
 	view,
 }: Readonly<MarketSummaryMetricsProps>) {
-	const gamesRangeLabel = formatMessage(messages.gamesWeeklyRange, {
-		weeks: String(gamesTrend?.points.length ?? 0),
-	});
 	const weeklyActivity = (
 		<WeeklyActivityChart
 			title={detailMessages.weeklyActivity}
@@ -176,18 +173,13 @@ function MarketSummaryMetrics({
 	}
 	return (
 		<>
-			<PanelSection
-				title={messages.gamesThisPeriod}
-				aside={gamesTrend ? gamesRangeLabel : undefined}
-				testId="panel-section-games"
-			>
+			<PanelSection title={gamesTitle} testId="panel-section-games">
 				{gamesTrend ? <GamesTrendChart view={gamesTrend} /> : weeklyActivity}
-				<StatTiles tiles={tiles.games} testIdPrefix="market-stat" />
-				{popularTimes}
 			</PanelSection>
-			{tiles.users.length > 0 && (
+			{popularTimes}
+			{userTiles.length > 0 && (
 				<PanelSection title={messages.sectionUsers} testId="panel-section-users">
-					<StatTiles tiles={tiles.users} testIdPrefix="market-stat" />
+					<StatTiles tiles={userTiles} testIdPrefix="market-stat" />
 				</PanelSection>
 			)}
 		</>
@@ -212,7 +204,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		messages,
 		reportWrongNumber,
 		scopeLine,
-		sectionTiles,
+		gamesTitle,
+		userTiles,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -277,7 +270,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							isRedesigned={isRedesigned}
 							messages={messages}
 							rankingsEmptyLabel={rankingsEmptyLabel}
-							tiles={sectionTiles}
+							gamesTitle={gamesTitle}
+							userTiles={userTiles}
 							view={view}
 						/>
 						<footer className="flex items-start justify-between gap-3 border-t pt-3 text-[11px] text-muted-foreground">

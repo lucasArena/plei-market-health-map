@@ -24,6 +24,9 @@ export interface FacilityReservationStats {
 	scheduledLastWeek: number;
 	scheduledPreviousWeek: number;
 	cancelledLastWeek: number;
+	cancelledPreviousWeek: number;
+	cancelledLast28Days: number;
+	cancelledPrevious28Days: number;
 	upcomingNextSevenDays: number;
 	lastPlayedDate: string | null;
 	weeklyActivity: FacilityWeeklyActivity[];
