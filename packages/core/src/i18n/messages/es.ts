@@ -198,7 +198,6 @@ export const es: Messages = {
 	},
 	drillDown: {
 		title: "Desglose de métricas",
-		close: "Cerrar desglose",
 		expand: "Ampliar desglose",
 		collapse: "Contraer desglose",
 		filteredBy: "Filtrado por",

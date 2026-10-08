@@ -176,7 +176,6 @@ export interface Messages {
 	};
 	drillDown: {
 		title: string;
-		close: string;
 		expand: string;
 		collapse: string;
 		filteredBy: string;

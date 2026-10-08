@@ -202,7 +202,7 @@ describe("MetricDrillDownPanel", () => {
 		rerender(<MetricDrillDownPanel {...props} isOpen={false} isClosing onClosed={onClosed} />);
 		expect(panel).toHaveClass("panel-slide-out");
 		fireEvent(
-			screen.getByRole("button", { name: "Close drill-down" }),
+			screen.getByRole("button", { name: "Expand drill-down" }),
 			new Event("webkitAnimationEnd", { bubbles: true }),
 		);
 		expect(onClosed).not.toHaveBeenCalled();
@@ -345,7 +345,12 @@ describe("MetricDrillDownPanel", () => {
 		rerender(<MetricDrillDownPanel {...props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 	});
-	it("retains selections while closed and returns focus for close and Escape", () => {
+	it("has no close button and focuses the expand button when it opens", () => {
+		setup();
+		expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Expand drill-down" })).toHaveFocus();
+	});
+	it("retains selections while closed and closes with Escape, returning focus to the toggle", () => {
 		const { rerender, props, onClose } = setup();
 		select("Slice", "facility");
 		rerender(<MetricDrillDownPanel {...props} isOpen={false} />);
@@ -356,8 +361,7 @@ describe("MetricDrillDownPanel", () => {
 		expect(onClose).not.toHaveBeenCalled();
 		fireEvent.keyDown(document, { key: "Escape" });
 		expect(onClose).toHaveBeenCalledOnce();
-		fireEvent.click(screen.getByRole("button", { name: "Close drill-down" }));
-		expect(onClose).toHaveBeenCalledTimes(2);
+		expect(screen.getByRole("button", { name: "Trigger" })).toHaveFocus();
 	});
 	it("shows loading, retryable failure, missing data and empty states", () => {
 		pending = true;

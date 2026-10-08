@@ -70,10 +70,10 @@ export function useMetricDrillDownPanelRules({
 	}
 	const [sort, setSort] = useState<DrillDownSort>("count-desc");
 	const panelRef = useRef<HTMLElement>(null);
-	const closeButtonRef = useRef<HTMLButtonElement>(null);
+	const expandButtonRef = useRef<HTMLButtonElement>(null);
 	useEffect(() => {
 		if (!isOpen) return;
-		closeButtonRef.current?.focus();
+		expandButtonRef.current?.focus();
 	}, [isOpen]);
 	useEffect(() => {
 		if (!isOpen) return;
@@ -245,10 +245,6 @@ export function useMetricDrillDownPanelRules({
 		setMapNavigation({ kind: "metric-focus", facilityIds });
 	}
 
-	function close() {
-		onClose();
-		triggerRef.current?.focus();
-	}
 	const heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
 	return {
 		messages: messages.drillDown,
@@ -287,8 +283,7 @@ export function useMetricDrillDownPanelRules({
 		showSupply,
 		viewOnMap,
 		heading,
-		close,
-		closeButtonRef,
+		expandButtonRef,
 		panelRef,
 		sort,
 		setSort,
