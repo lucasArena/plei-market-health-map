@@ -1,4 +1,12 @@
-import type { FacilityPointView } from "@market-health-map/core/application";
+import type {
+	FacilityPointView,
+	GetMetricDrillDownInput,
+} from "@market-health-map/core/application";
+import {
+	aggregateCountDrillDown,
+	drillDownWindow,
+	factsFromFacilityPoints,
+} from "@market-health-map/core/application";
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { createRef } from "react";
 import { renderWithMessages } from "@/application/test/render-with-messages";
@@ -36,7 +44,34 @@ vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderCo
 	useMapScope: () => ({ scope, period, setMapNavigation: navigate, setMetricFocus }),
 }));
 vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
-	useFacilityListAll: () => ({ data, isPending: pending, isError: failed, refetch: retry }),
+	useFacilityListAll: () => ({ data, isPending: false, isError: false, refetch: vi.fn() }),
+}));
+vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
+	useMetricDrillDown: (input: GetMetricDrillDownInput & { enabled?: boolean }) => {
+		if (!input.enabled) {
+			return { data: undefined, isPending: false, isError: false, refetch: retry };
+		}
+		if (pending) return { data: undefined, isPending: true, isError: false, refetch: retry };
+		if (failed) return { data: undefined, isPending: false, isError: true, refetch: retry };
+		const { start, end } = drillDownWindow(
+			new Date("2026-10-08T12:00:00Z"),
+			"America/New_York",
+			input.range,
+		);
+		const view = aggregateCountDrillDown({
+			facilities: factsFromFacilityPoints(data, input.range === "7d" ? "7d" : "28d"),
+			measure: input.measure,
+			slice: input.slice,
+			marketId: input.marketId,
+			facilityId: input.facilityId,
+			department: input.department,
+			gameDepartments: input.departments,
+			start,
+			end,
+			range: input.range,
+		});
+		return { data: view, isPending: false, isError: false, refetch: retry };
+	},
 }));
 function setup(isOpen = true) {
 	const onClose = vi.fn();
@@ -73,6 +108,11 @@ function select(name: string, value: string) {
 		facility: "Facility",
 		department: "Department",
 		none: "None",
+		"7d": "7D",
+		"28d": "28D",
+		"90d": "90D",
+		"6m": "6M",
+		"12m": "12M",
 	};
 	fireEvent.click(screen.getByRole("combobox", { name }));
 	fireEvent.click(screen.getByRole("option", { name: labels[value as keyof typeof labels] }));
@@ -344,6 +384,15 @@ describe("MetricDrillDownPanel", () => {
 		scope = { kind: "all" };
 		rerender(<MetricDrillDownPanel {...props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+	});
+	it("defaults the date range from the map period and supports longer ranges", () => {
+		const { props, rerender } = setup();
+		expect(screen.getByRole("combobox", { name: "Date range" })).toHaveTextContent("28D");
+		select("Date range", "90d");
+		expect(screen.getByRole("combobox", { name: "Date range" })).toHaveTextContent("90D");
+		period = "week";
+		rerender(<MetricDrillDownPanel {...props} />);
+		expect(screen.getByRole("combobox", { name: "Date range" })).toHaveTextContent("7D");
 	});
 	it("has no close button and focuses the expand button when it opens", () => {
 		setup();

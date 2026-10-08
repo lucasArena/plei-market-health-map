@@ -2,17 +2,15 @@
 
 import type {
 	DrillDownMeasure,
+	DrillDownRange,
 	DrillDownSegment,
 	DrillDownSlice,
 	MetricDrillDownRow,
+	MetricDrillDownView,
 } from "@market-health-map/core/application";
-import {
-	DRILL_DOWN_DEPARTMENTS,
-	makeGetMetricDrillDown,
-} from "@market-health-map/core/application";
+import { DRILL_DOWN_DEPARTMENTS } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
-import { type AnimationEvent, useEffect, useMemo, useRef, useState } from "react";
-import { browserTimeZone } from "@/infrastructure/time/stats-day";
+import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type {
 	DrillDownChartRow,
@@ -24,8 +22,21 @@ import type {
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
+import { useMetricDrillDown } from "@/presentation/hooks/use-metric/use-metric-drill-down";
 
-const getMetricDrillDown = makeGetMetricDrillDown();
+function rangeFromPeriod(period: string): DrillDownRange {
+	return period === "week" ? "7d" : "28d";
+}
+
+const EMPTY_VIEW: MetricDrillDownView = {
+	total: 0,
+	rows: [],
+	start: "1970-01-01",
+	end: "1970-01-01",
+	measure: "games",
+	range: "28d",
+	kind: "count",
+};
 
 export function useMetricDrillDownPanelRules({
 	isOpen,
@@ -36,7 +47,7 @@ export function useMetricDrillDownPanelRules({
 }: MetricDrillDownPanelProps) {
 	const { scope, period, setMapNavigation, setMetricFocus } = useMapScope();
 	const { messages, locale } = useMessages();
-	const query = useFacilityListAll();
+	const facilitiesQuery = useFacilityListAll();
 	const layers = useMapLayers();
 	const gameDepartments = layers?.gameDepartments;
 	const showSupply = layers?.showActiveFacilities ?? true;
@@ -47,6 +58,12 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const [range, setRangeState] = useState<DrillDownRange>(() => rangeFromPeriod(period));
+	const [previousPeriod, setPreviousPeriod] = useState(period);
+	if (previousPeriod !== period) {
+		setPreviousPeriod(period);
+		setRangeState(rangeFromPeriod(period));
+	}
 	const [focus, setFocus] = useState<MetricDrillDownFocus | null>(null);
 	const [previousDepartments, setPreviousDepartments] = useState(departmentKey);
 	if (previousDepartments !== departmentKey) {
@@ -90,20 +107,17 @@ export function useMetricDrillDownPanelRules({
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
 	}, [isOpen, isExpanded, onClose, triggerRef]);
-	const view = useMemo(
-		() =>
-			getMetricDrillDown({
-				facilities: showSupply ? (query.data ?? []) : [],
-				gameDepartments,
-				period,
-				...selection,
-				marketId: scope.kind === "market" ? scope.id : undefined,
-				facilityId: scope.kind === "facility" ? scope.id : undefined,
-				now: new Date(),
-				timeZone: browserTimeZone(),
-			}),
-		[period, query.data, scope, selection, gameDepartments, showSupply],
-	);
+	const query = useMetricDrillDown({
+		measure: selection.measure,
+		range,
+		slice: selection.slice,
+		segment: selection.segment,
+		marketId: scope.kind === "market" ? scope.id : undefined,
+		facilityId: scope.kind === "facility" ? scope.id : undefined,
+		departments: gameDepartments,
+		enabled: isOpen && showSupply,
+	});
+	const view = showSupply ? (query.data ?? EMPTY_VIEW) : EMPTY_VIEW;
 	const focusedRow = view.rows.find((row) => row.id === focus?.rowId);
 	const focusedValue = focus?.department
 		? (focusedRow?.departments?.[focus.department] ?? null)
@@ -114,7 +128,7 @@ export function useMetricDrillDownPanelRules({
 			setMetricFocus(null);
 			return;
 		}
-		const facilityIds = (query.data ?? [])
+		const facilityIds = (facilitiesQuery.data ?? [])
 			.filter(
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
@@ -126,7 +140,7 @@ export function useMetricDrillDownPanelRules({
 		const department =
 			selection.slice === "department" ? (focusedRow.id as GameDepartment) : focus?.department;
 		setMetricFocus({ facilityIds, department });
-	}, [focusedRow, query.data, scope, selection.slice, focus?.department, setMetricFocus]);
+	}, [focusedRow, facilitiesQuery.data, scope, selection.slice, focus?.department, setMetricFocus]);
 	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
 	function toggleFocus(row: MetricDrillDownRow, department?: GameDepartment) {
 		setFocus((current) =>
@@ -233,8 +247,12 @@ export function useMetricDrillDownPanelRules({
 		setFocus(null);
 		setSelection((current) => ({ ...current, segment: next }));
 	}
+	function setRange(next: DrillDownRange) {
+		setFocus(null);
+		setRangeState(next);
+	}
 	function viewOnMap(row: MetricDrillDownRow) {
-		const facilityIds = (query.data ?? [])
+		const facilityIds = (facilitiesQuery.data ?? [])
 			.filter(
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
@@ -249,11 +267,13 @@ export function useMetricDrillDownPanelRules({
 	return {
 		messages: messages.drillDown,
 		selection,
+		range,
 		segment,
 		canSegment,
 		setMeasure,
 		setSlice,
 		setSegment,
+		setRange,
 		rows,
 		chartRows,
 		tooltipAlignment,
@@ -288,8 +308,8 @@ export function useMetricDrillDownPanelRules({
 		sort,
 		setSort,
 		dateRange: `${date.format(new Date(`${view.start}T00:00:00Z`))} – ${date.format(new Date(`${view.end}T00:00:00Z`))}`,
-		isLoading: query.isPending,
-		isError: query.isError,
+		isLoading: showSupply && query.isPending,
+		isError: showSupply && query.isError,
 		retry: () => void query.refetch(),
 		isEmpty: view.rows.length === 0 || view.total === 0,
 		incomplete:

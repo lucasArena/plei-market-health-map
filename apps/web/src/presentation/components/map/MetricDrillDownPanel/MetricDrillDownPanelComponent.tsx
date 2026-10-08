@@ -2,6 +2,7 @@
 
 import type {
 	DrillDownMeasure,
+	DrillDownRange,
 	DrillDownSegment,
 	DrillDownSlice,
 } from "@market-health-map/core/application";
@@ -94,7 +95,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					<p className="mt-1 text-xs text-muted-foreground">{m.selectionHelp}</p>
 				</div>
 
-				<div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-3">
+				<div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-2">
 					<MapMetricSelect
 						label={m.measure}
 						help={m.measureHelp}
@@ -103,6 +104,20 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						options={[
 							{ value: "games", label: m.games },
 							{ value: "active-facilities", label: m.activeFacilities },
+						]}
+					/>
+					<MapMetricSelect
+						label={m.range}
+						help={m.rangeHelp}
+						value={rules.range}
+						alignRight
+						onChange={(value) => rules.setRange(value as DrillDownRange)}
+						options={[
+							{ value: "7d", label: m.range7d },
+							{ value: "28d", label: m.range28d },
+							{ value: "90d", label: m.range90d },
+							{ value: "6m", label: m.range6m },
+							{ value: "12m", label: m.range12m },
 						]}
 					/>
 					<MapMetricSelect

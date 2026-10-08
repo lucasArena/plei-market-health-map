@@ -184,9 +184,11 @@ export interface Messages {
 		measure: string;
 		slice: string;
 		segment: string;
+		range: string;
 		measureHelp: string;
 		sliceHelp: string;
 		segmentHelp: string;
+		rangeHelp: string;
 		help: string;
 		games: string;
 		activeFacilities: string;
@@ -194,6 +196,11 @@ export interface Messages {
 		facility: string;
 		department: string;
 		none: string;
+		range7d: string;
+		range28d: string;
+		range90d: string;
+		range6m: string;
+		range12m: string;
 		selectedDepartmentHelp: string;
 		segmentUnavailable: string;
 		topTen: string;

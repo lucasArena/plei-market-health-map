@@ -207,9 +207,11 @@ export const es: Messages = {
 		measure: "Medida",
 		slice: "Agrupación",
 		segment: "Segmento",
+		range: "Rango de fechas",
 		measureHelp: "¿Qué estamos midiendo?",
 		sliceHelp: "Agrupar los resultados por…",
 		segmentHelp: "Dividir cada grupo por…",
+		rangeHelp: "Días completos hasta ayer en tu zona horaria.",
 		help: "La agrupación crea grupos. El segmento colorea las partes de cada grupo.",
 		games: "Partidos jugados",
 		activeFacilities: "Instalaciones activas",
@@ -217,6 +219,11 @@ export const es: Messages = {
 		facility: "Instalación",
 		department: "Departamento",
 		none: "Ninguno",
+		range7d: "7D",
+		range28d: "28D",
+		range90d: "90D",
+		range6m: "6M",
+		range12m: "12M",
 		selectedDepartmentHelp:
 			"Se muestra el departamento seleccionado. Vuelve para comparar departamentos otra vez.",
 		segmentUnavailable:

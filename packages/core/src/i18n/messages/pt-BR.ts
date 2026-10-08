@@ -205,9 +205,11 @@ export const ptBR: Messages = {
 		measure: "Medida",
 		slice: "Agrupamento",
 		segment: "Segmento",
+		range: "Intervalo de datas",
 		measureHelp: "O que estamos medindo?",
 		sliceHelp: "Agrupar os resultados por…",
 		segmentHelp: "Dividir cada grupo por…",
+		rangeHelp: "Dias completos até ontem no seu fuso horário.",
 		help: "O agrupamento cria grupos. O segmento colore as partes de cada grupo.",
 		games: "Jogos realizados",
 		activeFacilities: "Instalações ativas",
@@ -215,6 +217,11 @@ export const ptBR: Messages = {
 		facility: "Instalação",
 		department: "Departamento",
 		none: "Nenhum",
+		range7d: "7D",
+		range28d: "28D",
+		range90d: "90D",
+		range6m: "6M",
+		range12m: "12M",
 		selectedDepartmentHelp:
 			"Exibindo o departamento selecionado. Volte para comparar departamentos novamente.",
 		segmentUnavailable:

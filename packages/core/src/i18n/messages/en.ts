@@ -201,9 +201,11 @@ export const en: Messages = {
 		measure: "Measure",
 		slice: "Slice",
 		segment: "Segment",
+		range: "Date range",
 		measureHelp: "What are we measuring?",
 		sliceHelp: "Group the results by…",
 		segmentHelp: "Split each group into…",
+		rangeHelp: "Complete days ending yesterday in your time zone.",
 		help: "Slice creates groups. Segment colors the parts within each group.",
 		games: "Games played",
 		activeFacilities: "Active facilities",
@@ -211,6 +213,11 @@ export const en: Messages = {
 		facility: "Facility",
 		department: "Department",
 		none: "None",
+		range7d: "7D",
+		range28d: "28D",
+		range90d: "90D",
+		range6m: "6M",
+		range12m: "12M",
 		selectedDepartmentHelp:
 			"Showing the selected department. Go back to compare departments again.",
 		segmentUnavailable:
