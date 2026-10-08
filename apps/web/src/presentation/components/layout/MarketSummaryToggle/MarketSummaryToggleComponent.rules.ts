@@ -2,13 +2,14 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { activityTracker } from "@/infrastructure/activity/activity-tracker";
 import type { MarketSummaryToggleState } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useSidePanels } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
 import { useIdleMarketPrefetch } from "@/presentation/hooks/use-market/use-idle-market-prefetch";
 import { useMarketSummaryFilters } from "@/presentation/hooks/use-market/use-market-summary-filters";
@@ -27,6 +28,8 @@ export function useMarketSummaryToggleRules() {
 	const queryClient = useQueryClient();
 	const { period, scope } = useMapScope();
 	const { departments } = useMarketSummaryFilters();
+	const opensOnLoad = useFeatureFlag("insights-panel-v3");
+	const hasOpenedOnLoad = useRef(false);
 	useIdleMarketPrefetch(isOnMap);
 
 	const prefetchScope = useCallback(() => {
@@ -56,6 +59,12 @@ export function useMarketSummaryToggleRules() {
 	useEffect(() => {
 		if (!isOnMap) setState("closed");
 	}, [isOnMap]);
+
+	useEffect(() => {
+		if (!opensOnLoad || !isOnMap || hasOpenedOnLoad.current) return;
+		hasOpenedOnLoad.current = true;
+		setState("open");
+	}, [isOnMap, opensOnLoad]);
 
 	return {
 		prefetchScope,

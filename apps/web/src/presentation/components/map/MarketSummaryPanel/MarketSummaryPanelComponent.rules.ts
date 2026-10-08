@@ -8,14 +8,16 @@ import {
 	type MarketSummaryMarketRankView,
 	type MarketSummaryScopeView,
 	type MarketSummaryView,
+	STATS_PERIOD_DAYS,
 	type StatsPeriod,
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@market-health-map/core/application";
-import type { GameDepartment } from "@market-health-map/core/domain";
+import { type GameDepartment, localDay, statsWindow } from "@market-health-map/core/domain";
 import { formatMessage, type StatsPeriodMessages } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
+import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import {
 	activityPeriodFor,
@@ -35,6 +37,7 @@ import {
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import type {
 	MarketRankRowView,
+	MarketSummaryComparison,
 	MarketSummaryHeading,
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
@@ -45,6 +48,8 @@ import type { MapScope } from "@/presentation/components/providers/MapScopeProvi
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityPlayerStats } from "@/presentation/hooks/use-facility/use-facility-player-stats";
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
+import { requestFeedback } from "@/presentation/hooks/use-feedback/feedback-requests";
 import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
 import { useMarketPlayerStats } from "@/presentation/hooks/use-market/use-market-player-stats";
 import { useMarketSummary } from "@/presentation/hooks/use-market/use-market-summary";
@@ -308,6 +313,68 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
+function utcDate(isoDate: string): Date {
+	return new Date(`${isoDate}T00:00:00Z`);
+}
+
+export function buildComparisonRange(
+	today: string,
+	period: StatsPeriod,
+	locale: string,
+	messages: MarketSummaryMessages,
+): MarketSummaryComparison {
+	const window = statsWindow(today, STATS_PERIOD_DAYS[period]);
+	const withYear = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC",
+	});
+	const withoutYear = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		day: "numeric",
+		timeZone: "UTC",
+	});
+	return {
+		current: withYear.formatRange(utcDate(window.start), utcDate(window.end)),
+		previous: formatMessage(messages.comparedWith, {
+			range: withoutYear.formatRange(utcDate(window.previousStart), utcDate(window.previousEnd)),
+		}),
+	};
+}
+
+export function buildScopeLine(
+	scope: MapScope,
+	counts: MarketSummaryScopeView | undefined,
+	heading: MarketSummaryHeading,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): string {
+	if (scope.kind === "facility" || !counts) return heading.subtitle;
+	const facilities = formatMessage(messages.facilitiesActive, {
+		active: formatters.number.format(counts.activeFacilityCount),
+		total: formatters.number.format(counts.facilityCount),
+	});
+	if (scope.kind === "market") return facilities;
+	const markets = formatMessage(messages.marketsActive, {
+		active: formatters.number.format(counts.activeMarketCount),
+		total: formatters.number.format(counts.marketCount),
+	});
+	return formatMessage(messages.scopeCounts, { facilities, markets });
+}
+
+export function buildDataAsOf(
+	updatedAt: number | undefined,
+	locale: string,
+	messages: MarketSummaryMessages,
+): string | null {
+	if (!updatedAt) return null;
+	const time = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
+		new Date(updatedAt),
+	);
+	return formatMessage(messages.dataAsOf, { time });
+}
+
 export function buildMarketAiSubject(
 	scope: MapScope,
 	heading: MarketSummaryHeading,
@@ -353,6 +420,7 @@ export function useMarketSummaryPanelRules({
 	const marketId = scope.kind === "market" ? scope.id : null;
 	const isMarketScope = facilityId === null;
 	const { departments } = useMarketSummaryFilters();
+	const isRedesigned = useFeatureFlag("insights-panel-v3");
 	const summaryQuery = useMarketSummary(marketId, isMarketScope, departments);
 	const insightsQuery = useMarketGameInsights(
 		marketId,
@@ -448,6 +516,25 @@ export function useMarketSummaryPanelRules({
 		departments,
 	]);
 	const status = resolveDetailStatus(reportQuery.isPending, reportQuery.isError);
+	const comparison = useMemo(
+		() =>
+			buildComparisonRange(
+				localDay(new Date(), browserTimeZone()),
+				period,
+				locale,
+				messages.marketSummary,
+			),
+		[locale, messages.marketSummary, period],
+	);
+	const scopeLine = buildScopeLine(
+		scope,
+		isMarketScope ? summary?.periods[period].scope : undefined,
+		heading,
+		messages.marketSummary,
+		formatters,
+	);
+	const dataAsOf = buildDataAsOf(reportQuery.dataUpdatedAt, locale, messages.marketSummary);
+	const reportWrongNumber = useCallback(() => requestFeedback("bug"), []);
 
 	const handleAnimationEnd = useCallback(() => {
 		if (isClosing) onClosed();
@@ -467,7 +554,12 @@ export function useMarketSummaryPanelRules({
 
 	return {
 		aiContext,
+		comparison,
+		dataAsOf,
+		isRedesigned,
 		rankingsEmptyLabel,
+		reportWrongNumber,
+		scopeLine,
 		detailMessages: messages.facilityDetail,
 		handleAnimationEnd,
 		heading,

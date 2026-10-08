@@ -267,6 +267,14 @@ export const es: Messages = {
 		marketSubtitle: "Resumen del mercado, {span}",
 		facilitySubtitle: "Sede en {market}, {span}",
 		marketSummaryNone: "No se jugaron partidos en este mercado {within}.",
+		scopeCounts: "{facilities} · {markets}",
+		facilitiesActive: "{active} de {total} instalaciones activas",
+		marketsActive: "{active} de {total} mercados activos",
+		comparedWith: "vs {range}",
+		showMore: "Mostrar más",
+		showLess: "Mostrar menos",
+		dataAsOf: "Datos al {time}",
+		reportWrongNumber: "Reportar un número incorrecto",
 	},
 	feedback: {
 		open: "Enviar comentarios",
@@ -365,6 +373,8 @@ export const es: Messages = {
 		requires: "Solo tiene efecto mientras {flag} esté activada.",
 		waiting: "Activada, esperando {flag}",
 		descriptions: {
+			"insights-panel-v3":
+				"Abrir el nuevo panel de insights al cargar, con franja de salud, fechas de comparación y actualización de los datos.",
 			"metric-drill-down":
 				"Explorar partidos e instalaciones activas por mercado, instalación y departamento.",
 			"facility-games-layer":

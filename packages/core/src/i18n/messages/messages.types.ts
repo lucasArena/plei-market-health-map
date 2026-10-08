@@ -237,6 +237,14 @@ export interface Messages {
 		marketSubtitle: string;
 		facilitySubtitle: string;
 		marketSummaryNone: string;
+		scopeCounts: string;
+		facilitiesActive: string;
+		marketsActive: string;
+		comparedWith: string;
+		showMore: string;
+		showLess: string;
+		dataAsOf: string;
+		reportWrongNumber: string;
 	};
 	feedback: {
 		open: string;

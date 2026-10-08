@@ -15,6 +15,11 @@ const mockPrefetchMarket = vi.fn().mockResolvedValue(undefined);
 const mockPrefetchFacility = vi.fn().mockResolvedValue(undefined);
 const mockScope = vi.fn(() => ({ kind: "all" }));
 const mockDepartments = vi.fn((): string[] => []);
+const mockFlag = vi.fn(() => false);
+
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockFlag(),
+}));
 
 vi.mock("@/presentation/hooks/use-market/prefetch-market-summary", () => ({
 	prefetchMarketSummary: (...args: unknown[]) => mockPrefetchMarket(...args),
@@ -58,7 +63,10 @@ function lastPanelProps() {
 }
 
 describe("MarketSummaryToggle", () => {
-	beforeEach(() => panelProps.mockClear());
+	beforeEach(() => {
+		panelProps.mockClear();
+		mockFlag.mockReturnValue(false);
+	});
 
 	it("cycles closed, open, closing and back open", () => {
 		expect(nextToggleState("closed")).toBe("open");
@@ -74,6 +82,17 @@ describe("MarketSummaryToggle", () => {
 		expect(button).toHaveAttribute("aria-expanded", "false");
 		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 		expect(panelProps).not.toHaveBeenCalled();
+	});
+
+	it("opens the panel once on load with the redesigned insights panel", () => {
+		mockFlag.mockReturnValue(true);
+		renderWithMessages(<MarketSummaryToggle />);
+		const button = screen.getByRole("button", { name: "Market summary" });
+
+		expect(button).toHaveAttribute("aria-expanded", "true");
+		fireEvent.click(button);
+		act(() => lastPanelProps().onClosed());
+		expect(button).toHaveAttribute("aria-expanded", "false");
 	});
 
 	it("opens, slides out when pressed again, and unmounts after the animation", () => {

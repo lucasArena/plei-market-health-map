@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
+import { requestFeedback } from "@/presentation/hooks/use-feedback/feedback-requests";
 
 vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
 
@@ -176,6 +177,18 @@ describe("Feedback", () => {
 		expect(screen.getByRole("dialog")).toHaveAttribute("data-state", "closing");
 		fireEvent.click(trigger);
 		expect(screen.getByRole("dialog")).toHaveAttribute("data-state", "open");
+	});
+
+	it("opens straight on the bug form when another part of the app asks for it", () => {
+		renderWidget();
+
+		act(() => requestFeedback("bug"));
+
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+		expect(screen.getByRole("textbox")).toHaveAttribute(
+			"placeholder",
+			"What happened, and what did you expect to happen instead?",
+		);
 	});
 
 	it("ignores animations that are not the panel closing", () => {

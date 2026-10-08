@@ -265,6 +265,14 @@ export const ptBR: Messages = {
 		marketSubtitle: "Resumo do mercado, {span}",
 		facilitySubtitle: "Instalação em {market}, {span}",
 		marketSummaryNone: "Nenhum jogo foi realizado neste mercado {within}.",
+		scopeCounts: "{facilities} · {markets}",
+		facilitiesActive: "{active} de {total} instalações ativas",
+		marketsActive: "{active} de {total} mercados ativos",
+		comparedWith: "vs {range}",
+		showMore: "Mostrar mais",
+		showLess: "Mostrar menos",
+		dataAsOf: "Dados de {time}",
+		reportWrongNumber: "Reportar um número errado",
 	},
 	feedback: {
 		open: "Enviar feedback",
@@ -363,6 +371,8 @@ export const ptBR: Messages = {
 		requires: "Só tem efeito enquanto {flag} estiver ligada.",
 		waiting: "Ligada, aguardando {flag}",
 		descriptions: {
+			"insights-panel-v3":
+				"Abrir o novo painel de insights ao carregar, com faixa de saúde, datas de comparação e atualização dos dados.",
 			"metric-drill-down":
 				"Explorar jogos e instalações ativas por mercado, instalação e departamento.",
 			"facility-games-layer": "Mostrar o seletor de jogos com contagens por grupo e instalação.",
