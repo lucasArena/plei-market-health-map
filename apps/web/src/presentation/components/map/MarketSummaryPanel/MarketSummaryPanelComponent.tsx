@@ -5,6 +5,7 @@ import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummaryS
 import { GamesTrendChart } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent";
 import { HealthStrip } from "@/presentation/components/displays/HealthStrip/HealthStripComponent";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
+import { MetricRows } from "@/presentation/components/displays/MetricRows/MetricRowsComponent";
 import { PanelSection } from "@/presentation/components/displays/PanelSection/PanelSectionComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
@@ -124,7 +125,7 @@ function MarketSummaryMetrics({
 	isRedesigned,
 	messages,
 	rankingsEmptyLabel,
-	userTiles,
+	userMetrics,
 	view,
 }: Readonly<MarketSummaryMetricsProps>) {
 	const weeklyActivity = (
@@ -173,9 +174,9 @@ function MarketSummaryMetrics({
 			<PanelSection title={gamesTitle} testId="panel-section-games">
 				{gamesTrend ? <GamesTrendChart view={gamesTrend} /> : weeklyActivity}
 			</PanelSection>
-			{userTiles.length > 0 && (
+			{userMetrics.length > 0 && (
 				<PanelSection title={messages.sectionUsers} testId="panel-section-users">
-					<StatTiles tiles={userTiles} testIdPrefix="market-stat" />
+					<MetricRows metrics={userMetrics} testId="user-metrics" />
 				</PanelSection>
 			)}
 		</>
@@ -201,7 +202,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		reportWrongNumber,
 		scopeLine,
 		gamesTitle,
-		userTiles,
+		userMetrics,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -267,7 +268,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							messages={messages}
 							rankingsEmptyLabel={rankingsEmptyLabel}
 							gamesTitle={gamesTitle}
-							userTiles={userTiles}
+							userMetrics={userMetrics}
 							view={view}
 						/>
 						<footer className="flex items-start justify-between gap-3 border-t pt-3 text-[11px] text-muted-foreground">

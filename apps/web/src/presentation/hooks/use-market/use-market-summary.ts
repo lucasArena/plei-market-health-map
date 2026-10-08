@@ -33,7 +33,7 @@ export const marketSummaryQueryKey = (
 	] as const;
 
 export function marketSummaryPath(
-	resource: "" | "/players",
+	resource: "" | "/players" | "/audience",
 	marketId: string | null,
 	departments: readonly GameDepartment[] = [],
 ) {

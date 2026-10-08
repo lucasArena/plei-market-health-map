@@ -2,10 +2,13 @@ import type { StatsPeriod } from "@market-health-map/core/application";
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { FACILITY_DETAIL } from "@/application/test/facility-detail";
-import { MARKET_PLAYER_STATS, MARKET_SUMMARY } from "@/application/test/market-summary";
+import {
+	MARKET_AUDIENCE,
+	MARKET_PLAYER_STATS,
+	MARKET_SUMMARY,
+} from "@/application/test/market-summary";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { createDetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
-import { ChangeDirection } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import {
 	buildComparisonRange,
 	buildDataAsOf,
@@ -20,9 +23,9 @@ import {
 	buildScopeHeading,
 	buildScopeLine,
 	buildScopeTiles,
+	buildUserMetrics,
 	contributorFactsFrom,
 	useMarketSummaryPanelRules,
-	userTiles,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
@@ -51,6 +54,10 @@ vi.mock("@/presentation/hooks/use-market/use-market-summary", () => ({
 let mockDepartments: string[] = [];
 vi.mock("@/presentation/hooks/use-market/use-market-summary-filters", () => ({
 	useMarketSummaryFilters: () => ({ departments: mockDepartments }),
+}));
+
+vi.mock("@/presentation/hooks/use-market/use-market-audience", () => ({
+	useMarketAudience: () => ({ data: undefined, isPending: false }),
 }));
 
 vi.mock("@/presentation/hooks/use-market/use-market-player-stats", () => ({
@@ -336,18 +343,53 @@ describe("redesigned panel header and footer", () => {
 		).toBe(heading.subtitle);
 	});
 
-	it("keeps only player tiles for Users, since games and confirmation live in the Games card", () => {
-		const tile = (key: string) => ({
-			key,
-			label: key,
-			value: "1",
-			hint: null,
-			hintDirection: ChangeDirection.flat,
-			isLoading: false,
-		});
-		const users = userTiles(["played", "confirmation", "players", "activated"].map(tile));
+	it("lists active players and registrations first, then active and unique users", () => {
+		const users = buildUserMetrics(
+			MARKET_AUDIENCE,
+			false,
+			MARKET_PLAYER_STATS,
+			false,
+			"month",
+			messages,
+			formatters,
+		);
 
-		expect(users.map((item) => item.key)).toEqual(["players", "activated"]);
+		expect(users.map((row) => [row.label, row.value, row.previous, row.change?.label])).toEqual([
+			["Active players", "24", "vs 20", "+20%"],
+			["New registrations", "450", "vs 500", "−10%"],
+			["Active users", "12,000", "vs 10,000", "+20%"],
+			["Unique users", "126", "vs 120", "+5%"],
+		]);
+		expect(users[1]?.change?.tone).toBe("bad");
+	});
+
+	it("holds a pending row until its data loads and skips what failed", () => {
+		const pending = buildUserMetrics(
+			undefined,
+			true,
+			undefined,
+			true,
+			"week",
+			messages,
+			formatters,
+		);
+		expect(pending.map((row) => [row.key, row.isPending])).toEqual([
+			["activePlayers", true],
+			["registrations", true],
+			["activeUsers", true],
+			["uniqueUsers", true],
+		]);
+		expect(
+			buildUserMetrics(
+				undefined,
+				false,
+				MARKET_PLAYER_STATS,
+				false,
+				"week",
+				messages,
+				formatters,
+			).map((row) => row.key),
+		).toEqual(["activePlayers", "uniqueUsers"]);
 	});
 
 	it("colors the All markets insight by the overall games trend", () => {

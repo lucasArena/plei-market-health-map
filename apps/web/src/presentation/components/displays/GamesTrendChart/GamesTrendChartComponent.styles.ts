@@ -1,5 +1,4 @@
 import type {
-	GamesMetricTone,
 	GamesTrendColors,
 	GamesTrendDirection,
 	TooltipAlign,
@@ -63,12 +62,6 @@ export const TOOLTIP_ALIGN_CLASS: Record<TooltipAlign, string> = {
 	start: "translate-x-0",
 	center: "-translate-x-1/2",
 	end: "-translate-x-full",
-};
-
-export const METRIC_PILL: Record<GamesMetricTone, string> = {
-	bad: "bg-[#fee2e2] text-[#b91c1c]",
-	good: "bg-[#dcfce7] text-[#166534]",
-	neutral: "bg-[rgba(118,118,128,0.12)] text-[#525866]",
 };
 
 export const TOOLTIP_PLACEMENT_CLASS: Record<TooltipPlacement, string> = {

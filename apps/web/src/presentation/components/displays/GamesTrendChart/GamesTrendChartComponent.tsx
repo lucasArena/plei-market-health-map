@@ -4,12 +4,12 @@ import { useGamesTrendChartRules } from "@/presentation/components/displays/Game
 import {
 	AXIS_LEFT,
 	GAMES_TREND_COLORS,
-	METRIC_PILL,
 	TOOLTIP_ALIGN_CLASS,
 	TOOLTIP_PLACEMENT_CLASS,
 	TREND_ICON_PATH,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.styles";
 import type { GamesTrendChartProps } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
+import { MetricRows } from "@/presentation/components/displays/MetricRows/MetricRowsComponent";
 
 export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 	const { view } = props;
@@ -174,47 +174,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 					))}
 				</div>
 			</div>
-			{view.metrics.length > 0 && (
-				<dl className="flex flex-col gap-2" data-testid="games-metrics">
-					{view.metrics.map((metric) => (
-						<div key={metric.key} className="flex flex-col gap-2">
-							<span aria-hidden="true" className="h-px bg-[rgba(60,60,67,0.12)]" />
-							<div className="flex items-center gap-3">
-								<div className="flex min-w-0 flex-1 flex-col gap-0.5">
-									<dt className="text-xs font-medium text-[#525866]">{metric.label}</dt>
-									<dd className="flex items-baseline gap-1.5">
-										<span className="text-base font-semibold text-[#1d1d1f] tabular-nums">
-											{metric.value}
-										</span>
-										<span className="text-[11px] text-[#525866] tabular-nums">
-											{metric.previous}
-										</span>
-									</dd>
-								</div>
-								{metric.change && (
-									<span
-										className={`flex shrink-0 items-center gap-1 rounded-full px-[7px] py-0.5 text-xs font-semibold whitespace-nowrap tabular-nums ${METRIC_PILL[metric.change.tone]}`}
-									>
-										<svg
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="2.5"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											aria-hidden="true"
-											className="size-3 shrink-0"
-										>
-											<path d={TREND_ICON_PATH[metric.change.direction]} />
-										</svg>
-										{metric.change.label}
-									</span>
-								)}
-							</div>
-						</div>
-					))}
-				</dl>
-			)}
+			{view.metrics.length > 0 && <MetricRows metrics={view.metrics} testId="games-metrics" />}
 		</div>
 	);
 }

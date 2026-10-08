@@ -249,6 +249,10 @@ export interface Messages {
 		metricCancellation: string;
 		metricPosted: string;
 		metricVs: string;
+		metricActiveUsers: string;
+		metricUniqueUsers: string;
+		metricActivePlayers: string;
+		metricRegistrations: string;
 		changePoints: string;
 		gamesComparedWith: string;
 		gamesPointTooltip: string;

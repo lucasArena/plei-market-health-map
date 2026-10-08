@@ -4,6 +4,7 @@ import {
 	type FacilityPlayerStatsView,
 	type FacilityReservationDetailView,
 	type FacilityReservationStatsView,
+	type MarketAudienceView,
 	type MarketSummaryFacilityRankView,
 	type MarketSummaryMarketRankView,
 	type MarketSummaryScopeView,
@@ -63,6 +64,7 @@ import { useFacilityPlayerStats } from "@/presentation/hooks/use-facility/use-fa
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
 import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { requestFeedback } from "@/presentation/hooks/use-feedback/feedback-requests";
+import { useMarketAudience } from "@/presentation/hooks/use-market/use-market-audience";
 import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
 import { useMarketPlayerStats } from "@/presentation/hooks/use-market/use-market-player-stats";
 import { useMarketSummary } from "@/presentation/hooks/use-market/use-market-summary";
@@ -326,12 +328,6 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
-const GAMES_CARD_TILE_KEYS: readonly string[] = ["played", "confirmation"];
-
-export function userTiles(tiles: FacilityStatTile[]): FacilityStatTile[] {
-	return tiles.filter((tile) => !GAMES_CARD_TILE_KEYS.includes(tile.key));
-}
-
 const CURRENT_WEEKS: Record<StatsPeriod, number> = { week: 1, month: 4 };
 
 function signed(value: number, magnitude: string): string {
@@ -394,14 +390,100 @@ function changeView(percent: number | null, played: number): GamesTrendChangeVie
 	};
 }
 
+function countMetric(
+	key: string,
+	label: string,
+	value: number,
+	previous: number,
+	changePercent: number | null,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): GamesMetricView {
+	const rounded = changePercent === null ? null : Math.round(changePercent);
+	const direction = rounded === null ? null : directionOfChange(rounded);
+	return {
+		key,
+		label,
+		value: formatters.number.format(value),
+		previous: formatMessage(messages.metricVs, { value: formatters.number.format(previous) }),
+		change:
+			rounded === null || direction === null
+				? null
+				: {
+						label: `${signed(rounded, String(Math.abs(rounded)))}%`,
+						direction,
+						tone: TONE_WHEN_HIGHER.higherIsBetter[direction],
+					},
+	};
+}
+
+function pendingMetric(key: string, label: string): GamesMetricView {
+	return { key, label, value: "", previous: "", change: null, isPending: true };
+}
+
+export function buildUserMetrics(
+	audience: MarketAudienceView | undefined,
+	isAudiencePending: boolean,
+	playerStats: FacilityPlayerStatsView | undefined,
+	isPlayersPending: boolean,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): GamesMetricView[] {
+	const count = (
+		key: string,
+		label: string,
+		values: [value: number, previous: number, changePercent: number | null] | null,
+		isPending: boolean,
+	): GamesMetricView[] => {
+		if (values) return [countMetric(key, label, ...values, messages, formatters)];
+		return isPending ? [pendingMetric(key, label)] : [];
+	};
+	const users = audience?.periods[period];
+	const players = playerStats ? toPlayerPeriodView(playerStats, period) : null;
+	return [
+		...count(
+			"activePlayers",
+			messages.metricActivePlayers,
+			players
+				? [
+						players.activatedPlayers,
+						players.activatedPlayersPrevious,
+						players.activatedPlayersChangePercent,
+					]
+				: null,
+			isPlayersPending,
+		),
+		...count(
+			"registrations",
+			messages.metricRegistrations,
+			users
+				? [users.registrations, users.registrationsPrevious, users.registrationsChangePercent]
+				: null,
+			isAudiencePending,
+		),
+		...count(
+			"activeUsers",
+			messages.metricActiveUsers,
+			users ? [users.activeUsers, users.activeUsersPrevious, users.activeUsersChangePercent] : null,
+			isAudiencePending,
+		),
+		...count(
+			"uniqueUsers",
+			messages.metricUniqueUsers,
+			players
+				? [players.uniquePlayers, players.uniquePlayersPrevious, players.uniquePlayersChangePercent]
+				: null,
+			isPlayersPending,
+		),
+	];
+}
+
 export function buildGamesMetrics(
 	games: ReservationPeriodView,
 	messages: MarketSummaryMessages,
 	formatters: DetailFormatters,
 ): GamesMetricView[] {
-	const postedChange =
-		games.scheduledChangePercent === null ? null : Math.round(games.scheduledChangePercent);
-	const postedDirection = postedChange === null ? null : directionOfChange(postedChange);
 	return [
 		rateMetric(
 			"confirmation",
@@ -421,22 +503,15 @@ export function buildGamesMetrics(
 			"lowerIsBetter",
 			messages,
 		),
-		{
-			key: "posted",
-			label: messages.metricPosted,
-			value: formatters.number.format(games.scheduled),
-			previous: formatMessage(messages.metricVs, {
-				value: formatters.number.format(games.scheduledPrevious),
-			}),
-			change:
-				postedChange === null || postedDirection === null
-					? null
-					: {
-							label: `${signed(postedChange, String(Math.abs(postedChange)))}%`,
-							direction: postedDirection,
-							tone: TONE_WHEN_HIGHER.higherIsBetter[postedDirection],
-						},
-		},
+		countMetric(
+			"posted",
+			messages.metricPosted,
+			games.scheduled,
+			games.scheduledPrevious,
+			games.scheduledChangePercent,
+			messages,
+			formatters,
+		),
 	];
 }
 
@@ -621,6 +696,7 @@ export function useMarketSummaryPanelRules({
 		departments,
 	);
 	const marketPlayerQuery = useMarketPlayerStats(marketId, isMarketScope, departments);
+	const audienceQuery = useMarketAudience(marketId, isRedesigned && isMarketScope);
 	const facilityQuery = useFacilityReservationStats(facilityId);
 	const facilityPlayerQuery = useFacilityPlayerStats(facilityId);
 	const reportQuery = isMarketScope ? summaryQuery : facilityQuery;
@@ -745,6 +821,28 @@ export function useMarketSummaryPanelRules({
 		period,
 		messages.marketSummary,
 	);
+	const userMetrics = useMemo(
+		() =>
+			buildUserMetrics(
+				isMarketScope ? audienceQuery.data : undefined,
+				isMarketScope && audienceQuery.isPending,
+				playerStats,
+				playerQuery.isPending,
+				period,
+				messages.marketSummary,
+				formatters,
+			),
+		[
+			audienceQuery.data,
+			audienceQuery.isPending,
+			formatters,
+			isMarketScope,
+			messages.marketSummary,
+			period,
+			playerQuery.isPending,
+			playerStats,
+		],
+	);
 	const dataAsOf = buildDataAsOf(reportQuery.dataUpdatedAt, locale, messages.marketSummary);
 	const reportWrongNumber = useCallback(() => requestFeedback("bug"), []);
 
@@ -783,7 +881,7 @@ export function useMarketSummaryPanelRules({
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
-		userTiles: userTiles(insightsView?.tiles ?? []),
+		userMetrics,
 		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,
 		view: insightsView,

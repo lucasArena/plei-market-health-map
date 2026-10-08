@@ -88,6 +88,12 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
+export { getMarketAudienceSchema } from "@core/application/dtos/market-audience-dto";
+export type {
+	AudiencePeriodView,
+	GetMarketAudienceInput,
+	MarketAudienceView,
+} from "@core/application/dtos/market-audience-dto.types";
 export {
 	gameDepartmentsSchema,
 	getMarketGameInsightsSchema,
@@ -178,10 +184,16 @@ export type {
 } from "@core/application/repositories/facility-stats-repository.types";
 export type { FeatureFlagRepository } from "@core/application/repositories/feature-flag-repository.types";
 export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
+export type {
+	MarketAudienceCounts,
+	MarketAudiencePeriodCounts,
+	MarketAudienceRepository,
+} from "@core/application/repositories/market-audience-repository.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
 export { makeGetFacilityReservationStats } from "@core/application/services/get-facility-reservation-stats";
+export { makeGetMarketAudience } from "@core/application/services/get-market-audience";
 export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";

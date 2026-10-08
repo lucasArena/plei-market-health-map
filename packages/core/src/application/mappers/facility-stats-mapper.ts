@@ -19,7 +19,7 @@ function roundTo(value: number, decimals: number): number {
 	return Math.round(value * factor) / factor;
 }
 
-function percentChange(current: number, previous: number): number | null {
+export function percentChange(current: number, previous: number): number | null {
 	if (previous <= 0) return null;
 	return roundTo(((current - previous) / previous) * 100, 1);
 }

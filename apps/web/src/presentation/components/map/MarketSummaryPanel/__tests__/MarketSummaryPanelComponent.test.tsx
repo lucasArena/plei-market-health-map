@@ -82,7 +82,23 @@ function rulesWith(overrides: object = {}) {
 		insight: { title: "Key insights", tone: "neutral" },
 		gamesTrend: null,
 		gamesTitle: "Games the last 7 days",
-		userTiles: VIEW.tiles,
+		userMetrics: [
+			{
+				key: "activeUsers",
+				label: "Active users",
+				value: "12,000",
+				previous: "vs 10,000",
+				change: { label: "+20%", direction: "up", tone: "good" },
+			},
+			{
+				key: "registrations",
+				label: "New registrations",
+				value: "",
+				previous: "",
+				change: null,
+				isPending: true,
+			},
+		],
 		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
@@ -149,9 +165,10 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByRole("region", { name: "Games the last 7 days" })).toContainElement(
 			screen.getByRole("heading", { name: "Weekly activity" }),
 		);
-		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
-			screen.getByTestId("market-stat-players-skeleton"),
-		);
+		const users = screen.getByRole("region", { name: "Users" });
+		expect(users).toContainElement(screen.getByTestId("user-metrics"));
+		expect(users).toHaveTextContent("Active users12,000vs 10,000+20%");
+		expect(users).toHaveTextContent("New registrations");
 		expect(screen.queryByRole("region", { name: "Markets" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("region", { name: "Facilities" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();

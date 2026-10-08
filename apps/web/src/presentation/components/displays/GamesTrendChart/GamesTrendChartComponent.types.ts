@@ -1,3 +1,8 @@
+import type {
+	MetricRowView,
+	MetricTone,
+} from "@/presentation/components/displays/MetricRows/MetricRowsComponent.types";
+
 export type GamesTrendDirection = "up" | "down" | "flat";
 
 export interface GamesTrendPointView {
@@ -15,21 +20,9 @@ export interface GamesTrendChangeView {
 	direction: GamesTrendDirection;
 }
 
-export type GamesMetricTone = "good" | "bad" | "neutral";
+export type GamesMetricTone = MetricTone;
 
-export interface GamesMetricChangeView {
-	label: string;
-	direction: GamesTrendDirection;
-	tone: GamesMetricTone;
-}
-
-export interface GamesMetricView {
-	key: string;
-	label: string;
-	value: string;
-	previous: string;
-	change: GamesMetricChangeView | null;
-}
+export type GamesMetricView = MetricRowView;
 
 export interface GamesTrendView {
 	total: string;
