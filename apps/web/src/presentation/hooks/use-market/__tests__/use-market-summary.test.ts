@@ -55,6 +55,7 @@ describe("market summary hooks", () => {
 			"market-summary",
 			"players",
 			"all",
+			"all",
 			statsDayKey(),
 		]);
 	});
@@ -112,7 +113,7 @@ it("loads market insights separately and caches them by scope", async () => {
 describe("market summary department filter", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
-	it("keys and requests the summary and insights per department filter, never the players", async () => {
+	it("keys and requests the summary, insights and players per department filter", async () => {
 		const fetchMock = stubFetch([]);
 		const { client, Wrapper } = createQueryWrapper();
 
@@ -123,13 +124,28 @@ describe("market summary department filter", () => {
 		const insights = renderHook(() => useMarketGameInsights(null, "week", true, ["partnerships"]), {
 			wrapper: Wrapper,
 		});
+		const players = renderHook(
+			() => useMarketPlayerStats("philly", true, ["organizers", "magic"]),
+			{ wrapper: Wrapper },
+		);
 
 		await waitFor(() => expect(summary.result.current.isSuccess).toBe(true));
 		await waitFor(() => expect(insights.result.current.isSuccess).toBe(true));
+		await waitFor(() => expect(players.result.current.isSuccess).toBe(true));
 		expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
 			withStatsTimeZone("/api/v1/market-summary?market=philly&departments=magic%2Corganizers"),
 			withStatsTimeZone("/api/v1/market-summary/insights?period=week&departments=partnerships"),
+			withStatsTimeZone(
+				"/api/v1/market-summary/players?market=philly&departments=magic%2Corganizers",
+			),
 		]);
+		expect(
+			client.getQueryData(marketPlayerStatsQueryKey("philly", ["magic", "organizers"])),
+		).toEqual([]);
+		expect(client.getQueryData(marketPlayerStatsQueryKey("philly"))).toBeUndefined();
+		expect(marketPlayerStatsQueryKey("philly", ["magic", "organizers", "partnerships"])).toEqual(
+			marketPlayerStatsQueryKey("philly"),
+		);
 		expect(client.getQueryData(marketSummaryQueryKey("philly", ["magic", "organizers"]))).toEqual(
 			[],
 		);
@@ -138,6 +154,7 @@ describe("market summary department filter", () => {
 			"market-summary",
 			"players",
 			"philly",
+			"all",
 			statsDayKey(),
 		]);
 	});

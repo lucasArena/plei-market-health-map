@@ -175,6 +175,8 @@ it("says which game departments the facts cover when the Layers filter is on", (
 	const unfiltered = prompt.build(subject, "en").at(-1)?.content;
 
 	expect(filtered).toContain("Game departments: Magic, Organizers only.");
-	expect(filtered).toContain("player counts include every department");
+	expect(filtered).toContain("contributors and players count only these departments");
+	expect(filtered).toContain("newly activated players had their first game in one of them");
+	expect(filtered).not.toContain("every department");
 	expect(unfiltered).not.toContain("Game departments");
 });

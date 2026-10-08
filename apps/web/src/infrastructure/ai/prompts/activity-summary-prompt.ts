@@ -131,7 +131,7 @@ export class ActivitySummaryPrompt {
 		if (!gameDepartments?.length) return [];
 		const names = gameDepartments.map((department) => DEPARTMENT_NAMES[department]).join(", ");
 		return [
-			`Game departments: ${names} only. Games, active facilities and contributors count only these departments; player counts include every department.`,
+			`Game departments: ${names} only. Games, active facilities, contributors and players count only these departments: unique players played at least one of their games, and newly activated players had their first game in one of them.`,
 		];
 	}
 

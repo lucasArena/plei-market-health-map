@@ -15,6 +15,7 @@ import { useMessages } from "@/presentation/components/providers/MessagesProvide
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
+import { useMarketSummaryFilters } from "@/presentation/hooks/use-market/use-market-summary-filters";
 import { usePlaceSearch } from "@/presentation/hooks/use-place/use-place-search";
 import { useIntentPrefetch } from "@/presentation/hooks/use-prefetch/use-intent-prefetch";
 
@@ -52,6 +53,7 @@ export function useMapSearchRules({
 	const { locale } = useMessages();
 	const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
 	const { period } = useMapScope();
+	const { departments } = useMarketSummaryFilters();
 	const [query, setQuery] = useState("");
 	const [placeQuery, setPlaceQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
@@ -126,7 +128,9 @@ export function useMapSearchRules({
 
 	const prefetchMarket = (market: MarketSearchResult) =>
 		intent.schedule(() => {
-			void prefetchMarketSummary(queryClient, market.id, period).catch(() => undefined);
+			void prefetchMarketSummary(queryClient, market.id, period, departments).catch(
+				() => undefined,
+			);
 		});
 
 	const prefetchFacility = (facility: MapSearchProps["facilities"][number]) =>
