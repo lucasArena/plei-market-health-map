@@ -6,19 +6,21 @@ import type {
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
 } from "@market-health-map/core/application";
-import { type EntityId, lastCompletedWeekStart } from "@market-health-map/core/domain";
+import {
+	DEFAULT_STATS_TIME_ZONE,
+	type EntityId,
+	localDay,
+	statsWindow,
+} from "@market-health-map/core/domain";
 import { createSeededRandom } from "@server/infrastructure/repositories/sample/seeded-random/seeded-random";
-
-const DAY_MS = 86_400_000;
-
-function isoDate(date: Date): string {
-	return date.toISOString().slice(0, 10);
-}
 
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly clock: Clock) {}
 
-	async getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
+	async getReservationStats(
+		facilityIds: EntityId[],
+		today: string,
+	): Promise<FacilityReservationStats> {
 		const {
 			uniquePlayersLastWeek: _uniquePlayersLastWeek,
 			uniquePlayersPreviousWeek: _uniquePlayersPreviousWeek,
@@ -29,8 +31,8 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			activatedPlayersLast28Days: _activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
 			...reservationStats
-		} = this.makeCounts(facilityIds);
-		const members = facilityIds.map((id) => this.makeCounts([id]));
+		} = this.makeCounts(facilityIds, today);
+		const members = facilityIds.map((id) => this.makeCounts([id], today));
 		return {
 			...reservationStats,
 			playedLastWeek: members.reduce((total, member) => total + member.playedLastWeek, 0),
@@ -73,9 +75,12 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		};
 	}
 
-	async getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+	async getGameComparisons(
+		facilityIds: EntityId[],
+		today: string,
+	): Promise<FacilityGameComparison[]> {
 		return facilityIds.map((facilityId) => {
-			const counts = this.makeCounts([facilityId]);
+			const counts = this.makeCounts([facilityId], today);
 			return {
 				facilityId,
 				playedLastWeek: counts.playedLastWeek,
@@ -86,8 +91,8 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		});
 	}
 
-	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
-		const counts = this.makeCounts(facilityIds);
+	async getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
+		const counts = this.makeCounts(facilityIds, today);
 		return {
 			uniquePlayersLastWeek: counts.uniquePlayersLastWeek,
 			uniquePlayersPreviousWeek: counts.uniquePlayersPreviousWeek,
@@ -100,9 +105,11 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		};
 	}
 
-	private makeCounts(facilityIds: EntityId[]): FacilityWeeklyCounts {
+	private makeCounts(
+		facilityIds: EntityId[],
+		today: string = localDay(this.clock.now(), DEFAULT_STATS_TIME_ZONE),
+	): FacilityWeeklyCounts {
 		const random = createSeededRandom(`${facilityIds.join(",")}-stats`);
-		const now = this.clock.now();
 		const scheduledLastWeek = Math.round(4 + random() * 40);
 		const cancelledLastWeek = Math.round(scheduledLastWeek * random() * 0.4);
 		const playedLastWeek = scheduledLastWeek - cancelledLastWeek;
@@ -129,13 +136,12 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		const uniquePlayersPreviousWeek = Math.round(playedPreviousWeek * (3 + random() * 2));
 		const activatedPlayersLastWeek = Math.round(playedLastWeek * (0.25 + random() * 0.3));
 		const activatedPlayersPreviousWeek = Math.round(playedPreviousWeek * (0.25 + random() * 0.3));
-		const weekStart = lastCompletedWeekStart(now);
-		const start = new Date(`${weekStart}T00:00:00Z`);
-		start.setUTCDate(start.getUTCDate() - 21);
+		const week = statsWindow(today, 7);
+		const month = statsWindow(today, 28);
 		return {
-			periodStart: isoDate(new Date(now.getTime() - 28 * DAY_MS)),
-			periodEnd: isoDate(new Date(now.getTime() - DAY_MS)),
-			weekStart,
+			periodStart: month.start,
+			periodEnd: month.end,
+			weekStart: week.start,
 			playedLastWeek,
 			playedPreviousWeek,
 			playedLast28Days,
@@ -154,9 +160,9 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			scheduledPreviousWeek,
 			cancelledLastWeek,
 			upcomingNextSevenDays: Math.round(random() * 30),
-			lastPlayedDate: isoDate(new Date(now.getTime() - DAY_MS)),
+			lastPlayedDate: month.end,
 			weeklyActivity: weeklyGames.map((gamesPlayed, index) => ({
-				weekStart: isoDate(new Date(start.getTime() + index * 7 * DAY_MS)),
+				weekStart: statsWindow(today, 28 - index * 7).start,
 				gamesPlayed,
 			})),
 			popularTimes: Array.from({ length: 28 }, (_, index) => ({

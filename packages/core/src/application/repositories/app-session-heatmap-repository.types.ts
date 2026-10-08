@@ -7,8 +7,10 @@ import type { StatsPeriod } from "@core/application/dtos/facility-detail-dto.typ
 
 export interface AppSessionHeatmapRepository {
 	listFilterOptions(): Promise<AppSessionFilterOptions>;
+	/** Sessions in the period's full days ending the day before `today` (YYYY-MM-DD). */
 	listSessions(
 		period: StatsPeriod,
-		filters?: AppSessionFilters,
+		filters: AppSessionFilters,
+		today: string,
 	): Promise<AppSessionHeatmapCellView[]>;
 }

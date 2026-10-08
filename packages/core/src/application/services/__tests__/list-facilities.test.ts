@@ -1,7 +1,11 @@
 import { FEATURE_FLAG_KEYS } from "@core/application/dtos/feature-flags-dto";
 import { makeListFacilities } from "@core/application/services/list-facilities";
+import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { asEntityId, Facility } from "@core/domain";
+
+/** Thu Oct 8, 2026 at noon in New York, so the default zone's today is 2026-10-08. */
+const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 const allFlagsOn = async () => ({ enabled: [...FEATURE_FLAG_KEYS] });
 
@@ -20,6 +24,7 @@ function facility(id: string, gamesLast28Days = 40) {
 describe("listFacilities", () => {
 	it("returns every facility as a map point", async () => {
 		const listFacilities = makeListFacilities({
+			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository([facility("a"), facility("b", 0)]),
 			enabledFeatureFlags: allFlagsOn,
 		});
@@ -71,6 +76,7 @@ describe("listFacilities", () => {
 			},
 		});
 		const listFacilities = makeListFacilities({
+			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository([trending]),
 			enabledFeatureFlags: allFlagsOn,
 		});
@@ -125,6 +131,7 @@ describe("listFacilities", () => {
 
 	it("returns an empty list when there are no facilities", async () => {
 		const listFacilities = makeListFacilities({
+			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository(),
 			enabledFeatureFlags: allFlagsOn,
 		});
@@ -165,6 +172,7 @@ describe("listFacilities", () => {
 
 		function listWith(enabled: string[]) {
 			return makeListFacilities({
+				clock: TEST_CLOCK,
 				facilities: new InMemoryFacilityRepository([trending]),
 				enabledFeatureFlags: async () => ({ enabled }),
 			})();
@@ -209,6 +217,7 @@ describe("listFacilities", () => {
 
 		it("keeps games without a department split while the trend is off", async () => {
 			const plain = makeListFacilities({
+				clock: TEST_CLOCK,
 				facilities: new InMemoryFacilityRepository([facility("a")]),
 				enabledFeatureFlags: async () => ({ enabled: ["facility-games-layer"] }),
 			});

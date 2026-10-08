@@ -1,13 +1,27 @@
-/**
- * The zone whose calendar decides "today" in warehouse queries. `date_with_time` is the game's
- * local wall-clock time with no zone, so a window must cut at local midnight. The service area
- * runs from Hawaii (UTC-10) to Brazil (UTC-3); today in the westernmost zone is never ahead of
- * any facility's local today, so "the 28 full days ending yesterday" never takes in a partial
- * local today. East of Hawaii the window can trail by one day for a few hours after midnight.
- * The session time zone is not set on the pool, so `current_date` alone would follow the
- * server default.
- */
-export const WAREHOUSE_DAY_TIME_ZONE = "Pacific/Honolulu";
+import { STATS_PERIOD_DAYS } from "@market-health-map/core/application";
 
-/** SQL for today's date in `WAREHOUSE_DAY_TIME_ZONE`, independent of the session time zone. */
-export const WAREHOUSE_TODAY_SQL = `(now() at time zone '${WAREHOUSE_DAY_TIME_ZONE}')::date`;
+/** Days in the 7D window. */
+export const WEEK_DAYS = STATS_PERIOD_DAYS.week;
+
+/** Days in the 28D window. */
+export const MONTH_DAYS = STATS_PERIOD_DAYS.month;
+
+/**
+ * The viewer's today as a bound query parameter (`$n::date`). It comes from the browser's time
+ * zone through `statsToday`, never from the warehouse session (UTC) or a fixed zone, so the map,
+ * the panel, the insights and the heatmap all cut at the viewer's local midnight. `date_with_time`
+ * is the game's local wall-clock time, so its date compares directly.
+ */
+export function todayParameterSql(position: number): string {
+	return `$${position}::date`;
+}
+
+/** `column` falls in the `days` full days ending the day before `today`; today is never included. */
+export function inLastDaysSql(column: string, today: string, days: number): string {
+	return `${column} >= ${today} - ${days} and ${column} < ${today}`;
+}
+
+/** `column` falls in the `days` full days just before `inLastDaysSql`'s window. */
+export function inPreviousDaysSql(column: string, today: string, days: number): string {
+	return `${column} >= ${today} - ${days * 2} and ${column} < ${today} - ${days}`;
+}

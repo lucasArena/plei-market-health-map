@@ -12,6 +12,8 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 	readonly reservationRequested: EntityId[][] = [];
 	readonly reservationFilters: (FacilityReservationStatsFilters | undefined)[] = [];
 	readonly playerRequested: EntityId[][] = [];
+	/** The `today` each call was made for, in call order across all three methods. */
+	readonly requestedDays: string[] = [];
 
 	constructor(
 		private readonly counts: FacilityWeeklyCounts,
@@ -20,8 +22,10 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 
 	async getReservationStats(
 		facilityIds: EntityId[],
+		today: string,
 		filters?: FacilityReservationStatsFilters,
 	): Promise<FacilityReservationStats> {
+		this.requestedDays.push(today);
 		this.reservationRequested.push([...facilityIds]);
 		this.reservationFilters.push(filters);
 		const {
@@ -38,11 +42,16 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 		return { ...reservationStats };
 	}
 
-	async getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+	async getGameComparisons(
+		facilityIds: EntityId[],
+		today: string,
+	): Promise<FacilityGameComparison[]> {
+		this.requestedDays.push(today);
 		return this.comparisons.filter((row) => facilityIds.includes(row.facilityId));
 	}
 
-	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
+	async getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
+		this.requestedDays.push(today);
 		this.playerRequested.push([...facilityIds]);
 		return {
 			uniquePlayersLastWeek: this.counts.uniquePlayersLastWeek,

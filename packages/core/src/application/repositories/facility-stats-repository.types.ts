@@ -49,14 +49,16 @@ export interface FacilityReservationStatsFilters {
 }
 
 export interface FacilityReservationStatsRepository {
+	/** Windows end the day before `today` (YYYY-MM-DD, the viewer's local date). */
 	getReservationStats(
 		facilityIds: EntityId[],
+		today: string,
 		filters?: FacilityReservationStatsFilters,
 	): Promise<FacilityReservationStats>;
 }
 
 export interface FacilityPlayerStatsRepository {
-	getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats>;
+	getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats>;
 }
 
 export interface FacilityStatsRepository
@@ -71,5 +73,5 @@ export interface FacilityGameComparison {
 	playedPrevious28Days: number;
 }
 export interface FacilityGameComparisonRepository {
-	getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]>;
+	getGameComparisons(facilityIds: EntityId[], today: string): Promise<FacilityGameComparison[]>;
 }

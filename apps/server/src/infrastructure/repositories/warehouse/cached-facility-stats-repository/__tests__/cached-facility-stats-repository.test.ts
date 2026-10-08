@@ -22,6 +22,9 @@ const RESERVATION_STATS = {
 	popularTimes: [],
 };
 
+/** The viewer's local today. */
+const TODAY = "2026-10-08";
+
 const PLAYER_STATS = {
 	uniquePlayersLast28Days: 126,
 	uniquePlayersPrevious28Days: 120,
@@ -57,23 +60,25 @@ describe("CachedFacilityStatsRepository", () => {
 		const { repository, getReservationStats } = setup();
 		const ids = ["292" as never, "698" as never];
 
-		await repository.getReservationStats(ids);
-		await repository.getReservationStats(ids, { departments: [] });
-		await repository.getReservationStats(ids, { departments: ["organizers", "magic"] });
-		await repository.getReservationStats([...ids].reverse(), {
+		await repository.getReservationStats(ids, TODAY);
+		await repository.getReservationStats(ids, TODAY, { departments: [] });
+		await repository.getReservationStats(ids, TODAY, { departments: ["organizers", "magic"] });
+		await repository.getReservationStats([...ids].reverse(), TODAY, {
 			departments: ["magic", "organizers"],
 		});
-		await repository.getReservationStats(ids, { departments: ["partnerships"] });
-		await repository.getReservationStats(ids, {
+		await repository.getReservationStats(ids, TODAY, { departments: ["partnerships"] });
+		await repository.getReservationStats(ids, TODAY, {
 			departments: ["magic", "organizers", "partnerships"],
 		});
 
 		expect(getReservationStats).toHaveBeenCalledTimes(3);
-		expect(getReservationStats).toHaveBeenNthCalledWith(1, ids);
-		expect(getReservationStats).toHaveBeenNthCalledWith(2, ids, {
+		expect(getReservationStats).toHaveBeenNthCalledWith(1, ids, TODAY);
+		expect(getReservationStats).toHaveBeenNthCalledWith(2, ids, TODAY, {
 			departments: ["magic", "organizers"],
 		});
-		expect(getReservationStats).toHaveBeenNthCalledWith(3, ids, { departments: ["partnerships"] });
+		expect(getReservationStats).toHaveBeenNthCalledWith(3, ids, TODAY, {
+			departments: ["partnerships"],
+		});
 	});
 
 	it("caches each analytics kind independently per facility", async () => {
@@ -81,11 +86,11 @@ describe("CachedFacilityStatsRepository", () => {
 		const firstIds = ["292" as never, "698" as never];
 		const reversedIds = ["698" as never, "292" as never];
 
-		await repository.getReservationStats(firstIds);
-		await repository.getReservationStats(reversedIds);
-		await repository.getPlayerStats(firstIds);
-		await repository.getPlayerStats(reversedIds);
-		await repository.getReservationStats(["889" as never]);
+		await repository.getReservationStats(firstIds, TODAY);
+		await repository.getReservationStats(reversedIds, TODAY);
+		await repository.getPlayerStats(firstIds, TODAY);
+		await repository.getPlayerStats(reversedIds, TODAY);
+		await repository.getReservationStats(["889" as never], TODAY);
 
 		expect(getReservationStats).toHaveBeenCalledTimes(2);
 		expect(getPlayerStats).toHaveBeenCalledTimes(1);
@@ -95,11 +100,13 @@ describe("CachedFacilityStatsRepository", () => {
 		const { repository, getReservationStats, getPlayerStats, advance } = setup();
 		getPlayerStats.mockRejectedValueOnce(new Error("warehouse down"));
 
-		await repository.getReservationStats(["889" as never]);
+		await repository.getReservationStats(["889" as never], TODAY);
 		advance(1000);
-		await repository.getReservationStats(["889" as never]);
-		await expect(repository.getPlayerStats(["889" as never])).rejects.toThrow("warehouse down");
-		await expect(repository.getPlayerStats(["889" as never])).resolves.toEqual(PLAYER_STATS);
+		await repository.getReservationStats(["889" as never], TODAY);
+		await expect(repository.getPlayerStats(["889" as never], TODAY)).rejects.toThrow(
+			"warehouse down",
+		);
+		await expect(repository.getPlayerStats(["889" as never], TODAY)).resolves.toEqual(PLAYER_STATS);
 
 		expect(getReservationStats).toHaveBeenCalledTimes(2);
 		expect(getPlayerStats).toHaveBeenCalledTimes(2);
@@ -114,8 +121,8 @@ describe("CachedFacilityStatsRepository", () => {
 			{ now: () => new Date(0) },
 		);
 
-		await repository.getReservationStats(["889" as never]);
-		await repository.getReservationStats(["889" as never]);
+		await repository.getReservationStats(["889" as never], TODAY);
+		await repository.getReservationStats(["889" as never], TODAY);
 
 		expect(getReservationStats).toHaveBeenCalledTimes(1);
 	});
@@ -132,12 +139,12 @@ describe("CachedFacilityStatsRepository", () => {
 			{ now: () => new Date(now) },
 		);
 
-		await repository.getPlayerStats(["1" as never]);
+		await repository.getPlayerStats(["1" as never], TODAY);
 		now = FACILITY_PLAYER_STATS_CACHE_TTL_MS - 1;
-		await repository.getPlayerStats(["1" as never]);
+		await repository.getPlayerStats(["1" as never], TODAY);
 		expect(getPlayerStats).toHaveBeenCalledTimes(1);
 		now = FACILITY_PLAYER_STATS_CACHE_TTL_MS;
-		await repository.getPlayerStats(["1" as never]);
+		await repository.getPlayerStats(["1" as never], TODAY);
 		expect(getPlayerStats).toHaveBeenCalledTimes(2);
 		expect(FACILITY_PLAYER_STATS_CACHE_TTL_MS).toBe(60 * 60 * 1000);
 	});
@@ -146,15 +153,36 @@ describe("CachedFacilityStatsRepository", () => {
 describe("game comparison cache", () => {
 	it("shares batches, expires results after the time to live, and retries failed requests", async () => {
 		const { repository, getGameComparisons, advance } = setup();
-		await repository.getGameComparisons(["1" as never, "2" as never]);
-		await repository.getGameComparisons(["2" as never, "1" as never]);
+		await repository.getGameComparisons(["1" as never, "2" as never], TODAY);
+		await repository.getGameComparisons(["2" as never, "1" as never], TODAY);
 		expect(getGameComparisons).toHaveBeenCalledTimes(1);
 		advance(1000);
 		getGameComparisons.mockRejectedValueOnce(new Error("unavailable"));
-		await expect(repository.getGameComparisons(["1" as never, "2" as never])).rejects.toThrow(
-			"unavailable",
-		);
-		await expect(repository.getGameComparisons(["1" as never, "2" as never])).resolves.toEqual([]);
+		await expect(
+			repository.getGameComparisons(["1" as never, "2" as never], TODAY),
+		).rejects.toThrow("unavailable");
+		await expect(
+			repository.getGameComparisons(["1" as never, "2" as never], TODAY),
+		).resolves.toEqual([]);
 		expect(getGameComparisons).toHaveBeenCalledTimes(3);
+	});
+});
+
+describe("viewer's today in the cache key", () => {
+	it("never shares stats between viewers whose local dates differ", async () => {
+		const { repository, getReservationStats, getPlayerStats, getGameComparisons } = setup();
+		const ids = ["1" as never];
+		for (const today of ["2026-10-08", "2026-10-09", "2026-10-08"]) {
+			await repository.getReservationStats(ids, today);
+			await repository.getReservationStats(ids, today, { departments: ["magic"] });
+			await repository.getPlayerStats(ids, today);
+			await repository.getGameComparisons(ids, today);
+		}
+		expect(getReservationStats).toHaveBeenCalledTimes(4);
+		expect(getPlayerStats.mock.calls.map((call) => call[1])).toEqual(["2026-10-08", "2026-10-09"]);
+		expect(getGameComparisons.mock.calls.map((call) => call[1])).toEqual([
+			"2026-10-08",
+			"2026-10-09",
+		]);
 	});
 });

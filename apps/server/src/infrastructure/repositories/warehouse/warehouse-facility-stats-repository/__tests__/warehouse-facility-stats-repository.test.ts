@@ -7,6 +7,9 @@ import {
 	WarehouseFacilityStatsRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
 
+/** The viewer's local today; every window ends the day before. */
+const TODAY = "2026-10-08";
+
 const RESERVATION_ROW = {
 	period_start: "2026-09-03",
 	period_end: "2026-09-30",
@@ -44,9 +47,9 @@ const PLAYER_ROW = {
 
 describe("facility stats SQL", () => {
 	it("filters every reservation scan by department only in the department variant", () => {
-		const departmentFilter = "else 'partnerships' end = any($2::text[])";
+		const departmentFilter = "else 'partnerships' end = any($3::text[])";
 		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("organizer_partners");
-		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("$2");
+		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("$3");
 		expect(FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL).toContain("organizer_partners as (");
 		expect(FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL.split(departmentFilter)).toHaveLength(3);
 		expect(
@@ -68,18 +71,36 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).not.toContain("dim_player");
 	});
 
-	it("buckets weekly activity into completed Monday to Sunday weeks", () => {
-		// Postgres date_trunc('week') starts weeks on Monday.
-		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
-			"date_trunc('week', current_date)::date as this_week",
-		);
-		// A Sunday game falls before week_start + 7 and a Monday game starts the next week.
+	it("reads today from the viewer's bound date, never the session clock", () => {
+		for (const sql of [
+			FACILITY_RESERVATION_STATS_SQL,
+			FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL,
+			FACILITY_PLAYER_STATS_SQL,
+		]) {
+			expect(sql).toContain("select $2::date as today");
+			expect(sql).not.toContain("current_date");
+			expect(sql).not.toContain("now()");
+			expect(sql).not.toContain("date_trunc('week'");
+		}
+	});
+
+	it("buckets weekly activity into the four 7 day blocks ending yesterday", () => {
+		// Each block is 7 full days, so the last block is the 7D window and all four make the 28D one.
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
 			"g.game_date >= w.week_start and g.game_date < w.week_start + 7",
 		);
-		// The last week is the one before this_week, so the week in progress is left out.
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
-			"generate_series(b.this_week - 28, b.this_week - 7, interval '7 days')",
+			"generate_series(b.today - 28, b.today - 7, interval '7 days')",
+		);
+	});
+
+	it("uses the 7 full days ending yesterday for 7D, never today", () => {
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain("(b.today - 7)::text as week_start");
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"g.game_date >= b.today - 7 and g.game_date < b.today",
+		);
+		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
+			"g.game_date >= b.today - 14 and g.game_date < b.today - 7",
 		);
 	});
 
@@ -89,14 +110,16 @@ describe("facility stats SQL", () => {
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.confirmed_game + 0 = 1");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.players_type || '' = 'pleiapp_player'");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("player_lifecycle = 'Activated'");
-		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= current_date - 56");
-		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played < current_date");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= $2::date - 56");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played < $2::date");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("b.today - 28");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("group by b.today");
 		expect(FACILITY_PLAYER_STATS_SQL).toContain(
-			"date_played >= b.this_week - 14 and date_played < b.this_week - 7",
+			"date_played >= b.today - 7 and date_played < b.today",
 		);
-		expect(FACILITY_PLAYER_STATS_SQL).toContain("f.date_played >= current_date - 56");
+		expect(FACILITY_PLAYER_STATS_SQL).toContain(
+			"date_played >= b.today - 14 and date_played < b.today - 7",
+		);
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("exists (");
 		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("dim_reservation");
 	});
@@ -162,51 +185,53 @@ describe("warehouse facility stats mappers", () => {
 });
 
 describe("WarehouseFacilityStatsRepository", () => {
-	it("counts only the selected departments' games, with the departments bound as $2", async () => {
+	it("counts only the selected departments' games, with today as $2 and the departments as $3", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [RESERVATION_ROW] });
 		const repository = new WarehouseFacilityStatsRepository({ query });
 
-		await repository.getReservationStats(["889" as never], {
+		await repository.getReservationStats(["889" as never], TODAY, {
 			departments: ["organizers", "magic"],
 		});
-		await repository.getReservationStats(["889" as never], { departments: [] });
+		await repository.getReservationStats(["889" as never], TODAY, { departments: [] });
 
 		expect(query).toHaveBeenNthCalledWith(1, FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL, [
 			[889],
+			TODAY,
 			["magic", "organizers"],
 		]);
-		expect(query).toHaveBeenNthCalledWith(2, FACILITY_RESERVATION_STATS_SQL, [[889]]);
+		expect(query).toHaveBeenNthCalledWith(2, FACILITY_RESERVATION_STATS_SQL, [[889], TODAY]);
 	});
 
 	it("queries one facility with a bound parameter", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [RESERVATION_ROW] });
 
-		const counts = await new WarehouseFacilityStatsRepository({ query }).getReservationStats([
-			"889" as never,
-		]);
+		const counts = await new WarehouseFacilityStatsRepository({ query }).getReservationStats(
+			["889" as never],
+			TODAY,
+		);
 
-		expect(query).toHaveBeenCalledWith(FACILITY_RESERVATION_STATS_SQL, [[889]]);
+		expect(query).toHaveBeenCalledWith(FACILITY_RESERVATION_STATS_SQL, [[889], TODAY]);
 		expect(counts.playedLastWeek).toBe(55);
 	});
 
 	it("sums every member of a merged facility in one query", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [PLAYER_ROW] });
 
-		await new WarehouseFacilityStatsRepository({ query }).getPlayerStats([
-			"292" as never,
-			"698" as never,
-		]);
+		await new WarehouseFacilityStatsRepository({ query }).getPlayerStats(
+			["292" as never, "698" as never],
+			TODAY,
+		);
 
-		expect(query).toHaveBeenCalledWith(FACILITY_PLAYER_STATS_SQL, [[292, 698]]);
+		expect(query).toHaveBeenCalledWith(FACILITY_PLAYER_STATS_SQL, [[292, 698], TODAY]);
 	});
 
 	it("fails loudly if the warehouse returns no row", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [] });
 		await expect(
-			new WarehouseFacilityStatsRepository({ query }).getReservationStats(["889" as never]),
+			new WarehouseFacilityStatsRepository({ query }).getReservationStats(["889" as never], TODAY),
 		).rejects.toThrow("No reservation stats row returned for facility 889.");
 		await expect(
-			new WarehouseFacilityStatsRepository({ query }).getPlayerStats(["889" as never]),
+			new WarehouseFacilityStatsRepository({ query }).getPlayerStats(["889" as never], TODAY),
 		).rejects.toThrow("No player stats row returned for facility 889.");
 	});
 });
@@ -224,9 +249,10 @@ describe("facility game comparison batch", () => {
 				},
 			],
 		});
-		const result = await new WarehouseFacilityStatsRepository({ query }).getGameComparisons([
-			"889" as never,
-		]);
+		const result = await new WarehouseFacilityStatsRepository({ query }).getGameComparisons(
+			["889" as never],
+			TODAY,
+		);
 		expect(result).toEqual([
 			{
 				facilityId: "889",
@@ -236,12 +262,21 @@ describe("facility game comparison batch", () => {
 				playedPrevious28Days: 50,
 			},
 		]);
-		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date >= b.this_week - 14");
-		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [[889]]);
-		expect(query.mock.calls[0]?.[0]).toContain("r.confirmed and r.status <> 'cancelled'");
-		expect(query.mock.calls[0]?.[0]).toContain("r.date_with_time::date < b.today");
-		expect(query.mock.calls[0]?.[0]).toContain(
-			"date_trunc('week', (now() at time zone 'Pacific/Honolulu')::date)::date as this_week",
+		const sql = query.mock.calls[0]?.[0] as string;
+		expect(query).toHaveBeenCalledWith(expect.stringContaining("group by r.location_id"), [
+			[889],
+			TODAY,
+		]);
+		expect(sql).toContain("select $2::date as today");
+		expect(sql).toContain(
+			"r.date_with_time::date >= b.today - 7 and r.date_with_time::date < b.today",
 		);
+		expect(sql).toContain(
+			"r.date_with_time::date >= b.today - 14 and r.date_with_time::date < b.today - 7",
+		);
+		expect(sql).toContain("r.date_with_time::date >= b.today - 56");
+		expect(sql).toContain("r.confirmed and r.status <> 'cancelled'");
+		expect(sql).not.toContain("now()");
+		expect(sql).not.toContain("current_date");
 	});
 });

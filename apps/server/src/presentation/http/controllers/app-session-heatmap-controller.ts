@@ -1,13 +1,14 @@
 import { appSessionFiltersSchema, type StatsPeriod } from "@market-health-map/core/application";
 import type { ApiServices } from "@server/presentation/http/api-app.types";
 import { ok } from "@server/presentation/http/respond";
+import { STATS_TIME_ZONE_PARAM } from "@server/presentation/http/stats-time-zone";
 import { Hono } from "hono";
 
 export function appSessionHeatmapController(services: () => ApiServices) {
 	return new Hono()
 		.get("/filters", async () => ok(await services().listAppSessionFilterOptions()))
 		.get("/", async (context) => {
-			const { period, ...query } = context.req.query();
+			const { period, [STATS_TIME_ZONE_PARAM]: timeZone, ...query } = context.req.query();
 			return ok(
 				await services().listAppSessionHeatmap(
 					appSessionFiltersSchema.parse({
@@ -20,6 +21,7 @@ export function appSessionHeatmapController(services: () => ApiServices) {
 						),
 					}),
 					period as StatsPeriod | undefined,
+					timeZone,
 				),
 			);
 		});
