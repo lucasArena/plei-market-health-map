@@ -201,6 +201,8 @@ export const es: Messages = {
 		close: "Cerrar desglose",
 		expand: "Ampliar desglose",
 		collapse: "Contraer desglose",
+		filteredBy: "Filtrado por",
+		supplyHidden: "La oferta está oculta. Actívala en Filtros para ver los resultados.",
 		measure: "Medida",
 		slice: "Agrupación",
 		segment: "Segmento",

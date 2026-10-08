@@ -12,6 +12,7 @@ import {
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { type AnimationEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type {
 	DrillDownChartRow,
 	DrillDownSort,
@@ -34,12 +35,21 @@ export function useMetricDrillDownPanelRules({
 	const { scope, period, setMapNavigation } = useMapScope();
 	const { messages, locale } = useMessages();
 	const query = useFacilityListAll();
+	const layers = useMapLayers();
+	const gameDepartments = layers?.gameDepartments;
+	const showSupply = layers?.showActiveFacilities ?? true;
+	const departmentKey = gameDepartments?.join(",") ?? "";
 	const scopeKey = scope.kind === "all" ? "all" : `${scope.kind}:${scope.id}`;
 	const [selection, setSelection] = useState<MetricDrillDownSelection>({
 		measure: "games",
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const [previousDepartments, setPreviousDepartments] = useState(departmentKey);
+	if (previousDepartments !== departmentKey) {
+		setPreviousDepartments(departmentKey);
+		setSelection((current) => ({ ...current, department: undefined }));
+	}
 	const [previousScope, setPreviousScope] = useState(scopeKey);
 	if (previousScope !== scopeKey) {
 		setPreviousScope(scopeKey);
@@ -79,14 +89,15 @@ export function useMetricDrillDownPanelRules({
 	const view = useMemo(
 		() =>
 			getMetricDrillDown({
-				facilities: query.data ?? [],
+				facilities: showSupply ? (query.data ?? []) : [],
+				gameDepartments,
 				period,
 				...selection,
 				marketId: selection.marketId ?? (scope.kind === "market" ? scope.id : undefined),
 				facilityId: scope.kind === "facility" ? scope.id : undefined,
 				now: new Date(),
 			}),
-		[period, query.data, scope, selection],
+		[period, query.data, scope, selection, gameDepartments, showSupply],
 	);
 	const canSegment =
 		selection.measure === "games" && selection.slice !== "department" && !selection.department;
@@ -123,6 +134,7 @@ export function useMetricDrillDownPanelRules({
 	const max = Math.ceil(largest / step) * step;
 	const ticks = Array.from({ length: Math.ceil(max / step) + 1 }, (_, index) => index * step);
 
+	const selectedDepartments = gameDepartments?.length ? gameDepartments : DRILL_DOWN_DEPARTMENTS;
 	const chartRows: DrillDownChartRow[] = topRows.map((row) => {
 		if (row.value === null) return { ...row, bars: [] };
 		if (segment === "department") {
@@ -130,7 +142,7 @@ export function useMetricDrillDownPanelRules({
 			if (!counts) return { ...row, bars: [] };
 			return {
 				...row,
-				bars: DRILL_DOWN_DEPARTMENTS.map((department) => ({
+				bars: selectedDepartments.map((department) => ({
 					id: department,
 					department,
 					label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(counts[department])}`,
@@ -234,7 +246,9 @@ export function useMetricDrillDownPanelRules({
 		formatValue,
 		rowName,
 		departmentNames,
-		departments: DRILL_DOWN_DEPARTMENTS,
+		departments: selectedDepartments,
+		filteredDepartments: gameDepartments ?? [],
+		showSupply,
 		explore,
 		back,
 		viewOnMap,

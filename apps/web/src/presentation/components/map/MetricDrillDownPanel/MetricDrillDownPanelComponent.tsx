@@ -5,6 +5,7 @@ import type {
 	DrillDownSegment,
 	DrillDownSlice,
 } from "@market-health-map/core/application";
+import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 import { useMetricDrillDownPanelRules } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.rules";
 import {
 	DRILL_DOWN_COLORS,
@@ -99,51 +100,60 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground">{rules.dateRange}</p>
 				</div>
+
 				<div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-3">
-					<label className="min-w-0 space-y-1">
-						<span title={m.measureHelp}>{m.measure}</span>
-						<select
-							aria-label={m.measure}
-							title={m.measureHelp}
-							value={selection.measure}
-							onChange={(event) => rules.setMeasure(event.target.value as DrillDownMeasure)}
-							className="w-full rounded-lg border border-border bg-background/60 p-2"
-						>
-							<option value="games">{m.games}</option>
-							<option value="active-facilities">{m.activeFacilities}</option>
-						</select>
-					</label>
-					<label className="min-w-0 space-y-1">
-						<span title={m.sliceHelp}>{m.slice}</span>
-						<select
-							aria-label={m.slice}
-							title={m.sliceHelp}
-							value={selection.slice}
-							onChange={(event) => rules.setSlice(event.target.value as DrillDownSlice)}
-							className="w-full rounded-lg border border-border bg-background/60 p-2"
-						>
-							<option value="market">{m.market}</option>
-							<option value="facility">{m.facility}</option>
-							{selection.measure === "games" && <option value="department">{m.department}</option>}
-						</select>
-					</label>
-					<label className="min-w-0 space-y-1">
-						<span title={m.segmentHelp}>{m.segment}</span>
-						<select
-							aria-label={m.segment}
-							aria-describedby={!rules.canSegment ? "drill-down-segment-help" : undefined}
-							title={m.segmentHelp}
-							disabled={!rules.canSegment}
-							value={segment}
-							onChange={(event) => rules.setSegment(event.target.value as DrillDownSegment)}
-							className="w-full rounded-lg border border-border bg-background/60 p-2 disabled:opacity-60"
-						>
-							<option value="none">{m.none}</option>
-							<option value="department">{m.department}</option>
-						</select>
-					</label>
+					<MapMetricSelect
+						label={m.measure}
+						help={m.measureHelp}
+						value={selection.measure}
+						onChange={(value) => rules.setMeasure(value as DrillDownMeasure)}
+						options={[
+							{ value: "games", label: m.games },
+							{ value: "active-facilities", label: m.activeFacilities },
+						]}
+					/>
+					<MapMetricSelect
+						label={m.slice}
+						help={m.sliceHelp}
+						value={selection.slice}
+						onChange={(value) => rules.setSlice(value as DrillDownSlice)}
+						options={[
+							{ value: "market", label: m.market },
+							{ value: "facility", label: m.facility },
+							...(selection.measure === "games"
+								? [{ value: "department", label: m.department }]
+								: []),
+						]}
+					/>
+					<MapMetricSelect
+						label={m.segment}
+						help={m.segmentHelp}
+						value={segment}
+						disabled={!rules.canSegment}
+						descriptionId={!rules.canSegment ? "drill-down-segment-help" : undefined}
+						alignRight
+						onChange={(value) => rules.setSegment(value as DrillDownSegment)}
+						options={[
+							{ value: "none", label: m.none },
+							{ value: "department", label: m.department },
+						]}
+					/>
 				</div>
 				<p className="text-xs text-muted-foreground">{m.help}</p>
+				{rules.filteredDepartments.length > 0 && (
+					<div className="flex flex-wrap items-center gap-1.5 text-xs">
+						<span className="text-muted-foreground">{m.filteredBy}</span>
+						{rules.filteredDepartments.map((department) => (
+							<span
+								key={department}
+								className="rounded-full border border-border bg-foreground/[0.03] px-2 py-1"
+							>
+								{departmentNames[department]}
+							</span>
+						))}
+					</div>
+				)}
+				{!rules.showSupply && <p className="text-xs text-muted-foreground">{m.supplyHidden}</p>}
 				{!rules.canSegment && (
 					<p id="drill-down-segment-help" className="text-xs text-muted-foreground">
 						{selection.department ? m.selectedDepartmentHelp : m.segmentUnavailable}
@@ -228,7 +238,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 																key={bar.id}
 																type="button"
 																onClick={() => rules.explore(row, bar.department)}
-																title={bar.label}
 																aria-label={bar.label}
 																style={{
 																	height: `${bar.height}%`,

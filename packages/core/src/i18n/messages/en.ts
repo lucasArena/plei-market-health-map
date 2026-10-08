@@ -196,6 +196,8 @@ export const en: Messages = {
 		close: "Close drill-down",
 		expand: "Expand drill-down",
 		collapse: "Collapse drill-down",
+		filteredBy: "Filtered by",
+		supplyHidden: "Supply is hidden. Turn it on in Filters to see results.",
 		measure: "Measure",
 		slice: "Slice",
 		segment: "Segment",

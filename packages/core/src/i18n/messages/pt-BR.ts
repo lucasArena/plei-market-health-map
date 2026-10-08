@@ -200,6 +200,8 @@ export const ptBR: Messages = {
 		close: "Fechar detalhamento",
 		expand: "Expandir detalhamento",
 		collapse: "Recolher detalhamento",
+		filteredBy: "Filtrado por",
+		supplyHidden: "Oferta está oculta. Ative-a em Filtros para ver os resultados.",
 		measure: "Medida",
 		slice: "Agrupamento",
 		segment: "Segmento",

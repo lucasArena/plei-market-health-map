@@ -40,18 +40,32 @@ export function makeGetMetricDrillDown() {
 		);
 		const rows = new Map<string, MetricDrillDownRow>();
 		let total: number | null = 0;
+		const selectedDepartments = input.gameDepartments?.length
+			? input.gameDepartments
+			: DRILL_DOWN_DEPARTMENTS;
 		for (const facility of facilities) {
 			const games = input.period === "week" ? facility.gamesLastWeek : facility.gamesLast28Days;
-			const departments =
+			const rawDepartments =
 				input.period === "week" ? facility.gamesLastWeekByDepartment : facility.gamesByDepartment;
-			let value: number | null = games ?? null;
+			const departments = rawDepartments ? { ...rawDepartments } : undefined;
+			if (departments)
+				for (const department of DRILL_DOWN_DEPARTMENTS)
+					if (!selectedDepartments.includes(department)) departments[department] = 0;
+			const filteredGames = departments
+				? selectedDepartments.reduce((sum, department) => sum + departments[department], 0)
+				: null;
+			if (input.gameDepartments?.length && filteredGames === 0) continue;
+			let value: number | null = input.gameDepartments?.length ? filteredGames : (games ?? null);
 			if (input.department) value = departments?.[input.department] ?? null;
 			if (input.measure === "active-facilities")
-				value = Number(input.period === "week" ? facility.isActiveLastWeek : facility.isActive);
+				value =
+					input.gameDepartments?.length && filteredGames === null
+						? null
+						: Number(input.period === "week" ? facility.isActiveLastWeek : facility.isActive);
 			total = sumKnown(total, value);
 			const groups =
 				input.slice === "department"
-					? DRILL_DOWN_DEPARTMENTS
+					? selectedDepartments
 					: [input.slice === "market" ? facility.marketId : facility.id];
 			for (const id of groups) {
 				const isDepartment = input.slice === "department";

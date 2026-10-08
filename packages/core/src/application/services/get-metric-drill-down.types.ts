@@ -14,6 +14,7 @@ export interface MetricDrillDownInput {
 	marketId?: string;
 	facilityId?: string;
 	department?: GameDepartment;
+	gameDepartments?: readonly GameDepartment[];
 	now: Date;
 }
 export interface MetricDrillDownRow {

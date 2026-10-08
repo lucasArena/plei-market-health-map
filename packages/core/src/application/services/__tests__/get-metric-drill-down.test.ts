@@ -27,6 +27,45 @@ const input: MetricDrillDownInput = {
 	now: new Date("2026-10-08T12:00:00Z"),
 };
 describe("getMetricDrillDown", () => {
+	it("applies department filters to totals, groups and segments in both periods", () => {
+		const result = getMetricDrillDown({
+			...input,
+			gameDepartments: ["magic", "organizers"],
+			slice: "department",
+		});
+		expect(result.total).toBe(5);
+		expect(result.rows.map((row) => [row.id, row.value])).toEqual([
+			["magic", 2],
+			["organizers", 3],
+		]);
+		expect(result.rows[0]?.departments).toEqual({ magic: 2, organizers: 3, partnerships: 0 });
+		expect(getMetricDrillDown({ ...input, gameDepartments: [] }).total).toBe(10);
+		expect(
+			getMetricDrillDown({ ...input, gameDepartments: ["magic"], period: "week" }),
+		).toMatchObject({ total: 0, rows: [] });
+		expect(
+			getMetricDrillDown({ ...input, gameDepartments: ["magic"], measure: "active-facilities" })
+				.total,
+		).toBe(1);
+		expect(
+			getMetricDrillDown({ ...input, gameDepartments: ["organizers"], department: "magic" }).total,
+		).toBe(0);
+	});
+	it("keeps unavailable department data unknown when filtering games or active facilities", () => {
+		const facilities = [{ ...facility, gamesByDepartment: undefined }];
+		expect(
+			getMetricDrillDown({ ...input, facilities, gameDepartments: ["magic"] }).total,
+		).toBeNull();
+		expect(
+			getMetricDrillDown({
+				...input,
+				facilities,
+				gameDepartments: ["magic"],
+				measure: "active-facilities",
+			}).total,
+		).toBeNull();
+	});
+
 	it("matches the warehouse calendar before Honolulu midnight, including Monday boundaries", () => {
 		const now = new Date("2026-10-05T08:00:00Z");
 		expect(getMetricDrillDown({ ...input, now })).toMatchObject({

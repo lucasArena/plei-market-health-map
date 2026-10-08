@@ -179,6 +179,8 @@ export interface Messages {
 		close: string;
 		expand: string;
 		collapse: string;
+		filteredBy: string;
+		supplyHidden: string;
 		measure: string;
 		slice: string;
 		segment: string;
