@@ -6,6 +6,8 @@ import { MARKET_PLAYER_STATS, MARKET_SUMMARY } from "@/application/test/market-s
 import { EN_MESSAGES } from "@/application/test/messages";
 import { createDetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import {
+	buildComparisonRange,
+	buildDataAsOf,
 	buildFacilityRows,
 	buildFacilitySummaryViewModel,
 	buildMarketAiSubject,
@@ -13,6 +15,7 @@ import {
 	buildMarketSummaryText,
 	buildMarketSummaryViewModel,
 	buildScopeHeading,
+	buildScopeLine,
 	buildScopeTiles,
 	contributorFactsFrom,
 	useMarketSummaryPanelRules,
@@ -23,6 +26,10 @@ import { MessagesProvider } from "@/presentation/components/providers/MessagesPr
 const mockUseMarketGameInsights = vi
 	.fn()
 	.mockReturnValue({ data: [], isPending: false, isError: false });
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => false,
+}));
+
 vi.mock("@/presentation/hooks/use-market/use-market-game-insights", () => ({
 	useMarketGameInsights: (...args: unknown[]) => mockUseMarketGameInsights(...args),
 }));
@@ -269,6 +276,68 @@ describe("market summary builders", () => {
 				MONTH,
 			),
 		).toEqual({ title: "Pegaso HTX", subtitle: "Facility in Houston, last 28 days" });
+	});
+});
+
+describe("redesigned panel header and footer", () => {
+	const messages = EN_MESSAGES.marketSummary;
+	const formatters = createDetailFormatters("en");
+	const counts = {
+		activeFacilityCount: 42,
+		facilityCount: 58,
+		activeMarketCount: 8,
+		marketCount: 12,
+	};
+	const heading = { title: "All markets", subtitle: "All facilities and markets, last 7 days" };
+
+	it("states the period and the period it is compared with", () => {
+		const plain = (range: { current: string; previous: string }) => ({
+			current: range.current.replace(/\s/g, " "),
+			previous: range.previous.replace(/\s/g, " "),
+		});
+		expect(plain(buildComparisonRange("2026-10-07", "month", "en", messages))).toEqual({
+			current: "Sep 9 – Oct 6, 2026",
+			previous: "vs Aug 12 – Sep 8",
+		});
+		expect(plain(buildComparisonRange("2026-10-07", "week", "en", messages))).toEqual({
+			current: "Sep 30 – Oct 6, 2026",
+			previous: "vs Sep 23 – 29",
+		});
+	});
+
+	it("sums up active facilities and markets for the scope", () => {
+		expect(buildScopeLine({ kind: "all" }, counts, heading, messages, formatters)).toBe(
+			"42 of 58 facilities active · 8 of 12 markets active",
+		);
+		expect(
+			buildScopeLine(
+				{ kind: "market", id: "miami", name: "Miami" },
+				counts,
+				heading,
+				messages,
+				formatters,
+			),
+		).toBe("42 of 58 facilities active");
+		expect(buildScopeLine({ kind: "all" }, undefined, heading, messages, formatters)).toBe(
+			heading.subtitle,
+		);
+		expect(
+			buildScopeLine(
+				{ kind: "facility", id: "1", name: "Pegaso", marketName: "Houston" },
+				counts,
+				heading,
+				messages,
+				formatters,
+			),
+		).toBe(heading.subtitle);
+	});
+
+	it("says when the data was loaded, and nothing before it loads", () => {
+		expect(buildDataAsOf(undefined, "en", messages)).toBeNull();
+		expect(buildDataAsOf(0, "en", messages)).toBeNull();
+		expect(buildDataAsOf(Date.UTC(2026, 9, 8, 12), "en", messages)).toMatch(
+			/^Data as of Oct 8, 2026/,
+		);
 	});
 });
 

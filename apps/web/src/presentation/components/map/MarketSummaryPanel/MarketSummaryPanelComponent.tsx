@@ -2,13 +2,16 @@
 
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent";
+import { HealthStrip } from "@/presentation/components/displays/HealthStrip/HealthStripComponent";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
 import type {
+	InsightCardProps,
 	MarketRankListProps,
+	MarketSummaryHeaderProps,
 	MarketSummaryPanelProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
@@ -62,9 +65,63 @@ function RankList({ title, rows, emptyLabel }: Readonly<MarketRankListProps>) {
 	);
 }
 
+function InsightCard({ children, isRedesigned, messages }: Readonly<InsightCardProps>) {
+	if (isRedesigned) {
+		return (
+			<HealthStrip showMoreLabel={messages.showMore} showLessLabel={messages.showLess}>
+				{children}
+			</HealthStrip>
+		);
+	}
+	return <section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">{children}</section>;
+}
+
+function MarketSummaryHeader({
+	comparison,
+	heading,
+	isRedesigned,
+	scopeLine,
+}: Readonly<MarketSummaryHeaderProps>) {
+	if (!isRedesigned) {
+		return (
+			<header className="pr-8">
+				<h2 className="truncate text-base font-semibold">{heading.title}</h2>
+				<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
+			</header>
+		);
+	}
+	return (
+		<header className="space-y-3 border-b pb-3">
+			<div>
+				<h2 className="truncate text-base font-semibold">{heading.title}</h2>
+				<p className="text-xs text-muted-foreground">{scopeLine}</p>
+			</div>
+			<p data-testid="market-summary-dates" className="flex items-center gap-1.5 text-xs">
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					aria-hidden="true"
+					className="size-3.5 shrink-0"
+				>
+					<rect width="18" height="18" x="3" y="4" rx="2" />
+					<path d="M16 2v4M8 2v4M3 10h18" />
+				</svg>
+				<span className="font-semibold">{comparison.current}</span>
+				<span className="text-muted-foreground">{comparison.previous}</span>
+			</p>
+		</header>
+	);
+}
+
 export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 	const {
 		aiContext,
+		comparison,
+		dataAsOf,
 		detailMessages,
 		handleAnimationEnd,
 		heading,
@@ -72,7 +129,10 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		isClosing,
 		isSummaryPending,
 		isInsightsFailed,
+		isRedesigned,
 		messages,
+		reportWrongNumber,
+		scopeLine,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -94,31 +154,33 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 				)}
 				{status === "ready" && view && (
 					<div className="space-y-4 p-5">
-						<header className="pr-8">
-							<h2 className="truncate text-base font-semibold">{heading.title}</h2>
-							<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
-						</header>
+						<MarketSummaryHeader
+							comparison={comparison}
+							heading={heading}
+							isRedesigned={isRedesigned}
+							scopeLine={scopeLine}
+						/>
 						{aiContext && view.summary && (
-							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+							<InsightCard isRedesigned={isRedesigned} messages={messages}>
 								<AiSummary context={aiContext} fallback={view.summary} introFirst />
-							</section>
+							</InsightCard>
 						)}
 						{!(aiContext && view.summary) && isSummaryPending && (
-							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+							<InsightCard isRedesigned={isRedesigned} messages={messages}>
 								<AiSummarySkeleton testId="market-summary-text-skeleton" />
-							</section>
+							</InsightCard>
 						)}
 						{!aiContext && !isSummaryPending && view.summary && (
-							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+							<InsightCard isRedesigned={isRedesigned} messages={messages}>
 								<KeyInsights title={messages.keyInsights} text={view.summary} introFirst />
-							</section>
+							</InsightCard>
 						)}
 						{isInsightsFailed && (
 							<p role="status" className="text-xs text-muted-foreground">
 								{messages.insightsFailed}
 							</p>
 						)}
-						{view.scopeTiles.length > 0 && (
+						{!isRedesigned && view.scopeTiles.length > 0 && (
 							<StatTiles tiles={view.scopeTiles} testIdPrefix="market-scope" />
 						)}
 						<StatTiles tiles={view.tiles} testIdPrefix="market-stat" />
@@ -150,8 +212,20 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 								emptyLabel={rankingsEmptyLabel}
 							/>
 						)}
-						<footer className="border-t pt-3 text-[11px] text-muted-foreground">
-							<p>{view.lastPlayedLabel}</p>
+						<footer className="flex items-start justify-between gap-3 border-t pt-3 text-[11px] text-muted-foreground">
+							<div>
+								<p>{view.lastPlayedLabel}</p>
+								{isRedesigned && dataAsOf && <p className="opacity-80">{dataAsOf}</p>}
+							</div>
+							{isRedesigned && (
+								<button
+									type="button"
+									onClick={reportWrongNumber}
+									className="shrink-0 rounded font-medium text-foreground/80 underline-offset-2 hover:underline focus-visible:outline-2"
+								>
+									{messages.reportWrongNumber}
+								</button>
+							)}
 						</footer>
 					</div>
 				)}

@@ -75,6 +75,11 @@ const VIEW = {
 function rulesWith(overrides: object = {}) {
 	return {
 		aiContext: { cacheKey: "v4:all-markets-all:2026-09-21:en", prompt: [] },
+		comparison: { current: "Sep 9 – Oct 6, 2026", previous: "vs Aug 12 – Sep 8" },
+		dataAsOf: "Data as of Oct 7, 2026, 9:35 PM",
+		isRedesigned: false,
+		reportWrongNumber: vi.fn(),
+		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
 		heading: { title: "All markets", subtitle: EN_MESSAGES.marketSummary.subtitle },
@@ -110,6 +115,37 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByText("6 of 9 facilities active")).toBeInTheDocument();
 		expect(screen.getByText("No games played last week.")).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
+	});
+
+	it("keeps the current header and footer while the redesign is off", () => {
+		mockRules.mockReturnValue(rulesWith());
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.queryByTestId("market-summary-dates")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("health-strip")).not.toBeInTheDocument();
+		expect(screen.queryByText("Data as of Oct 7, 2026, 9:35 PM")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Report a wrong number" })).not.toBeInTheDocument();
+	});
+
+	it("shows the redesigned header, health strip and data freshness footer", () => {
+		const reportWrongNumber = vi.fn();
+		mockRules.mockReturnValue(rulesWith({ isRedesigned: true, reportWrongNumber }));
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(
+			screen.getByText("42 of 58 facilities active · 8 of 12 markets active"),
+		).toBeInTheDocument();
+		expect(screen.getByTestId("market-summary-dates")).toHaveTextContent(
+			"Sep 9 – Oct 6, 2026vs Aug 12 – Sep 8",
+		);
+		expect(screen.getByTestId("health-strip")).toHaveTextContent(VIEW.summary);
+		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
+		expect(screen.getByText("Data as of Oct 7, 2026, 9:35 PM")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Report a wrong number" }));
+		expect(reportWrongNumber).toHaveBeenCalledOnce();
 	});
 
 	it("hides the scope tiles and rankings a single facility does not need", () => {

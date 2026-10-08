@@ -330,6 +330,14 @@ export const en: Messages = {
 		marketSubtitle: "Market summary, {span}",
 		facilitySubtitle: "Facility in {market}, {span}",
 		marketSummaryNone: "No games were played in this market {within}.",
+		scopeCounts: "{facilities} · {markets}",
+		facilitiesActive: "{active} of {total} facilities active",
+		marketsActive: "{active} of {total} markets active",
+		comparedWith: "vs {range}",
+		showMore: "Show more",
+		showLess: "Show less",
+		dataAsOf: "Data as of {time}",
+		reportWrongNumber: "Report a wrong number",
 	},
 	feedback: {
 		open: "Send feedback",
@@ -428,6 +436,8 @@ export const en: Messages = {
 		requires: "Only takes effect while {flag} is on.",
 		waiting: "On, waiting for {flag}",
 		descriptions: {
+			"insights-panel-v3":
+				"Open the redesigned insights panel on load, with a health strip, comparison dates and data freshness.",
 			"metric-drill-down":
 				"Explore games and active facilities by market, facility and department.",
 			"facility-games-layer":
