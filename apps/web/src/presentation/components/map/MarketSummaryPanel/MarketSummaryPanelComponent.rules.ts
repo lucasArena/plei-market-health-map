@@ -12,6 +12,7 @@ import {
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@market-health-map/core/application";
+import type { GameDepartment } from "@market-health-map/core/domain";
 import { formatMessage, type StatsPeriodMessages } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
@@ -47,6 +48,7 @@ import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/u
 import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
 import { useMarketPlayerStats } from "@/presentation/hooks/use-market/use-market-player-stats";
 import { useMarketSummary } from "@/presentation/hooks/use-market/use-market-summary";
+import { useMarketSummaryFilters } from "@/presentation/hooks/use-market/use-market-summary-filters";
 
 function scopeTile(
 	key: string,
@@ -313,6 +315,7 @@ export function buildMarketAiSubject(
 	facilityReport: FacilityReservationDetailView | undefined,
 	playerStats: FacilityPlayerStatsView | undefined,
 	period: StatsPeriod,
+	gameDepartments: readonly GameDepartment[] = [],
 ): ActivitySummarySubject | null {
 	if (!playerStats) return null;
 	if (scope.kind === "facility") {
@@ -326,12 +329,15 @@ export function buildMarketAiSubject(
 			: null;
 	}
 	if (!summary) return null;
+	const id = scope.kind === "market" ? scope.id : "all";
+	const isFiltered = gameDepartments.length > 0;
 	return {
 		kind: scope.kind === "market" ? "market" : "all-markets",
-		id: scope.kind === "market" ? scope.id : "all",
+		id: isFiltered ? `${id}~${gameDepartments.join("+")}` : id,
 		name: heading.title,
 		stats: activityPeriodFor(summary.stats, playerStats, period),
 		scope: summary.periods[period].scope,
+		...(isFiltered ? { gameDepartments: [...gameDepartments] } : {}),
 	};
 }
 
@@ -346,11 +352,13 @@ export function useMarketSummaryPanelRules({
 	const facilityId = scope.kind === "facility" ? scope.id : null;
 	const marketId = scope.kind === "market" ? scope.id : null;
 	const isMarketScope = facilityId === null;
-	const summaryQuery = useMarketSummary(marketId, isMarketScope);
+	const { departments } = useMarketSummaryFilters();
+	const summaryQuery = useMarketSummary(marketId, isMarketScope, departments);
 	const insightsQuery = useMarketGameInsights(
 		marketId,
 		period,
 		isMarketScope && !!summaryQuery.data,
+		departments,
 	);
 	const marketPlayerQuery = useMarketPlayerStats(marketId, isMarketScope);
 	const facilityQuery = useFacilityReservationStats(facilityId);
@@ -417,6 +425,7 @@ export function useMarketSummaryPanelRules({
 			facilityReport,
 			playerStats,
 			period,
+			departments,
 		);
 		return subject
 			? aiSummaryContextFor(
@@ -436,6 +445,7 @@ export function useMarketSummaryPanelRules({
 		view?.summary,
 		isMarketScope,
 		locale,
+		departments,
 	]);
 	const status = resolveDetailStatus(reportQuery.isPending, reportQuery.isError);
 

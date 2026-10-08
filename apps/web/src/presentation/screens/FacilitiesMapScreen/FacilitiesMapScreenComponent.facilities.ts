@@ -1,6 +1,6 @@
 import type { FacilityPointView, StatsPeriod } from "@market-health-map/core/application";
-import type { GameDepartment, GameDepartmentCounts } from "@market-health-map/core/domain";
-import { type GamesTrend, gamesTrend } from "@market-health-map/core/domain";
+import type { GameDepartment } from "@market-health-map/core/domain";
+import { type GamesTrend, gamesTrend, sumGameDepartments } from "@market-health-map/core/domain";
 import type {
 	ClusterGlassFeature,
 	FacilityFeatureCollection,
@@ -49,13 +49,6 @@ export function toFacilityFeatureCollection(
 	};
 }
 
-function sumDepartments(
-	counts: GameDepartmentCounts | undefined,
-	departments: readonly GameDepartment[],
-) {
-	return departments.reduce((sum, department) => sum + (counts?.[department] ?? 0), 0);
-}
-
 export function facilitiesForMap(
 	facilities: readonly FacilityPointView[],
 	options: {
@@ -73,8 +66,11 @@ export function facilitiesForMap(
 			if (!gameDepartments?.length) return facility;
 			return {
 				...facility,
-				gamesLast28Days: sumDepartments(facility.gamesByDepartment, gameDepartments),
-				gamesPrevious28Days: sumDepartments(facility.gamesPreviousByDepartment, gameDepartments),
+				gamesLast28Days: sumGameDepartments(facility.gamesByDepartment, gameDepartments),
+				gamesPrevious28Days: sumGameDepartments(
+					facility.gamesPreviousByDepartment,
+					gameDepartments,
+				),
 			};
 		})
 		.filter((facility) => {
