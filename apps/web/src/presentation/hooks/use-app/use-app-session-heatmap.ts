@@ -8,6 +8,7 @@ import type {
 } from "@market-health-map/core/application";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
+import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 
 export type { AppSessionFilterOptions, AppSessionFilters, AppSessionHeatmapCellView };
 
@@ -35,9 +36,11 @@ export function useAppSessionHeatmap(
 		} else if (value !== undefined) params.set(key, String(value));
 	}
 	return useQuery({
-		queryKey: [...appSessionHeatmapQueryKey, period, filters],
+		queryKey: [...appSessionHeatmapQueryKey, period, filters, statsDayKey()],
 		queryFn: () =>
-			apiClient.get<AppSessionHeatmapCellView[]>(`/api/v1/app-session-heatmap?${params}`),
+			apiClient.get<AppSessionHeatmapCellView[]>(
+				withStatsTimeZone(`/api/v1/app-session-heatmap?${params}`),
+			),
 		enabled,
 		staleTime: 5 * 60 * 1000,
 		retry: false,

@@ -1,3 +1,4 @@
+import { STATS_PERIOD_DAYS } from "@core/application/dtos/facility-detail-dto";
 import type {
 	FacilityPlayerStatsView,
 	FacilityReservationStatsView,
@@ -11,7 +12,7 @@ import type {
 	FacilityReservationStats,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
-import { weekEndOf } from "@core/domain";
+import { addDays } from "@core/domain";
 
 function roundTo(value: number, decimals: number): number {
 	const factor = 10 ** decimals;
@@ -90,7 +91,7 @@ function reservationCounts(stats: FacilityReservationStats, period: StatsPeriod)
 	if (period === "week") {
 		return {
 			start: stats.weekStart,
-			end: weekEndOf(stats.weekStart),
+			end: addDays(stats.weekStart, STATS_PERIOD_DAYS.week - 1),
 			played: stats.playedLastWeek,
 			playedPrevious: stats.playedPreviousWeek,
 			scheduled: stats.scheduledLastWeek,

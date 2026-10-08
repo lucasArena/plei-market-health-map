@@ -1,31 +1,37 @@
 import type { FacilityRepository } from "@market-health-map/core/application";
 import { asEntityId, Facility, GAMES_WINDOW_DAYS } from "@market-health-map/core/domain";
 import { companyLogoUrl } from "@server/infrastructure/repositories/warehouse/company-logo-url/company-logo-url";
+import {
+	gameDepartmentCase,
+	ORGANIZER_PARTNERS_CTE,
+	organizerPartnersJoin,
+} from "@server/infrastructure/repositories/warehouse/game-department-sql/game-department-sql";
 import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse/is-ignored-facility/is-ignored-facility";
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
 import { isWithinServiceArea } from "@server/infrastructure/repositories/warehouse/service-area/service-area";
-import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
+import {
+	inLastDaysSql,
+	inPreviousDaysSql,
+	todayParameterSql,
+	WEEK_DAYS,
+} from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseLocationRow,
 	WarehouseQueryable,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository.types";
 
+const GAME_DATE = "g.date_with_time::date";
+
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
-  select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
+  select ${todayParameterSql(1)} as today
 ),
-organizer_partners as (
-  select distinct partner_id from plei_gold.fct_terms
-  where name ilike '%Organizer Program%' and deleted_at is null
-),
+${ORGANIZER_PARTNERS_CTE},
 classified_games as (
-  select r.*, case
-    when r.partner_id in (6, 52, 62) then 'magic'
-    when op.partner_id is not null then 'organizers'
-    else 'partnerships' end as department
+  select r.*, ${gameDepartmentCase("r")} as department
   from plei_gold.dim_reservation r
-  left join organizer_partners op on op.partner_id = r.partner_id
+  ${organizerPartnersJoin("r")}
 ),
 facility_activity as (
   select r.location_id,
@@ -47,9 +53,9 @@ facility_activity as (
          count(distinct r.reservation_id) filter (where r.in_previous_week and r.department = 'partnerships') as partnership_games_previous_week
   from (
     select g.location_id, g.reservation_id, g.department,
-           g.date_with_time::date >= b.this_week - 7 and g.date_with_time::date < b.this_week as in_last_week,
-           g.date_with_time::date >= b.this_week - 14 and g.date_with_time::date < b.this_week - 7 as in_previous_week,
-           g.date_with_time::date >= b.today - ${GAMES_WINDOW_DAYS} as in_current
+           ${inLastDaysSql(GAME_DATE, "b.today", WEEK_DAYS)} as in_last_week,
+           ${inPreviousDaysSql(GAME_DATE, "b.today", WEEK_DAYS)} as in_previous_week,
+           ${inLastDaysSql(GAME_DATE, "b.today", GAMES_WINDOW_DAYS)} as in_current
     from classified_games g
     cross join bounds b
     where g.reservation_type = 'OpenReservation'
@@ -177,8 +183,10 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 export class WarehouseFacilityRepository implements FacilityRepository {
 	constructor(private readonly warehouse: WarehouseQueryable) {}
 
-	async listAll(): Promise<Facility[]> {
-		const { rows } = await this.warehouse.query<WarehouseLocationRow>(ACTIVE_LOCATIONS_SQL);
+	async listAll(today: string): Promise<Facility[]> {
+		const { rows } = await this.warehouse.query<WarehouseLocationRow>(ACTIVE_LOCATIONS_SQL, [
+			today,
+		]);
 		return mergeColocatedFacilities(
 			rows.flatMap((row) => {
 				const facility = toFacility(row);

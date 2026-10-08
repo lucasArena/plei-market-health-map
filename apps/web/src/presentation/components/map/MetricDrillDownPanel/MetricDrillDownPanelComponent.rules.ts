@@ -12,6 +12,7 @@ import {
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { type AnimationEvent, useEffect, useMemo, useRef, useState } from "react";
+import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type {
 	DrillDownChartRow,
@@ -99,6 +100,7 @@ export function useMetricDrillDownPanelRules({
 				marketId: scope.kind === "market" ? scope.id : undefined,
 				facilityId: scope.kind === "facility" ? scope.id : undefined,
 				now: new Date(),
+				timeZone: browserTimeZone(),
 			}),
 		[period, query.data, scope, selection, gameDepartments, showSupply],
 	);

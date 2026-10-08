@@ -1,10 +1,11 @@
+import { STATS_PERIOD_DAYS } from "@core/application/dtos/facility-detail-dto";
 import type {
 	MetricDrillDownInput,
 	MetricDrillDownRow,
 	MetricDrillDownView,
 } from "@core/application/services/get-metric-drill-down.types";
 import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
-import { lastCompletedWeekStart } from "@core/domain";
+import { localDay, statsWindow } from "@core/domain";
 
 export const DRILL_DOWN_DEPARTMENTS = ["magic", "organizers", "partnerships"] as const;
 
@@ -15,22 +16,12 @@ function sumKnown(left: number | null, right: number | null): number | null {
 function emptyDepartments(): GameDepartmentCounts {
 	return { magic: 0, organizers: 0, partnerships: 0 };
 }
-function shiftDate(date: string, days: number): string {
-	return new Date(Date.parse(`${date}T00:00:00Z`) + days * 86400000).toISOString().slice(0, 10);
-}
 export function makeGetMetricDrillDown() {
 	return (input: MetricDrillDownInput): MetricDrillDownView => {
-		const today = new Intl.DateTimeFormat("en-CA", {
-			timeZone: "Pacific/Honolulu",
-			year: "numeric",
-			month: "2-digit",
-			day: "2-digit",
-		}).format(input.now);
-		const start =
-			input.period === "week"
-				? lastCompletedWeekStart(new Date(`${today}T00:00:00Z`))
-				: shiftDate(today, -28);
-		const end = input.period === "week" ? shiftDate(start, 6) : shiftDate(today, -1);
+		const { start, end } = statsWindow(
+			localDay(input.now, input.timeZone),
+			STATS_PERIOD_DAYS[input.period],
+		);
 		const facilities = [
 			...new Map(input.facilities.map((facility) => [facility.id, facility])).values(),
 		].filter(

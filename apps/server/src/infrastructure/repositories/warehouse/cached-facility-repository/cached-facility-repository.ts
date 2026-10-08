@@ -17,11 +17,14 @@ export class CachedFacilityRepository implements FacilityRepository {
 		private readonly ttlMs: number = FACILITY_CACHE_TTL_MS,
 	) {}
 
-	listAll(): Promise<Facility[]> {
+	listAll(today: string): Promise<Facility[]> {
 		const now = this.clock.now().getTime();
-		const cached = this.cache.get("all");
+		const cached = this.cache.get(today);
 		if (!cached || isExpired(cached, now)) {
-			return remember(this.cache, "all", this.inner.listAll(), now + this.ttlMs);
+			for (const [key, entry] of this.cache) {
+				if (isExpired(entry, now)) this.cache.delete(key);
+			}
+			return remember(this.cache, today, this.inner.listAll(today), now + this.ttlMs);
 		}
 		return cached.value;
 	}

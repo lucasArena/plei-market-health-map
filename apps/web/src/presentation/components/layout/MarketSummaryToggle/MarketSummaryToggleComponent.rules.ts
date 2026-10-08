@@ -11,6 +11,7 @@ import { useSidePanels } from "@/presentation/components/providers/SidePanelProv
 import { prefetchFacilityStats } from "@/presentation/hooks/use-facility/prefetch-facility-stats";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
 import { useIdleMarketPrefetch } from "@/presentation/hooks/use-market/use-idle-market-prefetch";
+import { useMarketSummaryFilters } from "@/presentation/hooks/use-market/use-market-summary-filters";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
 export function nextToggleState(state: MarketSummaryToggleState): MarketSummaryToggleState {
@@ -25,6 +26,7 @@ export function useMarketSummaryToggleRules() {
 	const isFacilitySelected = activePanel === "facility-detail";
 	const queryClient = useQueryClient();
 	const { period, scope } = useMapScope();
+	const { departments } = useMarketSummaryFilters();
 	useIdleMarketPrefetch(isOnMap);
 
 	const prefetchScope = useCallback(() => {
@@ -33,8 +35,8 @@ export function useMarketSummaryToggleRules() {
 			return;
 		}
 		const marketId = scope.kind === "market" ? scope.id : null;
-		void prefetchMarketSummary(queryClient, marketId, period).catch(() => undefined);
-	}, [period, queryClient, scope]);
+		void prefetchMarketSummary(queryClient, marketId, period, departments).catch(() => undefined);
+	}, [departments, period, queryClient, scope]);
 
 	const toggle = useCallback(() => {
 		if (isFacilitySelected) {

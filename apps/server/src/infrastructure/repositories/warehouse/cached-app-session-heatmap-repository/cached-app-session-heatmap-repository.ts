@@ -34,10 +34,12 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 
 	listSessions(
 		period: StatsPeriod,
-		filters: AppSessionFilters = {},
+		filters: AppSessionFilters,
+		today: string,
 	): Promise<AppSessionHeatmapCellView[]> {
 		const now = this.clock.now().getTime();
 		const key = JSON.stringify([
+			today,
 			period,
 			filters.metric,
 			Array.isArray(filters.gender) ? [...filters.gender].sort() : filters.gender,
@@ -51,7 +53,12 @@ export class CachedAppSessionHeatmapRepository implements AppSessionHeatmapRepos
 				if (isExpired(entry, now)) this.cache.delete(entryKey);
 			}
 			if (this.cache.size >= 100) this.cache.delete(this.cache.keys().next().value as string);
-			return remember(this.cache, key, this.inner.listSessions(period, filters), now + this.ttlMs);
+			return remember(
+				this.cache,
+				key,
+				this.inner.listSessions(period, filters, today),
+				now + this.ttlMs,
+			);
 		}
 		return cached.value;
 	}

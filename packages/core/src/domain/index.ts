@@ -6,6 +6,11 @@ export type {
 	GameDepartmentCounts,
 } from "@core/domain/entities/facility/facility.types";
 export {
+	GAME_DEPARTMENTS,
+	normalizeGameDepartments,
+	sumGameDepartments,
+} from "@core/domain/entities/game-department/game-department";
+export {
 	classifyGamesTrend,
 	GAMES_WINDOW_DAYS,
 	gamesTrend,
@@ -37,4 +42,11 @@ export type { GeoPoint } from "@core/domain/shared/geo-point.types";
 export { guard } from "@core/domain/shared/guard";
 export { asEntityId } from "@core/domain/shared/id";
 export type { EntityId } from "@core/domain/shared/id.types";
+export {
+	DEFAULT_STATS_TIME_ZONE,
+	localDay,
+	resolveStatsTimeZone,
+	type StatsWindow,
+	statsWindow,
+} from "@core/domain/shared/stats-day";
 export { lastCompletedWeekStart, weekEndOf, weekStartOf } from "@core/domain/shared/week";
