@@ -87,9 +87,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					<p className="text-3xl font-semibold tabular-nums">
 						{rules.isLoading || rules.isError ? "—" : formatValue(rules.headlineValue)}
 					</p>
-					<p className="text-xs">
-						{m[selection.measure === "games" ? "games" : "activeFacilities"]}
-					</p>
+					<p className="text-xs">{rules.measureLabel}</p>
 					<p className="mt-1 text-xs text-muted-foreground">{rules.dateRange}</p>
 					{rules.focusLabel && <p className="mt-1 text-xs font-medium">{rules.focusLabel}</p>}
 					<p className="mt-1 text-xs text-muted-foreground">{m.selectionHelp}</p>
@@ -104,6 +102,10 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						options={[
 							{ value: "games", label: m.games },
 							{ value: "active-facilities", label: m.activeFacilities },
+							{ value: "scheduled-games", label: m.scheduledGames },
+							{ value: "confirmation-rate", label: m.confirmationRate },
+							{ value: "unique-players", label: m.uniquePlayers },
+							{ value: "activated-players", label: m.activatedPlayers },
 						]}
 					/>
 					<MapMetricSelect
@@ -128,9 +130,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						options={[
 							{ value: "market", label: m.market },
 							{ value: "facility", label: m.facility },
-							...(selection.measure === "games"
-								? [{ value: "department", label: m.department }]
-								: []),
+							...(rules.canSliceByDepartment ? [{ value: "department", label: m.department }] : []),
 						]}
 					/>
 					<MapMetricSelect
@@ -326,7 +326,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													}
 													className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap"
 												>
-													{m.value} ↕
+													{rules.valueLabel} ↕
 												</button>
 											</th>
 											{segment === "department" &&

@@ -8,7 +8,11 @@ import type {
 	MetricDrillDownRow,
 	MetricDrillDownView,
 } from "@market-health-map/core/application";
-import { DRILL_DOWN_DEPARTMENTS } from "@market-health-map/core/application";
+import {
+	canSegmentDrillDown,
+	canSliceDrillDownByDepartment,
+	DRILL_DOWN_DEPARTMENTS,
+} from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
@@ -151,17 +155,34 @@ export function useMetricDrillDownPanelRules({
 	}
 	const isSelected = (row: MetricDrillDownRow, department?: GameDepartment) =>
 		focus?.rowId === row.id && (department === undefined || focus.department === department);
-	const canSegment = selection.measure === "games" && selection.slice !== "department";
+	const canSegment = canSegmentDrillDown(selection.measure, selection.slice);
 	const segment = canSegment ? selection.segment : "none";
 	const number = new Intl.NumberFormat(locale);
+	const rate = new Intl.NumberFormat(locale, {
+		minimumFractionDigits: 1,
+		maximumFractionDigits: 1,
+	});
 	const date = new Intl.DateTimeFormat(locale, {
 		year: "numeric",
 		month: "short",
 		day: "numeric",
 		timeZone: "UTC",
 	});
+	const measureLabels = {
+		games: messages.drillDown.games,
+		"active-facilities": messages.drillDown.activeFacilities,
+		"scheduled-games": messages.drillDown.scheduledGames,
+		"confirmation-rate": messages.drillDown.confirmationRate,
+		"unique-players": messages.drillDown.uniquePlayers,
+		"activated-players": messages.drillDown.activatedPlayers,
+	};
 	const formatValue = (value: number | null) =>
-		value === null ? messages.drillDown.unavailable : number.format(value);
+		value === null
+			? messages.drillDown.unavailable
+			: {
+					true: `${rate.format(value)}%`,
+					false: number.format(value),
+				}[`${view.kind === "rate"}`];
 	const departmentNames = {
 		magic: messages.map.gameDepartmentMagic,
 		organizers: messages.map.gameDepartmentOrganizers,
@@ -196,13 +217,19 @@ export function useMetricDrillDownPanelRules({
 			if (!counts) return { ...row, bars: [] };
 			return {
 				...row,
-				bars: selectedDepartments.map((department) => ({
-					id: department,
-					department,
-					label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(counts[department])}`,
-					value: counts[department],
-					height: (counts[department] / max) * 100,
-				})),
+				bars: selectedDepartments.flatMap((department) => {
+					const value = counts[department];
+					if (value === null) return [];
+					return [
+						{
+							id: department,
+							department,
+							label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(value)}`,
+							value,
+							height: (value / max) * 100,
+						},
+					];
+				}),
 			};
 		}
 		return {
@@ -229,10 +256,10 @@ export function useMetricDrillDownPanelRules({
 			...current,
 			measure,
 			slice:
-				measure === "active-facilities" && current.slice === "department"
+				!canSliceDrillDownByDepartment(measure) && current.slice === "department"
 					? "market"
 					: current.slice,
-			segment: measure === "active-facilities" ? "none" : current.segment,
+			segment: canSliceDrillDownByDepartment(measure) ? current.segment : "none",
 		}));
 	}
 	function setSlice(slice: DrillDownSlice) {
@@ -266,10 +293,13 @@ export function useMetricDrillDownPanelRules({
 	const heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
 	return {
 		messages: messages.drillDown,
+		measureLabel: measureLabels[selection.measure],
+		valueLabel: view.kind === "rate" ? messages.drillDown.rate : messages.drillDown.value,
 		selection,
 		range,
 		segment,
 		canSegment,
+		canSliceByDepartment: canSliceDrillDownByDepartment(selection.measure),
 		setMeasure,
 		setSlice,
 		setSegment,

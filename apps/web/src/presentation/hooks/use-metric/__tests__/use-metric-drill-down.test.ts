@@ -55,6 +55,13 @@ describe("metricDrillDownPath", () => {
 		expect(path).not.toContain("department=");
 		expect(path).not.toContain("segment=");
 		expect(path).not.toContain("departments=");
+		expect(
+			metricDrillDownPath({
+				measure: "unique-players",
+				range: "12m",
+				slice: "department",
+			}),
+		).toContain("measure=unique-players");
 	});
 });
 

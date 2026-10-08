@@ -3,7 +3,7 @@ import type {
 	GetMetricDrillDownInput,
 } from "@market-health-map/core/application";
 import {
-	aggregateCountDrillDown,
+	aggregateDrillDownFromFacts,
 	drillDownWindow,
 	factsFromFacilityPoints,
 } from "@market-health-map/core/application";
@@ -58,8 +58,32 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 			"America/New_York",
 			input.range,
 		);
-		const view = aggregateCountDrillDown({
-			facilities: factsFromFacilityPoints(data, input.range === "7d" ? "7d" : "28d"),
+		const view = aggregateDrillDownFromFacts({
+			facilities: factsFromFacilityPoints(data, input.range === "7d" ? "7d" : "28d").map(
+				(facility) => ({
+					...facility,
+					scheduled: facility.games === null ? null : (facility.games ?? 0) + 2,
+					scheduledByDepartment: facility.gamesByDepartment
+						? {
+								magic: facility.gamesByDepartment.magic + 1,
+								organizers: facility.gamesByDepartment.organizers,
+								partnerships: facility.gamesByDepartment.partnerships + 1,
+							}
+						: null,
+					uniquePlayerIds: facility.id === "a" ? ["p1", "p2"] : ["p1", "p3"],
+					uniquePlayerIdsByDepartment: {
+						magic: ["p1"],
+						organizers: facility.id === "a" ? ["p2"] : ["p3"],
+						partnerships: [],
+					},
+					activatedPlayerIds: facility.id === "a" ? ["p2"] : ["p3"],
+					activatedPlayerIdsByDepartment: {
+						magic: [],
+						organizers: facility.id === "a" ? ["p2"] : ["p3"],
+						partnerships: [],
+					},
+				}),
+			),
 			measure: input.measure,
 			slice: input.slice,
 			marketId: input.marketId,
@@ -104,6 +128,10 @@ function select(name: string, value: string) {
 	const labels = {
 		games: "Games played",
 		"active-facilities": "Active facilities",
+		"scheduled-games": "Scheduled games",
+		"confirmation-rate": "Confirmation rate",
+		"unique-players": "Unique players",
+		"activated-players": "Activated players",
 		market: "Market",
 		facility: "Facility",
 		department: "Department",
@@ -319,11 +347,25 @@ describe("MetricDrillDownPanel", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
-	it("offers department slices only for games and disables overlapping facility segments", () => {
+	it("offers department slices for game and player measures and hides them for active facilities", () => {
 		setup();
 		select("Slice", "department");
 		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
 		expect(within(screen.getByRole("table")).getByText("Magic")).toBeInTheDocument();
+		select("Measure", "scheduled-games");
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Department");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Scheduled games");
+		select("Measure", "confirmation-rate");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
+			"Confirmation rate",
+		);
+		expect(screen.getByRole("button", { name: /Rate ↕/ })).toBeInTheDocument();
+		select("Measure", "unique-players");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Unique players");
+		select("Measure", "activated-players");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
+			"Activated players",
+		);
 		select("Measure", "active-facilities");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
@@ -345,7 +387,7 @@ describe("MetricDrillDownPanel", () => {
 			gamesLast28Days: index + 1,
 		}));
 		setup();
-		expect(screen.getByText("Top 10 by count")).toBeInTheDocument();
+		expect(screen.getByText("Top 10")).toBeInTheDocument();
 		expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(13);
 		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
 		expect(within(screen.getByRole("table")).getAllByRole("row")[1]).toHaveTextContent("Market 0");

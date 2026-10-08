@@ -192,6 +192,10 @@ export interface Messages {
 		help: string;
 		games: string;
 		activeFacilities: string;
+		scheduledGames: string;
+		confirmationRate: string;
+		uniquePlayers: string;
+		activatedPlayers: string;
 		market: string;
 		facility: string;
 		department: string;
@@ -206,6 +210,7 @@ export interface Messages {
 		topTen: string;
 		chart: string;
 		value: string;
+		rate: string;
 		viewOnMap: string;
 		back: string;
 		allMarkets: string;
