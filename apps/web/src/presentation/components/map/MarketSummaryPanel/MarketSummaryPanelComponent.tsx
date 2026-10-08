@@ -134,17 +134,6 @@ function MarketSummaryMetrics({
 			points={view.weeklyActivity}
 		/>
 	);
-	const popularTimes = (
-		<PopularTimesHeatmap
-			title={detailMessages.popularTimes}
-			dayLabels={view.dayLabels}
-			periodLabels={view.timePeriodLabels}
-			periodRanges={detailMessages.timePeriodRanges}
-			cells={view.popularTimes}
-			quietLabel={detailMessages.quiet}
-			busyLabel={detailMessages.busy}
-		/>
-	);
 	if (!isRedesigned) {
 		return (
 			<>
@@ -153,7 +142,15 @@ function MarketSummaryMetrics({
 				)}
 				<StatTiles tiles={view.tiles} testIdPrefix="market-stat" />
 				{weeklyActivity}
-				{popularTimes}
+				<PopularTimesHeatmap
+					title={detailMessages.popularTimes}
+					dayLabels={view.dayLabels}
+					periodLabels={view.timePeriodLabels}
+					periodRanges={detailMessages.timePeriodRanges}
+					cells={view.popularTimes}
+					quietLabel={detailMessages.quiet}
+					busyLabel={detailMessages.busy}
+				/>
 				{view.topMarkets && (
 					<RankList
 						title={messages.topMarkets}
@@ -176,7 +173,6 @@ function MarketSummaryMetrics({
 			<PanelSection title={gamesTitle} testId="panel-section-games">
 				{gamesTrend ? <GamesTrendChart view={gamesTrend} /> : weeklyActivity}
 			</PanelSection>
-			{popularTimes}
 			{userTiles.length > 0 && (
 				<PanelSection title={messages.sectionUsers} testId="panel-section-users">
 					<StatTiles tiles={userTiles} testIdPrefix="market-stat" />
