@@ -73,7 +73,6 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		return [...facilityIds].sort().join(",");
 	}
 
-	/** The unfiltered key stays the plain id list; a department filter gets its own entry. */
 	private reservationKeyFor(facilityIds: EntityId[], departments: readonly string[]): string {
 		const ids = this.keyFor(facilityIds);
 		return departments.length > 0 ? `${ids}|departments=${departments.join(",")}` : ids;

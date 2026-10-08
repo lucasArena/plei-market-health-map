@@ -39,3 +39,5 @@ export interface ClusterHoverCardPlacement {
 	top: number;
 	transform: string;
 }
+
+export type HoverTrendMessages = Messages["map"]["trend"];

@@ -43,7 +43,6 @@ export interface FacilityPlayerStats {
 
 export interface FacilityWeeklyCounts extends FacilityReservationStats, FacilityPlayerStats {}
 
-/** Narrows reservation stats to games from these departments; empty or absent means all. */
 export interface FacilityReservationStatsFilters {
 	departments?: readonly GameDepartment[];
 }

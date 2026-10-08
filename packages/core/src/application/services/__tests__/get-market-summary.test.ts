@@ -273,7 +273,6 @@ function departments(
 	return { magic, organizers, partnerships };
 }
 
-/** A facility with every per department window filled in, as the warehouse returns it. */
 function departmentFacility(id: string, marketId: string, month: GameDepartmentCounts) {
 	const total = month.magic + month.organizers + month.partnerships;
 	return Facility.create({

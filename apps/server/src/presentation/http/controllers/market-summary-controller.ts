@@ -6,7 +6,6 @@ import type { ApiServices } from "@server/presentation/http/api-app.types";
 import { ok } from "@server/presentation/http/respond";
 import { type Context, Hono } from "hono";
 
-/** `?departments=magic,organizers` as a list; absent stays absent so the default call is unchanged. */
 function departmentsFrom(context: Context): Pick<GetMarketSummaryInput, "departments"> {
 	const departments = context.req.query("departments");
 	if (departments === undefined) return {};

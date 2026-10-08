@@ -13,11 +13,6 @@ function previousGames(row: FacilityGameComparison | undefined, period: StatsPer
 	return period === "week" ? row.playedPreviousWeek : row.playedPrevious28Days;
 }
 
-/**
- * Game comparisons for the selected departments, read from the per department windows on
- * the cached facility list instead of the warehouse. Each row is keyed by the facility id,
- * which is one of its member ids, so co-located twins are counted once.
- */
 export function toDepartmentGameComparisons(
 	facilities: Facility[],
 	departments: readonly GameDepartment[],
