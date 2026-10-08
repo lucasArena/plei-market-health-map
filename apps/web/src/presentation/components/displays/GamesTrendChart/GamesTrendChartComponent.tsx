@@ -34,7 +34,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 
 	return (
 		<div className="space-y-3" data-testid={testId}>
-			{view.label && <p className="-mb-2 text-xs font-medium text-[#525866]">{view.label}</p>}
+			{view.label && <p className="text-xs font-medium text-[#525866]">{view.label}</p>}
 			<div className="flex items-end gap-2.5">
 				<p className="text-[36px] leading-[42px] font-semibold tracking-[-0.02em] text-[#1d1d1f] tabular-nums">
 					{view.total}
