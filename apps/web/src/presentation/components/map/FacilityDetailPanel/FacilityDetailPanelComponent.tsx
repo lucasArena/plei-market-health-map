@@ -35,7 +35,7 @@ function FacilityDetailSkeleton() {
 }
 
 export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
-	const { aiContext, handleAnimationEnd, isAiPending, isClosing, messages, onClose, status, view } =
+	const { aiContext, handleAnimationEnd, isAiPending, isClosing, messages, status, view } =
 		useFacilityDetailPanelRules(props);
 
 	return (
@@ -46,14 +46,6 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 			onAnimationEnd={handleAnimationEnd}
 			className={`${isClosing ? "panel-slide-out" : "panel-slide-in"} ${PANEL_CLASS}`}
 		>
-			<button
-				type="button"
-				onClick={onClose}
-				aria-label={messages.close}
-				className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-			>
-				×
-			</button>
 			<div className="min-h-0 flex-1 overflow-y-auto">
 				{status === "loading" && <FacilityDetailSkeleton />}
 				{status === "error" && (
