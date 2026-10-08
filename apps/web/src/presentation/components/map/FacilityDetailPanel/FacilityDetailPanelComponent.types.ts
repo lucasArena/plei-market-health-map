@@ -12,7 +12,6 @@ export interface FacilityDetailPanelProps {
 	isClosing: boolean;
 	onClose: () => void;
 	onClosed: () => void;
-	/** Games trend for the facility, only while Show trend is on. */
 	trend?: GamesTrend | null;
 }
 

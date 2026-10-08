@@ -14,7 +14,6 @@ export interface FeatureFlagView {
 	enabled: boolean;
 	updatedBy: string | null;
 	updatedAt: string | null;
-	/** The flag this one needs on before it takes effect, when it has one. */
 	requires?: string;
 }
 

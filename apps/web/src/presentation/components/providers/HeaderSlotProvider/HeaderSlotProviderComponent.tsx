@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext } from "react";
+import { useHeaderSlotProviderRules } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent.rules";
 import type {
 	HeaderSlotContextValue,
 	HeaderSlotProviderProps,
@@ -14,12 +15,7 @@ const HeaderSlotContext = createContext<HeaderSlotContextValue>({
 });
 
 export function HeaderSlotProvider({ children }: Readonly<HeaderSlotProviderProps>) {
-	const [searchSlot, setSearchSlot] = useState<HTMLElement | null>(null);
-	const [legendSlot, setLegendSlot] = useState<HTMLElement | null>(null);
-	const value = useMemo(
-		() => ({ searchSlot, setSearchSlot, legendSlot, setLegendSlot }),
-		[legendSlot, searchSlot],
-	);
+	const value = useHeaderSlotProviderRules();
 	return <HeaderSlotContext.Provider value={value}>{children}</HeaderSlotContext.Provider>;
 }
 

@@ -3,6 +3,5 @@ import type { FacilityRepository } from "@core/application/repositories/facility
 
 export interface ListFacilitiesDeps {
 	facilities: FacilityRepository;
-	/** The flags in effect; games and trend data are left out of the map list while theirs are off. */
 	enabledFeatureFlags: () => Promise<EnabledFeatureFlagsView>;
 }

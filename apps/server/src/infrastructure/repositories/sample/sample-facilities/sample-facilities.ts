@@ -62,7 +62,6 @@ export function scatterAround(center: GeoPoint, random: () => number): GeoPoint 
 	};
 }
 
-/** Previous window games for the trend, from its own seed so the other sample values stay put. */
 export function samplePreviousGames(current: number, random: () => number): number {
 	const roll = random();
 	if (current === 0) return roll < 0.5 ? 0 : Math.ceil(roll * 12);

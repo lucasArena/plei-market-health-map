@@ -148,10 +148,6 @@ function buildFacilityRepositories() {
 	};
 }
 
-/**
- * The flags server code honors. Under `next dev` every flag is on, matching `useFeatureFlag`, so
- * local UI and data agree; other builds read the saved flags.
- */
 function enabledFeatureFlags() {
 	if (process.env.NODE_ENV === "development") {
 		return Promise.resolve({ enabled: [...FEATURE_FLAG_KEYS] });
