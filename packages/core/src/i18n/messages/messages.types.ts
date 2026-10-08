@@ -241,8 +241,10 @@ export interface Messages {
 		facilitiesActive: string;
 		marketsActive: string;
 		comparedWith: string;
-		showMore: string;
-		showLess: string;
+		sectionGames: string;
+		sectionUsers: string;
+		sectionMarkets: string;
+		sectionFacilities: string;
 		dataAsOf: string;
 		reportWrongNumber: string;
 	};
