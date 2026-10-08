@@ -18,6 +18,9 @@ export const DRILL_DOWN_MEASURES = [
 	"confirmation-rate",
 	"unique-players",
 	"activated-players",
+	"almost-filled-rate",
+	"incident-games",
+	"incident-games-rate",
 ] as const;
 export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
 
@@ -37,6 +40,9 @@ export const DRILL_DOWN_MEASURE_KIND = {
 	"confirmation-rate": "rate",
 	"unique-players": "distinct-count",
 	"activated-players": "distinct-count",
+	"almost-filled-rate": "rate",
+	"incident-games": "count",
+	"incident-games-rate": "rate",
 } as const satisfies Record<DrillDownMeasure, DrillDownMeasureKind>;
 
 export const DRILL_DOWN_GRAINS = ["range"] as const;
@@ -62,11 +68,15 @@ export interface MetricDrillDownRow {
 	departments: Record<GameDepartment, number | null> | null;
 	numerator?: number | null;
 	denominator?: number | null;
+	dataErrors?: number;
 }
 
 export interface MetricDrillDownView {
 	total: number | null;
 	rows: MetricDrillDownRow[];
+	numerator?: number | null;
+	denominator?: number | null;
+	dataErrors?: number;
 	start: string;
 	end: string;
 	measure: DrillDownMeasure;

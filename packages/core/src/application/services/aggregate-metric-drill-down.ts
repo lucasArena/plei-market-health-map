@@ -13,7 +13,9 @@ import type {
 	AggregateCountDrillDownInput,
 	DistinctCountContribution,
 	DrillDownFacilityFact,
+	DrillDownRateMeasure,
 	RateContribution,
+	RateFactParts,
 } from "@core/application/services/aggregate-metric-drill-down.types";
 import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
 import { localDay, statsWindow } from "@core/domain";
@@ -193,7 +195,7 @@ export function measureRateValue(
 	denominator: number | null,
 ): number | null {
 	if (numerator === null || denominator === null) return null;
-	if (measure === "confirmation-rate") return confirmationRate(numerator, denominator);
+	if (DRILL_DOWN_MEASURE_KIND[measure] === "rate") return confirmationRate(numerator, denominator);
 	return rateValue(numerator, denominator);
 }
 
@@ -216,11 +218,16 @@ export function aggregateRateDrillDown(input: {
 			name: string;
 			numerator: number | null;
 			denominator: number | null;
+			dataErrors: number;
 			departments: Record<GameDepartment, { numerator: number | null; denominator: number | null }>;
 		}
 	>();
 	let totalNumerator: number | null = 0;
 	let totalDenominator: number | null = 0;
+	let totalDataErrors = 0;
+	const reportsDataErrors = input.contributions.some(
+		(contribution) => contribution.dataErrors !== undefined,
+	);
 	for (const contribution of input.contributions) {
 		const parts = input.department
 			? (contribution.departments?.[input.department] ?? {
@@ -235,6 +242,7 @@ export function aggregateRateDrillDown(input: {
 			name: contribution.name,
 			numerator: 0,
 			denominator: 0,
+			dataErrors: 0,
 			departments: {
 				magic: { numerator: 0, denominator: 0 },
 				organizers: { numerator: 0, denominator: 0 },
@@ -243,6 +251,8 @@ export function aggregateRateDrillDown(input: {
 		};
 		row.numerator = sumKnown(row.numerator, parts.numerator);
 		row.denominator = sumKnown(row.denominator, parts.denominator);
+		row.dataErrors += contribution.dataErrors ?? 0;
+		totalDataErrors += contribution.dataErrors ?? 0;
 		for (const department of selectedDepartments) {
 			const departmentParts = contribution.departments?.[department] ?? {
 				numerator: null,
@@ -257,12 +267,16 @@ export function aggregateRateDrillDown(input: {
 	}
 	return {
 		total: measureRateValue(input.measure, totalNumerator, totalDenominator),
+		numerator: totalNumerator,
+		denominator: totalDenominator,
+		...(reportsDataErrors ? { dataErrors: totalDataErrors } : {}),
 		rows: [...rows.values()].map((row) => ({
 			id: row.id,
 			name: row.name,
 			value: measureRateValue(input.measure, row.numerator, row.denominator),
 			numerator: row.numerator,
 			denominator: row.denominator,
+			...(reportsDataErrors ? { dataErrors: row.dataErrors } : {}),
 			departments: {
 				magic: measureRateValue(
 					input.measure,
@@ -299,55 +313,104 @@ export function scheduledFactsFrom(
 	}));
 }
 
+export function rateFactParts(
+	facility: DrillDownFacilityFact,
+	measure: DrillDownRateMeasure,
+): RateFactParts {
+	const parts = {
+		"confirmation-rate": () => ({
+			numerator: facility.games,
+			denominator: facility.scheduled ?? null,
+			numeratorByDepartment: facility.gamesByDepartment,
+			denominatorByDepartment: facility.scheduledByDepartment ?? null,
+		}),
+		"almost-filled-rate": () => ({
+			numerator: facility.almostFilled ?? null,
+			denominator: facility.rosteredCanceled ?? null,
+			numeratorByDepartment: facility.almostFilledByDepartment ?? null,
+			denominatorByDepartment: facility.rosteredCanceledByDepartment ?? null,
+			dataErrors: facility.missingRoster ?? 0,
+			dataErrorsByDepartment: facility.missingRosterByDepartment ?? null,
+		}),
+		"incident-games-rate": () => ({
+			numerator: facility.incidentGames ?? null,
+			denominator: facility.games,
+			numeratorByDepartment: facility.incidentGamesByDepartment ?? null,
+			denominatorByDepartment: facility.gamesByDepartment,
+		}),
+	};
+	return parts[measure]();
+}
+
+function isRateMeasure(measure: DrillDownMeasure): measure is DrillDownRateMeasure {
+	return DRILL_DOWN_MEASURE_KIND[measure] === "rate";
+}
+
 export function rateContributionsFromFacts(
 	facilities: readonly DrillDownFacilityFact[],
 	slice: DrillDownSlice,
 	options: {
+		measure?: DrillDownMeasure;
 		marketId?: string;
 		facilityId?: string;
 		gameDepartments?: readonly GameDepartment[];
 	} = {},
 ): RateContribution[] {
+	const measure =
+		options.measure && isRateMeasure(options.measure) ? options.measure : "confirmation-rate";
 	const selectedDepartments = options.gameDepartments?.length
 		? options.gameDepartments
 		: DRILL_DOWN_DEPARTMENTS;
 	return scopedFacilities(facilities, options.marketId, options.facilityId).flatMap(
 		(facility): RateContribution[] => {
+			const parts = rateFactParts(facility, measure);
+			const numerators = parts.numeratorByDepartment;
+			const denominators = parts.denominatorByDepartment;
 			const departments =
-				facility.gamesByDepartment && facility.scheduledByDepartment
+				numerators && denominators
 					? {
-							magic: {
-								numerator: facility.gamesByDepartment.magic,
-								denominator: facility.scheduledByDepartment.magic,
-							},
+							magic: { numerator: numerators.magic, denominator: denominators.magic },
 							organizers: {
-								numerator: facility.gamesByDepartment.organizers,
-								denominator: facility.scheduledByDepartment.organizers,
+								numerator: numerators.organizers,
+								denominator: denominators.organizers,
 							},
 							partnerships: {
-								numerator: facility.gamesByDepartment.partnerships,
-								denominator: facility.scheduledByDepartment.partnerships,
+								numerator: numerators.partnerships,
+								denominator: denominators.partnerships,
 							},
 						}
 					: null;
+			const reportsErrors = parts.dataErrors !== undefined;
 			if (slice === "department")
 				return selectedDepartments.map((department) => ({
 					id: department,
 					name: department,
 					numerator: departments?.[department].numerator ?? null,
 					denominator: departments?.[department].denominator ?? null,
+					...(reportsErrors ? { dataErrors: parts.dataErrorsByDepartment?.[department] ?? 0 } : {}),
 				}));
 			return [
 				{
 					id: slice === "market" ? facility.marketId : facility.id,
 					name: slice === "market" ? facility.marketName : facility.name,
-					numerator: facility.games,
-					denominator: facility.scheduled ?? null,
+					numerator: parts.numerator,
+					denominator: parts.denominator,
+					...(reportsErrors ? { dataErrors: parts.dataErrors } : {}),
 					departments,
 				},
 			];
 		},
 	);
+}
+
+export function incidentFactsFrom(
+	facilities: readonly DrillDownFacilityFact[],
+): DrillDownFacilityFact[] {
+	return facilities.map((facility) => ({
+		...facility,
+		games: facility.incidentGames ?? null,
+		gamesByDepartment: facility.incidentGamesByDepartment ?? null,
+	}));
 }
 
 export function distinctContributionsFromFacts(
@@ -398,7 +461,7 @@ export function distinctContributionsFromFacts(
 export function aggregateDrillDownFromFacts(
 	input: AggregateCountDrillDownInput,
 ): MetricDrillDownView {
-	if (input.measure === "confirmation-rate")
+	if (isRateMeasure(input.measure))
 		return aggregateRateDrillDown({
 			contributions: rateContributionsFromFacts(input.facilities, input.slice, input),
 			department: input.department,
@@ -424,10 +487,13 @@ export function aggregateDrillDownFromFacts(
 			start: input.start,
 			end: input.end,
 		});
+	const countFacts: Partial<Record<DrillDownMeasure, () => DrillDownFacilityFact[]>> = {
+		"scheduled-games": () => scheduledFactsFrom(input.facilities),
+		"incident-games": () => incidentFactsFrom(input.facilities),
+	};
 	return aggregateCountDrillDown({
 		...input,
-		facilities:
-			input.measure === "scheduled-games" ? scheduledFactsFrom(input.facilities) : input.facilities,
+		facilities: countFacts[input.measure]?.() ?? input.facilities,
 	});
 }
 

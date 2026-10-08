@@ -217,6 +217,19 @@ export const ptBR: Messages = {
 		confirmationRate: "Taxa de confirmação",
 		uniquePlayers: "Jogadores únicos",
 		activatedPlayers: "Jogadores ativados",
+		almostFilledRate: "Taxa de quase completos",
+		incidentGames: "Jogos com incidente",
+		incidentGamesRate: "% de jogos com incidente",
+		ratio: "{numerator} de {denominator}",
+		ratioWithErrors: "{numerator} de {denominator} · {errors} erros de dados",
+		almostFilledParts:
+			"{numerator} jogos cancelados quase completos de {denominator} jogos cancelados elegíveis",
+		incidentRateParts: "{numerator} jogos com incidente de {denominator} jogos realizados",
+		confirmationParts: "{numerator} jogos realizados de {denominator} jogos programados",
+		rosterDataErrors:
+			"Erro de dados: {count} jogos cancelados elegíveis não têm linha de pagamento ou contagem de jogadores. Eles ficam fora da taxa e não contam como 0.",
+		reviewsLag:
+			"As avaliações chegam depois dos jogos, então os incidentes dos dias mais recentes ainda podem aumentar.",
 		market: "Mercado",
 		facility: "Instalação",
 		department: "Departamento",

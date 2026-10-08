@@ -209,7 +209,9 @@ export type {
 	AggregateCountDrillDownInput,
 	DistinctCountContribution,
 	DrillDownFacilityFact,
+	DrillDownRateMeasure,
 	RateContribution,
+	RateFactParts,
 } from "@core/application/services/aggregate-metric-drill-down.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
@@ -228,9 +230,11 @@ export {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	incidentFactsFrom,
 	makeGetMetricDrillDown,
 	measureRateValue,
 	rateContributionsFromFacts,
+	rateFactParts,
 	rateValue,
 	scheduledFactsFrom,
 } from "@core/application/services/get-metric-drill-down";

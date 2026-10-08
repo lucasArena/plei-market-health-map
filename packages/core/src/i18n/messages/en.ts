@@ -213,6 +213,19 @@ export const en: Messages = {
 		confirmationRate: "Confirmation rate",
 		uniquePlayers: "Unique players",
 		activatedPlayers: "Activated players",
+		almostFilledRate: "Almost-filled rate",
+		incidentGames: "Incident games",
+		incidentGamesRate: "Incident games %",
+		ratio: "{numerator} of {denominator}",
+		ratioWithErrors: "{numerator} of {denominator} · {errors} data errors",
+		almostFilledParts:
+			"{numerator} almost-filled canceled games of {denominator} eligible canceled games",
+		incidentRateParts: "{numerator} incident games of {denominator} happened games",
+		confirmationParts: "{numerator} played games of {denominator} scheduled games",
+		rosterDataErrors:
+			"Data error: {count} eligible canceled games have no payout row or player count. They are left out of the rate, not counted as 0.",
+		reviewsLag:
+			"Reviews arrive after games, so incident counts for the most recent days can still grow.",
 		market: "Market",
 		facility: "Facility",
 		department: "Department",

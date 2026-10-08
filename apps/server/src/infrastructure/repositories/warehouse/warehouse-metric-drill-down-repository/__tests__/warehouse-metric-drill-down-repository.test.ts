@@ -1,17 +1,30 @@
-import { asEntityId, Facility } from "@market-health-map/core/domain";
+import {
+	asEntityId,
+	Facility,
+	GAME_DEPARTMENTS,
+	type GameDepartment,
+} from "@market-health-map/core/domain";
 import {
 	metricDrillDownLocationsSql,
 	playerFactsFrom,
+	qualityFactsFrom,
 	reservationFactsFrom,
 	toDrillDownFacility,
 	toDrillDownFacilityFact,
 	WarehouseMetricDrillDownRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository";
-import type { WarehouseDrillDownLocationRow } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
+import type {
+	WarehouseDrillDownLocationRow,
+	WarehouseDrillDownQualityRow,
+	WarehouseQualityCount,
+	WarehouseQueryable,
+} from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
 import {
 	metricDrillDownFacilitiesSql,
 	metricDrillDownPlayerSql,
+	metricDrillDownQualitySql,
 	metricDrillDownReservationSql,
+	QUALITY_COUNTS,
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-sql";
 
 const baseRow: WarehouseDrillDownLocationRow = {
@@ -369,5 +382,137 @@ describe("WarehouseMetricDrillDownRepository", () => {
 		});
 		expect(unassigned?.marketId).toBe("unassigned");
 		expect(unassigned?.toJSON().address).toBe("—");
+	});
+});
+
+function qualityRow(
+	locationId: number,
+	counts: Partial<Record<WarehouseQualityCount, number>>,
+	department: GameDepartment = "magic",
+): WarehouseDrillDownQualityRow {
+	const row: Record<string, number | string> = { location_id: locationId };
+	for (const name of QUALITY_COUNTS) {
+		row[name] = counts[name] ?? 0;
+		for (const each of GAME_DEPARTMENTS)
+			row[`${name}_${each}`] = each === department ? (counts[name] ?? 0) : 0;
+	}
+	return row as WarehouseDrillDownQualityRow;
+}
+
+describe("almost-filled and incident drill-down", () => {
+	it("follows the catalog definitions in SQL", () => {
+		const sql = metricDrillDownQualitySql(28, false);
+		expect(sql).toContain("coalesce(g.cancellation_reason, 'Not enough players')");
+		expect(sql).toContain("not in ('Recurring game series', 'Operational changes')");
+		expect(sql).toContain("from plei_gold.fct_payouts p");
+		expect(sql).toContain("count(*) as payout_rows");
+		expect(sql).toContain("ro.payout_rows = 1 and ro.real_player_count is not null");
+		expect(sql).toContain("g.min_player_count - ro.real_player_count between 1 and 3");
+		expect(sql).not.toContain("coalesce(ro.real_player_count, 0)");
+		expect(sql).not.toContain("p.deleted_at");
+		expect(sql).toContain("select distinct v.reservation_id");
+		expect(sql).toContain("v.rate < 3");
+		expect(sql).toContain("left join low_rating_games lrg");
+		expect(sql).toContain("count(distinct c.reservation_id) filter (where c.happened) as happened");
+		expect(sql).toContain("as incident_games_partnerships");
+		expect(sql).toContain("r.date_with_time::date >= b.today - 28");
+		expect(sql).not.toContain("$3::text[]");
+		expect(metricDrillDownQualitySql(7, true)).toContain("= any($3::text[])");
+	});
+
+	it("rates almost-filled games and reports missing rosters as data errors", async () => {
+		const quality = [
+			qualityRow(1, { almost_filled: 3, rostered_canceled: 10, missing_roster: 2 }),
+			qualityRow(2, { almost_filled: 1, rostered_canceled: 6 }, "organizers"),
+		];
+		const locations = [baseRow, { ...baseRow, location_id: 2, location_name: "Arena | B" }];
+		const query = vi.fn(async (sql: string) => ({
+			rows: sql.includes("fct_payouts") ? quality : locations,
+		})) as unknown as WarehouseQueryable["query"];
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		const view = await repository.group({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledWith(metricDrillDownQualitySql(28, false), [
+			[1, 2],
+			"2026-10-08",
+		]);
+		expect(view).toMatchObject({
+			kind: "rate",
+			total: 25,
+			numerator: 4,
+			denominator: 16,
+			dataErrors: 2,
+			rows: [
+				{
+					id: "1",
+					value: 25,
+					numerator: 4,
+					denominator: 16,
+					dataErrors: 2,
+					departments: { magic: 30, organizers: 16.7, partnerships: null },
+				},
+			],
+		});
+		const byDepartment = await repository.group({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "department",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(byDepartment.rows).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ id: "magic", numerator: 3, denominator: 10, dataErrors: 2 }),
+				expect.objectContaining({ id: "organizers", dataErrors: 0 }),
+			]),
+		);
+	});
+
+	it("counts incident games and keeps unreviewed happened games in the rate", async () => {
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({ rows: [qualityRow(1, { happened: 40, incident_games: 2 })] })
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({ rows: [qualityRow(1, { happened: 40, incident_games: 2 })] });
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		const count = await repository.group({
+			measure: "incident-games",
+			range: "7d",
+			slice: "market",
+			departments: ["magic"],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query.mock.calls[1]?.[1]).toEqual([[1], "2026-10-08", ["magic"]]);
+		expect(count).toMatchObject({ kind: "count", total: 2, rows: [{ id: "10", value: 2 }] });
+		const rate = await repository.group({
+			measure: "incident-games-rate",
+			range: "7d",
+			slice: "market",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(rate).toMatchObject({ total: 5, numerator: 2, denominator: 40 });
+		expect(rate.dataErrors).toBeUndefined();
+	});
+
+	it("maps facilities without quality rows to zero counts", () => {
+		const [fact] = qualityFactsFrom([toDrillDownFacility(baseRow) as Facility], []);
+		expect(fact).toMatchObject({
+			games: 0,
+			almostFilled: 0,
+			rosteredCanceled: 0,
+			missingRoster: 0,
+			incidentGames: 0,
+		});
 	});
 });

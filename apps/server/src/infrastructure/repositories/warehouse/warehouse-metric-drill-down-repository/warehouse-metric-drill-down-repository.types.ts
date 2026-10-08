@@ -1,3 +1,5 @@
+import type { GameDepartment } from "@market-health-map/core/domain";
+
 export interface WarehouseDrillDownLocationRow {
 	location_id: number | string;
 	location_name: string | null;
@@ -27,6 +29,18 @@ export interface WarehouseDrillDownReservationRow {
 	played_organizers: number | string;
 	played_partnerships: number | string;
 }
+
+export type WarehouseQualityCount =
+	| "almost_filled"
+	| "rostered_canceled"
+	| "missing_roster"
+	| "happened"
+	| "incident_games";
+
+export type WarehouseDrillDownQualityRow = { location_id: number | string } & Record<
+	WarehouseQualityCount | `${WarehouseQualityCount}_${GameDepartment}`,
+	number | string
+>;
 
 export interface WarehouseDrillDownPlayerRow {
 	location_id: number | string;

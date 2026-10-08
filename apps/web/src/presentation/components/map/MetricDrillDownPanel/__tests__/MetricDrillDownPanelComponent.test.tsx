@@ -82,6 +82,18 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 						organizers: facility.id === "a" ? ["p2"] : ["p3"],
 						partnerships: [],
 					},
+					almostFilled: 1,
+					almostFilledByDepartment: { magic: 1, organizers: 0, partnerships: 0 },
+					rosteredCanceled: 4,
+					rosteredCanceledByDepartment: { magic: 2, organizers: 2, partnerships: 0 },
+					missingRoster: facility.id === "a" ? 1 : 0,
+					missingRosterByDepartment: {
+						magic: 0,
+						organizers: facility.id === "a" ? 1 : 0,
+						partnerships: 0,
+					},
+					incidentGames: 1,
+					incidentGamesByDepartment: { magic: 0, organizers: 1, partnerships: 0 },
 				}),
 			),
 			measure: input.measure,
@@ -132,6 +144,9 @@ function select(name: string, value: string) {
 		"confirmation-rate": "Confirmation rate",
 		"unique-players": "Unique players",
 		"activated-players": "Activated players",
+		"almost-filled-rate": "Almost-filled rate",
+		"incident-games": "Incident games",
+		"incident-games-rate": "Incident games %",
 		market: "Market",
 		facility: "Facility",
 		department: "Department",
@@ -376,6 +391,41 @@ describe("MetricDrillDownPanel", () => {
 		select("Slice", "facility");
 		select("Segment", "department");
 		expect(screen.getByRole("button", { name: "Arena · Magic: 2" })).toBeInTheDocument();
+	});
+	it("shows almost-filled parts and reports missing rosters as data errors", () => {
+		setup();
+		select("Measure", "almost-filled-rate");
+		expect(screen.getAllByText("25.0%")[0]).toHaveClass("text-3xl");
+		expect(
+			screen.getByText("3 almost-filled canceled games of 12 eligible canceled games"),
+		).toBeInTheDocument();
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			"Data error: 1 eligible canceled games have no payout row or player count.",
+		);
+		const miami = within(screen.getByRole("table")).getByRole("row", { name: /Miami/ });
+		expect(miami).toHaveTextContent("2 of 8 · 1 data errors");
+		expect(screen.getByRole("button", { name: "Orlando: 25.0% · 1 of 4" })).toBeInTheDocument();
+		expect(screen.queryByText(/Reviews arrive after games/)).not.toBeInTheDocument();
+		fireEvent.click(miami);
+		expect(
+			screen.getByText("2 almost-filled canceled games of 8 eligible canceled games"),
+		).toBeInTheDocument();
+		select("Slice", "facility");
+		select("Segment", "department");
+		fireEvent.click(screen.getByRole("button", { name: "Arena · Magic: 50.0%" }));
+		expect(screen.queryByText(/almost-filled canceled games of/)).not.toBeInTheDocument();
+	});
+	it("shows incident games with the reviews-lag note and incident rate parts", () => {
+		setup();
+		select("Measure", "incident-games");
+		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Count ↕/ })).toBeInTheDocument();
+		select("Measure", "incident-games-rate");
+		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
+		expect(screen.getByText("3 incident games of 16 happened games")).toBeInTheDocument();
+		expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+		select("Measure", "confirmation-rate");
+		expect(screen.getByText("16 played games of 22 scheduled games")).toBeInTheDocument();
 	});
 	it("sorts all table groups independently of the top-ten chart", () => {
 		data = Array.from({ length: 12 }, (_, index) => ({

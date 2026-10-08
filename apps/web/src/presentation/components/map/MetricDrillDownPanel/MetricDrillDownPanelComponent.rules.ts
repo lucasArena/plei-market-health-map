@@ -14,6 +14,7 @@ import {
 	DRILL_DOWN_DEPARTMENTS,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
+import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type {
@@ -175,6 +176,9 @@ export function useMetricDrillDownPanelRules({
 		"confirmation-rate": messages.drillDown.confirmationRate,
 		"unique-players": messages.drillDown.uniquePlayers,
 		"activated-players": messages.drillDown.activatedPlayers,
+		"almost-filled-rate": messages.drillDown.almostFilledRate,
+		"incident-games": messages.drillDown.incidentGames,
+		"incident-games-rate": messages.drillDown.incidentGamesRate,
 	};
 	const formatValue = (value: number | null) =>
 		value === null
@@ -183,6 +187,28 @@ export function useMetricDrillDownPanelRules({
 					true: `${rate.format(value)}%`,
 					false: number.format(value),
 				}[`${view.kind === "rate"}`];
+	const rateParts = (parts: {
+		numerator?: number | null;
+		denominator?: number | null;
+		dataErrors?: number;
+	}) => {
+		if (view.kind !== "rate" || parts.numerator == null || parts.denominator == null)
+			return undefined;
+		const values = {
+			numerator: number.format(parts.numerator),
+			denominator: number.format(parts.denominator),
+			errors: number.format(parts.dataErrors ?? 0),
+		};
+		return formatMessage(
+			parts.dataErrors ? messages.drillDown.ratioWithErrors : messages.drillDown.ratio,
+			values,
+		);
+	};
+	const headlinePartsTemplates: Partial<Record<DrillDownMeasure, string>> = {
+		"confirmation-rate": messages.drillDown.confirmationParts,
+		"almost-filled-rate": messages.drillDown.almostFilledParts,
+		"incident-games-rate": messages.drillDown.incidentRateParts,
+	};
 	const departmentNames = {
 		magic: messages.map.gameDepartmentMagic,
 		organizers: messages.map.gameDepartmentOrganizers,
@@ -237,7 +263,9 @@ export function useMetricDrillDownPanelRules({
 			bars: [
 				{
 					id: "total",
-					label: `${rowName(row)}: ${formatValue(row.value)}`,
+					label: [`${rowName(row)}: ${formatValue(row.value)}`, rateParts(row)]
+						.filter(Boolean)
+						.join(" · "),
 					value: row.value,
 					height: (row.value / max) * 100,
 				},
@@ -291,6 +319,19 @@ export function useMetricDrillDownPanelRules({
 	}
 
 	const heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
+	const headlineSource = focusedRow ?? view;
+	const headlineTemplate = headlinePartsTemplates[selection.measure];
+	const headlineParts =
+		headlineTemplate &&
+		!focus?.department &&
+		headlineSource.numerator != null &&
+		headlineSource.denominator != null
+			? formatMessage(headlineTemplate, {
+					numerator: number.format(headlineSource.numerator),
+					denominator: number.format(headlineSource.denominator),
+				})
+			: undefined;
+	const dataErrors = headlineSource.dataErrors ?? 0;
 	return {
 		messages: messages.drillDown,
 		measureLabel: measureLabels[selection.measure],
@@ -315,6 +356,14 @@ export function useMetricDrillDownPanelRules({
 		view,
 		chartTruncated: !hasFocus && view.rows.length > 10,
 		headlineValue: hasFocus ? focusedValue : view.total,
+		headlineParts,
+		dataErrorsMessage:
+			dataErrors > 0
+				? formatMessage(messages.drillDown.rosterDataErrors, { count: number.format(dataErrors) })
+				: undefined,
+		showReviewsLag:
+			selection.measure === "incident-games" || selection.measure === "incident-games-rate",
+		rateParts,
 		focusLabel: hasFocus
 			? `${rowName(focusedRow)}${focus?.department ? ` · ${departmentNames[focus.department]}` : ""}`
 			: undefined,

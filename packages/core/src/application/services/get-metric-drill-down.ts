@@ -18,8 +18,10 @@ export {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	incidentFactsFrom,
 	measureRateValue,
 	rateContributionsFromFacts,
+	rateFactParts,
 	rateValue,
 	scheduledFactsFrom,
 } from "@core/application/services/aggregate-metric-drill-down";

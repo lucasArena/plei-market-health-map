@@ -13,9 +13,12 @@ import {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	incidentFactsFrom,
 	makeGetMetricDrillDown,
 	rateContributionsFromFacts,
+	rateFactParts,
 	rateValue,
+	scheduledFactsFrom,
 } from "@core/application/services/get-metric-drill-down";
 import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryMetricDrillDownRepository } from "@core/application/testing/in-memory-metric-drill-down-repository";
@@ -375,6 +378,123 @@ describe("aggregateRateDrillDown", () => {
 				end: "2026-10-07",
 			}).total,
 		).toBeNull();
+	});
+});
+
+describe("almost-filled and incident measures", () => {
+	const quality: DrillDownFacilityFact = {
+		...facility,
+		almostFilled: 2,
+		almostFilledByDepartment: { magic: 1, organizers: 1, partnerships: 0 },
+		rosteredCanceled: 8,
+		rosteredCanceledByDepartment: { magic: 4, organizers: 4, partnerships: 0 },
+		missingRoster: 3,
+		missingRosterByDepartment: { magic: 0, organizers: 3, partnerships: 0 },
+		incidentGames: 1,
+		incidentGamesByDepartment: { magic: 0, organizers: 1, partnerships: 0 },
+	};
+
+	it("returns almost-filled rate with its parts and data errors", async () => {
+		const { getMetricDrillDown } = setup([quality]);
+		const view = await getMetricDrillDown({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "market",
+		});
+		expect(view).toMatchObject({
+			kind: "rate",
+			total: 25,
+			numerator: 2,
+			denominator: 8,
+			dataErrors: 3,
+			rows: [
+				{
+					id: "miami",
+					numerator: 2,
+					denominator: 8,
+					dataErrors: 3,
+					departments: { magic: 25, organizers: 25, partnerships: null },
+				},
+			],
+		});
+		const departments = await getMetricDrillDown({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "department",
+		});
+		expect(departments.rows.find((row) => row.id === "organizers")).toMatchObject({
+			dataErrors: 3,
+			value: 25,
+		});
+	});
+
+	it("keeps almost-filled unavailable when rosters are unknown", async () => {
+		const { getMetricDrillDown } = setup([facility]);
+		const view = await getMetricDrillDown({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(view.total).toBeNull();
+		expect(view.dataErrors).toBe(0);
+		expect(view.rows[0]?.departments).toEqual({
+			magic: null,
+			organizers: null,
+			partnerships: null,
+		});
+	});
+
+	it("counts incident games and rates them over happened games", async () => {
+		const { getMetricDrillDown } = setup([quality]);
+		await expect(
+			getMetricDrillDown({ measure: "incident-games", range: "28d", slice: "market" }),
+		).resolves.toMatchObject({ kind: "count", total: 1 });
+		const rate = await getMetricDrillDown({
+			measure: "incident-games-rate",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(rate).toMatchObject({ total: 10, numerator: 1, denominator: 10 });
+		expect(rate.dataErrors).toBeUndefined();
+		expect(
+			rateContributionsFromFacts([quality], "facility", { measure: "games" })[0],
+		).toMatchObject({ numerator: 10, denominator: 12 });
+	});
+
+	it("keeps facts without quality data unknown instead of zero", () => {
+		const bare: DrillDownFacilityFact = {
+			id: "b",
+			name: "Bay",
+			marketId: "miami",
+			marketName: "Miami",
+			games: null,
+			gamesByDepartment: null,
+		};
+		expect(rateFactParts(bare, "confirmation-rate")).toMatchObject({
+			numerator: null,
+			denominator: null,
+			denominatorByDepartment: null,
+		});
+		expect(rateFactParts(bare, "almost-filled-rate")).toEqual({
+			numerator: null,
+			denominator: null,
+			numeratorByDepartment: null,
+			denominatorByDepartment: null,
+			dataErrors: 0,
+			dataErrorsByDepartment: null,
+		});
+		expect(rateFactParts(bare, "incident-games-rate")).toMatchObject({
+			numerator: null,
+			numeratorByDepartment: null,
+		});
+		expect(incidentFactsFrom([bare])[0]).toMatchObject({ games: null, gamesByDepartment: null });
+		expect(scheduledFactsFrom([bare])[0]).toMatchObject({ games: null, gamesByDepartment: null });
+		expect(
+			rateContributionsFromFacts([bare], "department", {
+				measure: "almost-filled-rate",
+				gameDepartments: ["magic"],
+			}),
+		).toEqual([{ id: "magic", name: "magic", numerator: null, denominator: null, dataErrors: 0 }]);
 	});
 });
 

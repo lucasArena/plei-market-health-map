@@ -6,6 +6,12 @@ export function isOperationalCancellationSql(alias: string): string {
       and ${alias}.${OPERATIONAL_CANCELLATION_REASONS_SQL}`;
 }
 
+export function isEligibleCancellationSql(alias: string): string {
+	return `${alias}.status = 'cancelled'
+      and coalesce(${alias}.cancellation_reason, 'Not enough players')
+        not in ('Recurring game series', 'Operational changes')`;
+}
+
 export function isPlayedGameSql(alias: string): string {
 	return `${alias}.confirmed and ${alias}.status <> 'cancelled'`;
 }

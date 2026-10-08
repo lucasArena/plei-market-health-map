@@ -219,6 +219,19 @@ export const es: Messages = {
 		confirmationRate: "Tasa de confirmación",
 		uniquePlayers: "Jugadores únicos",
 		activatedPlayers: "Jugadores activados",
+		almostFilledRate: "Tasa de casi completos",
+		incidentGames: "Partidos con incidente",
+		incidentGamesRate: "% de partidos con incidente",
+		ratio: "{numerator} de {denominator}",
+		ratioWithErrors: "{numerator} de {denominator} · {errors} errores de datos",
+		almostFilledParts:
+			"{numerator} partidos cancelados casi completos de {denominator} partidos cancelados elegibles",
+		incidentRateParts: "{numerator} partidos con incidente de {denominator} partidos jugados",
+		confirmationParts: "{numerator} partidos jugados de {denominator} partidos programados",
+		rosterDataErrors:
+			"Error de datos: {count} partidos cancelados elegibles no tienen fila de pago ni conteo de jugadores. Quedan fuera de la tasa y no cuentan como 0.",
+		reviewsLag:
+			"Las reseñas llegan después de los partidos, así que los incidentes de los días más recientes aún pueden aumentar.",
 		market: "Mercado",
 		facility: "Instalación",
 		department: "Departamento",

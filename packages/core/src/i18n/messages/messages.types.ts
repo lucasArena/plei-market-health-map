@@ -196,6 +196,16 @@ export interface Messages {
 		confirmationRate: string;
 		uniquePlayers: string;
 		activatedPlayers: string;
+		almostFilledRate: string;
+		incidentGames: string;
+		incidentGamesRate: string;
+		ratio: string;
+		ratioWithErrors: string;
+		almostFilledParts: string;
+		incidentRateParts: string;
+		confirmationParts: string;
+		rosterDataErrors: string;
+		reviewsLag: string;
 		market: string;
 		facility: string;
 		department: string;

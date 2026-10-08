@@ -88,6 +88,9 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						{rules.isLoading || rules.isError ? "—" : formatValue(rules.headlineValue)}
 					</p>
 					<p className="text-xs">{rules.measureLabel}</p>
+					{!rules.isLoading && !rules.isError && rules.headlineParts && (
+						<p className="mt-1 text-xs tabular-nums text-muted-foreground">{rules.headlineParts}</p>
+					)}
 					<p className="mt-1 text-xs text-muted-foreground">{rules.dateRange}</p>
 					{rules.focusLabel && <p className="mt-1 text-xs font-medium">{rules.focusLabel}</p>}
 					<p className="mt-1 text-xs text-muted-foreground">{m.selectionHelp}</p>
@@ -106,6 +109,9 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							{ value: "confirmation-rate", label: m.confirmationRate },
 							{ value: "unique-players", label: m.uniquePlayers },
 							{ value: "activated-players", label: m.activatedPlayers },
+							{ value: "almost-filled-rate", label: m.almostFilledRate },
+							{ value: "incident-games", label: m.incidentGames },
+							{ value: "incident-games-rate", label: m.incidentGamesRate },
 						]}
 					/>
 					<MapMetricSelect
@@ -186,6 +192,14 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							<p role="status" className="text-xs text-muted-foreground">
 								{m.incomplete}
 							</p>
+						)}
+						{rules.dataErrorsMessage && (
+							<p role="alert" className="text-xs text-pleiful-sangria-50">
+								{rules.dataErrorsMessage}
+							</p>
+						)}
+						{rules.showReviewsLag && (
+							<p className="text-xs text-muted-foreground">{m.reviewsLag}</p>
 						)}
 						{rules.isEmpty && (
 							<p role="status" className="text-sm text-muted-foreground">
@@ -361,7 +375,14 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 												className={`cursor-pointer border-b border-border/30 transition-colors hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${rules.isSelected(row) ? "bg-primary/[0.06]" : ""}`}
 											>
 												<td className="py-3 pl-3 pr-2">{rowName(row)}</td>
-												<td className="text-right tabular-nums">{formatValue(row.value)}</td>
+												<td className="text-right tabular-nums">
+													{formatValue(row.value)}
+													{rules.rateParts(row) && (
+														<span className="block text-[10px] text-muted-foreground">
+															{rules.rateParts(row)}
+														</span>
+													)}
+												</td>
 												{segment === "department" &&
 													rules.departments.map((department) => (
 														<td key={department} className="px-2 text-right tabular-nums">
