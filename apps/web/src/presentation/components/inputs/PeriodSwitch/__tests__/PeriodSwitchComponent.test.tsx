@@ -90,4 +90,15 @@ describe("PeriodSwitch", () => {
 		expect(screen.queryByRole("group")).not.toBeInTheDocument();
 		mockPathname.mockReturnValue("/");
 	});
+
+	it("shows the green thumb again when returning to the map from another page", () => {
+		mockPathname.mockReturnValue("/admin/metrics");
+		const { rerender } = renderWithMessages(<PeriodSwitch />);
+		expect(screen.queryByRole("group")).not.toBeInTheDocument();
+
+		mockPathname.mockReturnValue("/");
+		rerender(<PeriodSwitch />);
+
+		expect(screen.getByTestId("period-switch-thumb")).toHaveStyle({ opacity: "1" });
+	});
 });

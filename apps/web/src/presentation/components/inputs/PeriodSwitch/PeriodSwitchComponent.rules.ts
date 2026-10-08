@@ -16,7 +16,7 @@ export function usePeriodSwitchRules() {
 	const { messages } = useMessages();
 	const { period, setPeriod } = useMapScope();
 	const isOnMap = usePathname() === "/";
-	const trackRef = useRef<HTMLFieldSetElement>(null);
+	const [track, trackRef] = useState<HTMLFieldSetElement | null>(null);
 	const optionRefs = useRef(new Map<StatsPeriod, HTMLButtonElement>());
 	const [thumb, setThumb] = useState<PeriodThumbStyle>(HIDDEN_THUMB);
 	const options = useMemo<PeriodSwitchOption[]>(
@@ -36,7 +36,6 @@ export function usePeriodSwitchRules() {
 	}, []);
 
 	const syncThumb = useCallback(() => {
-		const track = trackRef.current;
 		const selected = optionRefs.current.get(period);
 		if (!track || !selected) {
 			setThumb(HIDDEN_THUMB);
@@ -47,17 +46,16 @@ export function usePeriodSwitchRules() {
 			width: selected.offsetWidth,
 			ready: true,
 		});
-	}, [period]);
+	}, [period, track]);
 
 	useLayoutEffect(() => {
 		syncThumb();
-		const track = trackRef.current;
 		if (!track || typeof ResizeObserver === "undefined") return;
 		const observer = new ResizeObserver(syncThumb);
 		observer.observe(track);
 		for (const button of optionRefs.current.values()) observer.observe(button);
 		return () => observer.disconnect();
-	}, [syncThumb]);
+	}, [syncThumb, track]);
 
 	const select = useCallback((value: StatsPeriod) => setPeriod(value), [setPeriod]);
 
