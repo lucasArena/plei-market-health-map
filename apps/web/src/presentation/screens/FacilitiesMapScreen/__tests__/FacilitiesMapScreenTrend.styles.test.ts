@@ -4,9 +4,11 @@ import {
 	FACILITY_TREND_RING,
 	FACILITY_TREND_TIP,
 	TREND_TIP_LENGTH,
-	type TrendRing,
-	type TrendTipShape,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
+import type {
+	TrendRing,
+	TrendTipShape,
+} from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 function points(path: string) {
 	return [...path.matchAll(/(?:M|L|0 1 [01]) ([\d.]+) ([\d.]+)/g)].map(([, x, y]) => [
