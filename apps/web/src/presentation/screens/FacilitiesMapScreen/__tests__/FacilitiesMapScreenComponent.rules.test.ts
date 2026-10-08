@@ -1071,6 +1071,56 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
 	});
 
+	it("consumes drill-down map navigation requests through the existing search behavior", async () => {
+		const container = document.createElement("div");
+		const { result } = renderHook(
+			() => {
+				const rules = useFacilitiesMapScreenRules();
+				rules.containerRef.current ??= container;
+				return { rules, context: useMapScope() };
+			},
+			{
+				wrapper: ({ children }: { children: ReactNode }) =>
+					wrapper({ children: createElement(MapScopeProvider, null, children) }),
+			},
+		);
+		act(() =>
+			result.current.context.setMapNavigation({
+				kind: "facility",
+				id: "f1",
+				name: FACILITY.name,
+				marketName: "Austin",
+			}),
+		);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(result.current.rules.selectedFacilityId).toBe("f1");
+		expect(result.current.context.mapNavigation).toBeNull();
+		expect(mapState.instances[0]?.easeTo).toHaveBeenCalledWith(
+			expect.objectContaining({
+				center: [FACILITY.location.longitude, FACILITY.location.latitude],
+				zoom: 14,
+			}),
+		);
+		act(() =>
+			result.current.context.setMapNavigation({ kind: "market", id: "austin", name: "Austin" }),
+		);
+		expect(result.current.context.scope).toEqual({ kind: "market", id: "austin", name: "Austin" });
+		expect(result.current.rules.selectedFacilityId).toBeNull();
+		expect(result.current.context.mapNavigation).toBeNull();
+		act(() =>
+			result.current.context.setMapNavigation({
+				kind: "facility",
+				id: "missing",
+				name: "Missing",
+				marketName: "Austin",
+			}),
+		);
+		expect(result.current.rules.selectedFacilityId).toBeNull();
+		act(() => result.current.context.setMapNavigation({ kind: "all" }));
+		expect(result.current.context.mapNavigation).toBeNull();
+	});
+
 	it("hides inactive facilities by default when there is no layers provider", async () => {
 		layersState.hasProvider = false;
 		const inactive = { ...FACILITY, id: "inactive", isActive: false, isActiveLastWeek: false };

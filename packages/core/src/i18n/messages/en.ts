@@ -191,6 +191,39 @@ export const en: Messages = {
 		lastPlayed: "Last game played {date}",
 		neverPlayed: "No games played yet",
 	},
+	drillDown: {
+		title: "Metric drill-down",
+		close: "Close drill-down",
+		measure: "Measure",
+		slice: "Slice",
+		segment: "Segment",
+		measureHelp: "What are we measuring?",
+		sliceHelp: "Group the results by…",
+		segmentHelp: "Split each group into…",
+		help: "Slice creates groups. Segment colors the parts within each group.",
+		games: "Games played",
+		activeFacilities: "Active facilities",
+		market: "Market",
+		facility: "Facility",
+		department: "Department",
+		none: "None",
+		selectedDepartmentHelp:
+			"Showing the selected department. Go back to compare departments again.",
+		segmentUnavailable:
+			"Department segments are available for games grouped by market or facility. Facilities can serve multiple departments.",
+		topTen: "Top 10 by count",
+		chart: "Metric by group",
+		value: "Count",
+		viewOnMap: "View on map",
+		back: "Back to overview",
+		allMarkets: "All markets",
+		loading: "Loading metrics…",
+		failed: "Could not load metrics.",
+		retry: "Try again",
+		empty: "No activity in this scope and period.",
+		unavailable: "Unavailable",
+		incomplete: "Some game counts are unavailable. Totals containing missing data are not shown.",
+	},
 	marketSummary: {
 		open: "Market summary",
 		close: "Close market summary",
@@ -321,6 +354,8 @@ export const en: Messages = {
 		requires: "Only takes effect while {flag} is on.",
 		waiting: "On, waiting for {flag}",
 		descriptions: {
+			"metric-drill-down":
+				"Explore games and active facilities by market, facility and department.",
 			"facility-games-layer":
 				"Show a Games supply selector with game counts in clusters and at each facility.",
 			"facility-games-trend":

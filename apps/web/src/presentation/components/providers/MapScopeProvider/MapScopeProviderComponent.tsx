@@ -12,6 +12,8 @@ export const ALL_MARKETS_SCOPE: MapScope = { kind: "all" };
 
 const MapScopeContext = createContext<MapScopeContextValue>({
 	scope: ALL_MARKETS_SCOPE,
+	mapNavigation: null,
+	setMapNavigation: () => undefined,
 	selectedFacilityId: null,
 	setSelectedFacilityId: () => undefined,
 	setScope: () => undefined,
@@ -20,12 +22,22 @@ const MapScopeContext = createContext<MapScopeContextValue>({
 });
 
 export function MapScopeProvider({ children }: Readonly<MapScopeProviderProps>) {
+	const [mapNavigation, setMapNavigation] = useState<MapScope | null>(null);
 	const [scope, setScope] = useState<MapScope>(ALL_MARKETS_SCOPE);
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 	const [period, setPeriod] = useState<StatsPeriod>(DEFAULT_STATS_PERIOD);
 	const value = useMemo(
-		() => ({ scope, setScope, selectedFacilityId, setSelectedFacilityId, period, setPeriod }),
-		[scope, selectedFacilityId, period],
+		() => ({
+			scope,
+			setScope,
+			selectedFacilityId,
+			setSelectedFacilityId,
+			period,
+			setPeriod,
+			mapNavigation,
+			setMapNavigation,
+		}),
+		[scope, selectedFacilityId, period, mapNavigation],
 	);
 	return <MapScopeContext.Provider value={value}>{children}</MapScopeContext.Provider>;
 }

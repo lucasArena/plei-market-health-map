@@ -8,6 +8,8 @@ export type MapScope =
 
 export interface MapScopeContextValue {
 	scope: MapScope;
+	mapNavigation: MapScope | null;
+	setMapNavigation(scope: MapScope | null): void;
 	selectedFacilityId: string | null;
 	setSelectedFacilityId(id: string | null): void;
 	setScope(scope: MapScope): void;

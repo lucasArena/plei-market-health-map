@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const FEATURE_FLAG_KEYS = [
+	"metric-drill-down",
 	"player-demographic-filters",
 	"facility-games-layer",
 	"facility-games-trend",

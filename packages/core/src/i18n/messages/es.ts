@@ -196,6 +196,40 @@ export const es: Messages = {
 		lastPlayed: "Último partido jugado el {date}",
 		neverPlayed: "Aún no se jugaron partidos",
 	},
+	drillDown: {
+		title: "Desglose de métricas",
+		close: "Cerrar desglose",
+		measure: "Medida",
+		slice: "Agrupación",
+		segment: "Segmento",
+		measureHelp: "¿Qué estamos midiendo?",
+		sliceHelp: "Agrupar los resultados por…",
+		segmentHelp: "Dividir cada grupo por…",
+		help: "La agrupación crea grupos. El segmento colorea las partes de cada grupo.",
+		games: "Partidos jugados",
+		activeFacilities: "Instalaciones activas",
+		market: "Mercado",
+		facility: "Instalación",
+		department: "Departamento",
+		none: "Ninguno",
+		selectedDepartmentHelp:
+			"Se muestra el departamento seleccionado. Vuelve para comparar departamentos otra vez.",
+		segmentUnavailable:
+			"Los segmentos por departamento están disponibles para partidos agrupados por mercado o instalación. Las instalaciones pueden atender a varios departamentos.",
+		topTen: "Los 10 mayores por cantidad",
+		chart: "Métrica por grupo",
+		value: "Cantidad",
+		viewOnMap: "Ver en el mapa",
+		back: "Volver al resumen",
+		allMarkets: "Todos los mercados",
+		loading: "Cargando métricas…",
+		failed: "No se pudieron cargar las métricas.",
+		retry: "Intentar de nuevo",
+		empty: "No hay actividad en este ámbito y período.",
+		unavailable: "No disponible",
+		incomplete:
+			"Algunos recuentos no están disponibles. No se muestran totales con datos faltantes.",
+	},
 	marketSummary: {
 		open: "Resumen del mercado",
 		close: "Cerrar resumen del mercado",
@@ -326,6 +360,8 @@ export const es: Messages = {
 		requires: "Solo tiene efecto mientras {flag} esté activada.",
 		waiting: "Activada, esperando {flag}",
 		descriptions: {
+			"metric-drill-down":
+				"Explorar partidos e instalaciones activas por mercado, instalación y departamento.",
 			"facility-games-layer":
 				"Mostrar el selector de partidos con conteos por grupo e instalación.",
 			"facility-games-trend":

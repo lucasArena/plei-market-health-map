@@ -1078,7 +1078,13 @@ export const PLACE_MAX_ZOOM = 11;
 
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
-	const { period, setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
+	const {
+		period,
+		setScope,
+		mapNavigation,
+		setMapNavigation,
+		setSelectedFacilityId: shareSelectedFacilityId,
+	} = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
 	const facilities = useMemo(
@@ -1456,6 +1462,29 @@ export function useFacilitiesMapScreenRules() {
 		},
 		[setScope],
 	);
+
+	useEffect(() => {
+		if (!mapNavigation || !isMapReady) return;
+		if (mapNavigation.kind === "facility") {
+			const facility = facilities.find((item) => item.id === mapNavigation.id);
+			if (facility) selectSearchFacility(facility);
+		}
+		if (mapNavigation.kind === "market") {
+			selectSearchMarket({
+				id: mapNavigation.id,
+				name: mapNavigation.name,
+				facilities: facilities.filter((item) => item.marketId === mapNavigation.id),
+			});
+		}
+		setMapNavigation(null);
+	}, [
+		mapNavigation,
+		isMapReady,
+		facilities,
+		selectSearchFacility,
+		selectSearchMarket,
+		setMapNavigation,
+	]);
 
 	const selectSearchPlace = useCallback(
 		(place: PlaceView) => {
