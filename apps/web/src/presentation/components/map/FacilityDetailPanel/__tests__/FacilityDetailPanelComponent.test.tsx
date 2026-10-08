@@ -164,12 +164,12 @@ describe("FacilityDetailPanel", () => {
 		expect(screen.getByRole("heading", { name: "Weekly activity" })).toBeInTheDocument();
 	});
 
-	it("closes from the button and reports the end of the animation", () => {
+	it("omits a close button and reports the end of the closing animation", () => {
 		const rules = rulesWith({ isClosing: true });
 		mockRules.mockReturnValue(rules);
 
 		render(<FacilityDetailPanel {...PROPS} isClosing />);
-		fireEvent.click(screen.getByRole("button", { name: "Close facility details" }));
+		expect(screen.queryByRole("button", { name: "Close facility details" })).not.toBeInTheDocument();
 		const panel = screen.getByRole("complementary");
 		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
 
@@ -179,7 +179,6 @@ describe("FacilityDetailPanel", () => {
 			"right-[var(--map-frame)]",
 			"shadow-[var(--map-shadow)]",
 		);
-		expect(rules.onClose).toHaveBeenCalled();
 		expect(rules.handleAnimationEnd).toHaveBeenCalled();
 	});
 
