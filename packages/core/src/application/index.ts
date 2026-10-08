@@ -180,6 +180,7 @@ export type {
 	FacilityReservationStatsFilters,
 	FacilityReservationStatsRepository,
 	FacilityStatsRepository,
+	FacilityWeeklyActivatedPlayers,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
 export type { FeatureFlagRepository } from "@core/application/repositories/feature-flag-repository.types";

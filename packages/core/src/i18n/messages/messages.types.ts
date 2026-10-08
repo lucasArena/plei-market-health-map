@@ -257,6 +257,8 @@ export interface Messages {
 		gamesComparedWith: string;
 		gamesPointTooltip: string;
 		gamesPointLabel: string;
+		playersPointTooltip: string;
+		playersPointLabel: string;
 		trendDeclining: string;
 		trendStable: string;
 		trendGrowing: string;

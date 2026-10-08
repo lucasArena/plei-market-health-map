@@ -56,6 +56,7 @@ import type {
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
 	MarketSummaryViewModel,
+	TrendViewInput,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
@@ -442,18 +443,9 @@ export function buildUserMetrics(
 	const users = audience?.periods[period];
 	const players = playerStats ? toPlayerPeriodView(playerStats, period) : null;
 	return [
-		...count(
-			"activePlayers",
-			messages.metricActivePlayers,
-			players
-				? [
-						players.activatedPlayers,
-						players.activatedPlayersPrevious,
-						players.activatedPlayersChangePercent,
-					]
-				: null,
-			isPlayersPending,
-		),
+		...(!players && isPlayersPending
+			? [pendingMetric("activePlayers", messages.metricActivePlayers)]
+			: []),
 		...count(
 			"registrations",
 			messages.metricRegistrations,
@@ -515,6 +507,47 @@ export function buildGamesMetrics(
 	];
 }
 
+export function buildTrendView(
+	input: TrendViewInput,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	periodMessages: StatsPeriodMessages,
+	formatters: DetailFormatters,
+): GamesTrendView {
+	const change = changeView(input.changePercent, input.value);
+	const firstCurrent = input.weeks.length - CURRENT_WEEKS[period];
+	const axisMax = niceAxisMax(input.weeks.map((week) => week.value));
+	return {
+		total: formatters.number.format(input.value),
+		change,
+		comparison: formatMessage(messages.gamesComparedWith, {
+			previous: formatters.number.format(input.previous),
+			comparison: periodMessages.comparison,
+		}),
+		direction: change?.direction ?? (input.value > 0 ? "up" : "flat"),
+		axisMax,
+		axisLabel: axisMax === null ? null : formatters.number.format(axisMax),
+		metrics: input.metrics,
+		points: input.weeks.map((week, index) => {
+			const weekLabel = formatters.week.format(utcDate(week.weekStart));
+			const valueLabel = formatters.number.format(week.value);
+			return {
+				key: week.weekStart,
+				value: week.value,
+				valueLabel,
+				weekLabel,
+				tooltipLabel: formatMessage(input.tooltip, { week: weekLabel }),
+				ariaLabel: formatMessage(input.pointLabel, {
+					games: valueLabel,
+					players: valueLabel,
+					week: weekLabel,
+				}),
+				isCurrentPeriod: index >= firstCurrent,
+			};
+		}),
+	};
+}
+
 export function buildGamesTrendView(
 	stats: FacilityReservationStatsView,
 	period: StatsPeriod,
@@ -523,35 +556,54 @@ export function buildGamesTrendView(
 	formatters: DetailFormatters,
 ): GamesTrendView {
 	const games = toReservationPeriodView(stats, period);
-	const change = changeView(games.playedChangePercent, games.played);
-	const weeks = stats.weeklyActivity;
-	const firstCurrent = weeks.length - CURRENT_WEEKS[period];
-	const axisMax = niceAxisMax(weeks.map((week) => week.gamesPlayed));
-	return {
-		total: formatters.number.format(games.played),
-		change,
-		comparison: formatMessage(messages.gamesComparedWith, {
-			previous: formatters.number.format(games.playedPrevious),
-			comparison: periodMessages.comparison,
-		}),
-		direction: change?.direction ?? (games.played > 0 ? "up" : "flat"),
-		axisMax,
-		axisLabel: axisMax === null ? null : formatters.number.format(axisMax),
-		metrics: buildGamesMetrics(games, messages, formatters),
-		points: weeks.map((week, index) => {
-			const weekLabel = formatters.week.format(utcDate(week.weekStart));
-			const valueLabel = formatters.number.format(week.gamesPlayed);
-			return {
-				key: week.weekStart,
+	return buildTrendView(
+		{
+			value: games.played,
+			previous: games.playedPrevious,
+			changePercent: games.playedChangePercent,
+			weeks: stats.weeklyActivity.map((week) => ({
+				weekStart: week.weekStart,
 				value: week.gamesPlayed,
-				valueLabel,
-				weekLabel,
-				tooltipLabel: formatMessage(messages.gamesPointTooltip, { week: weekLabel }),
-				ariaLabel: formatMessage(messages.gamesPointLabel, { games: valueLabel, week: weekLabel }),
-				isCurrentPeriod: index >= firstCurrent,
-			};
-		}),
-	};
+			})),
+			tooltip: messages.gamesPointTooltip,
+			pointLabel: messages.gamesPointLabel,
+			metrics: buildGamesMetrics(games, messages, formatters),
+		},
+		period,
+		messages,
+		periodMessages,
+		formatters,
+	);
+}
+
+export function buildPlayersTrendView(
+	stats: FacilityPlayerStatsView,
+	metrics: GamesMetricView[],
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	periodMessages: StatsPeriodMessages,
+	formatters: DetailFormatters,
+): GamesTrendView {
+	const players = toPlayerPeriodView(stats, period);
+	const view = buildTrendView(
+		{
+			value: players.activatedPlayers,
+			previous: players.activatedPlayersPrevious,
+			changePercent: players.activatedPlayersChangePercent,
+			weeks: stats.weeklyActivatedPlayers.map((week) => ({
+				weekStart: week.weekStart,
+				value: week.players,
+			})),
+			tooltip: messages.playersPointTooltip,
+			pointLabel: messages.playersPointLabel,
+			metrics,
+		},
+		period,
+		messages,
+		periodMessages,
+		formatters,
+	);
+	return { ...view, label: messages.metricActivePlayers };
 }
 
 const TREND_TONE: Record<OverallGamesTrend, InsightTone> = {
@@ -843,6 +895,20 @@ export function useMarketSummaryPanelRules({
 			playerStats,
 		],
 	);
+	const playersTrend = useMemo(
+		() =>
+			playerStats
+				? buildPlayersTrendView(
+						playerStats,
+						userMetrics,
+						period,
+						messages.marketSummary,
+						periodMessages,
+						formatters,
+					)
+				: null,
+		[formatters, messages.marketSummary, period, periodMessages, playerStats, userMetrics],
+	);
 	const dataAsOf = buildDataAsOf(reportQuery.dataUpdatedAt, locale, messages.marketSummary);
 	const reportWrongNumber = useCallback(() => requestFeedback("bug"), []);
 
@@ -881,6 +947,8 @@ export function useMarketSummaryPanelRules({
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
+		isUsersPending: !playerStats && playerQuery.isPending,
+		playersTrend,
 		userMetrics,
 		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,

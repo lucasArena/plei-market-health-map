@@ -12,7 +12,7 @@ import type { GamesTrendChartProps } from "@/presentation/components/displays/Ga
 import { MetricRows } from "@/presentation/components/displays/MetricRows/MetricRowsComponent";
 
 export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
-	const { view } = props;
+	const { metricsTestId = "games-metrics", testId = "games-trend-chart", view } = props;
 	const {
 		active,
 		activePoint,
@@ -33,7 +33,8 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 	const toTop = (y: number) => `${(y / chartHeight) * 100}%`;
 
 	return (
-		<div className="space-y-3" data-testid="games-trend-chart">
+		<div className="space-y-3" data-testid={testId}>
+			{view.label && <p className="-mb-2 text-xs font-medium text-[#525866]">{view.label}</p>}
 			<div className="flex items-end gap-2.5">
 				<p className="text-[36px] leading-[42px] font-semibold tracking-[-0.02em] text-[#1d1d1f] tabular-nums">
 					{view.total}
@@ -174,7 +175,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 					))}
 				</div>
 			</div>
-			{view.metrics.length > 0 && <MetricRows metrics={view.metrics} testId="games-metrics" />}
+			{view.metrics.length > 0 && <MetricRows metrics={view.metrics} testId={metricsTestId} />}
 		</div>
 	);
 }

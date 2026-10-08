@@ -5,6 +5,11 @@ export interface FacilityWeeklyActivity {
 	gamesPlayed: number;
 }
 
+export interface FacilityWeeklyActivatedPlayers {
+	weekStart: string;
+	players: number;
+}
+
 export interface FacilityPopularTime {
 	dayOfWeek: number;
 	timePeriod: number;
@@ -42,6 +47,7 @@ export interface FacilityPlayerStats {
 	activatedPlayersPreviousWeek: number;
 	activatedPlayersLast28Days: number;
 	activatedPlayersPrevious28Days: number;
+	weeklyActivatedPlayers: FacilityWeeklyActivatedPlayers[];
 }
 
 export interface FacilityWeeklyCounts extends FacilityReservationStats, FacilityPlayerStats {}

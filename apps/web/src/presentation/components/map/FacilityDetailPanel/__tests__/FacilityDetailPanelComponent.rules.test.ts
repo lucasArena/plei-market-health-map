@@ -57,6 +57,7 @@ const STATS: FacilityStatsView = {
 	uniquePlayersPrevious28Days: 40,
 	activatedPlayersLast28Days: 7,
 	activatedPlayersPrevious28Days: 5,
+	weeklyActivatedPlayers: [],
 	uniquePlayersLastWeek: 30,
 	uniquePlayersPreviousWeek: 25,
 	activatedPlayersLastWeek: 6,

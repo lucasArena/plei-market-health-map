@@ -85,3 +85,36 @@ it("reconciles sample market totals to facility contributions", async () => {
 	);
 	expect((await repository.getReservationStats([], TODAY)).playedLast28Days).toBe(0);
 });
+
+describe("sample weekly activated players", () => {
+	it("splits the activated counts into the eight 7 day blocks ending yesterday", async () => {
+		const ids = ["one" as never, "two" as never];
+		const stats = await repository.getPlayerStats(ids, TODAY);
+		const members = await Promise.all(ids.map((id) => repository.getPlayerStats([id], TODAY)));
+		const players = stats.weeklyActivatedPlayers.map((week) => week.players);
+		const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+
+		expect(stats.weeklyActivatedPlayers.map((week) => week.weekStart)).toEqual([
+			"2026-08-13",
+			"2026-08-20",
+			"2026-08-27",
+			"2026-09-03",
+			"2026-09-10",
+			"2026-09-17",
+			"2026-09-24",
+			"2026-10-01",
+		]);
+		expect(players.at(-1)).toBe(stats.activatedPlayersLastWeek);
+		expect(players.at(-2)).toBe(stats.activatedPlayersPreviousWeek);
+		expect(sum(players.slice(4))).toBe(stats.activatedPlayersLast28Days);
+		expect(sum(players.slice(0, 4))).toBe(stats.activatedPlayersPrevious28Days);
+		expect(stats.activatedPlayersLast28Days).toBe(
+			sum(members.map((member) => member.activatedPlayersLast28Days)),
+		);
+		expect(players).toEqual(
+			players.map((_, index) =>
+				sum(members.map((member) => member.weeklyActivatedPlayers[index]?.players ?? 0)),
+			),
+		);
+	});
+});

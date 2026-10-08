@@ -20,6 +20,7 @@ import {
 	buildMarketRows,
 	buildMarketSummaryText,
 	buildMarketSummaryViewModel,
+	buildPlayersTrendView,
 	buildScopeHeading,
 	buildScopeLine,
 	buildScopeTiles,
@@ -343,7 +344,7 @@ describe("redesigned panel header and footer", () => {
 		).toBe(heading.subtitle);
 	});
 
-	it("lists active players and registrations first, then active and unique users", () => {
+	it("lists registrations, active users and unique users under the active players chart", () => {
 		const users = buildUserMetrics(
 			MARKET_AUDIENCE,
 			false,
@@ -355,12 +356,11 @@ describe("redesigned panel header and footer", () => {
 		);
 
 		expect(users.map((row) => [row.label, row.value, row.previous, row.change?.label])).toEqual([
-			["Active players", "24", "vs 20", "+20%"],
 			["New registrations", "450", "vs 500", "−10%"],
 			["Active users", "12,000", "vs 10,000", "+20%"],
 			["Unique users", "126", "vs 120", "+5%"],
 		]);
-		expect(users[1]?.change?.tone).toBe("bad");
+		expect(users[0]?.change?.tone).toBe("bad");
 	});
 
 	it("holds a pending row until its data loads and skips what failed", () => {
@@ -389,7 +389,55 @@ describe("redesigned panel header and footer", () => {
 				messages,
 				formatters,
 			).map((row) => row.key),
-		).toEqual(["activePlayers", "uniqueUsers"]);
+		).toEqual(["uniqueUsers"]);
+	});
+
+	it("charts active players over the last 8 weeks with the user rows below", () => {
+		const weeks = [3, 4, 5, 6, 5, 6, 6, 7].map((players, index) => ({
+			weekStart: `2026-08-${String(10 + index).padStart(2, "0")}`,
+			players,
+		}));
+		const metrics = buildUserMetrics(
+			MARKET_AUDIENCE,
+			false,
+			MARKET_PLAYER_STATS,
+			false,
+			"month",
+			messages,
+			formatters,
+		);
+
+		const trend = buildPlayersTrendView(
+			{ ...MARKET_PLAYER_STATS, weeklyActivatedPlayers: weeks },
+			metrics,
+			"month",
+			messages,
+			EN_MESSAGES.statsPeriods.month,
+			formatters,
+		);
+
+		expect(trend).toMatchObject({
+			label: "Active players",
+			total: "24",
+			change: { label: "+20%", direction: "up" },
+			comparison: "vs 20 in the previous 28 days",
+			axisMax: 7,
+			metrics,
+		});
+		expect(trend.points.map((point) => point.isCurrentPeriod)).toEqual([
+			false,
+			false,
+			false,
+			false,
+			true,
+			true,
+			true,
+			true,
+		]);
+		expect(trend.points[7]).toMatchObject({
+			tooltipLabel: expect.stringMatching(/^active players · /),
+			ariaLabel: expect.stringMatching(/^7 active players, week ending /),
+		});
 	});
 
 	it("colors the All markets insight by the overall games trend", () => {

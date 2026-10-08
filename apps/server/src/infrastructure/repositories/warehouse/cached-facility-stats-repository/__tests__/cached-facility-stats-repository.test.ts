@@ -32,6 +32,7 @@ const PLAYER_STATS = {
 	uniquePlayersPrevious28Days: 120,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	weeklyActivatedPlayers: [],
 	uniquePlayersLastWeek: 30,
 	uniquePlayersPreviousWeek: 25,
 	activatedPlayersLastWeek: 6,

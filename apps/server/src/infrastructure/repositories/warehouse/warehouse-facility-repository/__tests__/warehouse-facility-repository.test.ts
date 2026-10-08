@@ -225,6 +225,7 @@ const COUNTS = {
 	uniquePlayersPrevious28Days: 0,
 	activatedPlayersLast28Days: 0,
 	activatedPlayersPrevious28Days: 0,
+	weeklyActivatedPlayers: [],
 	uniquePlayersLastWeek: 0,
 	uniquePlayersPreviousWeek: 0,
 	activatedPlayersLastWeek: 0,

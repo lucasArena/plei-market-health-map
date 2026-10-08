@@ -81,6 +81,8 @@ function rulesWith(overrides: object = {}) {
 		reportWrongNumber: vi.fn(),
 		insight: { title: "Key insights", tone: "neutral" },
 		gamesTrend: null,
+		playersTrend: null,
+		isUsersPending: false,
 		gamesTitle: "Games the last 7 days",
 		userMetrics: [
 			{
@@ -181,6 +183,55 @@ describe("MarketSummaryPanel", () => {
 		expect(reportWrongNumber).toHaveBeenCalledOnce();
 	});
 
+	it("charts active players at the top of Users with the other user rows below", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				isRedesigned: true,
+				playersTrend: {
+					label: "Active players",
+					total: "3,146",
+					change: { label: "−19%", direction: "down" },
+					comparison: "vs 3,877 in the previous 28 days",
+					direction: "down",
+					axisMax: 1000,
+					axisLabel: "1,000",
+					points: [
+						{
+							key: "2026-10-01",
+							value: 700,
+							valueLabel: "700",
+							weekLabel: "Oct 1",
+							tooltipLabel: "active players · Oct 1",
+							ariaLabel: "700 active players, week ending Oct 1",
+							isCurrentPeriod: true,
+						},
+					],
+					metrics: [
+						{
+							key: "registrations",
+							label: "New registrations",
+							value: "6,815",
+							previous: "vs 7,922",
+							change: { label: "−14%", direction: "down", tone: "bad" },
+						},
+					],
+				},
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		const users = screen.getByRole("region", { name: "Users" });
+		expect(users).toContainElement(screen.getByTestId("players-trend-chart"));
+		expect(users).toHaveTextContent("Active players3,146−19%vs 3,877 in the previous 28 days");
+		expect(screen.getByTestId("user-metrics")).toHaveTextContent(
+			"New registrations6,815vs 7,922−14%",
+		);
+		expect(
+			screen.getByRole("button", { name: "700 active players, week ending Oct 1" }),
+		).toBeInTheDocument();
+	});
+
 	it("tints the written insight with the overall trend", () => {
 		mockRules.mockReturnValue(
 			rulesWith({
@@ -271,5 +322,24 @@ describe("MarketSummaryPanel", () => {
 		mockRules.mockReturnValue(rulesWith({ status: "error", view: null }));
 		render(<MarketSummaryPanel {...PROPS} />);
 		expect(screen.getByRole("alert")).toHaveTextContent("Could not load the market summary.");
+	});
+
+	it("loads the redesigned panel with chart-shaped skeletons for Games and Users", () => {
+		mockRules.mockReturnValue(rulesWith({ status: "loading", view: null, isRedesigned: true }));
+		const { unmount } = render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByTestId("market-summary-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("market-summary-insight-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("games-trend-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("users-trend-skeleton")).toBeInTheDocument();
+		unmount();
+
+		mockRules.mockReturnValue(
+			rulesWith({ isRedesigned: true, isUsersPending: true, userMetrics: [] }),
+		);
+		render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
+			screen.getByTestId("users-trend-skeleton"),
+		);
+		expect(screen.queryByTestId("user-metrics")).not.toBeInTheDocument();
 	});
 });

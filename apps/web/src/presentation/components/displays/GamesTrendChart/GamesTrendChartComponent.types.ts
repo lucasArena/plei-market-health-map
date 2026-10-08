@@ -25,6 +25,7 @@ export type GamesMetricTone = MetricTone;
 export type GamesMetricView = MetricRowView;
 
 export interface GamesTrendView {
+	label?: string;
 	total: string;
 	change: GamesTrendChangeView | null;
 	comparison: string;
@@ -37,6 +38,8 @@ export interface GamesTrendView {
 
 export interface GamesTrendChartProps {
 	view: GamesTrendView;
+	testId?: string;
+	metricsTestId?: string;
 }
 
 export interface ChartPoint {

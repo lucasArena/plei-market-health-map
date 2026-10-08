@@ -34,6 +34,7 @@ const PLAYERS = {
 	activatedPlayersPreviousWeek: 12,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	weeklyActivatedPlayers: [],
 };
 
 describe("period views", () => {

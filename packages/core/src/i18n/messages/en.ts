@@ -283,6 +283,8 @@ export const en: Messages = {
 		gamesComparedWith: "vs {previous} in {comparison}",
 		gamesPointTooltip: "games · {week}",
 		gamesPointLabel: "{games} games, week ending {week}",
+		playersPointTooltip: "active players · {week}",
+		playersPointLabel: "{players} active players, week ending {week}",
 		dataAsOf: "Data as of {time}",
 		reportWrongNumber: "Report a wrong number",
 	},

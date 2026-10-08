@@ -80,6 +80,8 @@ export interface MarketSummaryMetricsProps {
 	messages: MarketSummaryMessages;
 	rankingsEmptyLabel: string;
 	gamesTitle: string;
+	isUsersPending: boolean;
+	playersTrend: GamesTrendView | null;
 	userMetrics: GamesMetricView[];
 	view: MarketSummaryViewModel;
 }
@@ -89,4 +91,25 @@ export interface MarketSummaryHeaderProps {
 	heading: MarketSummaryHeading;
 	isRedesigned: boolean;
 	scopeLine: string;
+}
+
+export interface TrendWeekCount {
+	weekStart: string;
+	value: number;
+}
+
+export interface TrendViewInput {
+	value: number;
+	previous: number;
+	changePercent: number | null;
+	weeks: TrendWeekCount[];
+	tooltip: string;
+	pointLabel: string;
+	metrics: GamesMetricView[];
+}
+
+export interface UsersSectionBodyProps {
+	isUsersPending: boolean;
+	playersTrend: GamesTrendView | null;
+	userMetrics: GamesMetricView[];
 }

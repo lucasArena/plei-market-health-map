@@ -29,6 +29,12 @@ export interface WarehouseFacilityPlayerStatsRow {
 	unique_players_previous_28_days: string | number;
 	activated_players_last_28_days: string | number;
 	activated_players_previous_28_days: string | number;
+	weekly_activated_players: WarehouseWeeklyActivatedPlayersRow[];
+}
+
+export interface WarehouseWeeklyActivatedPlayersRow {
+	week_start: string;
+	players: string | number;
 }
 
 export interface WarehouseWeeklyActivityRow {

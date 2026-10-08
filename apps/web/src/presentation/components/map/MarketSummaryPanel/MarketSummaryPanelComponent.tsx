@@ -7,7 +7,9 @@ import { HealthStrip } from "@/presentation/components/displays/HealthStrip/Heal
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 import { MetricRows } from "@/presentation/components/displays/MetricRows/MetricRowsComponent";
 import { PanelSection } from "@/presentation/components/displays/PanelSection/PanelSectionComponent";
+import { PANEL_SECTION_CLASS } from "@/presentation/components/displays/PanelSection/PanelSectionComponent.styles";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
+import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
@@ -18,8 +20,14 @@ import type {
 	MarketSummaryHeaderProps,
 	MarketSummaryMetricsProps,
 	MarketSummaryPanelProps,
+	UsersSectionBodyProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
+
+const SKELETON_SECTIONS = [
+	{ key: "games", hasLabel: false },
+	{ key: "users", hasLabel: true },
+];
 
 const SKELETON_TILES = ["facilities", "markets", "played", "confirmation", "players", "activated"];
 
@@ -40,6 +48,51 @@ function MarketSummarySkeleton() {
 			<div className="h-32 rounded-xl bg-muted" />
 		</div>
 	);
+}
+
+function RedesignedSkeleton() {
+	return (
+		<div data-testid="market-summary-skeleton" aria-hidden className="space-y-4 p-5">
+			<div className="animate-pulse space-y-3 border-b pb-3">
+				<div className="space-y-2">
+					<div className="h-4 w-1/3 rounded bg-muted" />
+					<div className="h-3 w-2/3 rounded bg-muted" />
+				</div>
+				<div className="h-3 w-1/2 rounded bg-muted" />
+			</div>
+			<AiSummarySkeleton testId="market-summary-insight-skeleton" />
+			{SKELETON_SECTIONS.map((section) => (
+				<div key={section.key} className={PANEL_SECTION_CLASS}>
+					<div className="h-4 w-32 animate-pulse rounded bg-muted" />
+					<TrendChartSkeleton
+						testId={`${section.key}-trend-skeleton`}
+						metricRows={3}
+						hasLabel={section.hasLabel}
+					/>
+				</div>
+			))}
+		</div>
+	);
+}
+
+function UsersSectionBody({
+	isUsersPending,
+	playersTrend,
+	userMetrics,
+}: Readonly<UsersSectionBodyProps>) {
+	if (playersTrend) {
+		return (
+			<GamesTrendChart
+				view={playersTrend}
+				testId="players-trend-chart"
+				metricsTestId="user-metrics"
+			/>
+		);
+	}
+	if (isUsersPending) {
+		return <TrendChartSkeleton testId="users-trend-skeleton" metricRows={3} hasLabel />;
+	}
+	return <MetricRows metrics={userMetrics} testId="user-metrics" />;
 }
 
 function RankRows({ rows, emptyLabel }: Readonly<MarketRankRowsProps>) {
@@ -124,7 +177,9 @@ function MarketSummaryMetrics({
 	gamesTrend,
 	isRedesigned,
 	messages,
+	isUsersPending,
 	rankingsEmptyLabel,
+	playersTrend,
 	userMetrics,
 	view,
 }: Readonly<MarketSummaryMetricsProps>) {
@@ -174,9 +229,13 @@ function MarketSummaryMetrics({
 			<PanelSection title={gamesTitle} testId="panel-section-games">
 				{gamesTrend ? <GamesTrendChart view={gamesTrend} /> : weeklyActivity}
 			</PanelSection>
-			{userMetrics.length > 0 && (
+			{(playersTrend || isUsersPending || userMetrics.length > 0) && (
 				<PanelSection title={messages.sectionUsers} testId="panel-section-users">
-					<MetricRows metrics={userMetrics} testId="user-metrics" />
+					<UsersSectionBody
+						isUsersPending={isUsersPending}
+						playersTrend={playersTrend}
+						userMetrics={userMetrics}
+					/>
 				</PanelSection>
 			)}
 		</>
@@ -202,6 +261,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		reportWrongNumber,
 		scopeLine,
 		gamesTitle,
+		isUsersPending,
+		playersTrend,
 		userMetrics,
 		status,
 		view,
@@ -216,7 +277,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 			className={`${isClosing ? "panel-slide-out" : "panel-slide-in"} ${MARKET_SUMMARY_PANEL_CLASS}`}
 		>
 			<div className="min-h-0 flex-1 overflow-y-auto">
-				{status === "loading" && <MarketSummarySkeleton />}
+				{status === "loading" && isRedesigned && <RedesignedSkeleton />}
+				{status === "loading" && !isRedesigned && <MarketSummarySkeleton />}
 				{status === "error" && (
 					<p role="alert" className="p-5 pr-12 text-sm text-destructive">
 						{messages.failed}
@@ -268,6 +330,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							messages={messages}
 							rankingsEmptyLabel={rankingsEmptyLabel}
 							gamesTitle={gamesTitle}
+							isUsersPending={isUsersPending}
+							playersTrend={playersTrend}
 							userMetrics={userMetrics}
 							view={view}
 						/>

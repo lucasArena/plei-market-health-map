@@ -237,6 +237,19 @@ ${departmentGames}facility_players as (
       where p.player_id = f.player_id
         and p.confirmed_at is not null and p.players_type = 'pleiapp_player'
     )
+),
+week_series as (
+  select generate_series(b.today - ${MONTH_DAYS * 2}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
+  from bounds b
+),
+weekly_activated_players as (
+  select w.week_start,
+    count(distinct f.player_id) filter (
+      where f.player_lifecycle = 'Activated'
+    ) as players
+  from week_series w
+  left join facility_players f on f.date_played >= w.week_start and f.date_played < w.week_start + 7
+  group by w.week_start
 )
 select
   count(distinct player_id) filter (
@@ -264,7 +277,11 @@ select
   ) as activated_players_last_28_days,
   count(distinct player_id) filter (
     where player_lifecycle = 'Activated' and date_played < b.today - 28
-  ) as activated_players_previous_28_days
+  ) as activated_players_previous_28_days,
+  (select json_agg(json_build_object(
+    'week_start', w.week_start::text,
+    'players', w.players
+  ) order by w.week_start) from weekly_activated_players w) as weekly_activated_players
 from bounds b
 left join facility_players f on true
 group by b.today`;
@@ -317,6 +334,10 @@ export function toPlayerStats(row: WarehouseFacilityPlayerStatsRow): FacilityPla
 		activatedPlayersPreviousWeek: Number(row.activated_players_previous_week),
 		activatedPlayersLast28Days: Number(row.activated_players_last_28_days),
 		activatedPlayersPrevious28Days: Number(row.activated_players_previous_28_days),
+		weeklyActivatedPlayers: row.weekly_activated_players.map((item) => ({
+			weekStart: item.week_start,
+			players: Number(item.players),
+		})),
 	};
 }
 

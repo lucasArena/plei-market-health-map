@@ -290,6 +290,8 @@ export const es: Messages = {
 		gamesComparedWith: "vs {previous} en {comparison}",
 		gamesPointTooltip: "partidos · {week}",
 		gamesPointLabel: "{games} partidos, semana hasta {week}",
+		playersPointTooltip: "jugadores activos · {week}",
+		playersPointLabel: "{players} jugadores activos, semana hasta {week}",
 		dataAsOf: "Datos al {time}",
 		reportWrongNumber: "Reportar un número incorrecto",
 	},

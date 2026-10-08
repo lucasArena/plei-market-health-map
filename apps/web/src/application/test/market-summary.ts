@@ -16,6 +16,7 @@ const {
 	activatedPlayersPrevious28Days,
 	uniquePlayersPeriodChangePercent,
 	activatedPlayersPeriodChangePercent,
+	weeklyActivatedPlayers,
 	...reservationStats
 } = FACILITY_DETAIL.stats;
 
@@ -58,6 +59,7 @@ export const MARKET_PLAYER_STATS: MarketPlayerStatsView = {
 	activatedPlayersPrevious28Days,
 	uniquePlayersPeriodChangePercent,
 	activatedPlayersPeriodChangePercent,
+	weeklyActivatedPlayers,
 };
 
 export const MARKET_AUDIENCE: MarketAudienceView = {

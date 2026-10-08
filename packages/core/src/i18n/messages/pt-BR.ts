@@ -288,6 +288,8 @@ export const ptBR: Messages = {
 		gamesComparedWith: "{previous} em relação {comparison}",
 		gamesPointTooltip: "jogos · {week}",
 		gamesPointLabel: "{games} jogos, semana até {week}",
+		playersPointTooltip: "jogadores ativos · {week}",
+		playersPointLabel: "{players} jogadores ativos, semana até {week}",
 		dataAsOf: "Dados de {time}",
 		reportWrongNumber: "Reportar um número errado",
 	},
