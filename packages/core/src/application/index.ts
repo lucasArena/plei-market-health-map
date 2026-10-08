@@ -100,6 +100,7 @@ export type {
 	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
 	MarketGameChangeView,
+	MarketHealthStatus,
 	MarketPlayerStatsView,
 	MarketSummaryFacilityRankView,
 	MarketSummaryMarketRankView,
@@ -141,6 +142,11 @@ export {
 	toFeedbackIssueTitle,
 } from "@core/application/mappers/feedback-issue-mapper";
 export { toLoginEventView } from "@core/application/mappers/login-event-mapper";
+export {
+	ATTENTION_CHANGE_PERCENT,
+	toMarketHealthStatus,
+	WATCH_CHANGE_PERCENT,
+} from "@core/application/mappers/market-health-status";
 export {
 	MARKET_SUMMARY_RANK_LIMIT,
 	selectMarketFacilities,

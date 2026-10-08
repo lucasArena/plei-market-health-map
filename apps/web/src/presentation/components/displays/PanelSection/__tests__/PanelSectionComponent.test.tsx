@@ -4,7 +4,7 @@ import { PanelSection } from "@/presentation/components/displays/PanelSection/Pa
 describe("PanelSection", () => {
 	it("titles a group of metrics as a labelled region", () => {
 		render(
-			<PanelSection title="Games" testId="panel-section-games">
+			<PanelSection title="Games" aside="Last 28 days" testId="panel-section-games">
 				<p>1,169 games</p>
 			</PanelSection>,
 		);
@@ -13,5 +13,6 @@ describe("PanelSection", () => {
 		expect(section).toHaveAttribute("data-testid", "panel-section-games");
 		expect(screen.getByRole("heading", { name: "Games" })).toBeInTheDocument();
 		expect(section).toHaveTextContent("1,169 games");
+		expect(screen.getByText("Last 28 days")).toBeInTheDocument();
 	});
 });

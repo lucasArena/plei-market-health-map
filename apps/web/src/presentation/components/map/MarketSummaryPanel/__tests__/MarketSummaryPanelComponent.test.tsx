@@ -10,6 +10,16 @@ vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonC
 	),
 }));
 
+vi.mock("@/presentation/components/map/MarketsTable/MarketsTableComponent", () => ({
+	MarketsTable: ({ markets }: { markets: { id: string; name: string }[] }) => (
+		<ul>
+			{markets.map((market) => (
+				<li key={market.id}>{market.name}</li>
+			))}
+		</ul>
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
 	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
@@ -69,6 +79,10 @@ const VIEW = {
 		{ key: "houston", rank: 1, name: "Houston", detail: "6 of 9 facilities active", value: "120" },
 	],
 	topFacilities: [],
+	markets: [
+		{ id: "houston", name: "Houston", facilityCount: 9, activeFacilityCount: 6, games: 120 },
+	],
+	marketChanges: undefined,
 	lastPlayedLabel: "Last game played Sep 27, 2026",
 };
 
@@ -79,6 +93,7 @@ function rulesWith(overrides: object = {}) {
 		dataAsOf: "Data as of Oct 7, 2026, 9:35 PM",
 		isRedesigned: false,
 		reportWrongNumber: vi.fn(),
+		periodLabel: "Last 7 days",
 		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
 		sectionTiles: { games: [], users: VIEW.tiles },
 		detailMessages: EN_MESSAGES.facilityDetail,
@@ -149,6 +164,7 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
 			screen.getByTestId("market-stat-players-skeleton"),
 		);
+		expect(screen.getByRole("region", { name: "Markets" })).toHaveTextContent("Last 7 days");
 		expect(screen.getByRole("region", { name: "Markets" })).toHaveTextContent("Houston");
 		expect(screen.getByRole("region", { name: "Facilities" })).toHaveTextContent(
 			"No games played last week.",

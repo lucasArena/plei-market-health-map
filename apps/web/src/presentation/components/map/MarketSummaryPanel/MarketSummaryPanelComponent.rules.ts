@@ -264,6 +264,8 @@ export function buildMarketSummaryViewModel(
 			isSingleMarket,
 		),
 		scopeTiles: isSingleMarket ? [] : scopeTiles,
+		markets: isSingleMarket ? null : rankings.markets,
+		marketChanges: summary.gameChanges,
 		topMarkets: isSingleMarket
 			? null
 			: buildMarketRows(rankings.topMarkets, messages, detailMessages, formatters),
@@ -291,6 +293,8 @@ export function buildFacilitySummaryViewModel(
 				)
 			: null,
 		scopeTiles: [],
+		markets: null,
+		marketChanges: undefined,
 		topMarkets: null,
 		topFacilities: null,
 	};
@@ -579,6 +583,7 @@ export function useMarketSummaryPanelRules({
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
+		periodLabel: periodMessages.label,
 		sectionTiles: splitTilesBySection(insightsView?.tiles ?? []),
 		status,
 		view: insightsView,

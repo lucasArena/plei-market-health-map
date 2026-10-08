@@ -1,3 +1,7 @@
+import type {
+	MarketGameChangeView,
+	MarketSummaryMarketRankView,
+} from "@market-health-map/core/application";
 import type { Messages } from "@market-health-map/core/i18n";
 import type { ReactNode } from "react";
 import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
@@ -38,6 +42,8 @@ export interface MarketSummaryViewModel {
 	dayLabels: string[];
 	timePeriodLabels: string[];
 	topMarkets: MarketRankRowView[] | null;
+	markets: MarketSummaryMarketRankView[] | null;
+	marketChanges: MarketGameChangeView[] | undefined;
 	topFacilities: MarketRankRowView[] | null;
 	lastPlayedLabel: string;
 }
@@ -66,6 +72,7 @@ export interface MarketSummaryMetricsProps {
 	detailMessages: DetailMessages;
 	isRedesigned: boolean;
 	messages: MarketSummaryMessages;
+	periodLabel: string;
 	rankingsEmptyLabel: string;
 	tiles: MarketSummarySectionTiles;
 	view: MarketSummaryViewModel;

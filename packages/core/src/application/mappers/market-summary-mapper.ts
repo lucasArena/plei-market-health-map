@@ -79,10 +79,9 @@ export function toTopFacilities(
 		.slice(0, limit);
 }
 
-export function toTopMarkets(
+export function toMarketRanks(
 	facilities: Facility[],
 	period: StatsPeriod,
-	limit: number = MARKET_SUMMARY_RANK_LIMIT,
 	departments: readonly GameDepartment[] = [],
 ): MarketSummaryMarketRankView[] {
 	const markets = new Map<string, MarketSummaryMarketRankView>();
@@ -102,9 +101,17 @@ export function toTopMarkets(
 			games: current.games + games,
 		});
 	}
-	return [...markets.values()]
+	return [...markets.values()].sort(byGamesThenName);
+}
+
+export function toTopMarkets(
+	facilities: Facility[],
+	period: StatsPeriod,
+	limit: number = MARKET_SUMMARY_RANK_LIMIT,
+	departments: readonly GameDepartment[] = [],
+): MarketSummaryMarketRankView[] {
+	return toMarketRanks(facilities, period, departments)
 		.filter((rank) => rank.games > 0)
-		.sort(byGamesThenName)
 		.slice(0, limit);
 }
 
@@ -117,5 +124,6 @@ export function toMarketSummaryPeriod(
 		scope: toMarketSummaryScope(facilities, period, departments),
 		topFacilities: toTopFacilities(facilities, period, MARKET_SUMMARY_RANK_LIMIT, departments),
 		topMarkets: toTopMarkets(facilities, period, MARKET_SUMMARY_RANK_LIMIT, departments),
+		markets: toMarketRanks(facilities, period, departments),
 	};
 }

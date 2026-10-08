@@ -147,6 +147,7 @@ export const en: Messages = {
 		switchLabel: "Comparison period",
 		week: {
 			short: "7D",
+			label: "Last 7 days",
 			title: "Last 7 days, ending yesterday, compared with the 7 days before",
 			span: "last 7 days",
 			within: "in the last 7 days",
@@ -154,6 +155,7 @@ export const en: Messages = {
 		},
 		month: {
 			short: "28D",
+			label: "Last 28 days",
 			title: "Last 28 days, ending yesterday, compared with the 28 days before",
 			span: "last 28 days",
 			within: "in the last 28 days",
@@ -227,6 +229,26 @@ export const en: Messages = {
 		empty: "No activity in this scope and period.",
 		unavailable: "Unavailable",
 		incomplete: "Some game counts are unavailable. Totals containing missing data are not shown.",
+	},
+	marketsTable: {
+		title: "Markets",
+		sortBy: "Sort by",
+		sortStatus: "Status",
+		sortGames: "Games",
+		sortChange: "Change",
+		columnMarket: "Market",
+		columnGames: "Games",
+		columnChange: "vs prev",
+		attention: "Attention",
+		watch: "Watch",
+		onTrack: "On track",
+		activeCount: "{active} of {total} active",
+		noBaseline: "New",
+		openMarket: "Open {name}",
+		noteStatus:
+			"Sorted by status (needs attention first), then games. Select a row to open that market.",
+		noteGames: "Sorted by games, most first. Select a row to open that market.",
+		noteChange: "Sorted by change, biggest drop first. Select a row to open that market.",
 	},
 	marketSummary: {
 		open: "Market summary",

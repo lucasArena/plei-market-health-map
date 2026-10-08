@@ -17,6 +17,7 @@ import type {
 	MarketSummaryMetricsProps,
 	MarketSummaryPanelProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
+import { MarketsTable } from "@/presentation/components/map/MarketsTable/MarketsTableComponent";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 
 const SKELETON_TILES = ["facilities", "markets", "played", "confirmation", "players", "activated"];
@@ -119,6 +120,7 @@ function MarketSummaryMetrics({
 	detailMessages,
 	isRedesigned,
 	messages,
+	periodLabel,
 	rankingsEmptyLabel,
 	tiles,
 	view,
@@ -179,9 +181,13 @@ function MarketSummaryMetrics({
 					<StatTiles tiles={tiles.users} testIdPrefix="market-stat" />
 				</PanelSection>
 			)}
-			{view.topMarkets && (
-				<PanelSection title={messages.sectionMarkets} testId="panel-section-markets">
-					<RankRows rows={view.topMarkets} emptyLabel={rankingsEmptyLabel} />
+			{view.markets && (
+				<PanelSection
+					title={messages.sectionMarkets}
+					aside={periodLabel}
+					testId="panel-section-markets"
+				>
+					<MarketsTable markets={view.markets} changes={view.marketChanges} />
 				</PanelSection>
 			)}
 			{view.topFacilities && (
@@ -207,6 +213,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		isInsightsFailed,
 		isRedesigned,
 		messages,
+		periodLabel,
 		reportWrongNumber,
 		scopeLine,
 		sectionTiles,
@@ -261,6 +268,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							detailMessages={detailMessages}
 							isRedesigned={isRedesigned}
 							messages={messages}
+							periodLabel={periodLabel}
 							rankingsEmptyLabel={rankingsEmptyLabel}
 							tiles={sectionTiles}
 							view={view}
