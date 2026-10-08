@@ -118,7 +118,15 @@ export const PLACE_MAX_ZOOM = 11;
 
 export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
-	const { period, setScope, setSelectedFacilityId: shareSelectedFacilityId } = useMapScope();
+	const {
+		period,
+		scope,
+		metricFocus,
+		setScope,
+		mapNavigation,
+		setMapNavigation,
+		setSelectedFacilityId: shareSelectedFacilityId,
+	} = useMapScope();
 	const queryClient = useQueryClient();
 	const query = useFacilityListAll();
 	const facilities = useMemo(
@@ -197,22 +205,36 @@ export function useFacilitiesMapScreenRules() {
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
 	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
+	const showMetricFocus = useFeatureFlag("metric-drill-down");
+	const scopedFacilities = useMemo(() => {
+		if (!showMetricFocus) return facilities;
+		return facilities.filter(
+			(facility) =>
+				(scope.kind !== "market" || facility.marketId === scope.id) &&
+				(scope.kind !== "facility" || facility.id === scope.id) &&
+				(!metricFocus || metricFocus.facilityIds.includes(facility.id)),
+		);
+	}, [facilities, scope, metricFocus, showMetricFocus]);
+	const focusedDepartments = useMemo(
+		() => (showMetricFocus && metricFocus?.department ? [metricFocus.department] : gameDepartments),
+		[showMetricFocus, metricFocus?.department, gameDepartments],
+	);
 	const shownFacilities = useMemo(
 		() =>
-			facilitiesForMap(facilities, {
-				gameDepartments,
+			facilitiesForMap(scopedFacilities, {
+				gameDepartments: focusedDepartments,
 				showGames,
 				showTrend,
 				showActiveFacilities,
 				showInactiveFacilities,
 			}),
 		[
-			facilities,
+			scopedFacilities,
 			showActiveFacilities,
 			showInactiveFacilities,
 			showGames,
 			showTrend,
-			gameDepartments,
+			focusedDepartments,
 		],
 	);
 	const featureCollection = useMemo(
@@ -495,6 +517,57 @@ export function useFacilitiesMapScreenRules() {
 		},
 		[setScope],
 	);
+
+	useEffect(() => {
+		if (!mapNavigation || !isMapReady) return;
+		if (mapNavigation.kind === "metric-focus") {
+			const targets = facilities.filter((facility) =>
+				mapNavigation.facilityIds.includes(facility.id),
+			);
+			const map = mapRef.current;
+			const bounds = marketBounds(targets);
+			if (map && targets.length === 1) {
+				const [target] = targets;
+				if (target)
+					map.easeTo({
+						center: [target.location.longitude, target.location.latitude],
+						zoom: 14,
+						padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
+						duration: 700,
+					});
+			} else if (map && bounds)
+				map.fitBounds(bounds, {
+					padding: { top: 72, bottom: 72, left: 72, right: DETAIL_PANEL_OFFSET + 72 },
+					maxZoom: 11,
+					duration: 700,
+				});
+		}
+
+		if (mapNavigation.kind === "all") {
+			setScope(ALL_MARKETS_SCOPE);
+			setSelectedFacilityId(null);
+		}
+		if (mapNavigation.kind === "facility") {
+			const facility = facilities.find((item) => item.id === mapNavigation.id);
+			if (facility) selectSearchFacility(facility);
+		}
+		if (mapNavigation.kind === "market") {
+			selectSearchMarket({
+				id: mapNavigation.id,
+				name: mapNavigation.name,
+				facilities: facilities.filter((item) => item.marketId === mapNavigation.id),
+			});
+		}
+		setMapNavigation(null);
+	}, [
+		mapNavigation,
+		isMapReady,
+		facilities,
+		selectSearchFacility,
+		selectSearchMarket,
+		setMapNavigation,
+		setScope,
+	]);
 
 	const selectSearchPlace = useCallback(
 		(place: PlaceView) => {
