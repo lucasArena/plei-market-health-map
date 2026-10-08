@@ -209,27 +209,6 @@ export interface Messages {
 		unavailable: string;
 		incomplete: string;
 	};
-	marketsTable: {
-		title: string;
-		sortBy: string;
-		sortStatus: string;
-		sortGames: string;
-		sortChange: string;
-		columnMarket: string;
-		columnGames: string;
-		columnChange: string;
-		attention: string;
-		watch: string;
-		onTrack: string;
-		activeCount: string;
-		noBaseline: string;
-		openMarket: string;
-		showAll: string;
-		showFewer: string;
-		noteStatus: string;
-		noteGames: string;
-		noteChange: string;
-	};
 	marketSummary: {
 		open: string;
 		close: string;
@@ -264,8 +243,6 @@ export interface Messages {
 		comparedWith: string;
 		sectionGames: string;
 		sectionUsers: string;
-		sectionMarkets: string;
-		sectionFacilities: string;
 		dataAsOf: string;
 		trendDeclining: string;
 		trendStable: string;
@@ -385,7 +362,6 @@ export interface Messages {
 
 export interface StatsPeriodMessages {
 	short: string;
-	label: string;
 	title: string;
 	span: string;
 	within: string;

@@ -140,7 +140,6 @@ describe("market summary", () => {
 			scope: { facilityCount: 0, activeFacilityCount: 0, marketCount: 0, activeMarketCount: 0 },
 			topFacilities: [],
 			topMarkets: [],
-			markets: [],
 		};
 		await expect(getMarketSummary()).resolves.toMatchObject({
 			periods: { week: empty, month: empty },
@@ -186,33 +185,6 @@ describe("market summary", () => {
 			["houston", 1],
 		]);
 		expect(periods.month.scope.activeFacilityCount).toBe(3);
-	});
-
-	it("lists every market for the markets table, including ones without games", async () => {
-		const { getMarketSummary } = setup([
-			facility("292", "philly", 16, [], 3),
-			facility("31", "houston", 40, [], 0),
-		]);
-
-		const { periods } = await getMarketSummary();
-
-		expect(periods.week.topMarkets.map((rank) => rank.id)).toEqual(["philly"]);
-		expect(periods.week.markets).toEqual([
-			{
-				id: "philly",
-				name: expect.any(String),
-				facilityCount: 1,
-				activeFacilityCount: 1,
-				games: 3,
-			},
-			{
-				id: "houston",
-				name: expect.any(String),
-				facilityCount: 1,
-				activeFacilityCount: 0,
-				games: 0,
-			},
-		]);
 	});
 
 	it("scopes player analytics to one market when asked", async () => {

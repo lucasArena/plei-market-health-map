@@ -42,10 +42,7 @@ export interface MarketSummaryPeriodView {
 	scope: MarketSummaryScopeView;
 	topFacilities: MarketSummaryFacilityRankView[];
 	topMarkets: MarketSummaryMarketRankView[];
-	markets: MarketSummaryMarketRankView[];
 }
-
-export type MarketHealthStatus = "attention" | "watch" | "on-track";
 
 export type GamesTrend = "declining" | "stable" | "growing";
 

@@ -152,7 +152,6 @@ export const es: Messages = {
 		switchLabel: "Período de comparación",
 		week: {
 			short: "7D",
-			label: "Últimos 7 días",
 			title: "Últimos 7 días, hasta ayer, frente a los 7 anteriores",
 			span: "últimos 7 días",
 			within: "en los últimos 7 días",
@@ -160,7 +159,6 @@ export const es: Messages = {
 		},
 		month: {
 			short: "28D",
-			label: "Últimos 28 días",
 			title: "Últimos 28 días, hasta ayer, frente a los 28 anteriores",
 			span: "últimos 28 días",
 			within: "en los últimos 28 días",
@@ -237,30 +235,6 @@ export const es: Messages = {
 		incomplete:
 			"Algunos recuentos no están disponibles. No se muestran totales con datos faltantes.",
 	},
-	marketsTable: {
-		title: "Mercados",
-		sortBy: "Ordenar por",
-		sortStatus: "Estado",
-		sortGames: "Partidos",
-		sortChange: "Cambio",
-		columnMarket: "Mercado",
-		columnGames: "Partidos",
-		columnChange: "vs anterior",
-		attention: "Atención",
-		watch: "Vigilar",
-		onTrack: "En camino",
-		activeCount: "{active} de {total} activas",
-		noBaseline: "Nuevo",
-		openMarket: "Abrir {name}",
-		showAll: "Mostrar los {count} mercados",
-		showFewer: "Mostrar menos",
-		noteStatus:
-			"Ordenado por estado (requiere atención primero), luego por partidos. Selecciona una fila para abrir el mercado.",
-		noteGames:
-			"Ordenado por partidos, de mayor a menor. Selecciona una fila para abrir el mercado.",
-		noteChange:
-			"Ordenado por cambio, mayor caída primero. Selecciona una fila para abrir el mercado.",
-	},
 	marketSummary: {
 		open: "Resumen del mercado",
 		close: "Cerrar resumen del mercado",
@@ -299,8 +273,6 @@ export const es: Messages = {
 		comparedWith: "vs {range}",
 		sectionGames: "Partidos",
 		sectionUsers: "Usuarios",
-		sectionMarkets: "Mercados",
-		sectionFacilities: "Instalaciones",
 		trendDeclining: "Requiere atención",
 		trendStable: "Estable",
 		trendGrowing: "Creciendo",

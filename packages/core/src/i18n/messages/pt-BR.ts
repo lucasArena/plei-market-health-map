@@ -151,7 +151,6 @@ export const ptBR: Messages = {
 		switchLabel: "Período de comparação",
 		week: {
 			short: "7D",
-			label: "Últimos 7 dias",
 			title: "Últimos 7 dias, até ontem, comparados com os 7 anteriores",
 			span: "últimos 7 dias",
 			within: "nos últimos 7 dias",
@@ -159,7 +158,6 @@ export const ptBR: Messages = {
 		},
 		month: {
 			short: "28D",
-			label: "Últimos 28 dias",
 			title: "Últimos 28 dias, até ontem, comparados com os 28 anteriores",
 			span: "últimos 28 dias",
 			within: "nos últimos 28 dias",
@@ -235,30 +233,6 @@ export const ptBR: Messages = {
 		incomplete:
 			"Algumas contagens de jogos estão indisponíveis. Totais com dados ausentes não são exibidos.",
 	},
-	marketsTable: {
-		title: "Mercados",
-		sortBy: "Ordenar por",
-		sortStatus: "Status",
-		sortGames: "Jogos",
-		sortChange: "Variação",
-		columnMarket: "Mercado",
-		columnGames: "Jogos",
-		columnChange: "vs anterior",
-		attention: "Atenção",
-		watch: "Observar",
-		onTrack: "No caminho",
-		activeCount: "{active} de {total} ativas",
-		noBaseline: "Novo",
-		openMarket: "Abrir {name}",
-		showAll: "Mostrar os {count} mercados",
-		showFewer: "Mostrar menos",
-		noteStatus:
-			"Ordenado por status (precisa de atenção primeiro), depois por jogos. Selecione uma linha para abrir o mercado.",
-		noteGames:
-			"Ordenado por jogos, do maior para o menor. Selecione uma linha para abrir o mercado.",
-		noteChange:
-			"Ordenado por variação, maior queda primeiro. Selecione uma linha para abrir o mercado.",
-	},
 	marketSummary: {
 		open: "Resumo do mercado",
 		close: "Fechar resumo do mercado",
@@ -297,8 +271,6 @@ export const ptBR: Messages = {
 		comparedWith: "vs {range}",
 		sectionGames: "Jogos",
 		sectionUsers: "Usuários",
-		sectionMarkets: "Mercados",
-		sectionFacilities: "Instalações",
 		trendDeclining: "Precisa de atenção",
 		trendStable: "Estável",
 		trendGrowing: "Crescendo",

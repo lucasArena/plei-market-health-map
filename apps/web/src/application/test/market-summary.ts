@@ -32,18 +32,11 @@ export const MARKET_SUMMARY: MarketSummaryView = {
 			topMarkets: [
 				{ id: "houston", name: "Houston", facilityCount: 9, activeFacilityCount: 6, games: 120 },
 			],
-			markets: [
-				{ id: "houston", name: "Houston", facilityCount: 9, activeFacilityCount: 6, games: 120 },
-				{ id: "philly", name: "Philadelphia", facilityCount: 3, activeFacilityCount: 1, games: 1 },
-			],
 		},
 		week: {
 			scope: { facilityCount: 142, activeFacilityCount: 51, marketCount: 12, activeMarketCount: 8 },
 			topFacilities: [{ id: "889", name: "Pegaso HTX", marketName: "Houston", games: 12 }],
 			topMarkets: [
-				{ id: "houston", name: "Houston", facilityCount: 9, activeFacilityCount: 4, games: 30 },
-			],
-			markets: [
 				{ id: "houston", name: "Houston", facilityCount: 9, activeFacilityCount: 4, games: 30 },
 			],
 		},
