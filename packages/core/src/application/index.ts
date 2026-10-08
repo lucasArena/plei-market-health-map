@@ -88,6 +88,12 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
+export { getMarketAudienceSchema } from "@core/application/dtos/market-audience-dto";
+export type {
+	AudiencePeriodView,
+	GetMarketAudienceInput,
+	MarketAudienceView,
+} from "@core/application/dtos/market-audience-dto.types";
 export {
 	gameDepartmentsSchema,
 	getMarketGameInsightsSchema,
@@ -106,6 +112,7 @@ export type {
 	MarketSummaryPeriodView,
 	MarketSummaryScopeView,
 	MarketSummaryView,
+	OverallGamesTrend,
 } from "@core/application/dtos/market-summary-dto.types";
 export {
 	canSegmentDrillDown,
@@ -169,6 +176,7 @@ export {
 	toFeedbackIssueSubmitter,
 	toFeedbackIssueTitle,
 } from "@core/application/mappers/feedback-issue-mapper";
+export { STABLE_CHANGE_PERCENT, toGamesTrend } from "@core/application/mappers/games-trend";
 export { toLoginEventView } from "@core/application/mappers/login-event-mapper";
 export {
 	MARKET_SUMMARY_RANK_LIMIT,
@@ -201,10 +209,16 @@ export type {
 	FacilityReservationStatsFilters,
 	FacilityReservationStatsRepository,
 	FacilityStatsRepository,
+	FacilityWeeklyActivatedPlayers,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
 export type { FeatureFlagRepository } from "@core/application/repositories/feature-flag-repository.types";
 export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
+export type {
+	MarketAudienceCounts,
+	MarketAudiencePeriodCounts,
+	MarketAudienceRepository,
+} from "@core/application/repositories/market-audience-repository.types";
 export type {
 	MetricDrillDownQuery,
 	MetricDrillDownRepository,
@@ -221,6 +235,7 @@ export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
 export { makeGetFacilityReservationStats } from "@core/application/services/get-facility-reservation-stats";
+export { makeGetMarketAudience } from "@core/application/services/get-market-audience";
 export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";

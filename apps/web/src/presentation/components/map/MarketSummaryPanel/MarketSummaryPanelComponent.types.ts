@@ -1,5 +1,10 @@
 import type { Messages } from "@market-health-map/core/i18n";
 import type { ReactNode } from "react";
+import type {
+	GamesMetricView,
+	GamesTrendView,
+} from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
+import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 import type {
 	DetailMessages,
@@ -55,6 +60,12 @@ export interface MarketSummaryComparison {
 export interface InsightCardProps {
 	children: ReactNode;
 	isRedesigned: boolean;
+	tone?: InsightTone;
+}
+
+export interface MarketSummaryInsightHeading {
+	title: string;
+	tone: InsightTone;
 }
 
 export interface MarketRankRowsProps {
@@ -64,16 +75,15 @@ export interface MarketRankRowsProps {
 
 export interface MarketSummaryMetricsProps {
 	detailMessages: DetailMessages;
+	gamesTrend: GamesTrendView | null;
 	isRedesigned: boolean;
 	messages: MarketSummaryMessages;
 	rankingsEmptyLabel: string;
-	tiles: MarketSummarySectionTiles;
+	gamesTitle: string;
+	isUsersPending: boolean;
+	playersTrend: GamesTrendView | null;
+	userMetrics: GamesMetricView[];
 	view: MarketSummaryViewModel;
-}
-
-export interface MarketSummarySectionTiles {
-	games: FacilityStatTile[];
-	users: FacilityStatTile[];
 }
 
 export interface MarketSummaryHeaderProps {
@@ -81,4 +91,25 @@ export interface MarketSummaryHeaderProps {
 	heading: MarketSummaryHeading;
 	isRedesigned: boolean;
 	scopeLine: string;
+}
+
+export interface TrendWeekCount {
+	weekStart: string;
+	value: number;
+}
+
+export interface TrendViewInput {
+	value: number;
+	previous: number;
+	changePercent: number | null;
+	weeks: TrendWeekCount[];
+	tooltip: string;
+	pointLabel: string;
+	metrics: GamesMetricView[];
+}
+
+export interface UsersSectionBodyProps {
+	isUsersPending: boolean;
+	playersTrend: GamesTrendView | null;
+	userMetrics: GamesMetricView[];
 }

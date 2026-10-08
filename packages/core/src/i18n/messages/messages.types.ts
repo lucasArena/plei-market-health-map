@@ -307,9 +307,26 @@ export interface Messages {
 		comparedWith: string;
 		sectionGames: string;
 		sectionUsers: string;
-		sectionMarkets: string;
-		sectionFacilities: string;
 		dataAsOf: string;
+		gamesInPeriod: string;
+		metricConfirmation: string;
+		metricCancellation: string;
+		metricPosted: string;
+		metricVs: string;
+		metricActiveUsers: string;
+		metricUniqueUsers: string;
+		metricActivePlayers: string;
+		metricRegistrations: string;
+		changePoints: string;
+		gamesComparedWith: string;
+		gamesPointTooltip: string;
+		gamesPointLabel: string;
+		playersPointTooltip: string;
+		playersPointLabel: string;
+		trendDeclining: string;
+		trendStable: string;
+		trendGrowing: string;
+		trendTitle: string;
 		reportWrongNumber: string;
 	};
 	feedback: {

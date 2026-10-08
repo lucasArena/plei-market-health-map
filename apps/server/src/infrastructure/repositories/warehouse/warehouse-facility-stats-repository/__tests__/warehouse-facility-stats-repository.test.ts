@@ -12,7 +12,7 @@ import {
 const TODAY = "2026-10-08";
 
 const ROLLING_PERIODS_PLAYER_SQL_SHA256 =
-	"10a04b29aee699ac03084d2570aed9f345fddc6e5d611f27754f3cfb25d467f5";
+	"63732644f7a57ecdc704b2c85bc3a77a73fd99d98d94018b99051b636b49d925";
 
 const RESERVATION_ROW = {
 	period_start: "2026-09-03",
@@ -27,6 +27,9 @@ const RESERVATION_ROW = {
 	scheduled_last_week: "87",
 	scheduled_previous_week: "87",
 	cancelled_last_week: "32",
+	cancelled_previous_week: "30",
+	cancelled_last_28_days: "120",
+	cancelled_previous_28_days: "110",
 	upcoming_next_seven_days: "41",
 	last_played_date: "2026-09-28",
 	weekly_activity: [
@@ -47,6 +50,16 @@ const PLAYER_ROW = {
 	unique_players_previous_week: "25",
 	activated_players_last_week: "6",
 	activated_players_previous_week: "5",
+	weekly_activated_players: [
+		{ week_start: "2026-08-03", players: "4" },
+		{ week_start: "2026-08-10", players: "5" },
+		{ week_start: "2026-08-17", players: "6" },
+		{ week_start: "2026-08-24", players: "5" },
+		{ week_start: "2026-08-31", players: "7" },
+		{ week_start: "2026-09-07", players: "6" },
+		{ week_start: "2026-09-14", players: "5" },
+		{ week_start: "2026-09-21", players: 6 },
+	],
 };
 
 describe("facility stats SQL", () => {
@@ -88,12 +101,12 @@ describe("facility stats SQL", () => {
 		}
 	});
 
-	it("buckets weekly activity into the four 7 day blocks ending yesterday", () => {
+	it("buckets weekly activity into the eight 7 day blocks ending yesterday", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
 			"g.game_date >= w.week_start and g.game_date < w.week_start + 7",
 		);
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
-			"generate_series(b.today - 28, b.today - 7, interval '7 days')",
+			"generate_series(b.today - 56, b.today - 7, interval '7 days')",
 		);
 	});
 
@@ -125,6 +138,21 @@ describe("facility stats SQL", () => {
 		);
 		expect(FACILITY_PLAYER_STATS_SQL).toContain("exists (");
 		expect(FACILITY_PLAYER_STATS_SQL).not.toContain("dim_reservation");
+	});
+
+	it("counts activated players in each of the eight 7 day blocks ending yesterday", () => {
+		for (const sql of [FACILITY_PLAYER_STATS_SQL, FACILITY_PLAYER_STATS_BY_DEPARTMENT_SQL]) {
+			expect(sql).toContain(
+				"generate_series(b.today - 56, b.today - 7, interval '7 days')::date as week_start",
+			);
+			expect(sql).toContain(
+				"left join facility_players f on f.date_played >= w.week_start and f.date_played < w.week_start + 7",
+			);
+			expect(sql).toContain("where f.player_lifecycle = 'Activated'");
+			expect(sql).toContain(
+				") order by w.week_start) from weekly_activated_players w) as weekly_activated_players",
+			);
+		}
 	});
 
 	it("keeps the unfiltered player query byte for byte as it was", () => {
@@ -190,6 +218,9 @@ describe("warehouse facility stats mappers", () => {
 			scheduledLastWeek: 87,
 			scheduledPreviousWeek: 87,
 			cancelledLastWeek: 32,
+			cancelledPreviousWeek: 30,
+			cancelledLast28Days: 120,
+			cancelledPrevious28Days: 110,
 			upcomingNextSevenDays: 41,
 			lastPlayedDate: "2026-09-28",
 			weeklyActivity: [
@@ -209,6 +240,16 @@ describe("warehouse facility stats mappers", () => {
 			uniquePlayersPreviousWeek: 25,
 			activatedPlayersLastWeek: 6,
 			activatedPlayersPreviousWeek: 5,
+			weeklyActivatedPlayers: [
+				{ weekStart: "2026-08-03", players: 4 },
+				{ weekStart: "2026-08-10", players: 5 },
+				{ weekStart: "2026-08-17", players: 6 },
+				{ weekStart: "2026-08-24", players: 5 },
+				{ weekStart: "2026-08-31", players: 7 },
+				{ weekStart: "2026-09-07", players: 6 },
+				{ weekStart: "2026-09-14", players: 5 },
+				{ weekStart: "2026-09-21", players: 6 },
+			],
 		});
 	});
 });

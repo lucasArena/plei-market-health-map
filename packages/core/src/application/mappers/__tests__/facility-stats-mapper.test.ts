@@ -17,6 +17,9 @@ const RESERVATIONS = {
 	scheduledLastWeek: 60,
 	scheduledPreviousWeek: 0,
 	cancelledLastWeek: 15,
+	cancelledPreviousWeek: 15,
+	cancelledLast28Days: 60,
+	cancelledPrevious28Days: 60,
 	upcomingNextSevenDays: 41,
 	lastPlayedDate: "2026-10-04",
 	weeklyActivity: [],
@@ -32,6 +35,7 @@ const PLAYERS = {
 	activatedPlayersPreviousWeek: 12,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	weeklyActivatedPlayers: [],
 };
 
 describe("confirmationRate", () => {
@@ -54,7 +58,14 @@ describe("period views", () => {
 			playedPrevious: 50,
 			playedChangePercent: -10,
 			confirmationRate: 75,
+			confirmationRatePrevious: null,
 			confirmationRateChangePoints: null,
+			scheduled: 60,
+			scheduledPrevious: 0,
+			scheduledChangePercent: null,
+			cancellationRate: 25,
+			cancellationRatePrevious: null,
+			cancellationRateChangePoints: null,
 		});
 		expect(toPlayerPeriodView(PLAYERS, "week")).toEqual({
 			uniquePlayers: 90,
@@ -75,7 +86,14 @@ describe("period views", () => {
 			playedPrevious: 200,
 			playedChangePercent: 6,
 			confirmationRate: 84.8,
+			confirmationRatePrevious: 80,
 			confirmationRateChangePoints: 4.8,
+			scheduled: 250,
+			scheduledPrevious: 250,
+			scheduledChangePercent: 0,
+			cancellationRate: 24,
+			cancellationRatePrevious: 24,
+			cancellationRateChangePoints: 0,
 		});
 		expect(toPlayerPeriodView(PLAYERS, "month")).toMatchObject({
 			uniquePlayers: 126,

@@ -79,8 +79,29 @@ function rulesWith(overrides: object = {}) {
 		dataAsOf: "Data as of Oct 7, 2026, 9:35 PM",
 		isRedesigned: false,
 		reportWrongNumber: vi.fn(),
+		insight: { title: "Key insights", tone: "neutral" },
+		gamesTrend: null,
+		playersTrend: null,
+		isUsersPending: false,
+		gamesTitle: "Games the last 7 days",
+		userMetrics: [
+			{
+				key: "activeUsers",
+				label: "Active users",
+				value: "12,000",
+				previous: "vs 10,000",
+				change: { label: "+20%", direction: "up", tone: "good" },
+			},
+			{
+				key: "registrations",
+				label: "New registrations",
+				value: "",
+				previous: "",
+				change: null,
+				isPending: true,
+			},
+		],
 		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
-		sectionTiles: { games: [], users: VIEW.tiles },
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
 		heading: { title: "All markets", subtitle: EN_MESSAGES.marketSummary.subtitle },
@@ -141,23 +162,91 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByTestId("market-summary-dates")).toHaveTextContent(
 			"Sep 9 – Oct 6, 2026vs Aug 12 – Sep 8",
 		);
-		expect(screen.getByTestId("health-strip")).toHaveTextContent(VIEW.summary);
+		expect(screen.getByText(VIEW.summary)).toBeInTheDocument();
 		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
-		expect(screen.getByRole("region", { name: "Games" })).toContainElement(
+		expect(screen.getByRole("region", { name: "Games the last 7 days" })).toContainElement(
 			screen.getByRole("heading", { name: "Weekly activity" }),
 		);
-		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
-			screen.getByTestId("market-stat-players-skeleton"),
-		);
-		expect(screen.getByRole("region", { name: "Markets" })).toHaveTextContent("Houston");
-		expect(screen.getByRole("region", { name: "Facilities" })).toHaveTextContent(
-			"No games played last week.",
-		);
+		const users = screen.getByRole("region", { name: "Users" });
+		expect(users).toContainElement(screen.getByTestId("user-metrics"));
+		expect(users).toHaveTextContent("Active users12,000vs 10,000+20%");
+		expect(users).toHaveTextContent("New registrations");
+		expect(screen.queryByRole("region", { name: "Markets" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("region", { name: "Facilities" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: "Popular times · last 28 days" }),
+		).not.toBeInTheDocument();
 		expect(screen.getByText("Data as of Oct 7, 2026, 9:35 PM")).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Report a wrong number" }));
 		expect(reportWrongNumber).toHaveBeenCalledOnce();
+	});
+
+	it("charts active players at the top of Users with the other user rows below", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				isRedesigned: true,
+				playersTrend: {
+					label: "Active players",
+					total: "3,146",
+					change: { label: "−19%", direction: "down" },
+					comparison: "vs 3,877 in the previous 28 days",
+					direction: "down",
+					axisMax: 1000,
+					axisLabel: "1,000",
+					points: [
+						{
+							key: "2026-10-01",
+							value: 700,
+							valueLabel: "700",
+							weekLabel: "Oct 1",
+							tooltipLabel: "active players · Oct 1",
+							ariaLabel: "700 active players, week ending Oct 1",
+							isCurrentPeriod: true,
+						},
+					],
+					metrics: [
+						{
+							key: "registrations",
+							label: "New registrations",
+							value: "6,815",
+							previous: "vs 7,922",
+							change: { label: "−14%", direction: "down", tone: "bad" },
+						},
+					],
+				},
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		const users = screen.getByRole("region", { name: "Users" });
+		expect(users).toContainElement(screen.getByTestId("players-trend-chart"));
+		expect(users).toHaveTextContent("Active players3,146−19%vs 3,877 in the previous 28 days");
+		expect(screen.getByTestId("user-metrics")).toHaveTextContent(
+			"New registrations6,815vs 7,922−14%",
+		);
+		expect(
+			screen.getByRole("button", { name: "700 active players, week ending Oct 1" }),
+		).toBeInTheDocument();
+	});
+
+	it("tints the written insight with the overall trend", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				aiContext: null,
+				isRedesigned: true,
+				insight: { title: "Needs attention · Key insights", tone: "attention" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("health-strip")).toHaveAttribute("data-tone", "attention");
+		expect(
+			screen.getByRole("heading", { name: "Needs attention · Key insights" }),
+		).toBeInTheDocument();
 	});
 
 	it("hides the scope tiles and rankings a single facility does not need", () => {
@@ -233,5 +322,24 @@ describe("MarketSummaryPanel", () => {
 		mockRules.mockReturnValue(rulesWith({ status: "error", view: null }));
 		render(<MarketSummaryPanel {...PROPS} />);
 		expect(screen.getByRole("alert")).toHaveTextContent("Could not load the market summary.");
+	});
+
+	it("loads the redesigned panel with chart-shaped skeletons for Games and Users", () => {
+		mockRules.mockReturnValue(rulesWith({ status: "loading", view: null, isRedesigned: true }));
+		const { unmount } = render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByTestId("market-summary-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("market-summary-insight-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("games-trend-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("users-trend-skeleton")).toBeInTheDocument();
+		unmount();
+
+		mockRules.mockReturnValue(
+			rulesWith({ isRedesigned: true, isUsersPending: true, userMetrics: [] }),
+		);
+		render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
+			screen.getByTestId("users-trend-skeleton"),
+		);
+		expect(screen.queryByTestId("user-metrics")).not.toBeInTheDocument();
 	});
 });

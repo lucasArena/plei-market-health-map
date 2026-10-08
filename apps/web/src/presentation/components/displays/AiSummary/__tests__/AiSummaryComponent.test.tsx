@@ -72,6 +72,22 @@ describe("AiSummary", () => {
 		expect(screen.getByText(messages.label)).toBeInTheDocument();
 	});
 
+	it("uses the status title and tone colors when given", () => {
+		mockRules.mockReturnValue(rulesWith("ready"));
+		render(
+			<AiSummary
+				context={{ cacheKey: "k", prompt: [] }}
+				fallback="Summary text."
+				title="Needs attention · Key insights"
+				tone="attention"
+			/>,
+		);
+
+		const title = screen.getByRole("heading", { name: "Needs attention · Key insights" });
+		expect(title).toHaveClass("text-[#b91c1c]");
+		expect(title.closest("[aria-busy]")).toHaveClass("bg-[#fef2f2]", "border-[#fecaca]");
+	});
+
 	it("marks a finished AI summary with the sparkle icon", () => {
 		mockRules.mockReturnValue(rulesWith("ready"));
 		renderSummary();
