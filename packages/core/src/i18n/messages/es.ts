@@ -199,6 +199,8 @@ export const es: Messages = {
 	drillDown: {
 		title: "Desglose de métricas",
 		close: "Cerrar desglose",
+		expand: "Ampliar desglose",
+		collapse: "Contraer desglose",
 		measure: "Medida",
 		slice: "Agrupación",
 		segment: "Segmento",

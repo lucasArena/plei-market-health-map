@@ -11,7 +11,7 @@ import {
 	makeGetMetricDrillDown,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type AnimationEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
 	DrillDownChartRow,
 	DrillDownSort,
@@ -26,6 +26,8 @@ const getMetricDrillDown = makeGetMetricDrillDown();
 
 export function useMetricDrillDownPanelRules({
 	isOpen,
+	isClosing,
+	onClosed,
 	onClose,
 	triggerRef,
 }: MetricDrillDownPanelProps) {
@@ -47,21 +49,33 @@ export function useMetricDrillDownPanelRules({
 			segment: current.segment,
 		}));
 	}
+	const [isExpanded, setExpanded] = useState(false);
+	const toggleExpanded = () => setExpanded((current) => !current);
+	function handleAnimationEnd(event: AnimationEvent<HTMLElement>) {
+		if (event.target === event.currentTarget && isClosing) onClosed?.();
+	}
 	const [sort, setSort] = useState<DrillDownSort>("count-desc");
 	const panelRef = useRef<HTMLElement>(null);
 	const closeButtonRef = useRef<HTMLButtonElement>(null);
 	useEffect(() => {
 		if (!isOpen) return;
 		closeButtonRef.current?.focus();
+	}, [isOpen]);
+	useEffect(() => {
+		if (!isOpen) return;
 		function onKey(event: KeyboardEvent) {
 			if (event.key !== "Escape") return;
 			event.preventDefault();
+			if (isExpanded) {
+				setExpanded(false);
+				return;
+			}
 			onClose();
 			triggerRef.current?.focus();
 		}
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
-	}, [isOpen, onClose, triggerRef]);
+	}, [isOpen, isExpanded, onClose, triggerRef]);
 	const view = useMemo(
 		() =>
 			getMetricDrillDown({
@@ -103,7 +117,11 @@ export function useMetricDrillDownPanelRules({
 		return (sort === "count-asc" ? delta : -delta) || rowName(a).localeCompare(rowName(b), locale);
 	});
 	const topRows = [...view.rows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
-	const max = Math.max(1, ...topRows.map((row) => row.value ?? 0));
+	const largest = Math.max(1, ...topRows.map((row) => row.value ?? 0));
+	const magnitude = 10 ** Math.floor(Math.log10(largest / 5));
+	const step = Math.max(1, Math.ceil(largest / magnitude / 5) * magnitude);
+	const max = Math.ceil(largest / step) * step;
+	const ticks = Array.from({ length: Math.ceil(max / step) + 1 }, (_, index) => index * step);
 
 	const chartRows: DrillDownChartRow[] = topRows.map((row) => {
 		if (row.value === null) return { ...row, bars: [] };
@@ -117,7 +135,7 @@ export function useMetricDrillDownPanelRules({
 					department,
 					label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(counts[department])}`,
 					value: counts[department],
-					width: (counts[department] / max) * 100,
+					height: (counts[department] / max) * 100,
 				})),
 			};
 		}
@@ -128,7 +146,7 @@ export function useMetricDrillDownPanelRules({
 					id: "total",
 					label: `${rowName(row)}: ${formatValue(row.value)}`,
 					value: row.value,
-					width: (row.value / max) * 100,
+					height: (row.value / max) * 100,
 				},
 			],
 		};
@@ -208,6 +226,10 @@ export function useMetricDrillDownPanelRules({
 		rows,
 		chartRows,
 		max,
+		ticks,
+		isExpanded,
+		toggleExpanded,
+		handleAnimationEnd,
 		view,
 		formatValue,
 		rowName,

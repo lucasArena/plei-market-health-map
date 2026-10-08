@@ -177,6 +177,8 @@ export interface Messages {
 	drillDown: {
 		title: string;
 		close: string;
+		expand: string;
+		collapse: string;
 		measure: string;
 		slice: string;
 		segment: string;

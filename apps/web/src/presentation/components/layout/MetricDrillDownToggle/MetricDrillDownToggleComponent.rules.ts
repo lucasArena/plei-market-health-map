@@ -12,18 +12,28 @@ export function useMetricDrillDownToggleRules(): MetricDrillDownToggleView {
 	const enabled = useFeatureFlag("metric-drill-down");
 	const pathname = usePathname();
 	const isVisible = enabled && pathname === "/";
-	const [isOpen, setIsOpen] = useState(false);
-	const close = useCallback(() => setIsOpen(false), []);
-	const toggle = useCallback(() => setIsOpen((current) => !current), []);
+	const [state, setState] = useState<"closed" | "open" | "closing">("closed");
+	const isOpen = state === "open";
+	const close = useCallback(
+		() => setState((current) => (current === "open" ? "closing" : current)),
+		[],
+	);
+	const handleClosed = useCallback(() => setState("closed"), []);
+	const toggle = useCallback(
+		() => setState((current) => (current === "open" ? "closing" : "open")),
+		[],
+	);
 	useExclusiveSidePanel("metric-drill-down", isOpen && isVisible, close);
 	useEffect(() => {
-		if (!isVisible) close();
-	}, [close, isVisible]);
+		if (!isVisible) setState("closed");
+	}, [isVisible]);
 	const { messages } = useMessages();
 	return {
 		triggerRef,
 		isOpen: isOpen && isVisible,
 		isVisible,
+		isClosing: state === "closing",
+		handleClosed,
 		close,
 		toggle,
 		label: messages.drillDown.title,

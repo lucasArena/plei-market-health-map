@@ -9,6 +9,8 @@ import type { RefObject } from "react";
 
 export interface MetricDrillDownPanelProps {
 	isOpen: boolean;
+	isClosing?: boolean;
+	onClosed?(): void;
 	onClose(): void;
 	triggerRef: RefObject<HTMLButtonElement | null>;
 }
@@ -26,7 +28,7 @@ export interface DrillDownChartBar {
 	id: GameDepartment | "total";
 	label: string;
 	value: number;
-	width: number;
+	height: number;
 	department?: GameDepartment;
 }
 export interface DrillDownChartRow extends MetricDrillDownRow {

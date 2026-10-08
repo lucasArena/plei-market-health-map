@@ -90,6 +90,46 @@ describe("MetricDrillDownPanel", () => {
 		navigate.mockClear();
 		retry.mockClear();
 	});
+	it("uses the summary glass surface and slides out before unmounting", () => {
+		const { props, rerender } = setup();
+		const panel = screen.getByRole("complementary");
+		expect(panel).toHaveClass("map-glass", "panel-slide-in");
+		const onClosed = vi.fn();
+		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
+		rerender(<MetricDrillDownPanel {...props} isOpen={false} isClosing onClosed={onClosed} />);
+		expect(panel).toHaveClass("panel-slide-out");
+		fireEvent(
+			screen.getByRole("button", { name: "Close drill-down" }),
+			new Event("webkitAnimationEnd", { bubbles: true }),
+		);
+		expect(onClosed).not.toHaveBeenCalled();
+		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
+		expect(onClosed).toHaveBeenCalledOnce();
+	});
+	it("expands the vertical chart without resetting selections, then collapses with Escape", () => {
+		const { onClose } = setup();
+		select("Segment", "department");
+		const bar = screen.getByRole("button", { name: "Miami · Magic: 3" });
+		expect(bar.style.height).toBe("20%");
+		expect(bar.style.width).toBe("");
+		fireEvent.click(screen.getByRole("button", { name: "Expand drill-down" }));
+		expect(screen.getByRole("button", { name: "Collapse drill-down" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveValue("department");
+		fireEvent.click(screen.getByRole("button", { name: "Collapse drill-down" }));
+		fireEvent.click(screen.getByRole("button", { name: "Expand drill-down" }));
+		fireEvent.keyDown(document, { key: "Escape" });
+		expect(screen.getByRole("button", { name: "Expand drill-down" })).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
+		expect(onClose).not.toHaveBeenCalled();
+		fireEvent.keyDown(document, { key: "Escape" });
+		expect(onClose).toHaveBeenCalledOnce();
+	});
+
 	it("sorts unavailable data after known counts and preserves equal-name groups", () => {
 		data = [
 			{ ...facility, gamesLast28Days: undefined },

@@ -15,10 +15,12 @@ vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 vi.mock("@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent", () => ({
 	MetricDrillDownPanel: ({
 		isOpen,
+		isClosing,
+		onClosed,
 		onClose,
-	}: Pick<MetricDrillDownPanelProps, "isOpen" | "onClose">) =>
-		isOpen ? (
-			<aside aria-label="Drill">
+	}: Pick<MetricDrillDownPanelProps, "isOpen" | "isClosing" | "onClosed" | "onClose">) =>
+		isOpen || isClosing ? (
+			<aside aria-label="Drill" data-closing={!!isClosing} onAnimationEnd={onClosed}>
 				<button type="button" onClick={onClose}>
 					Close
 				</button>
@@ -50,6 +52,11 @@ describe("MetricDrillDownToggle", () => {
 		fireEvent.click(button);
 		expect(screen.getByRole("complementary")).toBeInTheDocument();
 		fireEvent.click(button);
+		expect(screen.getByRole("complementary")).toHaveAttribute("data-closing", "true");
+		fireEvent(
+			screen.getByRole("complementary"),
+			new Event("webkitAnimationEnd", { bubbles: true }),
+		);
 		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 		fireEvent.click(button);
 		fireEvent.click(screen.getByRole("button", { name: "Close" }));
@@ -77,6 +84,14 @@ describe("MetricDrillDownToggle", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Metric drill-down" }));
 		expect(screen.queryByRole("complementary", { name: "Summary" })).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Summary" }));
+		expect(screen.getByRole("complementary", { name: "Drill" })).toHaveAttribute(
+			"data-closing",
+			"true",
+		);
+		fireEvent(
+			screen.getByRole("complementary", { name: "Drill" }),
+			new Event("webkitAnimationEnd", { bubbles: true }),
+		);
 		expect(screen.queryByRole("complementary", { name: "Drill" })).not.toBeInTheDocument();
 	});
 });

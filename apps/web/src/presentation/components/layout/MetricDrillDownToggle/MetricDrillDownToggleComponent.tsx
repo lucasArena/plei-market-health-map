@@ -5,7 +5,8 @@ import { useMetricDrillDownToggleRules } from "@/presentation/components/layout/
 import { MetricDrillDownPanel } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent";
 
 export function MetricDrillDownToggle() {
-	const { isOpen, isVisible, close, toggle, label, triggerRef } = useMetricDrillDownToggleRules();
+	const { isOpen, isClosing, handleClosed, isVisible, close, toggle, label, triggerRef } =
+		useMetricDrillDownToggleRules();
 	if (!isVisible) return null;
 	return (
 		<>
@@ -26,7 +27,13 @@ export function MetricDrillDownToggle() {
 					<rect x="17" y="8" width="3" height="12" rx="1.5" />
 				</svg>
 			</button>
-			<MetricDrillDownPanel isOpen={isOpen} onClose={close} triggerRef={triggerRef} />
+			<MetricDrillDownPanel
+				isOpen={isOpen}
+				isClosing={isClosing}
+				onClosed={handleClosed}
+				onClose={close}
+				triggerRef={triggerRef}
+			/>
 		</>
 	);
 }

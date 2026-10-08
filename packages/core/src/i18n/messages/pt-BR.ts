@@ -198,6 +198,8 @@ export const ptBR: Messages = {
 	drillDown: {
 		title: "Detalhamento de métricas",
 		close: "Fechar detalhamento",
+		expand: "Expandir detalhamento",
+		collapse: "Recolher detalhamento",
 		measure: "Medida",
 		slice: "Agrupamento",
 		segment: "Segmento",

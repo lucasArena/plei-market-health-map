@@ -194,6 +194,8 @@ export const en: Messages = {
 	drillDown: {
 		title: "Metric drill-down",
 		close: "Close drill-down",
+		expand: "Expand drill-down",
+		collapse: "Collapse drill-down",
 		measure: "Measure",
 		slice: "Slice",
 		segment: "Segment",
