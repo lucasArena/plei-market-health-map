@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import { prefetchMarketSummary } from "@/presentation/hooks/use-market/prefetch-market-summary";
 
 describe("prefetchMarketSummary", () => {
@@ -25,9 +26,9 @@ describe("prefetchMarketSummary", () => {
 		await prefetchMarketSummary(client, "m 1");
 
 		expect(order).toEqual([
-			"/api/v1/market-summary?market=m%201",
-			"/api/v1/market-summary/players?market=m%201",
-			"/api/v1/market-summary/insights?period=week&market=m+1",
+			withStatsTimeZone("/api/v1/market-summary?market=m%201"),
+			withStatsTimeZone("/api/v1/market-summary/players?market=m%201"),
+			withStatsTimeZone("/api/v1/market-summary/insights?period=week&market=m+1"),
 		]);
 		expect(maxInFlight).toBe(1);
 	});

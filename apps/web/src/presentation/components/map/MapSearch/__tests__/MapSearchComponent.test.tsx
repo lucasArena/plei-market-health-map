@@ -2,6 +2,7 @@ import type { PlaceView } from "@market-health-map/core/application";
 import { act, fireEvent, screen } from "@testing-library/react";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { renderWithMessages } from "@/application/test/render-with-messages";
+import { statsDayKey } from "@/infrastructure/time/stats-day";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { buildMarketSearchResults } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
 
@@ -328,12 +329,13 @@ describe("MapSearch", () => {
 			"reservations",
 			"austin",
 			"all",
+			statsDayKey(),
 		]);
 
 		mockPrefetchQuery.mockClear();
 		fireEvent.focus(facility);
 		act(() => vi.advanceTimersByTime(150));
-		expect(mockPrefetchQuery.mock.calls.map(([options]) => options.queryKey.at(-1))).toEqual([
+		expect(mockPrefetchQuery.mock.calls.map(([options]) => options.queryKey.at(-2))).toEqual([
 			"reservations",
 			"players",
 		]);

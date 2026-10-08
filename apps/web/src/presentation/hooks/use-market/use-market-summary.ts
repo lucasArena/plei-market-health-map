@@ -4,6 +4,7 @@ import type { MarketSummaryView } from "@market-health-map/core/application";
 import { type GameDepartment, normalizeGameDepartments } from "@market-health-map/core/domain";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
+import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 
 export function marketDepartmentsKey(departments: readonly GameDepartment[] = []): string {
 	const selected = normalizeGameDepartments(departments);
@@ -23,7 +24,13 @@ export const marketSummaryQueryKey = (
 	marketId: string | null = null,
 	departments: readonly GameDepartment[] = [],
 ) =>
-	["market-summary", "reservations", marketId ?? "all", marketDepartmentsKey(departments)] as const;
+	[
+		"market-summary",
+		"reservations",
+		marketId ?? "all",
+		marketDepartmentsKey(departments),
+		statsDayKey(),
+	] as const;
 
 export function marketSummaryPath(
 	resource: "" | "/players",
@@ -35,7 +42,9 @@ export function marketSummaryPath(
 		...(marketId === null ? [] : [`market=${encodeURIComponent(marketId)}`]),
 		...(selected.length > 0 ? [`departments=${encodeURIComponent(selected.join(","))}`] : []),
 	];
-	return `/api/v1/market-summary${resource}${parts.length > 0 ? `?${parts.join("&")}` : ""}`;
+	return withStatsTimeZone(
+		`/api/v1/market-summary${resource}${parts.length > 0 ? `?${parts.join("&")}` : ""}`,
+	);
 }
 
 export function marketSummaryQueryOptions(

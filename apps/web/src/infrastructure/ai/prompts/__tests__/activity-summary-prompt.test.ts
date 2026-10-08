@@ -77,17 +77,17 @@ describe("ActivitySummaryPrompt", () => {
 		);
 		expect(content).toContain("Confirmation rate: 84.8%, unchanged from the previous 28 days.");
 	});
-	it("compares last week with the week before when the week is selected", () => {
+	it("compares the last 7 days with the 7 days before when the week is selected", () => {
 		const messages = prompt.build(facilitySubject(FACILITY_WEEK_ACTIVITY), "pt-BR");
 		const facts = messages.at(-1)?.content ?? "";
 
-		expect(messages[0]?.content).toContain("Identify the most useful signals in last week");
-		expect(messages[1]?.content).toContain("Period: last week (Aug 24 to Aug 30, 2026)");
-		expect(messages[2]?.content).toContain("em relação à semana anterior");
-		expect(facts).toContain("compared with the previous week.");
-		expect(facts).toContain("Pickup games played: 51 → 55, up 7.8% from the previous week.");
+		expect(messages[0]?.content).toContain("Identify the most useful signals in the last 7 days");
+		expect(messages[1]?.content).toContain("Period: the last 7 days (Aug 24 to Aug 30, 2026)");
+		expect(messages[2]?.content).toContain("em relação aos 7 dias anteriores");
+		expect(facts).toContain("compared with the previous 7 days.");
+		expect(facts).toContain("Pickup games played: 51 → 55, up 7.8% from the previous 7 days.");
 		expect(prompt.build(facilitySubject(FACILITY_WEEK_ACTIVITY), "fr")[2]?.content).toContain(
-			"versus the previous week",
+			"versus the previous 7 days",
 		);
 	});
 	it("uses the viewer language with English fallback", () => {

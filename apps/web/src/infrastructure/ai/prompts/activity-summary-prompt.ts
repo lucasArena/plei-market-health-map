@@ -16,17 +16,17 @@ const DEPARTMENT_NAMES: Record<GameDepartment, string> = {
 };
 
 const PERIOD_TEXT: PromptPeriodTexts = {
-	week: { current: "last week", previous: "the previous week" },
+	week: { current: "the last 7 days", previous: "the previous 7 days" },
 	month: { current: "the last 28 days", previous: "the previous 28 days" },
 };
 
 const EXAMPLE_PREVIOUS_BY_LOCALE: Record<string, PromptPeriodTexts> = {
 	"pt-BR": {
-		week: { current: "semana passada", previous: "à semana anterior" },
+		week: { current: "últimos 7 dias", previous: "aos 7 dias anteriores" },
 		month: { current: "últimos 28 dias", previous: "aos 28 dias anteriores" },
 	},
 	es: {
-		week: { current: "la semana pasada", previous: "la semana anterior" },
+		week: { current: "los últimos 7 días", previous: "los 7 días anteriores" },
 		month: { current: "los últimos 28 días", previous: "los 28 días anteriores" },
 	},
 };
