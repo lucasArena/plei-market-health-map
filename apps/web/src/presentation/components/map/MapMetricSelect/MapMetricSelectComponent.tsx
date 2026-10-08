@@ -39,7 +39,8 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 					id={rules.id}
 					role="listbox"
 					aria-label={props.label}
-					className={`${MAP_MENU_SURFACE_CLASS} ${props.alignRight ? "right-0" : "left-0"} z-50 min-w-48 bg-background/90`}
+					style={{ backgroundColor: "color-mix(in oklch, var(--background) 94%, transparent)" }}
+					className={`${MAP_MENU_SURFACE_CLASS} ${props.alignRight ? "right-0" : "left-0"} z-50 min-w-48`}
 				>
 					{props.options.map((option) => (
 						<button
