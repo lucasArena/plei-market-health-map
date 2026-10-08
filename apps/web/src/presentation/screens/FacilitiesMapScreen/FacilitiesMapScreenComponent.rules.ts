@@ -6,12 +6,8 @@ import type {
 	PlaceView,
 	StatsPeriod,
 } from "@market-health-map/core/application";
-import type {
-	GameDepartment,
-	GameDepartmentCounts,
-	GamesTrendLevel,
-} from "@market-health-map/core/domain";
-import { type GamesTrend, gamesTrend } from "@market-health-map/core/domain";
+import type { GameDepartment, GamesTrendLevel } from "@market-health-map/core/domain";
+import { type GamesTrend, gamesTrend, sumGameDepartments } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
@@ -173,13 +169,6 @@ export function toFacilityFeatureCollection(
 	};
 }
 
-function sumDepartments(
-	counts: GameDepartmentCounts | undefined,
-	departments: readonly GameDepartment[],
-) {
-	return departments.reduce((sum, department) => sum + (counts?.[department] ?? 0), 0);
-}
-
 /**
  * Applies the supply filters to facilities. Selected departments narrow both windows. With
  * the trend on, facilities with no games now but games in the previous window stay on the map
@@ -202,8 +191,11 @@ export function facilitiesForMap(
 			if (!gameDepartments?.length) return facility;
 			return {
 				...facility,
-				gamesLast28Days: sumDepartments(facility.gamesByDepartment, gameDepartments),
-				gamesPrevious28Days: sumDepartments(facility.gamesPreviousByDepartment, gameDepartments),
+				gamesLast28Days: sumGameDepartments(facility.gamesByDepartment, gameDepartments),
+				gamesPrevious28Days: sumGameDepartments(
+					facility.gamesPreviousByDepartment,
+					gameDepartments,
+				),
 			};
 		})
 		.filter((facility) => {

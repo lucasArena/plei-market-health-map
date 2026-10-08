@@ -37,6 +37,11 @@ vi.mock("@/presentation/hooks/use-market/use-market-summary", () => ({
 	useMarketSummary: (...args: unknown[]) => mockUseMarketSummary(...args),
 }));
 
+let mockDepartments: string[] = [];
+vi.mock("@/presentation/hooks/use-market/use-market-summary-filters", () => ({
+	useMarketSummaryFilters: () => ({ departments: mockDepartments }),
+}));
+
 vi.mock("@/presentation/hooks/use-market/use-market-player-stats", () => ({
 	useMarketPlayerStats: (...args: unknown[]) => mockUseMarketPlayerStats(...args),
 }));
@@ -271,6 +276,7 @@ describe("useMarketSummaryPanelRules", () => {
 	beforeEach(() => {
 		mockScope = { kind: "all" };
 		mockPeriod = "month";
+		mockDepartments = [];
 		mockUseMarketGameInsights.mockReturnValue({ data: [], isPending: false, isError: false });
 		mockUseFacilityReservationStats.mockReturnValue(IDLE_QUERY);
 		mockUseFacilityPlayerStats.mockReturnValue(IDLE_QUERY);
@@ -314,17 +320,17 @@ describe("useMarketSummaryPanelRules", () => {
 	it("defers insights until the main report arrives and disables them for facility scope", () => {
 		mockUseMarketSummary.mockReturnValue(IDLE_QUERY);
 		const { rerender } = renderRules();
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", false);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", false, []);
 		mockUseMarketSummary.mockReturnValue({
 			data: MARKET_SUMMARY,
 			isPending: false,
 			isError: false,
 		});
 		rerender({ isClosing: false });
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true, []);
 		mockScope = { kind: "facility", id: "889", name: "Pegaso HTX", marketName: "Houston" };
 		rerender({ isClosing: false });
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", false);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", false, []);
 	});
 	it("builds the market-wide view", () => {
 		const { result } = renderRules();
@@ -335,16 +341,29 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(result.current.isSummaryPending).toBe(false);
 		expect(result.current.messages).toBe(messages);
 		expect(result.current.heading.title).toBe("All markets");
-		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, true);
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, true, []);
 		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true);
 		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith(null);
+	});
+
+	it("asks for the summary and insights with the Layers department filter", () => {
+		mockDepartments = ["magic", "organizers"];
+		const { result } = renderRules();
+
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, true, ["magic", "organizers"]);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true, [
+			"magic",
+			"organizers",
+		]);
+		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, true);
+		expect(result.current.aiContext?.cacheKey).toContain("all-markets-all~magic+organizers-month");
 	});
 
 	it("shows last week against the week before when the week is selected", () => {
 		mockPeriod = "week";
 		const { result } = renderRules();
 
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "week", true);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "week", true, []);
 		expect(result.current.heading.subtitle).toBe("All facilities and markets, last week");
 		expect(result.current.view?.tiles.map((tile) => tile.value)[0]).toBe("55");
 		expect(result.current.view?.summary).toContain("versus the previous week");
@@ -361,7 +380,7 @@ describe("useMarketSummaryPanelRules", () => {
 		mockScope = { kind: "market", id: "houston", name: "Houston" };
 		rerender({ isClosing: false });
 
-		expect(mockUseMarketSummary).toHaveBeenLastCalledWith("houston", true);
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith("houston", true, []);
 		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith("houston", true);
 		expect(result.current.heading.title).toBe("Houston");
 		expect(result.current.view?.topMarkets).toBeNull();
@@ -383,7 +402,7 @@ describe("useMarketSummaryPanelRules", () => {
 
 		const { result } = renderRules();
 
-		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, false);
+		expect(mockUseMarketSummary).toHaveBeenLastCalledWith(null, false, []);
 		expect(mockUseMarketPlayerStats).toHaveBeenLastCalledWith(null, false);
 		expect(mockUseFacilityReservationStats).toHaveBeenLastCalledWith("889");
 		expect(mockUseFacilityPlayerStats).toHaveBeenLastCalledWith("889");
@@ -420,7 +439,7 @@ describe("useMarketSummaryPanelRules", () => {
 
 		const { result } = renderRules();
 
-		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true);
+		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "month", true, []);
 		expect(result.current.aiContext).toBeNull();
 		expect(result.current.isSummaryPending).toBe(true);
 	});
@@ -602,6 +621,44 @@ describe("AI subject readiness", () => {
 				"month",
 			),
 		).toBeNull();
+	});
+	it("makes a filtered summary its own AI subject and leaves facilities unfiltered", () => {
+		const heading = { title: "All markets", subtitle: "" };
+		const all = buildMarketAiSubject(
+			{ kind: "all" },
+			heading,
+			MARKET_SUMMARY,
+			undefined,
+			MARKET_PLAYER_STATS,
+			"month",
+			["magic", "organizers"],
+		);
+		const market = buildMarketAiSubject(
+			{ kind: "market", id: "houston", name: "Houston" },
+			heading,
+			MARKET_SUMMARY,
+			undefined,
+			MARKET_PLAYER_STATS,
+			"month",
+			["partnerships"],
+		);
+		const facility = buildMarketAiSubject(
+			{ kind: "facility", id: "889", name: "Arena", marketName: "Houston" },
+			heading,
+			undefined,
+			FACILITY_REPORT,
+			MARKET_PLAYER_STATS,
+			"month",
+			["partnerships"],
+		);
+
+		expect(all).toMatchObject({
+			id: "all~magic+organizers",
+			gameDepartments: ["magic", "organizers"],
+		});
+		expect(market).toMatchObject({ id: "houston~partnerships", gameDepartments: ["partnerships"] });
+		expect(facility?.id).toBe("889");
+		expect(facility).not.toHaveProperty("gameDepartments");
 	});
 	it("identifies all markets, one market and one facility", () => {
 		const heading = { title: "Houston", subtitle: "" };

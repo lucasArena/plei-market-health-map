@@ -160,3 +160,21 @@ it("grounds AI wording in the independently computed contributors", () => {
 	expect(content[0]?.content).toContain("All markets names markets only");
 	expect(content[0]?.content).toContain("plain overall-change opening paragraph");
 });
+
+it("says which game departments the facts cover when the Layers filter is on", () => {
+	const subject = {
+		kind: "all-markets" as const,
+		id: "all~magic+organizers",
+		name: "All markets",
+		stats: FACILITY_MONTH_ACTIVITY,
+	};
+
+	const filtered = prompt
+		.build({ ...subject, gameDepartments: ["magic", "organizers"] }, "en")
+		.at(-1)?.content;
+	const unfiltered = prompt.build(subject, "en").at(-1)?.content;
+
+	expect(filtered).toContain("Game departments: Magic, Organizers only.");
+	expect(filtered).toContain("player counts include every department");
+	expect(unfiltered).not.toContain("Game departments");
+});

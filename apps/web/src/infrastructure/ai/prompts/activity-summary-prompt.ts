@@ -1,3 +1,4 @@
+import type { GameDepartment } from "@market-health-map/core/domain";
 import type { LlmMessage } from "@/infrastructure/ai/browser-llm/browser-llm.types";
 import type {
 	ActivitySummarySubject,
@@ -7,6 +8,12 @@ import type {
 const DEFAULT_LANGUAGE = "English";
 const DEFAULT_EXAMPLE_SUMMARY =
 	"- New player activation fell 29% versus {previous}, while games fell 10%.\n- Activation is weakening faster than game activity; investigate the gap.";
+
+const DEPARTMENT_NAMES: Record<GameDepartment, string> = {
+	magic: "Magic",
+	organizers: "Organizers",
+	partnerships: "Partnerships",
+};
 
 const PERIOD_TEXT: PromptPeriodTexts = {
 	week: { current: "last week", previous: "the previous week" },
@@ -120,6 +127,14 @@ export class ActivitySummaryPrompt {
 		return [facilities, `Active markets: ${scope.activeMarketCount} of ${scope.marketCount}.`];
 	}
 
+	private departmentFacts({ gameDepartments }: ActivitySummarySubject): string[] {
+		if (!gameDepartments?.length) return [];
+		const names = gameDepartments.map((department) => DEPARTMENT_NAMES[department]).join(", ");
+		return [
+			`Game departments: ${names} only. Games, active facilities and contributors count only these departments; player counts include every department.`,
+		];
+	}
+
 	private factsFor(subject: ActivitySummarySubject, locale: string): string[] {
 		const { stats } = subject;
 		const { current, previous } = PERIOD_TEXT[stats.period];
@@ -128,6 +143,7 @@ export class ActivitySummaryPrompt {
 		return [
 			this.subjectFact(subject),
 			...this.scopeFacts(subject),
+			...this.departmentFacts(subject),
 			...(subject.insightFacts
 				? [
 						`Largest contributors to the games change (preserve their names and counts): ${subject.insightFacts}`,

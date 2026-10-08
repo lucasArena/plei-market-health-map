@@ -1,11 +1,15 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
-import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
+import {
+	marketGameInsightsQueryKey,
+	useMarketGameInsights,
+} from "@/presentation/hooks/use-market/use-market-game-insights";
 import {
 	marketPlayerStatsQueryKey,
 	useMarketPlayerStats,
 } from "@/presentation/hooks/use-market/use-market-player-stats";
 import {
+	marketDepartmentsKey,
 	marketSummaryQueryKey,
 	useMarketSummary,
 } from "@/presentation/hooks/use-market/use-market-summary";
@@ -97,4 +101,51 @@ it("loads market insights separately and caches them by scope", async () => {
 		"/api/v1/market-summary/insights?period=month",
 	]);
 	vi.unstubAllGlobals();
+});
+
+describe("market summary department filter", () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it("keys and requests the summary and insights per department filter, never the players", async () => {
+		const fetchMock = stubFetch([]);
+		const { client, Wrapper } = createQueryWrapper();
+
+		const summary = renderHook(
+			() => useMarketSummary("philly", true, ["organizers", "magic", "magic"]),
+			{ wrapper: Wrapper },
+		);
+		const insights = renderHook(() => useMarketGameInsights(null, "week", true, ["partnerships"]), {
+			wrapper: Wrapper,
+		});
+
+		await waitFor(() => expect(summary.result.current.isSuccess).toBe(true));
+		await waitFor(() => expect(insights.result.current.isSuccess).toBe(true));
+		expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+			"/api/v1/market-summary?market=philly&departments=magic%2Corganizers",
+			"/api/v1/market-summary/insights?period=week&departments=partnerships",
+		]);
+		expect(client.getQueryData(marketSummaryQueryKey("philly", ["magic", "organizers"]))).toEqual(
+			[],
+		);
+		expect(client.getQueryData(marketSummaryQueryKey("philly"))).toBeUndefined();
+		expect(marketPlayerStatsQueryKey("philly")).toEqual(["market-summary", "players", "philly"]);
+	});
+
+	it("shares one cache entry for no filter and for every department", () => {
+		expect(marketSummaryQueryKey(null, ["magic", "organizers", "partnerships"])).toEqual(
+			marketSummaryQueryKey(),
+		);
+		expect(marketSummaryQueryKey()).toEqual(["market-summary", "reservations", "all", "all"]);
+		expect(marketGameInsightsQueryKey("houston", "month", ["organizers"])).toEqual([
+			"market-summary",
+			"insights",
+			"houston",
+			"month",
+			"organizers",
+		]);
+		expect(marketGameInsightsQueryKey("houston", "month")).not.toEqual(
+			marketGameInsightsQueryKey("houston", "month", ["organizers"]),
+		);
+		expect(marketDepartmentsKey(["partnerships", "magic"])).toBe("magic,partnerships");
+	});
 });

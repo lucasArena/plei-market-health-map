@@ -1,27 +1,63 @@
 "use client";
 
 import type { MarketSummaryView } from "@market-health-map/core/application";
+import { type GameDepartment, normalizeGameDepartments } from "@market-health-map/core/domain";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
 
-export const marketSummaryQueryKey = (marketId: string | null = null) =>
-	["market-summary", "reservations", marketId ?? "all"] as const;
-
-export function marketSummaryPath(resource: "" | "/players", marketId: string | null) {
-	const query = marketId === null ? "" : `?market=${encodeURIComponent(marketId)}`;
-	return `/api/v1/market-summary${resource}${query}`;
+/** One query key part per department filter; "all" when every game counts. */
+export function marketDepartmentsKey(departments: readonly GameDepartment[] = []): string {
+	const selected = normalizeGameDepartments(departments);
+	return selected.length > 0 ? selected.join(",") : "all";
 }
 
-export function marketSummaryQueryOptions(marketId: string | null = null, enabled = true) {
+/** Adds `departments=` only when filtered, so the unfiltered URL stays as it was. */
+export function setMarketDepartments(
+	params: URLSearchParams,
+	departments: readonly GameDepartment[] = [],
+): URLSearchParams {
+	const selected = normalizeGameDepartments(departments);
+	if (selected.length > 0) params.set("departments", selected.join(","));
+	return params;
+}
+
+export const marketSummaryQueryKey = (
+	marketId: string | null = null,
+	departments: readonly GameDepartment[] = [],
+) =>
+	["market-summary", "reservations", marketId ?? "all", marketDepartmentsKey(departments)] as const;
+
+export function marketSummaryPath(
+	resource: "" | "/players",
+	marketId: string | null,
+	departments: readonly GameDepartment[] = [],
+) {
+	const selected = normalizeGameDepartments(departments);
+	const parts = [
+		...(marketId === null ? [] : [`market=${encodeURIComponent(marketId)}`]),
+		...(selected.length > 0 ? [`departments=${encodeURIComponent(selected.join(","))}`] : []),
+	];
+	return `/api/v1/market-summary${resource}${parts.length > 0 ? `?${parts.join("&")}` : ""}`;
+}
+
+export function marketSummaryQueryOptions(
+	marketId: string | null = null,
+	enabled = true,
+	departments: readonly GameDepartment[] = [],
+) {
 	return {
-		queryKey: marketSummaryQueryKey(marketId),
-		queryFn: () => apiClient.get<MarketSummaryView>(marketSummaryPath("", marketId)),
+		queryKey: marketSummaryQueryKey(marketId, departments),
+		queryFn: () => apiClient.get<MarketSummaryView>(marketSummaryPath("", marketId, departments)),
 		enabled,
 		staleTime: Number.POSITIVE_INFINITY,
 		gcTime: Number.POSITIVE_INFINITY,
 	};
 }
 
-export function useMarketSummary(marketId: string | null = null, enabled = true) {
-	return useQuery(marketSummaryQueryOptions(marketId, enabled));
+export function useMarketSummary(
+	marketId: string | null = null,
+	enabled = true,
+	departments: readonly GameDepartment[] = [],
+) {
+	return useQuery(marketSummaryQueryOptions(marketId, enabled, departments));
 }

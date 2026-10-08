@@ -3,6 +3,7 @@ import type {
 	MarketSummaryScopeView,
 	StatsPeriod,
 } from "@market-health-map/core/application";
+import type { GameDepartment } from "@market-health-map/core/domain";
 
 export type ActivitySummaryKind = "facility" | "market" | "all-markets";
 
@@ -22,4 +23,6 @@ export interface ActivitySummarySubject {
 	stats: ActivitySummaryStats;
 	scope?: MarketSummaryScopeView;
 	insightFacts?: string;
+	/** Set when the Layers game department filter narrows the games behind these facts. */
+	gameDepartments?: GameDepartment[];
 }

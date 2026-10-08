@@ -327,6 +327,7 @@ describe("MapSearch", () => {
 			"market-summary",
 			"reservations",
 			"austin",
+			"all",
 		]);
 
 		mockPrefetchQuery.mockClear();
