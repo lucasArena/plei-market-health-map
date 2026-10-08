@@ -12,7 +12,9 @@ export function MapBrand() {
 	return (
 		<Link href="/" className={MAP_BRAND_CLASS}>
 			<Image src={PLEI_LOGO_URL} alt="" width={16} height={16} />
-			<p className="text-[12px] font-semibold whitespace-nowrap text-foreground">{label}</p>
+			<p className="max-sm:sr-only text-[12px] font-semibold whitespace-nowrap text-foreground">
+				{label}
+			</p>
 		</Link>
 	);
 }
