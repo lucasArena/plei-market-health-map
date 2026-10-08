@@ -224,6 +224,8 @@ export interface Messages {
 		activeCount: string;
 		noBaseline: string;
 		openMarket: string;
+		showAll: string;
+		showFewer: string;
 		noteStatus: string;
 		noteGames: string;
 		noteChange: string;
@@ -265,6 +267,10 @@ export interface Messages {
 		sectionMarkets: string;
 		sectionFacilities: string;
 		dataAsOf: string;
+		trendDeclining: string;
+		trendStable: string;
+		trendGrowing: string;
+		trendTitle: string;
 		reportWrongNumber: string;
 	};
 	feedback: {

@@ -250,6 +250,8 @@ export const ptBR: Messages = {
 		activeCount: "{active} de {total} ativas",
 		noBaseline: "Novo",
 		openMarket: "Abrir {name}",
+		showAll: "Mostrar os {count} mercados",
+		showFewer: "Mostrar menos",
 		noteStatus:
 			"Ordenado por status (precisa de atenção primeiro), depois por jogos. Selecione uma linha para abrir o mercado.",
 		noteGames:
@@ -297,6 +299,10 @@ export const ptBR: Messages = {
 		sectionUsers: "Usuários",
 		sectionMarkets: "Mercados",
 		sectionFacilities: "Instalações",
+		trendDeclining: "Precisa de atenção",
+		trendStable: "Estável",
+		trendGrowing: "Crescendo",
+		trendTitle: "{status} · {title}",
 		dataAsOf: "Dados de {time}",
 		reportWrongNumber: "Reportar um número errado",
 	},

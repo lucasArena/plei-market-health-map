@@ -93,6 +93,7 @@ function rulesWith(overrides: object = {}) {
 		dataAsOf: "Data as of Oct 7, 2026, 9:35 PM",
 		isRedesigned: false,
 		reportWrongNumber: vi.fn(),
+		insight: { title: "Key insights", tone: "neutral" },
 		periodLabel: "Last 7 days",
 		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
 		sectionTiles: { games: [], users: VIEW.tiles },
@@ -156,7 +157,7 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByTestId("market-summary-dates")).toHaveTextContent(
 			"Sep 9 – Oct 6, 2026vs Aug 12 – Sep 8",
 		);
-		expect(screen.getByTestId("health-strip")).toHaveTextContent(VIEW.summary);
+		expect(screen.getByText(VIEW.summary)).toBeInTheDocument();
 		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
 		expect(screen.getByRole("region", { name: "Games" })).toContainElement(
 			screen.getByRole("heading", { name: "Weekly activity" }),
@@ -174,6 +175,23 @@ describe("MarketSummaryPanel", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Report a wrong number" }));
 		expect(reportWrongNumber).toHaveBeenCalledOnce();
+	});
+
+	it("tints the written insight with the overall trend", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				aiContext: null,
+				isRedesigned: true,
+				insight: { title: "Needs attention · Key insights", tone: "attention" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("health-strip")).toHaveAttribute("data-tone", "attention");
+		expect(
+			screen.getByRole("heading", { name: "Needs attention · Key insights" }),
+		).toBeInTheDocument();
 	});
 
 	it("hides the scope tiles and rankings a single facility does not need", () => {

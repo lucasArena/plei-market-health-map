@@ -158,4 +158,21 @@ describe("MarketsTable", () => {
 			name: "Austin Metro",
 		});
 	});
+
+	it("shows the first 8 markets until Show all is pressed", () => {
+		const many = Array.from({ length: 10 }, (_, index) => market(`M${index}`, 20 - index));
+		renderWithMessages(<MarketsTable markets={many} changes={undefined} />);
+
+		expect(rowNames()).toHaveLength(8);
+		fireEvent.click(screen.getByRole("button", { name: "Show all 10 markets" }));
+		expect(rowNames()).toHaveLength(10);
+		fireEvent.click(screen.getByRole("button", { name: "Show fewer" }));
+		expect(rowNames()).toHaveLength(8);
+	});
+
+	it("has no Show all button for 8 markets or fewer", () => {
+		renderWithMessages(<MarketsTable markets={MARKETS} changes={CHANGES} />);
+
+		expect(screen.queryByRole("button", { name: /Show all/ })).not.toBeInTheDocument();
+	});
 });

@@ -47,6 +47,8 @@ export interface MarketSummaryPeriodView {
 
 export type MarketHealthStatus = "attention" | "watch" | "on-track";
 
+export type GamesTrend = "declining" | "stable" | "growing";
+
 export interface MarketSummaryView {
 	stats: FacilityReservationStatsView;
 	periods: Record<StatsPeriod, MarketSummaryPeriodView>;

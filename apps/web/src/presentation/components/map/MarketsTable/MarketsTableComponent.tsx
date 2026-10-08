@@ -10,8 +10,19 @@ import {
 import type { MarketsTableProps } from "@/presentation/components/map/MarketsTable/MarketsTableComponent.types";
 
 export function MarketsTable(props: Readonly<MarketsTableProps>) {
-	const { messages, note, openMarket, rows, setSort, sort, sortOptions } =
-		useMarketsTableRules(props);
+	const {
+		canExpand,
+		expandLabel,
+		isExpanded,
+		messages,
+		note,
+		openMarket,
+		rows,
+		setSort,
+		sort,
+		sortOptions,
+		toggleExpanded,
+	} = useMarketsTableRules(props);
 
 	return (
 		<div className="space-y-3" data-testid="markets-table">
@@ -131,6 +142,18 @@ export function MarketsTable(props: Readonly<MarketsTableProps>) {
 						);
 					})}
 				</ul>
+				{canExpand && (
+					<div className="flex justify-center pt-1">
+						<button
+							type="button"
+							onClick={toggleExpanded}
+							aria-expanded={isExpanded}
+							className="rounded-full border border-[#d3d5d8] bg-white/90 px-3 py-1 text-xs font-medium text-[#525866] shadow-sm transition-colors hover:bg-white"
+						>
+							{expandLabel}
+						</button>
+					</div>
+				)}
 			</div>
 			<p className="text-[11px] text-[#525866]">{note}</p>
 		</div>

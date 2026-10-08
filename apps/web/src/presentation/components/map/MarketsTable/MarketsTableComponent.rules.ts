@@ -25,6 +25,8 @@ const PENDING_STATUS_ORDER = 3;
 
 const SORT_KEYS: readonly MarketsTableSort[] = ["status", "games", "change"];
 
+export const COLLAPSED_MARKET_ROWS = 8;
+
 export function formatChange(
 	change: MarketGameChangeView,
 	messages: MarketsTableMessages,
@@ -108,6 +110,7 @@ export function useMarketsTableRules({ markets, changes }: MarketsTableProps) {
 	const { setMapNavigation } = useMapScope();
 	const tableMessages = messages.marketsTable;
 	const [sort, setSort] = useState<MarketsTableSort>("status");
+	const [isExpanded, setIsExpanded] = useState(false);
 	const rows = useMemo(
 		() => sortMarketRows(buildMarketRows(markets, changes, tableMessages, locale), sort),
 		[changes, locale, markets, sort, tableMessages],
@@ -126,10 +129,29 @@ export function useMarketsTableRules({ markets, changes }: MarketsTableProps) {
 		change: tableMessages.noteChange,
 	}[sort];
 
+	const canExpand = rows.length > COLLAPSED_MARKET_ROWS;
+	const visibleRows = isExpanded ? rows : rows.slice(0, COLLAPSED_MARKET_ROWS);
+	const expandLabel = isExpanded
+		? tableMessages.showFewer
+		: formatMessage(tableMessages.showAll, { count: String(rows.length) });
+	const toggleExpanded = useCallback(() => setIsExpanded((current) => !current), []);
+
 	const openMarket = useCallback(
 		(row: MarketsTableRowView) => setMapNavigation({ kind: "market", id: row.id, name: row.name }),
 		[setMapNavigation],
 	);
 
-	return { messages: tableMessages, note, openMarket, rows, setSort, sort, sortOptions };
+	return {
+		canExpand,
+		expandLabel,
+		isExpanded,
+		messages: tableMessages,
+		note,
+		openMarket,
+		rows: visibleRows,
+		setSort,
+		sort,
+		sortOptions,
+		toggleExpanded,
+	};
 }

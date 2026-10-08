@@ -96,6 +96,7 @@ export {
 } from "@core/application/dtos/market-summary-dto";
 export type {
 	FacilityGameChangeView,
+	GamesTrend,
 	GetMarketGameInsightsInput,
 	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
@@ -144,6 +145,8 @@ export {
 export { toLoginEventView } from "@core/application/mappers/login-event-mapper";
 export {
 	ATTENTION_CHANGE_PERCENT,
+	STABLE_CHANGE_PERCENT,
+	toGamesTrend,
 	toMarketHealthStatus,
 	WATCH_CHANGE_PERCENT,
 } from "@core/application/mappers/market-health-status";

@@ -70,8 +70,9 @@ function RankList({ title, rows, emptyLabel }: Readonly<MarketRankListProps>) {
 	);
 }
 
-function InsightCard({ children, isRedesigned }: Readonly<InsightCardProps>) {
-	if (isRedesigned) return <HealthStrip>{children}</HealthStrip>;
+function InsightCard({ children, isRedesigned, tone }: Readonly<InsightCardProps>) {
+	if (isRedesigned && tone) return <HealthStrip tone={tone}>{children}</HealthStrip>;
+	if (isRedesigned) return children;
 	return <section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">{children}</section>;
 }
 
@@ -207,6 +208,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		detailMessages,
 		handleAnimationEnd,
 		heading,
+		insight,
 		rankingsEmptyLabel,
 		isClosing,
 		isSummaryPending,
@@ -246,7 +248,13 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 						/>
 						{aiContext && view.summary && (
 							<InsightCard isRedesigned={isRedesigned}>
-								<AiSummary context={aiContext} fallback={view.summary} introFirst />
+								<AiSummary
+									context={aiContext}
+									fallback={view.summary}
+									introFirst
+									title={insight.title}
+									tone={insight.tone}
+								/>
 							</InsightCard>
 						)}
 						{!(aiContext && view.summary) && isSummaryPending && (
@@ -255,8 +263,13 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							</InsightCard>
 						)}
 						{!aiContext && !isSummaryPending && view.summary && (
-							<InsightCard isRedesigned={isRedesigned}>
-								<KeyInsights title={messages.keyInsights} text={view.summary} introFirst />
+							<InsightCard isRedesigned={isRedesigned} tone={insight.tone}>
+								<KeyInsights
+									title={insight.title}
+									text={view.summary}
+									introFirst
+									tone={insight.tone}
+								/>
 							</InsightCard>
 						)}
 						{isInsightsFailed && (

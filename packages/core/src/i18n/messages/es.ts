@@ -252,6 +252,8 @@ export const es: Messages = {
 		activeCount: "{active} de {total} activas",
 		noBaseline: "Nuevo",
 		openMarket: "Abrir {name}",
+		showAll: "Mostrar los {count} mercados",
+		showFewer: "Mostrar menos",
 		noteStatus:
 			"Ordenado por estado (requiere atención primero), luego por partidos. Selecciona una fila para abrir el mercado.",
 		noteGames:
@@ -299,6 +301,10 @@ export const es: Messages = {
 		sectionUsers: "Usuarios",
 		sectionMarkets: "Mercados",
 		sectionFacilities: "Instalaciones",
+		trendDeclining: "Requiere atención",
+		trendStable: "Estable",
+		trendGrowing: "Creciendo",
+		trendTitle: "{status} · {title}",
 		dataAsOf: "Datos al {time}",
 		reportWrongNumber: "Reportar un número incorrecto",
 	},

@@ -4,12 +4,14 @@ import {
 	type FacilityPlayerStatsView,
 	type FacilityReservationDetailView,
 	type FacilityReservationStatsView,
+	type GamesTrend,
 	type MarketSummaryFacilityRankView,
 	type MarketSummaryMarketRankView,
 	type MarketSummaryScopeView,
 	type MarketSummaryView,
 	STATS_PERIOD_DAYS,
 	type StatsPeriod,
+	toGamesTrend,
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@market-health-map/core/application";
@@ -19,6 +21,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
 import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
+import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 import {
 	activityPeriodFor,
 	buildPopularTimes,
@@ -39,6 +42,7 @@ import type {
 	MarketRankRowView,
 	MarketSummaryComparison,
 	MarketSummaryHeading,
+	MarketSummaryInsightHeading,
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
 	MarketSummarySectionTiles,
@@ -327,6 +331,32 @@ export function splitTilesBySection(tiles: FacilityStatTile[]): MarketSummarySec
 	};
 }
 
+const TREND_TONE: Record<GamesTrend, InsightTone> = {
+	declining: "attention",
+	stable: "stable",
+	growing: "growing",
+};
+
+export function buildInsightHeading(
+	isToned: boolean,
+	summary: MarketSummaryView | undefined,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+): MarketSummaryInsightHeading {
+	if (!isToned || !summary) return { title: messages.keyInsights, tone: "neutral" };
+	const games = toReservationPeriodView(summary.stats, period);
+	const trend = toGamesTrend(games.played, games.playedPrevious);
+	const status = {
+		declining: messages.trendDeclining,
+		stable: messages.trendStable,
+		growing: messages.trendGrowing,
+	}[trend];
+	return {
+		title: formatMessage(messages.trendTitle, { status, title: messages.keyInsights }),
+		tone: TREND_TONE[trend],
+	};
+}
+
 function utcDate(isoDate: string): Date {
 	return new Date(`${isoDate}T00:00:00Z`);
 }
@@ -547,6 +577,12 @@ export function useMarketSummaryPanelRules({
 		messages.marketSummary,
 		formatters,
 	);
+	const insight = buildInsightHeading(
+		isRedesigned && scope.kind === "all",
+		summary,
+		period,
+		messages.marketSummary,
+	);
 	const dataAsOf = buildDataAsOf(reportQuery.dataUpdatedAt, locale, messages.marketSummary);
 	const reportWrongNumber = useCallback(() => requestFeedback("bug"), []);
 
@@ -577,6 +613,7 @@ export function useMarketSummaryPanelRules({
 		detailMessages: messages.facilityDetail,
 		handleAnimationEnd,
 		heading,
+		insight,
 		isClosing,
 		isSummaryPending:
 			status === "ready" && ((isMarketScope && insightsQuery.isPending) || playerQuery.isPending),

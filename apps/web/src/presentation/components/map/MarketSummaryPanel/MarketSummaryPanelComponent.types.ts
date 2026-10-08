@@ -4,6 +4,7 @@ import type {
 } from "@market-health-map/core/application";
 import type { Messages } from "@market-health-map/core/i18n";
 import type { ReactNode } from "react";
+import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 import type {
 	DetailMessages,
@@ -61,6 +62,12 @@ export interface MarketSummaryComparison {
 export interface InsightCardProps {
 	children: ReactNode;
 	isRedesigned: boolean;
+	tone?: InsightTone;
+}
+
+export interface MarketSummaryInsightHeading {
+	title: string;
+	tone: InsightTone;
 }
 
 export interface MarketRankRowsProps {

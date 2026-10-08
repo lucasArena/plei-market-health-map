@@ -11,6 +11,7 @@ import {
 	buildDataAsOf,
 	buildFacilityRows,
 	buildFacilitySummaryViewModel,
+	buildInsightHeading,
 	buildMarketAiSubject,
 	buildMarketRows,
 	buildMarketSummaryText,
@@ -347,6 +348,31 @@ describe("redesigned panel header and footer", () => {
 
 		expect(split.games.map((item) => item.key)).toEqual(["played", "confirmation"]);
 		expect(split.users.map((item) => item.key)).toEqual(["players", "activated"]);
+	});
+
+	it("colors the All markets insight by the overall games trend", () => {
+		const withGames = (played: number, previous: number) => ({
+			...MARKET_SUMMARY,
+			stats: { ...MARKET_SUMMARY.stats, playedLastWeek: played, playedPreviousWeek: previous },
+		});
+
+		expect(buildInsightHeading(true, withGames(80, 100), "week", messages)).toEqual({
+			title: "Needs attention · Key insights",
+			tone: "attention",
+		});
+		expect(buildInsightHeading(true, withGames(98, 100), "week", messages)).toEqual({
+			title: "Stable · Key insights",
+			tone: "stable",
+		});
+		expect(buildInsightHeading(true, withGames(120, 100), "week", messages)).toEqual({
+			title: "Growing · Key insights",
+			tone: "growing",
+		});
+		expect(buildInsightHeading(false, withGames(80, 100), "week", messages)).toEqual({
+			title: "Key insights",
+			tone: "neutral",
+		});
+		expect(buildInsightHeading(true, undefined, "week", messages).tone).toBe("neutral");
 	});
 
 	it("says when the data was loaded, and nothing before it loads", () => {
