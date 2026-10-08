@@ -14,12 +14,16 @@ vi.mock("next/navigation", () => ({ usePathname: () => mockPathname() }));
 const mockPrefetchMarket = vi.fn().mockResolvedValue(undefined);
 const mockPrefetchFacility = vi.fn().mockResolvedValue(undefined);
 const mockScope = vi.fn(() => ({ kind: "all" }));
+const mockDepartments = vi.fn((): string[] => []);
 
 vi.mock("@/presentation/hooks/use-market/prefetch-market-summary", () => ({
 	prefetchMarketSummary: (...args: unknown[]) => mockPrefetchMarket(...args),
 }));
 vi.mock("@/presentation/hooks/use-facility/prefetch-facility-stats", () => ({
 	prefetchFacilityStats: (...args: unknown[]) => mockPrefetchFacility(...args),
+}));
+vi.mock("@/presentation/hooks/use-market/use-market-summary-filters", () => ({
+	useMarketSummaryFilters: () => ({ departments: mockDepartments() }),
 }));
 vi.mock("@/presentation/hooks/use-market/use-idle-market-prefetch", () => ({
 	useIdleMarketPrefetch: vi.fn(),
@@ -138,12 +142,20 @@ describe("MarketSummaryToggle", () => {
 		const button = () => screen.getByRole("button", { name: "Market summary" });
 
 		fireEvent.pointerEnter(button());
-		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), null, "month");
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), null, "month", []);
 
 		mockScope.mockReturnValue({ kind: "market", id: "houston" } as never);
 		rerender(<MarketSummaryToggle />);
 		fireEvent.focus(button());
-		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), "houston", "month");
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), "houston", "month", []);
+
+		mockDepartments.mockReturnValue(["organizers"]);
+		rerender(<MarketSummaryToggle />);
+		fireEvent.pointerEnter(button());
+		expect(mockPrefetchMarket).toHaveBeenLastCalledWith(expect.anything(), "houston", "month", [
+			"organizers",
+		]);
+		mockDepartments.mockReturnValue([]);
 
 		mockScope.mockReturnValue({ kind: "facility", id: "889" } as never);
 		rerender(<MarketSummaryToggle />);

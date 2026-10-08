@@ -32,4 +32,26 @@ describe("prefetchMarketSummary", () => {
 		]);
 		expect(maxInFlight).toBe(1);
 	});
+
+	it("warms the panel's department filtered keys, players included", async () => {
+		const order: string[] = [];
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				order.push(url);
+				return { ok: true, status: 200, json: async () => ({ data: {} }) };
+			}),
+		);
+		const client = new QueryClient();
+
+		await prefetchMarketSummary(client, null, "month", ["partnerships", "magic"]);
+
+		expect(order).toEqual([
+			withStatsTimeZone("/api/v1/market-summary?departments=magic%2Cpartnerships"),
+			withStatsTimeZone("/api/v1/market-summary/players?departments=magic%2Cpartnerships"),
+			withStatsTimeZone(
+				"/api/v1/market-summary/insights?period=month&departments=magic%2Cpartnerships",
+			),
+		]);
+	});
 });
