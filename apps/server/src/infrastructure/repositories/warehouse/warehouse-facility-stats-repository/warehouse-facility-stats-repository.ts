@@ -11,7 +11,13 @@ import {
 	ORGANIZER_PARTNERS_CTE,
 	organizerPartnersJoin,
 } from "@server/infrastructure/repositories/warehouse/game-department-sql/game-department-sql";
-import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
+import {
+	inLastDaysSql,
+	inPreviousDaysSql,
+	MONTH_DAYS,
+	todayParameterSql,
+	WEEK_DAYS,
+} from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseFacilityGameComparisonRow,
 	WarehouseFacilityPlayerStatsRow,
@@ -19,25 +25,31 @@ import type {
 	WarehouseParameterizedQueryable,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository.types";
 
+const GAME_DATE = "r.date_with_time::date";
+
 export const FACILITY_GAME_COMPARISONS_SQL = `
 with bounds as (
-  select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
+  select ${todayParameterSql(2)} as today
 )
 select r.location_id,
  count(distinct r.reservation_id) filter (
-   where r.date_with_time::date >= b.this_week - 7 and r.date_with_time::date < b.this_week
+   where ${inLastDaysSql(GAME_DATE, "b.today", WEEK_DAYS)}
  ) as played_last_week,
  count(distinct r.reservation_id) filter (
-   where r.date_with_time::date >= b.this_week - 14 and r.date_with_time::date < b.this_week - 7
+   where ${inPreviousDaysSql(GAME_DATE, "b.today", WEEK_DAYS)}
  ) as played_previous_week,
- count(distinct r.reservation_id) filter (where r.date_with_time::date >= b.today - 28) as played_last_28_days,
- count(distinct r.reservation_id) filter (where r.date_with_time::date < b.today - 28) as played_previous_28_days
+ count(distinct r.reservation_id) filter (
+   where ${inLastDaysSql(GAME_DATE, "b.today", MONTH_DAYS)}
+ ) as played_last_28_days,
+ count(distinct r.reservation_id) filter (
+   where ${inPreviousDaysSql(GAME_DATE, "b.today", MONTH_DAYS)}
+ ) as played_previous_28_days
 from plei_gold.dim_reservation r
 cross join bounds b
 where r.location_id = any($1::int[])
  and r.reservation_type = 'OpenReservation'
  and r.confirmed and r.status <> 'cancelled'
- and r.date_with_time::date >= b.today - 56
+ and r.date_with_time::date >= b.today - ${MONTH_DAYS * 2}
  and r.date_with_time::date < b.today
 group by r.location_id`;
 
@@ -45,10 +57,10 @@ function reservationStatsSql(byDepartment: boolean): string {
 	const organizerPartners = byDepartment ? `${ORGANIZER_PARTNERS_CTE},\n` : "";
 	const join = (indent: string) => (byDepartment ? `\n${indent}${organizerPartnersJoin("r")}` : "");
 	const filter = (indent: string) =>
-		byDepartment ? `\n${indent}and ${gameDepartmentCase("r")} = any($2::text[])` : "";
+		byDepartment ? `\n${indent}and ${gameDepartmentCase("r")} = any($3::text[])` : "";
 	return `
 with bounds as (
-  select date_trunc('week', current_date)::date as this_week, current_date as today
+  select ${todayParameterSql(2)} as today
 ),
 ${organizerPartners}games as (
   select r.reservation_id, r.date_with_time as game_time, r.date_with_time::date as game_date,
@@ -68,7 +80,7 @@ last_played as (
     (
       select max(g.game_date)
       from games g
-      where g.confirmed and g.status <> 'cancelled' and g.game_date < current_date
+      where g.confirmed and g.status <> 'cancelled' and g.game_date < (select today from bounds)
     ),
     (
       select max(r.date_with_time::date)
@@ -77,12 +89,12 @@ last_played as (
         and r.reservation_type = 'OpenReservation'
         and r.confirmed
         and r.status <> 'cancelled'
-        and r.date_with_time::date < current_date${filter("        ")}
+        and r.date_with_time::date < (select today from bounds)${filter("        ")}
     )
   )::text as game_date
 ),
 week_series as (
-  select generate_series(b.this_week - 28, b.this_week - 7, interval '7 days')::date as week_start
+  select generate_series(b.today - ${MONTH_DAYS}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
   from bounds b
 ),
 weekly_activity as (
@@ -121,14 +133,14 @@ popular_times as (
 select
   (b.today - 28)::text as period_start,
   (b.today - 1)::text as period_end,
-  (b.this_week - 7)::text as week_start,
+  (b.today - ${WEEK_DAYS})::text as week_start,
   count(distinct g.reservation_id) filter (
     where g.confirmed and g.status <> 'cancelled'
-      and g.game_date >= b.this_week - 7 and g.game_date < b.this_week
+      and ${inLastDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as played_last_week,
   count(distinct g.reservation_id) filter (
     where g.confirmed and g.status <> 'cancelled'
-      and g.game_date >= b.this_week - 14 and g.game_date < b.this_week - 7
+      and ${inPreviousDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as played_previous_week,
   count(distinct g.reservation_id) filter (
     where g.confirmed and g.status <> 'cancelled'
@@ -145,14 +157,14 @@ select
     where g.game_date >= b.today - 56 and g.game_date < b.today - 28
   ) as scheduled_previous_28_days,
   count(distinct g.reservation_id) filter (
-    where g.game_date >= b.this_week - 7 and g.game_date < b.this_week
+    where ${inLastDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as scheduled_last_week,
   count(distinct g.reservation_id) filter (
-    where g.game_date >= b.this_week - 14 and g.game_date < b.this_week - 7
+    where ${inPreviousDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as scheduled_previous_week,
   count(distinct g.reservation_id) filter (
     where g.status = 'cancelled'
-      and g.game_date >= b.this_week - 7 and g.game_date < b.this_week
+      and ${inLastDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as cancelled_last_week,
   count(distinct g.reservation_id) filter (
     where g.status <> 'cancelled' and g.game_date > b.today and g.game_date <= b.today + 7
@@ -169,7 +181,7 @@ select
   ) order by p.time_period, p.day_of_week) from popular_times p) as popular_times
 from bounds b
 left join games g on true
-group by b.this_week, b.today`;
+group by b.today`;
 }
 
 export const FACILITY_RESERVATION_STATS_SQL = reservationStatsSql(false);
@@ -178,14 +190,14 @@ export const FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL = reservationStatsSql(
 
 export const FACILITY_PLAYER_STATS_SQL = `
 with bounds as (
-  select current_date as today, date_trunc('week', current_date)::date as this_week
+  select ${todayParameterSql(2)} as today
 ),
 facility_players as (
   select f.player_id, f.player_lifecycle, f.date_played
   from plei_gold.fct_games_opened f
   where f.location_id = any($1::int[])
-    and f.date_played >= current_date - 56
-    and f.date_played < current_date
+    and f.date_played >= ${todayParameterSql(2)} - ${MONTH_DAYS * 2}
+    and f.date_played < ${todayParameterSql(2)}
     and f.valid_player + 0 = 1 and f.confirmed_game + 0 = 1 and f.open_reservation_games + 0 = 1
     and f.dropping_date_local is null and f.players_type || '' = 'pleiapp_player'
     and exists (
@@ -197,18 +209,18 @@ facility_players as (
 )
 select
   count(distinct player_id) filter (
-    where date_played >= b.this_week - 7 and date_played < b.this_week
+    where ${inLastDaysSql("date_played", "b.today", WEEK_DAYS)}
   ) as unique_players_last_week,
   count(distinct player_id) filter (
-    where date_played >= b.this_week - 14 and date_played < b.this_week - 7
+    where ${inPreviousDaysSql("date_played", "b.today", WEEK_DAYS)}
   ) as unique_players_previous_week,
   count(distinct player_id) filter (
     where player_lifecycle = 'Activated'
-      and date_played >= b.this_week - 7 and date_played < b.this_week
+      and ${inLastDaysSql("date_played", "b.today", WEEK_DAYS)}
   ) as activated_players_last_week,
   count(distinct player_id) filter (
     where player_lifecycle = 'Activated'
-      and date_played >= b.this_week - 14 and date_played < b.this_week - 7
+      and ${inPreviousDaysSql("date_played", "b.today", WEEK_DAYS)}
   ) as activated_players_previous_week,
   count(distinct player_id) filter (
     where date_played >= b.today - 28
@@ -224,7 +236,7 @@ select
   ) as activated_players_previous_28_days
 from bounds b
 left join facility_players f on true
-group by b.today, b.this_week`;
+group by b.today`;
 
 export function toReservationStats(
 	row: WarehouseFacilityReservationStatsRow,
@@ -274,6 +286,7 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 
 	async getReservationStats(
 		facilityIds: EntityId[],
+		today: string,
 		filters?: FacilityReservationStatsFilters,
 	): Promise<FacilityReservationStats> {
 		const departments = normalizeGameDepartments(filters?.departments);
@@ -281,10 +294,11 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 		const { rows } = await (departments.length > 0
 			? this.warehouse.query<WarehouseFacilityReservationStatsRow>(
 					FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL,
-					[ids, departments],
+					[ids, today, departments],
 				)
 			: this.warehouse.query<WarehouseFacilityReservationStatsRow>(FACILITY_RESERVATION_STATS_SQL, [
 					ids,
+					today,
 				]));
 		const [row] = rows;
 		if (!row) {
@@ -293,10 +307,13 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 		return toReservationStats(row);
 	}
 
-	async getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+	async getGameComparisons(
+		facilityIds: EntityId[],
+		today: string,
+	): Promise<FacilityGameComparison[]> {
 		const { rows } = await this.warehouse.query<WarehouseFacilityGameComparisonRow>(
 			FACILITY_GAME_COMPARISONS_SQL,
-			[facilityIds.map(Number)],
+			[facilityIds.map(Number), today],
 		);
 		return rows.map((row) => ({
 			facilityId: String(row.location_id) as EntityId,
@@ -307,10 +324,10 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 		}));
 	}
 
-	async getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
+	async getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
 		const { rows } = await this.warehouse.query<WarehouseFacilityPlayerStatsRow>(
 			FACILITY_PLAYER_STATS_SQL,
-			[facilityIds.map(Number)],
+			[facilityIds.map(Number), today],
 		);
 		const [row] = rows;
 		if (!row) {

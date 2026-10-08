@@ -31,50 +31,55 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 
 	getReservationStats(
 		facilityIds: EntityId[],
+		today: string,
 		filters?: FacilityReservationStatsFilters,
 	): Promise<FacilityReservationStats> {
 		const now = this.clock.now().getTime();
 		const departments = normalizeGameDepartments(filters?.departments);
-		const key = this.reservationKeyFor(facilityIds, departments);
+		const key = this.reservationKeyFor(facilityIds, today, departments);
 		const cached = this.reservationCache.get(key);
 		if (!cached || isExpired(cached, now)) {
 			const fromWarehouse =
 				departments.length > 0
-					? this.inner.getReservationStats(facilityIds, { departments })
-					: this.inner.getReservationStats(facilityIds);
+					? this.inner.getReservationStats(facilityIds, today, { departments })
+					: this.inner.getReservationStats(facilityIds, today);
 			return remember(this.reservationCache, key, fromWarehouse, now + this.ttlMs);
 		}
 		return cached.value;
 	}
 
-	getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+	getGameComparisons(facilityIds: EntityId[], today: string): Promise<FacilityGameComparison[]> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds);
+		const key = this.keyFor(facilityIds, today);
 		const cached = this.comparisonCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getGameComparisons(facilityIds);
+			const fromWarehouse = this.inner.getGameComparisons(facilityIds, today);
 			return remember(this.comparisonCache, key, fromWarehouse, now + this.ttlMs);
 		}
 		return cached.value;
 	}
 
-	getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
+	getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds);
+		const key = this.keyFor(facilityIds, today);
 		const cached = this.playerCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getPlayerStats(facilityIds);
+			const fromWarehouse = this.inner.getPlayerStats(facilityIds, today);
 			return remember(this.playerCache, key, fromWarehouse, now + this.playerTtlMs);
 		}
 		return cached.value;
 	}
 
-	private keyFor(facilityIds: EntityId[]): string {
-		return [...facilityIds].sort().join(",");
+	private keyFor(facilityIds: EntityId[], today: string): string {
+		return `${today}|${[...facilityIds].sort().join(",")}`;
 	}
 
-	private reservationKeyFor(facilityIds: EntityId[], departments: readonly string[]): string {
-		const ids = this.keyFor(facilityIds);
-		return departments.length > 0 ? `${ids}|departments=${departments.join(",")}` : ids;
+	private reservationKeyFor(
+		facilityIds: EntityId[],
+		today: string,
+		departments: readonly string[],
+	): string {
+		const key = this.keyFor(facilityIds, today);
+		return departments.length > 0 ? `${key}|departments=${departments.join(",")}` : key;
 	}
 }

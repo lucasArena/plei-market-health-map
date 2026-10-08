@@ -11,19 +11,21 @@ import {
 	toMarketSummaryPeriod,
 } from "@core/application/mappers/market-summary-mapper";
 import type { GetMarketSummaryDeps } from "@core/application/services/get-market-summary.types";
+import { statsToday } from "@core/application/services/stats-today";
 
-export function makeGetMarketSummary({ facilities, stats }: GetMarketSummaryDeps) {
+export function makeGetMarketSummary({ facilities, stats, clock }: GetMarketSummaryDeps) {
 	return async function getMarketSummary(
 		input: GetMarketSummaryInput = {},
 	): Promise<MarketSummaryView> {
 		const parsed = getMarketSummarySchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
-		const { departments, market } = parsed.data;
-		const visible = selectMarketFacilities(await facilities.listAll(), market);
+		const { departments, market, timeZone } = parsed.data;
+		const today = statsToday(clock, timeZone);
+		const visible = selectMarketFacilities(await facilities.listAll(today), market);
 		const memberIds = toMarketMemberIds(visible);
 		const reservationStats = await (departments.length > 0
-			? stats.getReservationStats(memberIds, { departments })
-			: stats.getReservationStats(memberIds));
+			? stats.getReservationStats(memberIds, today, { departments })
+			: stats.getReservationStats(memberIds, today));
 		return {
 			stats: toFacilityReservationStatsView(reservationStats),
 			periods: {

@@ -1,4 +1,4 @@
-import { STATS_PERIODS } from "@core/application/dtos/facility-detail-dto";
+import { STATS_PERIODS, statsTimeZoneSchema } from "@core/application/dtos/facility-detail-dto";
 import { GAME_DEPARTMENTS, normalizeGameDepartments } from "@core/domain";
 import { z } from "zod";
 
@@ -10,6 +10,7 @@ export const gameDepartmentsSchema = z
 
 export const getMarketPlayerStatsSchema = z.object({
 	market: z.string().trim().min(1).max(64).optional(),
+	timeZone: statsTimeZoneSchema,
 });
 
 export const getMarketSummarySchema = getMarketPlayerStatsSchema.extend({

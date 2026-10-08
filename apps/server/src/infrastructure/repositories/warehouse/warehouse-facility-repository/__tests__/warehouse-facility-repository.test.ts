@@ -7,7 +7,10 @@ import {
 	makeListFacilities,
 	NotFoundError,
 } from "@market-health-map/core/application";
-import { InMemoryFacilityStatsRepository } from "@market-health-map/core/application/testing";
+import {
+	FixedClock,
+	InMemoryFacilityStatsRepository,
+} from "@market-health-map/core/application/testing";
 import { asEntityId } from "@market-health-map/core/domain";
 import {
 	ACTIVE_LOCATIONS_SQL,
@@ -16,6 +19,9 @@ import {
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
 
 const allFlagsOn = async () => ({ enabled: [...FEATURE_FLAG_KEYS] });
+
+const TODAY = "2026-10-08";
+const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 function row(overrides: object = {}) {
 	return {
@@ -92,15 +98,15 @@ describe("WarehouseFacilityRepository", () => {
 			rows: [row(), row({ location_id: 2, location_name: "adidas TEST" })],
 		});
 
-		const facilities = await new WarehouseFacilityRepository({ query }).listAll();
+		const facilities = await new WarehouseFacilityRepository({ query }).listAll(TODAY);
 
-		expect(query).toHaveBeenCalledWith(ACTIVE_LOCATIONS_SQL);
+		expect(query).toHaveBeenCalledWith(ACTIVE_LOCATIONS_SQL, [TODAY]);
 		expect(ACTIVE_LOCATIONS_SQL).toContain("deleted_at is null");
-		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date >= b.today - 28 as in_current");
-		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date < b.today");
 		expect(ACTIVE_LOCATIONS_SQL).toContain(
-			"select (now() at time zone 'Pacific/Honolulu')::date as today",
+			"g.date_with_time::date >= b.today - 28 and g.date_with_time::date < b.today as in_current",
 		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date < b.today");
+		expect(ACTIVE_LOCATIONS_SQL).toContain("select $1::date as today");
 		expect(ACTIVE_LOCATIONS_SQL).not.toContain("current_date");
 		expect(facilities.map((facility) => facility.id)).toEqual(["1042"]);
 	});
@@ -143,7 +149,7 @@ describe("WarehouseFacilityRepository", () => {
 			],
 		});
 
-		const [facility, ...rest] = await new WarehouseFacilityRepository({ query }).listAll();
+		const [facility, ...rest] = await new WarehouseFacilityRepository({ query }).listAll(TODAY);
 
 		expect(rest).toEqual([]);
 		expect(facility?.toJSON()).toMatchObject({
@@ -224,7 +230,7 @@ const COUNTS = {
 
 describe("ignored facilities downstream", () => {
 	it("hides them from the repository before co-located twins are merged", async () => {
-		const facilities = await ignoredRepository().listAll();
+		const facilities = await ignoredRepository().listAll(TODAY);
 
 		expect(facilities.map((facility) => facility.toJSON())).toEqual([
 			expect.objectContaining({
@@ -238,6 +244,7 @@ describe("ignored facilities downstream", () => {
 
 	it("leaves them out of the map list and search source", async () => {
 		const list = await makeListFacilities({
+			clock: TEST_CLOCK,
 			facilities: ignoredRepository(),
 			enabledFeatureFlags: allFlagsOn,
 		})();
@@ -247,7 +254,11 @@ describe("ignored facilities downstream", () => {
 
 	it("answers 404 for an ignored facility or twin in the detail panel", async () => {
 		const stats = new InMemoryFacilityStatsRepository(COUNTS);
-		const getFacilityDetail = makeGetFacilityDetail({ facilities: ignoredRepository(), stats });
+		const getFacilityDetail = makeGetFacilityDetail({
+			clock: TEST_CLOCK,
+			facilities: ignoredRepository(),
+			stats,
+		});
 
 		await expect(getFacilityDetail({ facilityId: "3" })).rejects.toBeInstanceOf(NotFoundError);
 		await expect(getFacilityDetail({ facilityId: "2" })).rejects.toBeInstanceOf(NotFoundError);
@@ -261,7 +272,11 @@ describe("ignored facilities downstream", () => {
 	it("leaves them out of the market summary counts, rankings and stats query", async () => {
 		const stats = new InMemoryFacilityStatsRepository(COUNTS);
 
-		const summary = await makeGetMarketSummary({ facilities: ignoredRepository(), stats })();
+		const summary = await makeGetMarketSummary({
+			clock: TEST_CLOCK,
+			facilities: ignoredRepository(),
+			stats,
+		})();
 
 		expect(summary.periods.month.scope).toEqual({
 			facilityCount: 2,
@@ -276,6 +291,7 @@ describe("ignored facilities downstream", () => {
 
 	it("answers 404 for a market whose only facilities are ignored", async () => {
 		const getMarketSummary = makeGetMarketSummary({
+			clock: TEST_CLOCK,
 			facilities: ignoredRepository(),
 			stats: new InMemoryFacilityStatsRepository(COUNTS),
 		});
@@ -301,8 +317,12 @@ describe("ignored facilities downstream", () => {
 			},
 		]);
 
-		await makeGetMarketPlayerStats({ facilities: ignoredRepository(), stats })();
-		const insights = await makeGetMarketGameInsights({ facilities: ignoredRepository(), stats })();
+		await makeGetMarketPlayerStats({ clock: TEST_CLOCK, facilities: ignoredRepository(), stats })();
+		const insights = await makeGetMarketGameInsights({
+			clock: TEST_CLOCK,
+			facilities: ignoredRepository(),
+			stats,
+		})();
 
 		expect(stats.playerRequested).toEqual([["1", "5"]]);
 		expect(JSON.stringify(insights)).not.toContain("IGNORE");
@@ -334,6 +354,7 @@ it("exposes department counts through the facility map DTO", async () => {
 		}),
 	});
 	const points = await makeListFacilities({
+		clock: TEST_CLOCK,
 		facilities: repository,
 		enabledFeatureFlags: allFlagsOn,
 	})();
@@ -345,7 +366,7 @@ describe("previous window games for the trend", () => {
 	it("reads both windows in one query with one widened date filter", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [row()] });
 
-		await new WarehouseFacilityRepository({ query }).listAll();
+		await new WarehouseFacilityRepository({ query }).listAll(TODAY);
 
 		expect(query).toHaveBeenCalledTimes(1);
 		expect(ACTIVE_LOCATIONS_SQL).toContain("g.date_with_time::date >= b.today - 56");
@@ -390,6 +411,7 @@ describe("previous window games for the trend", () => {
 
 	it("exposes previous window games through the facility map DTO", async () => {
 		const listFacilities = makeListFacilities({
+			clock: TEST_CLOCK,
 			enabledFeatureFlags: allFlagsOn,
 			facilities: new WarehouseFacilityRepository({
 				query: vi.fn().mockResolvedValue({
@@ -420,10 +442,14 @@ describe("previous window games for the trend", () => {
 });
 
 describe("weekly games for the 7D period", () => {
-	it("counts the last completed week and the week before in the same query", () => {
+	it("counts the 7 full days ending yesterday and the 7 before in the same query", () => {
 		expect(ACTIVE_LOCATIONS_SQL).toContain(
-			"g.date_with_time::date >= b.this_week - 14 and g.date_with_time::date < b.this_week - 7 as in_previous_week",
+			"g.date_with_time::date >= b.today - 7 and g.date_with_time::date < b.today as in_last_week",
 		);
+		expect(ACTIVE_LOCATIONS_SQL).toContain(
+			"g.date_with_time::date >= b.today - 14 and g.date_with_time::date < b.today - 7 as in_previous_week",
+		);
+		expect(ACTIVE_LOCATIONS_SQL).not.toContain("this_week");
 		expect(ACTIVE_LOCATIONS_SQL).toContain(
 			"filter (where r.in_last_week and r.department = 'magic') as magic_games_last_week",
 		);

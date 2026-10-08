@@ -3,9 +3,12 @@ import { NotFoundError } from "@core/application/errors/not-found-error";
 import { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 import { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 import { makeGetMarketSummary } from "@core/application/services/get-market-summary";
+import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { asEntityId, Facility, type GameDepartmentCounts } from "@core/domain";
+
+const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 function facility(
 	id: string,
@@ -59,8 +62,12 @@ function setup(facilities: Facility[]) {
 	const stats = new InMemoryFacilityStatsRepository(COUNTS);
 	return {
 		stats,
-		getMarketSummary: makeGetMarketSummary({ facilities: repository, stats }),
-		getMarketPlayerStats: makeGetMarketPlayerStats({ facilities: repository, stats }),
+		getMarketSummary: makeGetMarketSummary({ clock: TEST_CLOCK, facilities: repository, stats }),
+		getMarketPlayerStats: makeGetMarketPlayerStats({
+			clock: TEST_CLOCK,
+			facilities: repository,
+			stats,
+		}),
 	};
 }
 
@@ -231,7 +238,7 @@ it("returns game comparisons for every market, including inactive facilities", a
 			playedPrevious28Days: 25,
 		},
 	]);
-	const insights = makeGetMarketGameInsights({ facilities, stats });
+	const insights = makeGetMarketGameInsights({ clock: TEST_CLOCK, facilities, stats });
 	expect(await insights({ period: "month" })).toMatchObject([
 		{ id: "houston", change: -100, changePercent: -100 },
 		{ id: "philly", change: 25, changePercent: 100 },
@@ -250,7 +257,7 @@ it("loads the main report without invoking slow or failing insight analytics", a
 	const comparisons = vi
 		.spyOn(stats, "getGameComparisons")
 		.mockImplementation(() => new Promise(() => undefined));
-	const result = await makeGetMarketSummary({ facilities, stats })();
+	const result = await makeGetMarketSummary({ clock: TEST_CLOCK, facilities, stats })();
 	expect(result.stats.playedLast28Days).toBe(212);
 	expect(comparisons).not.toHaveBeenCalled();
 });
@@ -258,7 +265,7 @@ it("validates insight scope before requesting comparisons", async () => {
 	const facilities = new InMemoryFacilityRepository([facility("1", "houston", 20)]);
 	const stats = new InMemoryFacilityStatsRepository(COUNTS);
 	const comparisons = vi.spyOn(stats, "getGameComparisons");
-	const insights = makeGetMarketGameInsights({ facilities, stats });
+	const insights = makeGetMarketGameInsights({ clock: TEST_CLOCK, facilities, stats });
 	await expect(insights({ market: " " })).rejects.toBeInstanceOf(InvalidRequestError);
 	await expect(insights({ market: "unknown" })).rejects.toBeInstanceOf(NotFoundError);
 	await expect(insights({ period: "year" as never })).rejects.toBeInstanceOf(InvalidRequestError);
@@ -365,7 +372,11 @@ describe("market summary game department filter", () => {
 		const repository = new InMemoryFacilityRepository(facilities());
 		const stats = new InMemoryFacilityStatsRepository(COUNTS);
 		const comparisons = vi.spyOn(stats, "getGameComparisons");
-		const insights = makeGetMarketGameInsights({ facilities: repository, stats });
+		const insights = makeGetMarketGameInsights({
+			clock: TEST_CLOCK,
+			facilities: repository,
+			stats,
+		});
 
 		const month = await insights({ period: "month", departments: ["partnerships"] });
 
@@ -379,6 +390,44 @@ describe("market summary game department filter", () => {
 		expect(philly?.facilities.map((row) => [row.id, row.played])).toEqual([
 			["1", 2],
 			["2", 0],
+		]);
+	});
+});
+
+describe("viewer's local today", () => {
+	it("sends the same local today to the facility list and every stats query", async () => {
+		const facilities = new InMemoryFacilityRepository([facility("1", "philly", 3)]);
+		const stats = new InMemoryFacilityStatsRepository(COUNTS, [
+			{
+				facilityId: asEntityId("1"),
+				playedLastWeek: 1,
+				playedPreviousWeek: 1,
+				playedLast28Days: 3,
+				playedPrevious28Days: 2,
+			},
+		]);
+		const lateEveningInLosAngeles = new FixedClock(new Date("2026-10-09T05:00:00Z"));
+		const deps = { clock: lateEveningInLosAngeles, facilities, stats };
+
+		await makeGetMarketSummary(deps)({ timeZone: "America/Los_Angeles" });
+		await makeGetMarketGameInsights(deps)({ timeZone: "America/Los_Angeles" });
+		await makeGetMarketPlayerStats(deps)({ timeZone: "America/Los_Angeles" });
+		await makeGetMarketSummary(deps)({ timeZone: "America/New_York" });
+		await makeGetMarketSummary(deps)({ timeZone: "Not/AZone" });
+
+		expect(facilities.requestedDays).toEqual([
+			"2026-10-08",
+			"2026-10-08",
+			"2026-10-08",
+			"2026-10-09",
+			"2026-10-09",
+		]);
+		expect(stats.requestedDays).toEqual([
+			"2026-10-08",
+			"2026-10-08",
+			"2026-10-08",
+			"2026-10-09",
+			"2026-10-09",
 		]);
 	});
 });
