@@ -267,7 +267,7 @@ export function MapLayersPanel() {
 			ref={rootRef}
 			onKeyDown={closeOnEscape}
 			aria-label={messages.layersHeading}
-			className="fixed top-[var(--map-frame)] left-[calc(50%+min(12rem,50%-12rem)+4px)] z-50 w-[32px]"
+			className="fixed top-[var(--map-frame)] left-[calc(50%+min(12rem,50%-12rem)+4px)] z-50 w-[32px] max-sm:top-[calc(var(--map-frame)+40px)] max-sm:right-[var(--map-frame)] max-sm:left-auto"
 		>
 			<button
 				type="button"
@@ -303,7 +303,7 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics || showGamesSelector ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+36px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics || showGamesSelector ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+76px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
 				>
 					{showDemographics ? (
 						<AppSessionFilters showSessions={showSessions} onApplied={closePanel}>

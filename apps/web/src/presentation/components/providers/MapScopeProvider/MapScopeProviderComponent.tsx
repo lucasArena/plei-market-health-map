@@ -15,6 +15,10 @@ export { ALL_MARKETS_SCOPE };
 
 const MapScopeContext = createContext<MapScopeContextValue>({
 	scope: ALL_MARKETS_SCOPE,
+	metricFocus: null,
+	setMetricFocus: () => undefined,
+	mapNavigation: null,
+	setMapNavigation: () => undefined,
 	selectedFacilityId: null,
 	setSelectedFacilityId: () => undefined,
 	setScope: () => undefined,
