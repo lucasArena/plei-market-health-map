@@ -68,3 +68,5 @@ export interface GamesTrendColors {
 }
 
 export type TooltipAlign = "start" | "center" | "end";
+
+export type TooltipPlacement = "above" | "below";

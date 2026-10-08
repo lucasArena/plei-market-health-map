@@ -155,6 +155,9 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.queryByRole("region", { name: "Markets" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("region", { name: "Facilities" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: "Popular times · last 28 days" }),
+		).not.toBeInTheDocument();
 		expect(screen.getByText("Data as of Oct 7, 2026, 9:35 PM")).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Report a wrong number" }));

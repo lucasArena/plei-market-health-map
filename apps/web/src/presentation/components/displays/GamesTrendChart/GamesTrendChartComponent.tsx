@@ -2,9 +2,11 @@
 
 import { useGamesTrendChartRules } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.rules";
 import {
+	AXIS_LEFT,
 	GAMES_TREND_COLORS,
 	METRIC_PILL,
 	TOOLTIP_ALIGN_CLASS,
+	TOOLTIP_PLACEMENT_CLASS,
 	TREND_ICON_PATH,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.styles";
 import type { GamesTrendChartProps } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
@@ -16,17 +18,15 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 		activePoint,
 		align,
 		axisStart,
-		baselineStart,
 		baselineY,
 		chartHeight,
 		chartWidth,
 		geometry,
 		gradientId,
-		hairlineTop,
 		index,
+		placement,
 		resetActive,
 		setActiveIndex,
-		zeroLabel,
 	} = useGamesTrendChartRules(props);
 	const colors = GAMES_TREND_COLORS[view.direction];
 	const toLeft = (x: number) => `${(x / chartWidth) * 100}%`;
@@ -76,8 +76,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							</linearGradient>
 						</defs>
 						<line
-							data-testid="games-trend-baseline"
-							x1={baselineStart}
+							x1={AXIS_LEFT}
 							x2={chartWidth}
 							y1={baselineY}
 							y2={baselineY}
@@ -116,24 +115,8 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							{view.axisLabel}
 						</span>
 					)}
-					<span
-						aria-hidden="true"
-						className="absolute left-0 -translate-y-1/2 text-[11px] leading-[13px] text-[rgba(60,60,67,0.6)] tabular-nums"
-						style={{ top: toTop(baselineY) }}
-					>
-						{zeroLabel}
-					</span>
 					{activePoint && active && (
 						<>
-							<span
-								aria-hidden="true"
-								className="absolute w-px -translate-x-1/2 bg-[rgba(60,60,67,0.22)]"
-								style={{
-									left: toLeft(activePoint.x),
-									top: toTop(hairlineTop),
-									height: toTop(Math.max(activePoint.y - hairlineTop - 4, 0)),
-								}}
-							/>
 							<span
 								aria-hidden="true"
 								className={`absolute size-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full ${colors.halo}`}
@@ -146,8 +129,8 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							/>
 							<span
 								data-testid="games-trend-tooltip"
-								className={`absolute top-0 flex items-center gap-1 rounded-full border border-white/90 bg-white/70 px-2 py-[3px] text-[11px] whitespace-nowrap shadow-[0_0_0_0.5px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-[6px] ${TOOLTIP_ALIGN_CLASS[align]}`}
-								style={{ left: toLeft(activePoint.x) }}
+								className={`absolute z-10 flex items-center gap-1 rounded-full border border-white/90 bg-white/70 px-2 py-[3px] text-[11px] whitespace-nowrap shadow-[0_0_0_0.5px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-[6px] ${TOOLTIP_ALIGN_CLASS[align]} ${TOOLTIP_PLACEMENT_CLASS[placement]}`}
+								style={{ left: toLeft(activePoint.x), top: toTop(activePoint.y) }}
 							>
 								<span className="font-semibold text-[#1d1d1f]">{active.valueLabel}</span>
 								<span className="text-[rgba(60,60,67,0.6)]">{active.tooltipLabel}</span>

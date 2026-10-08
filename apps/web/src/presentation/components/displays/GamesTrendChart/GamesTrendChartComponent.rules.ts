@@ -4,18 +4,20 @@ import { useCallback, useId, useState } from "react";
 import {
 	AXIS_LABEL_CHAR_WIDTH,
 	AXIS_LABEL_PADDING,
-	AXIS_ZERO_LABEL,
 	CHART_AXIS,
 	CHART_BASELINE,
+	CHART_BOTTOM,
 	CHART_HEIGHT,
+	CHART_TOP,
 	CHART_WIDTH,
-	HAIRLINE_TOP,
+	TOOLTIP_CLEARANCE,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.styles";
 import type {
 	ChartPoint,
 	GamesTrendChartProps,
 	GamesTrendGeometry,
 	TooltipAlign,
+	TooltipPlacement,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
 
 function round(value: number): number {
@@ -54,9 +56,14 @@ export function niceAxisMax(values: number[]): number | null {
 }
 
 export function buildGeometry(values: number[], axisMax: number | null): GamesTrendGeometry {
-	const high = axisMax ?? Math.max(0, ...values);
+	const low = Math.min(...values);
+	const high = axisMax ?? Math.max(...values);
+	const top = axisMax === null ? CHART_TOP : CHART_AXIS;
+	const span = high - low;
 	const toY = (value: number) =>
-		high <= 0 ? CHART_BASELINE : CHART_BASELINE - (value / high) * (CHART_BASELINE - CHART_AXIS);
+		span === 0
+			? (CHART_TOP + CHART_BOTTOM) / 2
+			: CHART_BOTTOM - ((value - low) / span) * (CHART_BOTTOM - top);
 	const points = values.map((value, index) => ({
 		x: ((index + 0.5) / values.length) * CHART_WIDTH,
 		y: toY(value),
@@ -81,6 +88,10 @@ export function tooltipAlign(index: number, count: number): TooltipAlign {
 	return "center";
 }
 
+export function tooltipPlacement(y: number): TooltipPlacement {
+	return y < TOOLTIP_CLEARANCE ? "below" : "above";
+}
+
 export function useGamesTrendChartRules({ view }: GamesTrendChartProps) {
 	const gradientId = useId();
 	const lastIndex = view.points.length - 1;
@@ -100,15 +111,13 @@ export function useGamesTrendChartRules({ view }: GamesTrendChartProps) {
 		activePoint,
 		align: tooltipAlign(index, view.points.length),
 		axisStart: axisLineStart(view.axisLabel),
-		baselineStart: axisLineStart(AXIS_ZERO_LABEL),
-		zeroLabel: AXIS_ZERO_LABEL,
 		chartHeight: CHART_HEIGHT,
 		chartWidth: CHART_WIDTH,
 		baselineY: CHART_BASELINE,
 		geometry,
 		gradientId,
-		hairlineTop: HAIRLINE_TOP,
 		index,
+		placement: tooltipPlacement(activePoint?.y ?? CHART_BASELINE),
 		resetActive,
 		setActiveIndex,
 	};
