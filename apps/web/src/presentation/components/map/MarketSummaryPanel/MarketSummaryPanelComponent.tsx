@@ -1,7 +1,9 @@
 "use client";
 
+import { formatMessage } from "@market-health-map/core/i18n";
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent";
+import { GamesTrendChart } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent";
 import { HealthStrip } from "@/presentation/components/displays/HealthStrip/HealthStripComponent";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
 import { PanelSection } from "@/presentation/components/displays/PanelSection/PanelSectionComponent";
@@ -118,12 +120,16 @@ function MarketSummaryHeader({
 
 function MarketSummaryMetrics({
 	detailMessages,
+	gamesTrend,
 	isRedesigned,
 	messages,
 	rankingsEmptyLabel,
 	tiles,
 	view,
 }: Readonly<MarketSummaryMetricsProps>) {
+	const gamesRangeLabel = formatMessage(messages.gamesWeeklyRange, {
+		weeks: String(gamesTrend?.points.length ?? 0),
+	});
 	const weeklyActivity = (
 		<WeeklyActivityChart
 			title={detailMessages.weeklyActivity}
@@ -170,9 +176,13 @@ function MarketSummaryMetrics({
 	}
 	return (
 		<>
-			<PanelSection title={messages.sectionGames} testId="panel-section-games">
+			<PanelSection
+				title={messages.gamesThisPeriod}
+				aside={gamesTrend ? gamesRangeLabel : undefined}
+				testId="panel-section-games"
+			>
+				{gamesTrend ? <GamesTrendChart view={gamesTrend} /> : weeklyActivity}
 				<StatTiles tiles={tiles.games} testIdPrefix="market-stat" />
-				{weeklyActivity}
 				{popularTimes}
 			</PanelSection>
 			{tiles.users.length > 0 && (
@@ -190,6 +200,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		comparison,
 		dataAsOf,
 		detailMessages,
+		gamesTrend,
 		handleAnimationEnd,
 		heading,
 		insight,
@@ -262,6 +273,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 						)}
 						<MarketSummaryMetrics
 							detailMessages={detailMessages}
+							gamesTrend={gamesTrend}
 							isRedesigned={isRedesigned}
 							messages={messages}
 							rankingsEmptyLabel={rankingsEmptyLabel}

@@ -96,7 +96,6 @@ export {
 } from "@core/application/dtos/market-summary-dto";
 export type {
 	FacilityGameChangeView,
-	GamesTrend,
 	GetMarketGameInsightsInput,
 	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
@@ -107,6 +106,7 @@ export type {
 	MarketSummaryPeriodView,
 	MarketSummaryScopeView,
 	MarketSummaryView,
+	OverallGamesTrend,
 } from "@core/application/dtos/market-summary-dto.types";
 export {
 	MIN_PLACE_QUERY_LENGTH,

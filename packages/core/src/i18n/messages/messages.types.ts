@@ -244,6 +244,14 @@ export interface Messages {
 		sectionGames: string;
 		sectionUsers: string;
 		dataAsOf: string;
+		gamesThisPeriod: string;
+		gamesWeeklyRange: string;
+		gamesComparedWith: string;
+		gamesPriorAverage: string;
+		gamesPriorAverageHint: string;
+		gamesPerWeekRange: string;
+		gamesPointTooltip: string;
+		gamesPointLabel: string;
 		trendDeclining: string;
 		trendStable: string;
 		trendGrowing: string;

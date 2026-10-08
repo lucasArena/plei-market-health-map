@@ -88,12 +88,12 @@ describe("facility stats SQL", () => {
 		}
 	});
 
-	it("buckets weekly activity into the four 7 day blocks ending yesterday", () => {
+	it("buckets weekly activity into the eight 7 day blocks ending yesterday", () => {
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
 			"g.game_date >= w.week_start and g.game_date < w.week_start + 7",
 		);
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
-			"generate_series(b.today - 28, b.today - 7, interval '7 days')",
+			"generate_series(b.today - 56, b.today - 7, interval '7 days')",
 		);
 	});
 

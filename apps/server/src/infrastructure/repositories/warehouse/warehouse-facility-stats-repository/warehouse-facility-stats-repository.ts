@@ -95,7 +95,7 @@ last_played as (
   )::text as game_date
 ),
 week_series as (
-  select generate_series(b.today - ${MONTH_DAYS}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
+  select generate_series(b.today - ${MONTH_DAYS * 2}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
   from bounds b
 ),
 weekly_activity as (

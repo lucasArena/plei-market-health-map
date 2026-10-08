@@ -80,6 +80,7 @@ function rulesWith(overrides: object = {}) {
 		isRedesigned: false,
 		reportWrongNumber: vi.fn(),
 		insight: { title: "Key insights", tone: "neutral" },
+		gamesTrend: null,
 		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
 		sectionTiles: { games: [], users: VIEW.tiles },
 		detailMessages: EN_MESSAGES.facilityDetail,
@@ -144,7 +145,7 @@ describe("MarketSummaryPanel", () => {
 		);
 		expect(screen.getByText(VIEW.summary)).toBeInTheDocument();
 		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
-		expect(screen.getByRole("region", { name: "Games" })).toContainElement(
+		expect(screen.getByRole("region", { name: "Games this period" })).toContainElement(
 			screen.getByRole("heading", { name: "Weekly activity" }),
 		);
 		expect(screen.getByRole("region", { name: "Users" })).toContainElement(

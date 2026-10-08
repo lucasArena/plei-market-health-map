@@ -4,11 +4,11 @@ import {
 	type FacilityPlayerStatsView,
 	type FacilityReservationDetailView,
 	type FacilityReservationStatsView,
-	type GamesTrend,
 	type MarketSummaryFacilityRankView,
 	type MarketSummaryMarketRankView,
 	type MarketSummaryScopeView,
 	type MarketSummaryView,
+	type OverallGamesTrend,
 	STATS_PERIOD_DAYS,
 	type StatsPeriod,
 	toGamesTrend,
@@ -21,6 +21,10 @@ import { useCallback, useEffect, useMemo } from "react";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
 import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
+import type {
+	GamesTrendChangeView,
+	GamesTrendView,
+} from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
 import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 import {
 	activityPeriodFor,
@@ -318,16 +322,89 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
-const GAME_TILE_KEYS: readonly string[] = ["played", "confirmation"];
+const GAME_TILE_KEYS: readonly string[] = ["confirmation"];
+
+const CHARTED_TILE_KEYS: readonly string[] = ["played"];
 
 export function splitTilesBySection(tiles: FacilityStatTile[]): MarketSummarySectionTiles {
+	const listed = tiles.filter((tile) => !CHARTED_TILE_KEYS.includes(tile.key));
 	return {
-		games: tiles.filter((tile) => GAME_TILE_KEYS.includes(tile.key)),
-		users: tiles.filter((tile) => !GAME_TILE_KEYS.includes(tile.key)),
+		games: listed.filter((tile) => GAME_TILE_KEYS.includes(tile.key)),
+		users: listed.filter((tile) => !GAME_TILE_KEYS.includes(tile.key)),
 	};
 }
 
-const TREND_TONE: Record<GamesTrend, InsightTone> = {
+const CURRENT_WEEKS: Record<StatsPeriod, number> = { week: 1, month: 4 };
+
+const PRIOR_WEEKS = 4;
+
+function changeView(percent: number | null, played: number): GamesTrendChangeView | null {
+	if (percent === null) return null;
+	const rounded = Math.round(percent);
+	const magnitude = Math.abs(rounded);
+	if (rounded < 0) return { label: `−${magnitude}%`, direction: "down" };
+	if (rounded > 0) return { label: `+${magnitude}%`, direction: "up" };
+	return { label: played > 0 ? "0%" : "—", direction: "flat" };
+}
+
+export function buildGamesTrendView(
+	stats: FacilityReservationStatsView,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	periodMessages: StatsPeriodMessages,
+	formatters: DetailFormatters,
+): GamesTrendView {
+	const games = toReservationPeriodView(stats, period);
+	const change = changeView(games.playedChangePercent, games.played);
+	const weeks = stats.weeklyActivity;
+	const firstCurrent = weeks.length - CURRENT_WEEKS[period];
+	const prior = weeks.length >= PRIOR_WEEKS * 2 ? weeks.slice(0, PRIOR_WEEKS) : [];
+	const benchmark =
+		prior.length > 0
+			? Math.round(prior.reduce((sum, week) => sum + week.gamesPlayed, 0) / prior.length)
+			: null;
+	const first = weeks[0];
+	const last = weeks.at(-1);
+	return {
+		total: formatters.number.format(games.played),
+		change,
+		comparison: formatMessage(messages.gamesComparedWith, {
+			previous: formatters.number.format(games.playedPrevious),
+			comparison: periodMessages.comparison,
+		}),
+		direction: change?.direction ?? (games.played > 0 ? "up" : "flat"),
+		benchmark,
+		benchmarkLabel:
+			benchmark === null
+				? null
+				: formatMessage(messages.gamesPriorAverage, {
+						value: formatters.number.format(benchmark),
+					}),
+		benchmarkHint: messages.gamesPriorAverageHint,
+		rangeLabel:
+			first && last && weeks.length > 1
+				? formatMessage(messages.gamesPerWeekRange, {
+						first: formatters.number.format(first.gamesPlayed),
+						last: formatters.number.format(last.gamesPlayed),
+					})
+				: null,
+		points: weeks.map((week, index) => {
+			const weekLabel = formatters.week.format(utcDate(week.weekStart));
+			const valueLabel = formatters.number.format(week.gamesPlayed);
+			return {
+				key: week.weekStart,
+				value: week.gamesPlayed,
+				valueLabel,
+				weekLabel,
+				tooltipLabel: formatMessage(messages.gamesPointTooltip, { week: weekLabel }),
+				ariaLabel: formatMessage(messages.gamesPointLabel, { games: valueLabel, week: weekLabel }),
+				isCurrentPeriod: index >= firstCurrent,
+			};
+		}),
+	};
+}
+
+const TREND_TONE: Record<OverallGamesTrend, InsightTone> = {
 	declining: "attention",
 	stable: "stable",
 	growing: "growing",
@@ -573,6 +650,20 @@ export function useMarketSummaryPanelRules({
 		messages.marketSummary,
 		formatters,
 	);
+	const reportStats = isMarketScope ? summary?.stats : facilityReport?.stats;
+	const gamesTrend = useMemo(
+		() =>
+			reportStats
+				? buildGamesTrendView(
+						reportStats,
+						period,
+						messages.marketSummary,
+						periodMessages,
+						formatters,
+					)
+				: null,
+		[formatters, messages.marketSummary, period, periodMessages, reportStats],
+	);
 	const insight = buildInsightHeading(
 		isRedesigned && scope.kind === "all",
 		summary,
@@ -608,6 +699,7 @@ export function useMarketSummaryPanelRules({
 		scopeLine,
 		detailMessages: messages.facilityDetail,
 		handleAnimationEnd,
+		gamesTrend,
 		heading,
 		insight,
 		isClosing,

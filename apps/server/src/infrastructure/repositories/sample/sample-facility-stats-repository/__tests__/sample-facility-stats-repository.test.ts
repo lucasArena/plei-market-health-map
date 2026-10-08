@@ -27,19 +27,27 @@ describe("SampleFacilityStatsRepository", () => {
 });
 
 describe("sample weekly activity", () => {
-	it("shows the four 7 day blocks ending yesterday and leaves out today", async () => {
+	it("shows the eight 7 day blocks ending yesterday and leaves out today", async () => {
 		const ids = ["austin-facility-1" as never];
 
 		const onThursday = await repository.getReservationStats(ids, TODAY);
 		const onFriday = await repository.getReservationStats(ids, "2026-10-09");
 
 		expect(onThursday.weeklyActivity.map((week) => week.weekStart)).toEqual([
+			"2026-08-13",
+			"2026-08-20",
+			"2026-08-27",
+			"2026-09-03",
 			"2026-09-10",
 			"2026-09-17",
 			"2026-09-24",
 			"2026-10-01",
 		]);
 		expect(onFriday.weeklyActivity.map((week) => week.weekStart)).toEqual([
+			"2026-08-14",
+			"2026-08-21",
+			"2026-08-28",
+			"2026-09-04",
 			"2026-09-11",
 			"2026-09-18",
 			"2026-09-25",

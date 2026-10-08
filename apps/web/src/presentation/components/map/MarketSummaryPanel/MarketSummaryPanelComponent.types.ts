@@ -1,5 +1,6 @@
 import type { Messages } from "@market-health-map/core/i18n";
 import type { ReactNode } from "react";
+import type { GamesTrendView } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
 import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
 import type {
@@ -71,6 +72,7 @@ export interface MarketRankRowsProps {
 
 export interface MarketSummaryMetricsProps {
 	detailMessages: DetailMessages;
+	gamesTrend: GamesTrendView | null;
 	isRedesigned: boolean;
 	messages: MarketSummaryMessages;
 	rankingsEmptyLabel: string;

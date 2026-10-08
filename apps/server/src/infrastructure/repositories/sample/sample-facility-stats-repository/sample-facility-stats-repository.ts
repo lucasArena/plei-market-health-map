@@ -14,6 +14,10 @@ import {
 } from "@market-health-map/core/domain";
 import { createSeededRandom } from "@server/infrastructure/repositories/sample/seeded-random/seeded-random";
 
+function splitIntoWeeks(total: number): number[] {
+	return [0, 1, 2, 3].map((week) => Math.floor(total / 4) + Number(week < total % 4));
+}
+
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly clock: Clock) {}
 
@@ -161,10 +165,12 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			cancelledLastWeek,
 			upcomingNextSevenDays: Math.round(random() * 30),
 			lastPlayedDate: month.end,
-			weeklyActivity: weeklyGames.map((gamesPlayed, index) => ({
-				weekStart: statsWindow(today, 28 - index * 7).start,
-				gamesPlayed,
-			})),
+			weeklyActivity: [...splitIntoWeeks(playedPrevious28Days), ...weeklyGames].map(
+				(gamesPlayed, index) => ({
+					weekStart: statsWindow(today, 56 - index * 7).start,
+					gamesPlayed,
+				}),
+			),
 			popularTimes: Array.from({ length: 28 }, (_, index) => ({
 				dayOfWeek: (index % 7) + 1,
 				timePeriod: Math.floor(index / 7),

@@ -44,7 +44,7 @@ export interface MarketSummaryPeriodView {
 	topMarkets: MarketSummaryMarketRankView[];
 }
 
-export type GamesTrend = "declining" | "stable" | "growing";
+export type OverallGamesTrend = "declining" | "stable" | "growing";
 
 export interface MarketSummaryView {
 	stats: FacilityReservationStatsView;
