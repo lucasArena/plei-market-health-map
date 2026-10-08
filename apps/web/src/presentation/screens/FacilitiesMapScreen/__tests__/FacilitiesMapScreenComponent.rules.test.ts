@@ -183,14 +183,17 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 
 const mockDemandFlag = vi.fn(() => false);
 const mockSupplyFlag = vi.fn(() => false);
+const mockMetricFocusFlag = vi.fn(() => false);
 const mockTrendFlag = vi.fn(() => true);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 	useFeatureFlag: (key: string) =>
-		key === "facility-games-trend"
-			? mockTrendFlag()
-			: key === "facility-games-layer"
-				? mockSupplyFlag()
-				: mockDemandFlag(),
+		(
+			({
+				"metric-drill-down": mockMetricFocusFlag,
+				"facility-games-trend": mockTrendFlag,
+				"facility-games-layer": mockSupplyFlag,
+			})[key] ?? mockDemandFlag
+		)(),
 }));
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
@@ -1059,6 +1062,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.gameDepartments = [];
 		layersState.showGamesTrend = false;
 		mockSupplyFlag.mockReturnValue(false);
+		mockMetricFocusFlag.mockReturnValue(false);
 		layersState.setSessionFilters = vi.fn();
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
@@ -1069,6 +1073,69 @@ describe("useFacilitiesMapScreenRules", () => {
 			isError: false,
 		});
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
+	});
+
+	it("isolates selected supply groups and restores them when cleared, behind the flag", async () => {
+		mockMetricFocusFlag.mockReturnValue(true);
+		mockSupplyFlag.mockReturnValue(true);
+		layersState.supplyMetric = "games";
+		const played = sameInBothPeriods({
+			...FACILITY,
+			gamesLast28Days: 10,
+			gamesByDepartment: { magic: 10, organizers: 0, partnerships: 0 },
+		});
+		const other = {
+			...played,
+			id: "other",
+			marketId: "other-market",
+			gamesLast28Days: 8,
+			gamesLastWeek: 8,
+		};
+		mockUseFacilities.mockReturnValue({
+			data: [played, other],
+			isPending: false,
+			isError: false,
+		});
+		const container = document.createElement("div");
+		const { result } = renderHook(
+			() => {
+				const rules = useFacilitiesMapScreenRules();
+				rules.containerRef.current ??= container;
+				return { rules, context: useMapScope() };
+			},
+			{
+				wrapper: ({ children }: { children: ReactNode }) =>
+					wrapper({ children: createElement(MapScopeProvider, null, children) }),
+			},
+		);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		act(() => result.current.context.setMetricFocus({ facilityIds: ["other"] }));
+		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["other"]);
+		act(() => result.current.context.setMetricFocus(null));
+		expect(result.current.rules.shownFacilities).toHaveLength(2);
+		act(() =>
+			result.current.context.setScope({ kind: "market", id: "other-market", name: "Other" }),
+		);
+		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["other"]);
+		act(() =>
+			result.current.context.setScope({
+				kind: "facility",
+				id: "f1",
+				name: FACILITY.name,
+				marketName: "Austin",
+			}),
+		);
+		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["f1"]);
+		act(() => result.current.context.setMapNavigation({ kind: "all" }));
+		expect(result.current.rules.shownFacilities).toHaveLength(2);
+		act(() =>
+			result.current.context.setMetricFocus({ facilityIds: ["other"], department: "magic" }),
+		);
+		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["other"]);
+		mockMetricFocusFlag.mockReturnValue(false);
+		act(() => result.current.context.setScope({ kind: "market", id: "missing", name: "Missing" }));
+		expect(result.current.rules.shownFacilities).toHaveLength(2);
 	});
 
 	it("consumes drill-down map navigation requests through the existing search behavior", async () => {
@@ -2414,6 +2481,7 @@ describe("games trend", () => {
 
 			layersState.supplyMetric = "games";
 			mockSupplyFlag.mockReturnValue(false);
+			mockMetricFocusFlag.mockReturnValue(false);
 			rerender();
 			expect(result.current.showTrend).toBe(false);
 		});
@@ -2431,6 +2499,7 @@ describe("games trend", () => {
 
 			mockTrendFlag.mockReturnValue(true);
 			mockSupplyFlag.mockReturnValue(false);
+			mockMetricFocusFlag.mockReturnValue(false);
 			rerender();
 			expect(result.current.showTrend).toBe(false);
 

@@ -82,6 +82,15 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 				</div>
 			</div>
 			<div className="min-h-0 space-y-4 overflow-y-auto p-5 pt-3">
+				{rules.showScopeBack && (
+					<button
+						type="button"
+						onClick={rules.clearScope}
+						className="cursor-pointer text-xs underline"
+					>
+						← {m.allMarkets}
+					</button>
+				)}
 				{selection.marketId && (
 					<div className="flex flex-wrap items-center gap-2 text-xs">
 						<button type="button" onClick={rules.back} className="cursor-pointer underline">
@@ -93,12 +102,14 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 				)}
 				<div>
 					<p className="text-3xl font-semibold tabular-nums">
-						{rules.isLoading || rules.isError ? "—" : formatValue(view.total)}
+						{rules.isLoading || rules.isError ? "—" : formatValue(rules.headlineValue)}
 					</p>
 					<p className="text-xs">
 						{m[selection.measure === "games" ? "games" : "activeFacilities"]}
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground">{rules.dateRange}</p>
+					{rules.focusLabel && <p className="mt-1 text-xs font-medium">{rules.focusLabel}</p>}
+					<p className="mt-1 text-xs text-muted-foreground">{m.selectionHelp}</p>
 				</div>
 
 				<div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-3">
@@ -237,20 +248,22 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 															<button
 																key={bar.id}
 																type="button"
-																onClick={() => rules.explore(row, bar.department)}
+																onClick={() => rules.toggleFocus(row, bar.department)}
+																aria-pressed={rules.isSelected(row, bar.department)}
 																aria-label={bar.label}
 																style={{
 																	height: `${bar.height}%`,
+																	opacity: rules.isDimmed(row, bar.department) ? 0.2 : 1,
 																	backgroundColor:
 																		bar.value === 0
 																			? "transparent"
 																			: DRILL_DOWN_COLORS[bar.department ?? "organizers"],
 																}}
-																className="group relative min-h-[2px] w-full shrink-0 cursor-pointer transition-opacity hover:z-10 hover:opacity-90 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+																className="group relative aria-pressed:ring-2 aria-pressed:ring-primary aria-pressed:ring-offset-2 min-h-[2px] w-full shrink-0 cursor-pointer transition-opacity hover:z-10 hover:opacity-90 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 															>
 																<span
 																	aria-hidden="true"
-																	className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground opacity-0 shadow-sm group-hover:opacity-100 group-focus-visible:opacity-100"
+																	className={`pointer-events-none absolute bottom-full ${rules.tooltipAlignment(row)} z-20 mb-2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground opacity-0 shadow-sm group-hover:opacity-100 group-focus-visible:opacity-100`}
 																>
 																	{bar.label}
 																</span>
@@ -335,19 +348,20 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 									</thead>
 									<tbody>
 										{rows.map((row) => (
-											<tr key={row.id} className="border-b border-border/50">
+											<tr
+												key={row.id}
+												className={`border-b border-border/50 transition-opacity ${rules.isSelected(row) ? "bg-primary/10 outline-1 outline-primary -outline-offset-1" : ""}`}
+												style={{ opacity: rules.isDimmed(row) ? 0.35 : 1 }}
+											>
 												<td className="py-2 pr-2">
-													{selection.slice === "market" ? (
-														<button
-															type="button"
-															onClick={() => rules.explore(row)}
-															className="cursor-pointer text-left hover:underline"
-														>
-															{rowName(row)}
-														</button>
-													) : (
-														rowName(row)
-													)}
+													<button
+														type="button"
+														onClick={() => rules.toggleFocus(row)}
+														aria-pressed={rules.isSelected(row)}
+														className="cursor-pointer text-left hover:underline"
+													>
+														{rowName(row)}
+													</button>
 												</td>
 												<td className="text-right tabular-nums">{formatValue(row.value)}</td>
 												{segment === "department" &&
@@ -358,6 +372,16 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													))}
 												{selection.slice !== "department" && (
 													<td className="py-2 pl-3 text-right">
+														{selection.slice === "market" && (
+															<button
+																type="button"
+																onClick={() => rules.explore(row)}
+																aria-label={`${m.exploreFacilities}: ${rowName(row)}`}
+																className="mr-3 cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline"
+															>
+																{m.exploreFacilities}
+															</button>
+														)}
 														<button
 															type="button"
 															onClick={() => rules.viewOnMap(row)}

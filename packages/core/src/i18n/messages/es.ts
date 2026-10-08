@@ -203,6 +203,9 @@ export const es: Messages = {
 		collapse: "Contraer desglose",
 		filteredBy: "Filtrado por",
 		supplyHidden: "La oferta está oculta. Actívala en Filtros para ver los resultados.",
+		selectionHelp:
+			"Haz clic en una barra o fila para seleccionarla. Haz clic de nuevo para quitar la selección.",
+		exploreFacilities: "Explorar sedes",
 		measure: "Medida",
 		slice: "Agrupación",
 		segment: "Segmento",

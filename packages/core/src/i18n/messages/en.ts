@@ -198,6 +198,8 @@ export const en: Messages = {
 		collapse: "Collapse drill-down",
 		filteredBy: "Filtered by",
 		supplyHidden: "Supply is hidden. Turn it on in Filters to see results.",
+		selectionHelp: "Click a bar or row to select it. Click again to clear.",
+		exploreFacilities: "Explore facilities",
 		measure: "Measure",
 		slice: "Slice",
 		segment: "Segment",

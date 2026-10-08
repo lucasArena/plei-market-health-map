@@ -16,6 +16,7 @@ import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLa
 import type {
 	DrillDownChartRow,
 	DrillDownSort,
+	MetricDrillDownFocus,
 	MetricDrillDownPanelProps,
 	MetricDrillDownSelection,
 } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
@@ -32,7 +33,7 @@ export function useMetricDrillDownPanelRules({
 	onClose,
 	triggerRef,
 }: MetricDrillDownPanelProps) {
-	const { scope, period, setMapNavigation } = useMapScope();
+	const { scope, period, setMapNavigation, setMetricFocus } = useMapScope();
 	const { messages, locale } = useMessages();
 	const query = useFacilityListAll();
 	const layers = useMapLayers();
@@ -45,14 +46,17 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const [focus, setFocus] = useState<MetricDrillDownFocus | null>(null);
 	const [previousDepartments, setPreviousDepartments] = useState(departmentKey);
 	if (previousDepartments !== departmentKey) {
 		setPreviousDepartments(departmentKey);
+		setFocus(null);
 		setSelection((current) => ({ ...current, department: undefined }));
 	}
 	const [previousScope, setPreviousScope] = useState(scopeKey);
 	if (previousScope !== scopeKey) {
 		setPreviousScope(scopeKey);
+		setFocus(null);
 		setSelection((current) => ({
 			measure: current.measure,
 			slice: scope.kind === "all" ? "market" : "facility",
@@ -99,6 +103,57 @@ export function useMetricDrillDownPanelRules({
 			}),
 		[period, query.data, scope, selection, gameDepartments, showSupply],
 	);
+	const focusedRow = view.rows.find((row) => row.id === focus?.rowId);
+	const focusedValue = focus?.department
+		? (focusedRow?.departments?.[focus.department] ?? null)
+		: (focusedRow?.value ?? null);
+	const hasFocus = !!focusedRow;
+	useEffect(() => {
+		if (!focusedRow && !selection.marketId && !selection.department) {
+			setMetricFocus(null);
+			return;
+		}
+		const facilityIds = (query.data ?? [])
+			.filter(
+				(facility) =>
+					(scope.kind !== "market" || facility.marketId === scope.id) &&
+					(scope.kind !== "facility" || facility.id === scope.id) &&
+					(!selection.marketId || facility.marketId === selection.marketId) &&
+					(!focusedRow || selection.slice !== "market" || facility.marketId === focusedRow.id) &&
+					(!focusedRow || selection.slice !== "facility" || facility.id === focusedRow.id),
+			)
+			.map((facility) => facility.id);
+		const department =
+			selection.slice === "department" && focusedRow
+				? (focusedRow.id as GameDepartment)
+				: (focus?.department ?? selection.department);
+		setMetricFocus({ facilityIds, department });
+	}, [
+		focusedRow,
+		query.data,
+		scope,
+		selection.marketId,
+		selection.department,
+		selection.slice,
+		focus?.department,
+		setMetricFocus,
+	]);
+	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
+	function toggleFocus(row: MetricDrillDownRow, department?: GameDepartment) {
+		setFocus((current) =>
+			current?.rowId === row.id && current.department === department
+				? null
+				: { rowId: row.id, department },
+		);
+	}
+	const isSelected = (row: MetricDrillDownRow, department?: GameDepartment) =>
+		focus?.rowId === row.id && (department === undefined || focus.department === department);
+	const isDimmed = (row: MetricDrillDownRow, department?: GameDepartment) =>
+		hasFocus &&
+		(!isSelected(row) ||
+			(department !== undefined &&
+				focus?.department !== undefined &&
+				focus.department !== department));
 	const canSegment =
 		selection.measure === "games" && selection.slice !== "department" && !selection.department;
 	const segment = canSegment ? selection.segment : "none";
@@ -163,7 +218,14 @@ export function useMetricDrillDownPanelRules({
 			],
 		};
 	});
+	function tooltipAlignment(row: MetricDrillDownRow) {
+		if (row.id === chartRows[0]?.id) return "left-0";
+		if (row.id === chartRows.at(-1)?.id) return "right-0";
+		return "left-1/2 -translate-x-1/2";
+	}
+
 	function setMeasure(measure: DrillDownMeasure) {
+		setFocus(null);
 		setSelection((current) => ({
 			...current,
 			measure,
@@ -176,6 +238,7 @@ export function useMetricDrillDownPanelRules({
 		}));
 	}
 	function setSlice(slice: DrillDownSlice) {
+		setFocus(null);
 		setSelection((current) => ({
 			...current,
 			slice,
@@ -184,10 +247,15 @@ export function useMetricDrillDownPanelRules({
 		}));
 	}
 	function setSegment(next: DrillDownSegment) {
+		setFocus(null);
 		setSelection((current) => ({ ...current, segment: next }));
 	}
-	function explore(row: MetricDrillDownRow, department?: GameDepartment) {
+	function explore(
+		row: MetricDrillDownRow,
+		department = focus?.rowId === row.id ? focus.department : undefined,
+	) {
 		if (selection.slice !== "market") return;
+		setFocus(null);
 		setSelection((current) => ({
 			...current,
 			marketId: row.id,
@@ -197,6 +265,7 @@ export function useMetricDrillDownPanelRules({
 		}));
 	}
 	function back() {
+		setFocus(null);
 		setSelection((current) => ({
 			...current,
 			marketId: undefined,
@@ -207,9 +276,10 @@ export function useMetricDrillDownPanelRules({
 	}
 	function viewOnMap(row: MetricDrillDownRow) {
 		if (selection.slice === "department") return;
-		if (selection.slice === "market")
+		if (selection.slice === "market") {
 			setMapNavigation({ kind: "market", id: row.id, name: row.name });
-		else {
+			return;
+		} else {
 			const facility = query.data?.find((item) => item.id === row.id);
 			if (!facility) return;
 			setMapNavigation({
@@ -237,12 +307,25 @@ export function useMetricDrillDownPanelRules({
 		setSegment,
 		rows,
 		chartRows,
+		tooltipAlignment,
 		max,
 		ticks,
 		isExpanded,
 		toggleExpanded,
 		handleAnimationEnd,
 		view,
+		headlineValue: hasFocus ? focusedValue : view.total,
+		focusLabel: hasFocus
+			? `${rowName(focusedRow)}${focus?.department ? ` · ${departmentNames[focus.department]}` : ""}`
+			: undefined,
+		toggleFocus,
+		isSelected,
+		isDimmed,
+		showScopeBack: scope.kind !== "all" && !selection.marketId,
+		clearScope: () => {
+			setFocus(null);
+			setMapNavigation({ kind: "all" });
+		},
 		formatValue,
 		rowName,
 		departmentNames,

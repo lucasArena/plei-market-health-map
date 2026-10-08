@@ -181,6 +181,8 @@ export interface Messages {
 		collapse: string;
 		filteredBy: string;
 		supplyHidden: string;
+		selectionHelp: string;
+		exploreFacilities: string;
 		measure: string;
 		slice: string;
 		segment: string;

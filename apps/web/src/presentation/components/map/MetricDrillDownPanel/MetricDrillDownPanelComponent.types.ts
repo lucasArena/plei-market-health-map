@@ -22,6 +22,10 @@ export interface MetricDrillDownSelection {
 	marketName?: string;
 	department?: GameDepartment;
 }
+export interface MetricDrillDownFocus {
+	rowId: string;
+	department?: GameDepartment;
+}
 export type DrillDownSort = "count-desc" | "count-asc" | "name-asc" | "name-desc";
 
 export interface DrillDownChartBar {

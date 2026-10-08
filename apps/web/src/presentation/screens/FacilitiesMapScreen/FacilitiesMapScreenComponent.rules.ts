@@ -1080,6 +1080,8 @@ export function useFacilitiesMapScreenRules() {
 	const { messages } = useMessages();
 	const {
 		period,
+		scope,
+		metricFocus,
 		setScope,
 		mapNavigation,
 		setMapNavigation,
@@ -1164,22 +1166,36 @@ export function useFacilitiesMapScreenRules() {
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
 	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
+	const showMetricFocus = useFeatureFlag("metric-drill-down");
+	const scopedFacilities = useMemo(() => {
+		if (!showMetricFocus) return facilities;
+		return facilities.filter(
+			(facility) =>
+				(scope.kind !== "market" || facility.marketId === scope.id) &&
+				(scope.kind !== "facility" || facility.id === scope.id) &&
+				(!metricFocus || metricFocus.facilityIds.includes(facility.id)),
+		);
+	}, [facilities, scope, metricFocus, showMetricFocus]);
+	const focusedDepartments = useMemo(
+		() => (showMetricFocus && metricFocus?.department ? [metricFocus.department] : gameDepartments),
+		[showMetricFocus, metricFocus?.department, gameDepartments],
+	);
 	const shownFacilities = useMemo(
 		() =>
-			facilitiesForMap(facilities, {
-				gameDepartments,
+			facilitiesForMap(scopedFacilities, {
+				gameDepartments: focusedDepartments,
 				showGames,
 				showTrend,
 				showActiveFacilities,
 				showInactiveFacilities,
 			}),
 		[
-			facilities,
+			scopedFacilities,
 			showActiveFacilities,
 			showInactiveFacilities,
 			showGames,
 			showTrend,
-			gameDepartments,
+			focusedDepartments,
 		],
 	);
 	const featureCollection = useMemo(
@@ -1465,6 +1481,10 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		if (!mapNavigation || !isMapReady) return;
+		if (mapNavigation.kind === "all") {
+			setScope(ALL_MARKETS_SCOPE);
+			setSelectedFacilityId(null);
+		}
 		if (mapNavigation.kind === "facility") {
 			const facility = facilities.find((item) => item.id === mapNavigation.id);
 			if (facility) selectSearchFacility(facility);
@@ -1484,6 +1504,7 @@ export function useFacilitiesMapScreenRules() {
 		selectSearchFacility,
 		selectSearchMarket,
 		setMapNavigation,
+		setScope,
 	]);
 
 	const selectSearchPlace = useCallback(

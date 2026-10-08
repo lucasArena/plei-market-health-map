@@ -6,12 +6,15 @@ import type {
 	MapScope,
 	MapScopeContextValue,
 	MapScopeProviderProps,
+	MetricMapFocus,
 } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 
 export const ALL_MARKETS_SCOPE: MapScope = { kind: "all" };
 
 const MapScopeContext = createContext<MapScopeContextValue>({
 	scope: ALL_MARKETS_SCOPE,
+	metricFocus: null,
+	setMetricFocus: () => undefined,
 	mapNavigation: null,
 	setMapNavigation: () => undefined,
 	selectedFacilityId: null,
@@ -22,6 +25,7 @@ const MapScopeContext = createContext<MapScopeContextValue>({
 });
 
 export function MapScopeProvider({ children }: Readonly<MapScopeProviderProps>) {
+	const [metricFocus, setMetricFocus] = useState<MetricMapFocus | null>(null);
 	const [mapNavigation, setMapNavigation] = useState<MapScope | null>(null);
 	const [scope, setScope] = useState<MapScope>(ALL_MARKETS_SCOPE);
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
@@ -29,6 +33,8 @@ export function MapScopeProvider({ children }: Readonly<MapScopeProviderProps>) 
 	const value = useMemo(
 		() => ({
 			scope,
+			metricFocus,
+			setMetricFocus,
 			setScope,
 			selectedFacilityId,
 			setSelectedFacilityId,
@@ -37,7 +43,7 @@ export function MapScopeProvider({ children }: Readonly<MapScopeProviderProps>) 
 			mapNavigation,
 			setMapNavigation,
 		}),
-		[scope, selectedFacilityId, period, mapNavigation],
+		[scope, selectedFacilityId, period, mapNavigation, metricFocus],
 	);
 	return <MapScopeContext.Provider value={value}>{children}</MapScopeContext.Provider>;
 }

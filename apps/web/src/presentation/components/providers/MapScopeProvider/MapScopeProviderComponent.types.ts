@@ -1,4 +1,5 @@
 import type { StatsPeriod } from "@market-health-map/core/application";
+import type { GameDepartment } from "@market-health-map/core/domain";
 import type { ReactNode } from "react";
 
 export type MapScope =
@@ -6,7 +7,14 @@ export type MapScope =
 	| { kind: "market"; id: string; name: string }
 	| { kind: "facility"; id: string; name: string; marketName: string };
 
+export interface MetricMapFocus {
+	facilityIds: readonly string[];
+	department?: GameDepartment;
+}
+
 export interface MapScopeContextValue {
+	metricFocus: MetricMapFocus | null;
+	setMetricFocus(focus: MetricMapFocus | null): void;
 	scope: MapScope;
 	mapNavigation: MapScope | null;
 	setMapNavigation(scope: MapScope | null): void;
