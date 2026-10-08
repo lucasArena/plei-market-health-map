@@ -4,12 +4,12 @@ import { useCallback, useId, useState } from "react";
 import {
 	AXIS_LABEL_CHAR_WIDTH,
 	AXIS_LABEL_PADDING,
+	AXIS_ZERO_LABEL,
 	CHART_AXIS,
 	CHART_BASELINE,
-	CHART_BOTTOM,
 	CHART_HEIGHT,
-	CHART_TOP,
 	CHART_WIDTH,
+	HAIRLINE_TOP,
 } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.styles";
 import type {
 	ChartPoint,
@@ -54,14 +54,9 @@ export function niceAxisMax(values: number[]): number | null {
 }
 
 export function buildGeometry(values: number[], axisMax: number | null): GamesTrendGeometry {
-	const low = Math.min(...values);
-	const high = axisMax ?? Math.max(...values);
-	const top = axisMax === null ? CHART_TOP : CHART_AXIS;
-	const span = high - low;
+	const high = axisMax ?? Math.max(0, ...values);
 	const toY = (value: number) =>
-		span === 0
-			? (CHART_TOP + CHART_BOTTOM) / 2
-			: CHART_BOTTOM - ((value - low) / span) * (CHART_BOTTOM - top);
+		high <= 0 ? CHART_BASELINE : CHART_BASELINE - (value / high) * (CHART_BASELINE - CHART_AXIS);
 	const points = values.map((value, index) => ({
 		x: ((index + 0.5) / values.length) * CHART_WIDTH,
 		y: toY(value),
@@ -105,11 +100,14 @@ export function useGamesTrendChartRules({ view }: GamesTrendChartProps) {
 		activePoint,
 		align: tooltipAlign(index, view.points.length),
 		axisStart: axisLineStart(view.axisLabel),
+		baselineStart: axisLineStart(AXIS_ZERO_LABEL),
+		zeroLabel: AXIS_ZERO_LABEL,
 		chartHeight: CHART_HEIGHT,
 		chartWidth: CHART_WIDTH,
 		baselineY: CHART_BASELINE,
 		geometry,
 		gradientId,
+		hairlineTop: HAIRLINE_TOP,
 		index,
 		resetActive,
 		setActiveIndex,

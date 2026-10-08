@@ -11,17 +11,15 @@ export const CHART_HEIGHT = 96;
 
 export const CHART_AXIS = 15;
 
-export const AXIS_LEFT = 14;
+export const AXIS_ZERO_LABEL = "0";
 
 export const AXIS_LABEL_CHAR_WIDTH = 7;
 
 export const AXIS_LABEL_PADDING = 10;
 
-export const CHART_TOP = 22;
-
-export const CHART_BOTTOM = 65.5;
-
 export const CHART_BASELINE = 85;
+
+export const HAIRLINE_TOP = 20;
 
 export const GAMES_TREND_COLORS: Record<GamesTrendDirection, GamesTrendColors> = {
 	down: {

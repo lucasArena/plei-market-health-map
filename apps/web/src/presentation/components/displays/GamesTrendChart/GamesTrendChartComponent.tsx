@@ -2,7 +2,6 @@
 
 import { useGamesTrendChartRules } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.rules";
 import {
-	AXIS_LEFT,
 	GAMES_TREND_COLORS,
 	METRIC_PILL,
 	TOOLTIP_ALIGN_CLASS,
@@ -17,17 +16,21 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 		activePoint,
 		align,
 		axisStart,
+		baselineStart,
 		baselineY,
 		chartHeight,
 		chartWidth,
 		geometry,
 		gradientId,
+		hairlineTop,
 		index,
 		resetActive,
 		setActiveIndex,
+		zeroLabel,
 	} = useGamesTrendChartRules(props);
 	const colors = GAMES_TREND_COLORS[view.direction];
 	const toLeft = (x: number) => `${(x / chartWidth) * 100}%`;
+	const toTop = (y: number) => `${(y / chartHeight) * 100}%`;
 
 	return (
 		<div className="space-y-3" data-testid="games-trend-chart">
@@ -73,7 +76,8 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							</linearGradient>
 						</defs>
 						<line
-							x1={AXIS_LEFT}
+							data-testid="games-trend-baseline"
+							x1={baselineStart}
 							x2={chartWidth}
 							y1={baselineY}
 							y2={baselineY}
@@ -107,27 +111,38 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 						<span
 							aria-hidden="true"
 							className="absolute left-0 -translate-y-1/2 text-[11px] leading-[13px] text-[rgba(60,60,67,0.6)] tabular-nums"
-							style={{ top: geometry.axisY }}
+							style={{ top: toTop(geometry.axisY) }}
 						>
 							{view.axisLabel}
 						</span>
 					)}
+					<span
+						aria-hidden="true"
+						className="absolute left-0 -translate-y-1/2 text-[11px] leading-[13px] text-[rgba(60,60,67,0.6)] tabular-nums"
+						style={{ top: toTop(baselineY) }}
+					>
+						{zeroLabel}
+					</span>
 					{activePoint && active && (
 						<>
 							<span
 								aria-hidden="true"
-								className="absolute top-5 w-px -translate-x-1/2 bg-[rgba(60,60,67,0.22)]"
-								style={{ left: toLeft(activePoint.x), height: Math.max(activePoint.y - 20 - 4, 0) }}
+								className="absolute w-px -translate-x-1/2 bg-[rgba(60,60,67,0.22)]"
+								style={{
+									left: toLeft(activePoint.x),
+									top: toTop(hairlineTop),
+									height: toTop(Math.max(activePoint.y - hairlineTop - 4, 0)),
+								}}
 							/>
 							<span
 								aria-hidden="true"
 								className={`absolute size-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full ${colors.halo}`}
-								style={{ left: toLeft(activePoint.x), top: activePoint.y }}
+								style={{ left: toLeft(activePoint.x), top: toTop(activePoint.y) }}
 							/>
 							<span
 								aria-hidden="true"
 								className={`absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white ${colors.dot}`}
-								style={{ left: toLeft(activePoint.x), top: activePoint.y }}
+								style={{ left: toLeft(activePoint.x), top: toTop(activePoint.y) }}
 							/>
 							<span
 								data-testid="games-trend-tooltip"

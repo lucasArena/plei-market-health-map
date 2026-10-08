@@ -48,19 +48,19 @@ const VIEW: GamesTrendView = {
 };
 
 describe("GamesTrendChart rules", () => {
-	it("maps the lowest value to the bottom and the axis maximum to the gridline", () => {
+	it("scales the line from zero on the baseline to the axis maximum on the gridline", () => {
 		const geometry = buildGeometry([10, 20], null);
 
 		expect(geometry.points).toEqual([
-			{ x: 94, y: 65.5 },
-			{ x: 282, y: 22 },
+			{ x: 94, y: 50 },
+			{ x: 282, y: 15 },
 		]);
 		expect(geometry.axisY).toBeNull();
 		expect(geometry.areaPath).toMatch(/Z$/);
 		const withAxis = buildGeometry([41, 50], 50);
 		expect(withAxis.axisY).toBe(15);
-		expect(withAxis.points.map((item) => item.y)).toEqual([65.5, 15]);
-		expect(buildGeometry([5, 5], null).points.map((item) => item.y)).toEqual([43.75, 43.75]);
+		expect(withAxis.points.map((item) => item.y)).toEqual([27.6, 15]);
+		expect(buildGeometry([0, 0], null).points.map((item) => item.y)).toEqual([85, 85]);
 	});
 
 	it("starts the gridline after its label", () => {
@@ -104,6 +104,8 @@ describe("GamesTrendChart", () => {
 		expect(screen.getByText("−3%")).toHaveClass("bg-[#fee2e2]");
 		expect(screen.getByText("vs 178 in the previous 28 days")).toBeInTheDocument();
 		expect(screen.getByTestId("games-trend-axis")).toBeInTheDocument();
+		expect(screen.getByTestId("games-trend-baseline")).toBeInTheDocument();
+		expect(screen.getByText("0")).toBeInTheDocument();
 		expect(screen.getByText("50")).toBeInTheDocument();
 		expect(screen.getByTestId("games-trend-tooltip")).toHaveTextContent("41games · Sep 30");
 		expect(screen.getByText("Sep 30")).toHaveClass("text-[rgba(60,60,67,0.6)]");
