@@ -107,6 +107,24 @@ describe("MetricDrillDownPanel", () => {
 		navigate.mockClear();
 		retry.mockClear();
 	});
+	it("toggles from count cells and keyboard while map icons remain independent", () => {
+		setup();
+		const row = within(screen.getByRole("table")).getByRole("row", { name: /Miami/ });
+		fireEvent.click(within(row).getByText("14"));
+		expect(row).toHaveAttribute("aria-selected", "true");
+		expect(row).not.toHaveClass("outline-1");
+		fireEvent.click(within(row).getByRole("button", { name: "View on map: Miami" }));
+		expect(row).toHaveAttribute("aria-selected", "true");
+		fireEvent.keyDown(within(row).getByRole("button"), { key: "Enter" });
+		expect(row).toHaveAttribute("aria-selected", "true");
+		fireEvent.keyDown(row, { key: "Escape" });
+		expect(row).toHaveAttribute("aria-selected", "true");
+		fireEvent.keyDown(row, { key: "Enter" });
+		expect(row).toHaveAttribute("aria-selected", "false");
+		fireEvent.keyDown(row, { key: " " });
+		expect(row).toHaveAttribute("aria-selected", "true");
+	});
+
 	it("filters chart and table by selection and restores groups when cleared", () => {
 		setup();
 		const bar = screen.getByRole("button", { name: "Miami: 14" });
@@ -119,7 +137,7 @@ describe("MetricDrillDownPanel", () => {
 			facilityIds: ["a", "b"],
 			department: undefined,
 		});
-		fireEvent.click(within(screen.getByRole("table")).getByRole("button", { name: "Miami" }));
+		fireEvent.click(within(screen.getByRole("table")).getByRole("row", { name: /Miami/ }));
 		expect(bar).toHaveAttribute("aria-pressed", "false");
 		expect(screen.getByText("16", { selector: "p" })).toBeInTheDocument();
 		expect(setMetricFocus).toHaveBeenLastCalledWith(null);

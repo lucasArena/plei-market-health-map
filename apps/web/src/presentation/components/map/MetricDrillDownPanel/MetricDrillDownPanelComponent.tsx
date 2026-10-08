@@ -248,7 +248,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 																			? "transparent"
 																			: DRILL_DOWN_COLORS[bar.department ?? "organizers"],
 																}}
-																className="group relative aria-pressed:ring-2 aria-pressed:ring-primary aria-pressed:ring-offset-2 min-h-[2px] w-full shrink-0 cursor-pointer transition-opacity hover:z-10 hover:opacity-90 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+																className="group relative aria-pressed:brightness-110 min-h-[2px] w-full shrink-0 cursor-pointer transition-opacity hover:z-10 hover:opacity-90 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 															>
 																<span
 																	aria-hidden="true"
@@ -339,18 +339,21 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 										{rows.map((row) => (
 											<tr
 												key={row.id}
-												className={`border-b border-border/50 transition-opacity ${rules.isSelected(row) ? "bg-primary/10 outline-1 outline-primary -outline-offset-1" : ""}`}
+												aria-selected={rules.isSelected(row)}
+												tabIndex={0}
+												onClick={() => rules.toggleFocus(row)}
+												onKeyDown={(event) => {
+													if (
+														event.target === event.currentTarget &&
+														(event.key === "Enter" || event.key === " ")
+													) {
+														event.preventDefault();
+														rules.toggleFocus(row);
+													}
+												}}
+												className={`cursor-pointer border-b border-border/30 transition-colors hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${rules.isSelected(row) ? "bg-primary/[0.06]" : ""}`}
 											>
-												<td className="py-2 pr-2">
-													<button
-														type="button"
-														onClick={() => rules.toggleFocus(row)}
-														aria-pressed={rules.isSelected(row)}
-														className="cursor-pointer text-left hover:underline"
-													>
-														{rowName(row)}
-													</button>
-												</td>
+												<td className="py-3 pl-3 pr-2">{rowName(row)}</td>
 												<td className="text-right tabular-nums">{formatValue(row.value)}</td>
 												{segment === "department" &&
 													rules.departments.map((department) => (
@@ -362,7 +365,10 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													<td className="py-2 pl-3 text-right">
 														<button
 															type="button"
-															onClick={() => rules.viewOnMap(row)}
+															onClick={(event) => {
+																event.stopPropagation();
+																rules.viewOnMap(row);
+															}}
 															aria-label={`${m.viewOnMap}: ${rowName(row)}`}
 															title={`${m.viewOnMap}: ${rowName(row)}`}
 															className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/[0.07] hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"

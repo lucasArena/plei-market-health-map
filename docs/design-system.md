@@ -87,3 +87,5 @@ Applied department filters narrow drill-down totals, grouping and segments for t
 
 
 Metric bar and table-name clicks filter results to that group; clicking the selected group again restores the complete chart and table. A selected department segment narrows counts, bars, columns and map Supply to that department. Selection does not move the camera. Row actions are compact map icons with accessible labels and a single native tooltip; they issue metric-focus navigation to zoom to matching facility coordinates, retaining the drawer and metric controls. Textual Explore facilities/View on map actions have been removed. Count sort uses an inline, non-wrapping label and arrow in both drawer widths. Demand keeps its independent filters.
+
+Metric drill-down table rows toggle selection across their full width, with Enter/Space keyboard support and a soft background tint. The map icon stops propagation so zooming does not toggle selection. Bar selection uses a subtle brightness change rather than a box outline; labels remain unobstructed.
