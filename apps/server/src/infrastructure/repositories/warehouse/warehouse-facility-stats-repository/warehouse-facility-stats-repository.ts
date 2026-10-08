@@ -1,6 +1,7 @@
 import type {
 	FacilityGameComparison,
 	FacilityPlayerStats,
+	FacilityPlayerStatsFilters,
 	FacilityReservationStats,
 	FacilityReservationStatsFilters,
 	FacilityStatsRepository,
@@ -188,18 +189,36 @@ export const FACILITY_RESERVATION_STATS_SQL = reservationStatsSql(false);
 
 export const FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL = reservationStatsSql(true);
 
-export const FACILITY_PLAYER_STATS_SQL = `
+function playerStatsSql(byDepartment: boolean): string {
+	const departmentGames = byDepartment
+		? `${ORGANIZER_PARTNERS_CTE},
+department_games as (
+  select r.reservation_id
+  from plei_gold.dim_reservation r
+  ${organizerPartnersJoin("r")}
+  where r.location_id = any($1::int[])
+    and r.date_with_time::date >= ${todayParameterSql(2)} - ${MONTH_DAYS * 2}
+    and r.date_with_time::date < ${todayParameterSql(2)}
+    and ${gameDepartmentCase("r")} = any($3::text[])
+),
+`
+		: "";
+	const departmentFilter = byDepartment
+		? `
+    and f.reservation_id in (select reservation_id from department_games)`
+		: "";
+	return `
 with bounds as (
   select ${todayParameterSql(2)} as today
 ),
-facility_players as (
+${departmentGames}facility_players as (
   select f.player_id, f.player_lifecycle, f.date_played
   from plei_gold.fct_games_opened f
   where f.location_id = any($1::int[])
     and f.date_played >= ${todayParameterSql(2)} - ${MONTH_DAYS * 2}
     and f.date_played < ${todayParameterSql(2)}
     and f.valid_player + 0 = 1 and f.confirmed_game + 0 = 1 and f.open_reservation_games + 0 = 1
-    and f.dropping_date_local is null and f.players_type || '' = 'pleiapp_player'
+    and f.dropping_date_local is null and f.players_type || '' = 'pleiapp_player'${departmentFilter}
     and exists (
       select 1
       from plei_gold.dim_player p
@@ -237,6 +256,11 @@ select
 from bounds b
 left join facility_players f on true
 group by b.today`;
+}
+
+export const FACILITY_PLAYER_STATS_SQL = playerStatsSql(false);
+
+export const FACILITY_PLAYER_STATS_BY_DEPARTMENT_SQL = playerStatsSql(true);
 
 export function toReservationStats(
 	row: WarehouseFacilityReservationStatsRow,
@@ -324,11 +348,22 @@ export class WarehouseFacilityStatsRepository implements FacilityStatsRepository
 		}));
 	}
 
-	async getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
-		const { rows } = await this.warehouse.query<WarehouseFacilityPlayerStatsRow>(
-			FACILITY_PLAYER_STATS_SQL,
-			[facilityIds.map(Number), today],
-		);
+	async getPlayerStats(
+		facilityIds: EntityId[],
+		today: string,
+		filters?: FacilityPlayerStatsFilters,
+	): Promise<FacilityPlayerStats> {
+		const departments = normalizeGameDepartments(filters?.departments);
+		const ids = facilityIds.map(Number);
+		const { rows } = await (departments.length > 0
+			? this.warehouse.query<WarehouseFacilityPlayerStatsRow>(
+					FACILITY_PLAYER_STATS_BY_DEPARTMENT_SQL,
+					[ids, today, departments],
+				)
+			: this.warehouse.query<WarehouseFacilityPlayerStatsRow>(FACILITY_PLAYER_STATS_SQL, [
+					ids,
+					today,
+				]));
 		const [row] = rows;
 		if (!row) {
 			throw new Error(`No player stats row returned for facility ${facilityIds.join(", ")}.`);

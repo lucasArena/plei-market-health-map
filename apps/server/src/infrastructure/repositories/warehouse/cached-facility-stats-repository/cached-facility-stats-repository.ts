@@ -3,6 +3,7 @@ import type {
 	FacilityGameComparison,
 	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
+	FacilityPlayerStatsFilters,
 	FacilityReservationStats,
 	FacilityReservationStatsFilters,
 	FacilityStatsRepository,
@@ -36,7 +37,7 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 	): Promise<FacilityReservationStats> {
 		const now = this.clock.now().getTime();
 		const departments = normalizeGameDepartments(filters?.departments);
-		const key = this.reservationKeyFor(facilityIds, today, departments);
+		const key = this.departmentKeyFor(facilityIds, today, departments);
 		const cached = this.reservationCache.get(key);
 		if (!cached || isExpired(cached, now)) {
 			const fromWarehouse =
@@ -59,12 +60,20 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		return cached.value;
 	}
 
-	getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
+	getPlayerStats(
+		facilityIds: EntityId[],
+		today: string,
+		filters?: FacilityPlayerStatsFilters,
+	): Promise<FacilityPlayerStats> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds, today);
+		const departments = normalizeGameDepartments(filters?.departments);
+		const key = this.departmentKeyFor(facilityIds, today, departments);
 		const cached = this.playerCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getPlayerStats(facilityIds, today);
+			const fromWarehouse =
+				departments.length > 0
+					? this.inner.getPlayerStats(facilityIds, today, { departments })
+					: this.inner.getPlayerStats(facilityIds, today);
 			return remember(this.playerCache, key, fromWarehouse, now + this.playerTtlMs);
 		}
 		return cached.value;
@@ -74,7 +83,7 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		return `${today}|${[...facilityIds].sort().join(",")}`;
 	}
 
-	private reservationKeyFor(
+	private departmentKeyFor(
 		facilityIds: EntityId[],
 		today: string,
 		departments: readonly string[],

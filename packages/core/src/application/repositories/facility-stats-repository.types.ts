@@ -55,8 +55,14 @@ export interface FacilityReservationStatsRepository {
 	): Promise<FacilityReservationStats>;
 }
 
+export type FacilityPlayerStatsFilters = FacilityReservationStatsFilters;
+
 export interface FacilityPlayerStatsRepository {
-	getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats>;
+	getPlayerStats(
+		facilityIds: EntityId[],
+		today: string,
+		filters?: FacilityPlayerStatsFilters,
+	): Promise<FacilityPlayerStats>;
 }
 
 export interface FacilityStatsRepository

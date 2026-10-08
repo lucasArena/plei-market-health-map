@@ -18,8 +18,15 @@ export function makeGetMarketPlayerStats({ facilities, stats, clock }: GetMarket
 	): Promise<MarketPlayerStatsView> {
 		const parsed = getMarketPlayerStatsSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
-		const today = statsToday(clock, parsed.data.timeZone);
-		const visible = selectMarketFacilities(await facilities.listAll(today), parsed.data.market);
-		return toFacilityPlayerStatsView(await stats.getPlayerStats(toMarketMemberIds(visible), today));
+		const { departments, market, timeZone } = parsed.data;
+		const today = statsToday(clock, timeZone);
+		const memberIds = toMarketMemberIds(
+			selectMarketFacilities(await facilities.listAll(today), market),
+		);
+		return toFacilityPlayerStatsView(
+			await (departments.length > 0
+				? stats.getPlayerStats(memberIds, today, { departments })
+				: stats.getPlayerStats(memberIds, today)),
+		);
 	};
 }

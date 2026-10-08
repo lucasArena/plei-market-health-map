@@ -185,3 +185,34 @@ describe("viewer's today in the cache key", () => {
 		]);
 	});
 });
+
+describe("player stats department filter", () => {
+	it("keeps one player entry per department set, sharing the unfiltered one with every department", async () => {
+		const { repository, getPlayerStats } = setup();
+		const ids = ["292" as never, "698" as never];
+
+		await repository.getPlayerStats(ids, TODAY);
+		await repository.getPlayerStats(ids, TODAY, { departments: [] });
+		await repository.getPlayerStats(ids, TODAY, {
+			departments: ["magic", "organizers", "partnerships"],
+		});
+		await repository.getPlayerStats(ids, TODAY, { departments: ["organizers", "magic"] });
+		await repository.getPlayerStats([...ids].reverse(), TODAY, {
+			departments: ["magic", "organizers"],
+		});
+		await repository.getPlayerStats(ids, TODAY, { departments: ["partnerships"] });
+		await repository.getPlayerStats(ids, "2026-10-09", { departments: ["partnerships"] });
+
+		expect(getPlayerStats).toHaveBeenCalledTimes(4);
+		expect(getPlayerStats).toHaveBeenNthCalledWith(1, ids, TODAY);
+		expect(getPlayerStats).toHaveBeenNthCalledWith(2, ids, TODAY, {
+			departments: ["magic", "organizers"],
+		});
+		expect(getPlayerStats).toHaveBeenNthCalledWith(3, ids, TODAY, {
+			departments: ["partnerships"],
+		});
+		expect(getPlayerStats).toHaveBeenNthCalledWith(4, ids, "2026-10-09", {
+			departments: ["partnerships"],
+		});
+	});
+});
