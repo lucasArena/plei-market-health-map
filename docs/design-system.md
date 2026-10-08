@@ -77,3 +77,5 @@ Active and inactive count circles use the exact 35px ring assets from Figma node
 The stable trend arrow is the same 12px arrow geometry as the upward icon, rotated right and colored gray, with the same 1.33px rounded stroke.
 
 MapMetricSelect uses the filter menu glass surface, checkmarks and keyboard navigation. MapScopeProvider carries metric focus and explicit camera navigation separately from shared scope; SidePanelProvider supports the exclusive drill-down panel ID. Existing panel offsets share consistent glass positioning.
+
+MetricDrillDownPanel combines Measure / Slice / Segment, the top-ten bar chart and sortable full-row selection table. It follows applied departments and Supply visibility, publishes metric focus without zoom, and uses a map icon for explicit camera navigation. The glass drawer animates, expands and supports Escape/focus handling. MetricDrillDownToggle gates it behind metric-drill-down and shares exclusive panel state. This slice defines the components; the following integration mounts them in AppHeader and connects Supply filtering and camera commands.
