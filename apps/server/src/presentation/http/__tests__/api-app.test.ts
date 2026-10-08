@@ -226,6 +226,7 @@ describe("session demographics API", () => {
 		expect(services.listAppSessionHeatmap).toHaveBeenCalledWith(
 			{ gender: "Female", skill: "Advanced", ageMin: 25, ageMax: 34 },
 			"week",
+			undefined,
 		);
 		expect((await get("/app-session-heatmap/filters")).body).toEqual({
 			data: { genders: ["Female"], skills: ["Advanced"], ages: [25] },
@@ -242,5 +243,42 @@ describe("session demographics API", () => {
 		const { get, services } = setup();
 		expect((await get(`/app-session-heatmap?${query}`)).status).toBe(422);
 		expect(services.listAppSessionHeatmap).not.toHaveBeenCalled();
+	});
+});
+
+describe("viewer time zone", () => {
+	it("forwards ?tz= to every period endpoint so today follows the browser's zone", async () => {
+		const { get, services } = setup();
+		const tz = "tz=America%2FLos_Angeles";
+		const timeZone = "America/Los_Angeles";
+
+		expect((await get(`/facilities?${tz}`)).status).toBe(200);
+		expect((await get(`/facilities/889?${tz}`)).status).toBe(200);
+		expect((await get(`/facilities/889/reservations?${tz}`)).status).toBe(200);
+		expect((await get(`/facilities/889/players?${tz}`)).status).toBe(200);
+		expect((await get(`/market-summary?market=houston&${tz}`)).status).toBe(200);
+		expect((await get(`/market-summary/insights?period=week&${tz}`)).status).toBe(200);
+		expect((await get(`/market-summary/players?${tz}`)).status).toBe(200);
+		expect((await get(`/app-session-heatmap?period=week&gender=Female&${tz}`)).status).toBe(200);
+
+		expect(services.listFacilities).toHaveBeenCalledWith({ timeZone });
+		expect(services.getFacilityDetail).toHaveBeenCalledWith({ facilityId: "889", timeZone });
+		expect(services.getFacilityReservationStats).toHaveBeenCalledWith({
+			facilityId: "889",
+			timeZone,
+		});
+		expect(services.getFacilityPlayerStats).toHaveBeenCalledWith({ facilityId: "889", timeZone });
+		expect(services.getMarketSummary).toHaveBeenCalledWith({ market: "houston", timeZone });
+		expect(services.getMarketGameInsights).toHaveBeenCalledWith({
+			market: undefined,
+			period: "week",
+			timeZone,
+		});
+		expect(services.getMarketPlayerStats).toHaveBeenCalledWith({ market: undefined, timeZone });
+		expect(services.listAppSessionHeatmap).toHaveBeenCalledWith(
+			{ gender: "Female" },
+			"week",
+			timeZone,
+		);
 	});
 });

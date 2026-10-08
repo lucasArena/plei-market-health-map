@@ -9,6 +9,7 @@ export interface AppSessionHeatmapRepository {
 	listFilterOptions(): Promise<AppSessionFilterOptions>;
 	listSessions(
 		period: StatsPeriod,
-		filters?: AppSessionFilters,
+		filters: AppSessionFilters,
+		today: string,
 	): Promise<AppSessionHeatmapCellView[]>;
 }

@@ -4,6 +4,7 @@ import type {
 } from "@market-health-map/core/application";
 import type { ApiServices } from "@server/presentation/http/api-app.types";
 import { ok } from "@server/presentation/http/respond";
+import { statsTimeZoneFrom } from "@server/presentation/http/stats-time-zone";
 import { type Context, Hono } from "hono";
 
 function departmentsFrom(context: Context): Pick<GetMarketSummaryInput, "departments"> {
@@ -24,6 +25,7 @@ export function marketSummaryController(services: () => ApiServices) {
 				await services().getMarketSummary({
 					market: context.req.query("market"),
 					...departmentsFrom(context),
+					...statsTimeZoneFrom(context),
 				}),
 			),
 		)
@@ -33,10 +35,16 @@ export function marketSummaryController(services: () => ApiServices) {
 					market: context.req.query("market"),
 					period: context.req.query("period") as GetMarketGameInsightsInput["period"],
 					...departmentsFrom(context),
+					...statsTimeZoneFrom(context),
 				}),
 			),
 		)
 		.get("/players", async (context) =>
-			ok(await services().getMarketPlayerStats({ market: context.req.query("market") })),
+			ok(
+				await services().getMarketPlayerStats({
+					market: context.req.query("market"),
+					...statsTimeZoneFrom(context),
+				}),
+			),
 		);
 }

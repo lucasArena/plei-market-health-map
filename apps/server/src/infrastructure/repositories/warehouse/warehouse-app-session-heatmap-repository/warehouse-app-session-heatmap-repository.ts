@@ -1,12 +1,11 @@
-import type {
-	AppSessionFilters,
-	AppSessionHeatmapCellView,
-	AppSessionHeatmapRepository,
-	Clock,
-	StatsPeriod,
+import {
+	type AppSessionFilters,
+	type AppSessionHeatmapCellView,
+	type AppSessionHeatmapRepository,
+	STATS_PERIOD_DAYS,
+	type StatsPeriod,
 } from "@market-health-map/core/application";
-import { lastCompletedWeekStart } from "@market-health-map/core/domain";
-import { SystemClock } from "@server/infrastructure/providers/system/system-clock/system-clock";
+import { addDays } from "@market-health-map/core/domain";
 import type {
 	WarehouseAppSessionFilterRow,
 	WarehouseAppSessionHeatmapRow,
@@ -20,19 +19,8 @@ FROM plei_gold.dim_player
 WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)
   OR (confirmed_at >= CURRENT_DATE - 28 AND confirmed_at < CURRENT_DATE AND players_type = 'pleiapp_player')`;
 
-const DAY_MS = 86_400_000;
-
-function shiftDays(isoDate: string, days: number): string {
-	return new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
-}
-
-export function sessionWindow(period: StatsPeriod, now: Date): [start: string, end: string] {
-	if (period === "week") {
-		const start = lastCompletedWeekStart(now);
-		return [start, shiftDays(start, 7)];
-	}
-	const today = now.toISOString().slice(0, 10);
-	return [shiftDays(today, -28), today];
+export function sessionWindow(period: StatsPeriod, today: string): [start: string, end: string] {
+	return [addDays(today, -STATS_PERIOD_DAYS[period]), today];
 }
 
 export const APP_SESSION_HEATMAP_SQL = `
@@ -62,8 +50,8 @@ WITH region_coordinates AS (
 SELECT c.lat, c.lng, COUNT(DISTINCT p.player_id)::bigint AS session_weight
 FROM plei_gold.dim_player p
 JOIN region_coordinates c ON c.region_id = p.region_id
-WHERE p.confirmed_at >= CURRENT_DATE - 28
-  AND p.confirmed_at < CURRENT_DATE
+WHERE p.confirmed_at >= $1::date - 28
+  AND p.confirmed_at < $1::date
   AND p.players_type = 'pleiapp_player'
 GROUP BY c.lat, c.lng`;
 
@@ -82,10 +70,7 @@ export function toAppSessionHeatmapCell(
 }
 
 export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRepository {
-	constructor(
-		private readonly warehouse: WarehouseQueryable,
-		private readonly clock: Clock = new SystemClock(),
-	) {}
+	constructor(private readonly warehouse: WarehouseQueryable) {}
 
 	async listFilterOptions() {
 		const { rows } = await this.warehouse.query<WarehouseAppSessionFilterRow>(
@@ -107,11 +92,12 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 
 	async listSessions(
 		period: StatsPeriod,
-		filters: AppSessionFilters = {},
+		filters: AppSessionFilters,
+		today: string,
 	): Promise<AppSessionHeatmapCellView[]> {
 		const isRegistrations = filters.metric === "registrations";
 		const predicates: string[] = [];
-		const values: unknown[] = isRegistrations ? [] : sessionWindow(period, this.clock.now());
+		const values: unknown[] = isRegistrations ? [today] : sessionWindow(period, today);
 		for (const [column, value, operator] of [
 			["NULLIF(TRIM(p.gender::text), '')", filters.gender, "="],
 			["NULLIF(TRIM(p.skill_description::text), '')", filters.skill, "="],

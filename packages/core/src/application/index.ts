@@ -29,7 +29,9 @@ export type { AppSessionHeatmapCellView } from "@core/application/dtos/app-sessi
 export {
 	DEFAULT_STATS_PERIOD,
 	getFacilityDetailSchema,
+	STATS_PERIOD_DAYS,
 	STATS_PERIODS,
+	statsTimeZoneSchema,
 } from "@core/application/dtos/facility-detail-dto";
 export type {
 	ActivityPeriodView,
@@ -191,4 +193,5 @@ export { makeRecordDailyActivity } from "@core/application/services/record-daily
 export { makeRecordLogin } from "@core/application/services/record-login";
 export { makeSearchPlaces } from "@core/application/services/search-places";
 export { makeSetFeatureFlag } from "@core/application/services/set-feature-flag";
+export { statsToday } from "@core/application/services/stats-today";
 export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

@@ -7,7 +7,7 @@ import type { ListAppSessionHeatmapDeps } from "@core/application/services/list-
 export function makeListAppSessionFilterOptions({
 	appSessionHeatmap,
 	enabledFeatureFlags,
-}: ListAppSessionHeatmapDeps) {
+}: Omit<ListAppSessionHeatmapDeps, "clock">) {
 	return async function listAppSessionFilterOptions() {
 		const { enabled } = await enabledFeatureFlags();
 		if (!demographicFiltersEnabled(enabled)) {

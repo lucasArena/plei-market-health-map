@@ -10,15 +10,22 @@ import { isIgnoredFacility } from "@server/infrastructure/repositories/warehouse
 import { isTestFacility } from "@server/infrastructure/repositories/warehouse/is-test-facility/is-test-facility";
 import { mergeColocatedFacilities } from "@server/infrastructure/repositories/warehouse/merge-colocated-facilities/merge-colocated-facilities";
 import { isWithinServiceArea } from "@server/infrastructure/repositories/warehouse/service-area/service-area";
-import { WAREHOUSE_TODAY_SQL } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
+import {
+	inLastDaysSql,
+	inPreviousDaysSql,
+	todayParameterSql,
+	WEEK_DAYS,
+} from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
 	WarehouseLocationRow,
 	WarehouseQueryable,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository.types";
 
+const GAME_DATE = "g.date_with_time::date";
+
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
-  select ${WAREHOUSE_TODAY_SQL} as today, date_trunc('week', ${WAREHOUSE_TODAY_SQL})::date as this_week
+  select ${todayParameterSql(1)} as today
 ),
 ${ORGANIZER_PARTNERS_CTE},
 classified_games as (
@@ -46,9 +53,9 @@ facility_activity as (
          count(distinct r.reservation_id) filter (where r.in_previous_week and r.department = 'partnerships') as partnership_games_previous_week
   from (
     select g.location_id, g.reservation_id, g.department,
-           g.date_with_time::date >= b.this_week - 7 and g.date_with_time::date < b.this_week as in_last_week,
-           g.date_with_time::date >= b.this_week - 14 and g.date_with_time::date < b.this_week - 7 as in_previous_week,
-           g.date_with_time::date >= b.today - ${GAMES_WINDOW_DAYS} as in_current
+           ${inLastDaysSql(GAME_DATE, "b.today", WEEK_DAYS)} as in_last_week,
+           ${inPreviousDaysSql(GAME_DATE, "b.today", WEEK_DAYS)} as in_previous_week,
+           ${inLastDaysSql(GAME_DATE, "b.today", GAMES_WINDOW_DAYS)} as in_current
     from classified_games g
     cross join bounds b
     where g.reservation_type = 'OpenReservation'
@@ -176,8 +183,10 @@ export function toFacility(row: WarehouseLocationRow): Facility | null {
 export class WarehouseFacilityRepository implements FacilityRepository {
 	constructor(private readonly warehouse: WarehouseQueryable) {}
 
-	async listAll(): Promise<Facility[]> {
-		const { rows } = await this.warehouse.query<WarehouseLocationRow>(ACTIVE_LOCATIONS_SQL);
+	async listAll(today: string): Promise<Facility[]> {
+		const { rows } = await this.warehouse.query<WarehouseLocationRow>(ACTIVE_LOCATIONS_SQL, [
+			today,
+		]);
 		return mergeColocatedFacilities(
 			rows.flatMap((row) => {
 				const facility = toFacility(row);

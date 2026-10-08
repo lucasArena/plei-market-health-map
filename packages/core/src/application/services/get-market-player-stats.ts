@@ -10,14 +10,16 @@ import {
 	toMarketMemberIds,
 } from "@core/application/mappers/market-summary-mapper";
 import type { GetMarketPlayerStatsDeps } from "@core/application/services/get-market-player-stats.types";
+import { statsToday } from "@core/application/services/stats-today";
 
-export function makeGetMarketPlayerStats({ facilities, stats }: GetMarketPlayerStatsDeps) {
+export function makeGetMarketPlayerStats({ facilities, stats, clock }: GetMarketPlayerStatsDeps) {
 	return async function getMarketPlayerStats(
 		input: GetMarketPlayerStatsInput = {},
 	): Promise<MarketPlayerStatsView> {
 		const parsed = getMarketPlayerStatsSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
-		const visible = selectMarketFacilities(await facilities.listAll(), parsed.data.market);
-		return toFacilityPlayerStatsView(await stats.getPlayerStats(toMarketMemberIds(visible)));
+		const today = statsToday(clock, parsed.data.timeZone);
+		const visible = selectMarketFacilities(await facilities.listAll(today), parsed.data.market);
+		return toFacilityPlayerStatsView(await stats.getPlayerStats(toMarketMemberIds(visible), today));
 	};
 }
