@@ -1,8 +1,11 @@
 import { NotFoundError } from "@core/application/errors/not-found-error";
 import { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
+import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { asEntityId, Facility } from "@core/domain";
+
+const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 const FACILITY = Facility.create({
 	id: asEntityId("889"),
@@ -49,6 +52,7 @@ const COUNTS = {
 function setup(counts = COUNTS) {
 	const stats = new InMemoryFacilityStatsRepository(counts);
 	const getFacilityDetail = makeGetFacilityDetail({
+		clock: TEST_CLOCK,
 		facilities: new InMemoryFacilityRepository([FACILITY]),
 		stats,
 	});
@@ -101,6 +105,7 @@ describe("getFacilityDetail", () => {
 		});
 		const stats = new InMemoryFacilityStatsRepository(COUNTS);
 		const getFacilityDetail = makeGetFacilityDetail({
+			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository([merged]),
 			stats,
 		});

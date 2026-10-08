@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
+import { withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 
 describe("useFacilityListAll", () => {
@@ -18,6 +19,6 @@ describe("useFacilityListAll", () => {
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 		expect(result.current.data).toEqual([{ id: "f1" }]);
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/facilities");
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(withStatsTimeZone("/api/v1/facilities"));
 	});
 });

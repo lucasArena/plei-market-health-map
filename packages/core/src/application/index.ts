@@ -29,7 +29,9 @@ export type { AppSessionHeatmapCellView } from "@core/application/dtos/app-sessi
 export {
 	DEFAULT_STATS_PERIOD,
 	getFacilityDetailSchema,
+	STATS_PERIOD_DAYS,
 	STATS_PERIODS,
+	statsTimeZoneSchema,
 } from "@core/application/dtos/facility-detail-dto";
 export type {
 	ActivityPeriodView,
@@ -87,12 +89,15 @@ export type {
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
 export {
+	gameDepartmentsSchema,
 	getMarketGameInsightsSchema,
+	getMarketPlayerStatsSchema,
 	getMarketSummarySchema,
 } from "@core/application/dtos/market-summary-dto";
 export type {
 	FacilityGameChangeView,
 	GetMarketGameInsightsInput,
+	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
 	MarketGameChangeView,
 	MarketPlayerStatsView,
@@ -161,8 +166,10 @@ export type {
 	FacilityGameComparison,
 	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
+	FacilityPlayerStatsFilters,
 	FacilityPlayerStatsRepository,
 	FacilityReservationStats,
+	FacilityReservationStatsFilters,
 	FacilityReservationStatsRepository,
 	FacilityStatsRepository,
 	FacilityWeeklyCounts,
@@ -176,6 +183,18 @@ export { makeGetFacilityReservationStats } from "@core/application/services/get-
 export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
+export {
+	DRILL_DOWN_DEPARTMENTS,
+	makeGetMetricDrillDown,
+} from "@core/application/services/get-metric-drill-down";
+export type {
+	DrillDownMeasure,
+	DrillDownSegment,
+	DrillDownSlice,
+	MetricDrillDownInput,
+	MetricDrillDownRow,
+	MetricDrillDownView,
+} from "@core/application/services/get-metric-drill-down.types";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
 export { makeListAppSessionFilterOptions } from "@core/application/services/list-app-session-filter-options";
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
@@ -187,4 +206,5 @@ export { makeRecordDailyActivity } from "@core/application/services/record-daily
 export { makeRecordLogin } from "@core/application/services/record-login";
 export { makeSearchPlaces } from "@core/application/services/search-places";
 export { makeSetFeatureFlag } from "@core/application/services/set-feature-flag";
+export { statsToday } from "@core/application/services/stats-today";
 export { makeSubmitFeedback } from "@core/application/services/submit-feedback";

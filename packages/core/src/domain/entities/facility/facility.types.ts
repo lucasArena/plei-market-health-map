@@ -10,11 +10,9 @@ export interface FacilityMetrics {
 	activePlayers: number;
 	gamesLastWeek: number;
 	gamesLast28Days: number;
-	/** Games in the equal length window just before the last 28 days. */
 	gamesPrevious28Days?: number;
 	gamesPreviousByDepartment?: GameDepartmentCounts;
 	gamesLastWeekByDepartment?: GameDepartmentCounts;
-	/** Games in the completed Monday to Sunday week before the last one. */
 	gamesPreviousWeek?: number;
 	gamesPreviousWeekByDepartment?: GameDepartmentCounts;
 	utilization: number;

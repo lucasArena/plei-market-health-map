@@ -1,4 +1,5 @@
 import type { KeyboardEvent, ReactNode, RefObject } from "react";
+import type { useAppSessionFiltersRules } from "@/presentation/components/map/AppSessionFilters/AppSessionFiltersComponent.rules";
 
 export interface AppSessionFiltersProps {
 	showSessions: boolean;
@@ -61,3 +62,5 @@ export interface StepChevronProps {
 export interface CheckMarkProps {
 	selected: boolean;
 }
+
+export type SessionFilterRules = ReturnType<typeof useAppSessionFiltersRules>;

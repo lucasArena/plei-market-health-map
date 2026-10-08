@@ -15,7 +15,7 @@ function SelectedPeriod() {
 }
 
 describe("PeriodSwitch", () => {
-	it("starts on the last week and slides the green thumb when switching", () => {
+	it("starts on the last 7 days and slides the green thumb when switching", () => {
 		const widths = { "7D": 32, "28D": 40 };
 		const lefts = { "7D": 3, "28D": 35 };
 		const originalOffsetLeft = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetLeft");
@@ -52,7 +52,10 @@ describe("PeriodSwitch", () => {
 		expect(group).toContainElement(week);
 		expect(group).toContainElement(thumb);
 		expect(week).toHaveAttribute("aria-pressed", "true");
-		expect(week).toHaveAttribute("title", "Last week compared with the week before");
+		expect(week).toHaveAttribute(
+			"title",
+			"Last 7 days, ending yesterday, compared with the 7 days before",
+		);
 		expect(week).toHaveClass("text-white", "active:scale-[0.94]");
 		expect(week).not.toHaveClass("bg-pleiful-pitch-green-80");
 		expect(month).toHaveAttribute("aria-pressed", "false");
@@ -89,5 +92,16 @@ describe("PeriodSwitch", () => {
 
 		expect(screen.queryByRole("group")).not.toBeInTheDocument();
 		mockPathname.mockReturnValue("/");
+	});
+
+	it("shows the green thumb again when returning to the map from another page", () => {
+		mockPathname.mockReturnValue("/admin/metrics");
+		const { rerender } = renderWithMessages(<PeriodSwitch />);
+		expect(screen.queryByRole("group")).not.toBeInTheDocument();
+
+		mockPathname.mockReturnValue("/");
+		rerender(<PeriodSwitch />);
+
+		expect(screen.getByTestId("period-switch-thumb")).toHaveStyle({ opacity: "1" });
 	});
 });

@@ -3,6 +3,7 @@ import type {
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
 	GetMarketGameInsightsInput,
+	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
 	IssueTracker,
 	ListAppMetricsPeopleInput,
@@ -148,10 +149,6 @@ function buildFacilityRepositories() {
 	};
 }
 
-/**
- * The flags server code honors. Under `next dev` every flag is on, matching `useFeatureFlag`, so
- * local UI and data agree; other builds read the saved flags.
- */
 function enabledFeatureFlags() {
 	if (process.env.NODE_ENV === "development") {
 		return Promise.resolve({ enabled: [...FEATURE_FLAG_KEYS] });
@@ -160,11 +157,12 @@ function enabledFeatureFlags() {
 }
 
 function buildFacilities() {
-	const repositories = buildFacilityRepositories();
+	const repositories = { ...buildFacilityRepositories(), clock: new SystemClock() };
 	return {
 		listFacilities: makeListFacilities({
 			facilities: repositories.facilities,
 			enabledFeatureFlags,
+			clock: repositories.clock,
 		}),
 		getFacilityDetail: makeGetFacilityDetail(repositories),
 		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
@@ -189,6 +187,7 @@ function buildAppSessionHeatmap() {
 	const listAppSessionHeatmap = makeListAppSessionHeatmap({
 		appSessionHeatmap,
 		enabledFeatureFlags,
+		clock: new SystemClock(),
 	});
 	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({
 		appSessionHeatmap,
@@ -196,9 +195,13 @@ function buildAppSessionHeatmap() {
 	});
 	return {
 		listAppSessionFilterOptions,
-		listAppSessionHeatmap: async (filters: AppSessionFilters = {}, period?: StatsPeriod) => {
+		listAppSessionHeatmap: async (
+			filters: AppSessionFilters = {},
+			period?: StatsPeriod,
+			timeZone?: string,
+		) => {
 			try {
-				return await listAppSessionHeatmap(filters, period);
+				return await listAppSessionHeatmap(filters, period, timeZone);
 			} catch (error) {
 				console.error(
 					"[app-session-heatmap]",
@@ -292,9 +295,9 @@ function feedbackModule() {
 const container = {
 	recordLogin: (input: RecordLoginInput) => loginModule().recordLogin(input),
 	listRecentLogins: (input?: ListRecentLoginsInput) => loginModule().listRecentLogins(input),
-	listFacilities: () => facilityModule().listFacilities(),
-	listAppSessionHeatmap: (filters?: AppSessionFilters, period?: StatsPeriod) =>
-		appSessionHeatmapModule().listAppSessionHeatmap(filters, period),
+	listFacilities: (input?: { timeZone?: string }) => facilityModule().listFacilities(input),
+	listAppSessionHeatmap: (filters?: AppSessionFilters, period?: StatsPeriod, timeZone?: string) =>
+		appSessionHeatmapModule().listAppSessionHeatmap(filters, period, timeZone),
 	listAppSessionFilterOptions: () => appSessionHeatmapModule().listAppSessionFilterOptions(),
 	getFacilityDetail: (input: GetFacilityDetailInput) => facilityModule().getFacilityDetail(input),
 	getFacilityReservationStats: (input: GetFacilityReservationStatsInput) =>
@@ -304,7 +307,7 @@ const container = {
 	getMarketGameInsights: (input?: GetMarketGameInsightsInput) =>
 		facilityModule().getMarketGameInsights(input),
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
-	getMarketPlayerStats: (input?: GetMarketSummaryInput) =>
+	getMarketPlayerStats: (input?: GetMarketPlayerStatsInput) =>
 		facilityModule().getMarketPlayerStats(input),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
 	recordDailyActivity: (input: RecordDailyActivityInput) =>

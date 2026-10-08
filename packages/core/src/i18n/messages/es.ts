@@ -152,14 +152,14 @@ export const es: Messages = {
 		switchLabel: "Período de comparación",
 		week: {
 			short: "7D",
-			title: "La semana pasada frente a la anterior",
-			span: "semana pasada",
-			within: "la semana pasada",
-			comparison: "la semana anterior",
+			title: "Últimos 7 días, hasta ayer, frente a los 7 anteriores",
+			span: "últimos 7 días",
+			within: "en los últimos 7 días",
+			comparison: "los 7 días anteriores",
 		},
 		month: {
 			short: "28D",
-			title: "Últimos 28 días frente a los 28 anteriores",
+			title: "Últimos 28 días, hasta ayer, frente a los 28 anteriores",
 			span: "últimos 28 días",
 			within: "en los últimos 28 días",
 			comparison: "los 28 días anteriores",
@@ -195,6 +195,45 @@ export const es: Messages = {
 		busy: "Concurrido",
 		lastPlayed: "Último partido jugado el {date}",
 		neverPlayed: "Aún no se jugaron partidos",
+	},
+	drillDown: {
+		title: "Desglose de métricas",
+		expand: "Ampliar desglose",
+		collapse: "Contraer desglose",
+		filteredBy: "Filtrado por",
+		supplyHidden: "La oferta está oculta. Actívala en Filtros para ver los resultados.",
+		selectionHelp:
+			"Haz clic en una barra o fila para seleccionarla. Haz clic de nuevo para quitar la selección.",
+		measure: "Medida",
+		slice: "Agrupación",
+		segment: "Segmento",
+		measureHelp: "¿Qué estamos midiendo?",
+		sliceHelp: "Agrupar los resultados por…",
+		segmentHelp: "Dividir cada grupo por…",
+		help: "La agrupación crea grupos. El segmento colorea las partes de cada grupo.",
+		games: "Partidos jugados",
+		activeFacilities: "Instalaciones activas",
+		market: "Mercado",
+		facility: "Instalación",
+		department: "Departamento",
+		none: "Ninguno",
+		selectedDepartmentHelp:
+			"Se muestra el departamento seleccionado. Vuelve para comparar departamentos otra vez.",
+		segmentUnavailable:
+			"Los segmentos por departamento están disponibles para partidos agrupados por mercado o instalación. Las instalaciones pueden atender a varios departamentos.",
+		topTen: "Los 10 mayores por cantidad",
+		chart: "Métrica por grupo",
+		value: "Cantidad",
+		viewOnMap: "Ver en el mapa",
+		back: "Volver al resumen",
+		allMarkets: "Todos los mercados",
+		loading: "Cargando métricas…",
+		failed: "No se pudieron cargar las métricas.",
+		retry: "Intentar de nuevo",
+		empty: "No hay actividad en este ámbito y período.",
+		unavailable: "No disponible",
+		incomplete:
+			"Algunos recuentos no están disponibles. No se muestran totales con datos faltantes.",
 	},
 	marketSummary: {
 		open: "Resumen del mercado",
@@ -326,6 +365,8 @@ export const es: Messages = {
 		requires: "Solo tiene efecto mientras {flag} esté activada.",
 		waiting: "Activada, esperando {flag}",
 		descriptions: {
+			"metric-drill-down":
+				"Explorar partidos e instalaciones activas por mercado, instalación y departamento.",
 			"facility-games-layer":
 				"Mostrar el selector de partidos con conteos por grupo e instalación.",
 			"facility-games-trend":

@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
       - name: Move the ticket to Code Review
         run: node .github/scripts/linear/move-issues.mjs "Code Review" "$TITLE" "$HEAD_REF" --skip-from Done,Released,Canceled
 
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
       - name: Move the ticket to Feedback
         run: node .github/scripts/linear/move-issues.mjs Feedback "$TITLE" "$HEAD_REF" --skip-from Done,Released,Canceled
 
@@ -55,6 +55,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
       - name: Move the ticket to Done
         run: node .github/scripts/linear/move-issues.mjs Done "$TITLE" "$HEAD_REF" --skip-from Released,Canceled

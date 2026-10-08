@@ -157,12 +157,12 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByTestId("market-summary-text-skeleton")).toBeInTheDocument();
 	});
 
-	it("closes from the button and reports the end of the animation", () => {
+	it("omits a close button and reports the end of the closing animation", () => {
 		const rules = rulesWith({ isClosing: true });
 		mockRules.mockReturnValue(rules);
 
 		render(<MarketSummaryPanel {...PROPS} isClosing />);
-		fireEvent.click(screen.getByRole("button", { name: "Close market summary" }));
+		expect(screen.queryByRole("button", { name: "Close market summary" })).not.toBeInTheDocument();
 		const panel = screen.getByRole("complementary");
 		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
 
@@ -173,7 +173,6 @@ describe("MarketSummaryPanel", () => {
 			"right-[var(--map-frame)]",
 			"shadow-[var(--map-shadow)]",
 		);
-		expect(rules.onClose).toHaveBeenCalled();
 		expect(rules.handleAnimationEnd).toHaveBeenCalled();
 	});
 

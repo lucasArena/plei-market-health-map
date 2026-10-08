@@ -73,7 +73,6 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		isSummaryPending,
 		isInsightsFailed,
 		messages,
-		onClose,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -86,14 +85,6 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 			onAnimationEnd={handleAnimationEnd}
 			className={`${isClosing ? "panel-slide-out" : "panel-slide-in"} ${MARKET_SUMMARY_PANEL_CLASS}`}
 		>
-			<button
-				type="button"
-				onClick={onClose}
-				aria-label={messages.close}
-				className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-			>
-				×
-			</button>
 			<div className="min-h-0 flex-1 overflow-y-auto">
 				{status === "loading" && <MarketSummarySkeleton />}
 				{status === "error" && (

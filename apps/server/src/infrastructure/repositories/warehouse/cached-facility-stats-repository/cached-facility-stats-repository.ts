@@ -3,10 +3,12 @@ import type {
 	FacilityGameComparison,
 	FacilityGameComparisonRepository,
 	FacilityPlayerStats,
+	FacilityPlayerStatsFilters,
 	FacilityReservationStats,
+	FacilityReservationStatsFilters,
 	FacilityStatsRepository,
 } from "@market-health-map/core/application";
-import type { EntityId } from "@market-health-map/core/domain";
+import { type EntityId, normalizeGameDepartments } from "@market-health-map/core/domain";
 import {
 	isExpired,
 	remember,
@@ -28,40 +30,65 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		private readonly playerTtlMs: number = FACILITY_PLAYER_STATS_CACHE_TTL_MS,
 	) {}
 
-	getReservationStats(facilityIds: EntityId[]): Promise<FacilityReservationStats> {
+	getReservationStats(
+		facilityIds: EntityId[],
+		today: string,
+		filters?: FacilityReservationStatsFilters,
+	): Promise<FacilityReservationStats> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds);
+		const departments = normalizeGameDepartments(filters?.departments);
+		const key = this.departmentKeyFor(facilityIds, today, departments);
 		const cached = this.reservationCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getReservationStats(facilityIds);
+			const fromWarehouse =
+				departments.length > 0
+					? this.inner.getReservationStats(facilityIds, today, { departments })
+					: this.inner.getReservationStats(facilityIds, today);
 			return remember(this.reservationCache, key, fromWarehouse, now + this.ttlMs);
 		}
 		return cached.value;
 	}
 
-	getGameComparisons(facilityIds: EntityId[]): Promise<FacilityGameComparison[]> {
+	getGameComparisons(facilityIds: EntityId[], today: string): Promise<FacilityGameComparison[]> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds);
+		const key = this.keyFor(facilityIds, today);
 		const cached = this.comparisonCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getGameComparisons(facilityIds);
+			const fromWarehouse = this.inner.getGameComparisons(facilityIds, today);
 			return remember(this.comparisonCache, key, fromWarehouse, now + this.ttlMs);
 		}
 		return cached.value;
 	}
 
-	getPlayerStats(facilityIds: EntityId[]): Promise<FacilityPlayerStats> {
+	getPlayerStats(
+		facilityIds: EntityId[],
+		today: string,
+		filters?: FacilityPlayerStatsFilters,
+	): Promise<FacilityPlayerStats> {
 		const now = this.clock.now().getTime();
-		const key = this.keyFor(facilityIds);
+		const departments = normalizeGameDepartments(filters?.departments);
+		const key = this.departmentKeyFor(facilityIds, today, departments);
 		const cached = this.playerCache.get(key);
 		if (!cached || isExpired(cached, now)) {
-			const fromWarehouse = this.inner.getPlayerStats(facilityIds);
+			const fromWarehouse =
+				departments.length > 0
+					? this.inner.getPlayerStats(facilityIds, today, { departments })
+					: this.inner.getPlayerStats(facilityIds, today);
 			return remember(this.playerCache, key, fromWarehouse, now + this.playerTtlMs);
 		}
 		return cached.value;
 	}
 
-	private keyFor(facilityIds: EntityId[]): string {
-		return [...facilityIds].sort().join(",");
+	private keyFor(facilityIds: EntityId[], today: string): string {
+		return `${today}|${[...facilityIds].sort().join(",")}`;
+	}
+
+	private departmentKeyFor(
+		facilityIds: EntityId[],
+		today: string,
+		departments: readonly string[],
+	): string {
+		const key = this.keyFor(facilityIds, today);
+		return departments.length > 0 ? `${key}|departments=${departments.join(",")}` : key;
 	}
 }

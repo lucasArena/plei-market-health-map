@@ -17,7 +17,6 @@ export function toFeatureFlagView(
 	};
 }
 
-/** A flag is in effect when it is on and every flag it requires is in effect too. */
 export function isFeatureFlagInEffect(
 	key: string,
 	records: Map<string, FeatureFlagRecord>,

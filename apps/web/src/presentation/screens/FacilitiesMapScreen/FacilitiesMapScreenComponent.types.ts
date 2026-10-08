@@ -1,6 +1,7 @@
 import type { FacilityPointView } from "@market-health-map/core/application";
 import type { GamesTrend, GamesTrendLevel } from "@market-health-map/core/domain";
 import type { Feature, FeatureCollection, Point } from "geojson";
+import type { trendTipShape } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
 
 export interface HoverPlacement {
 	x: number;
@@ -23,9 +24,7 @@ export interface FacilityHover extends HoverPlacement {
 	kind: "facility";
 	facility: FacilityPointView;
 	viewport: ClusterHoverViewport;
-	/** Games mode only: the games count the hover reads instead of facilities. */
 	games?: number;
-	/** Games mode with Show trend on only, so hover stays unchanged with the trend off. */
 	trend?: GamesTrend;
 }
 
@@ -35,9 +34,7 @@ export interface ClusterHover extends HoverPlacement {
 	total: number;
 	facilities: FacilityPointView[];
 	viewport: ClusterHoverViewport;
-	/** Games mode only: the cluster's games count, read instead of its facility count. */
 	games?: number;
-	/** Games mode with Show trend on only, so hover stays unchanged with the trend off. */
 	trend?: GamesTrend;
 }
 
@@ -142,9 +139,7 @@ export interface ClusterGlassBadge {
 	x: number;
 	y: number;
 	active: boolean;
-	/** Only while Show trend is on with the Games layer, and never on a no games marker. */
 	trend?: GamesTrendLevel;
-	/** Games layer only: no games in the current window, drawn in the inactive marker style. */
 	noGames?: boolean;
 }
 
@@ -154,9 +149,7 @@ export interface FacilityGlassBadge {
 	x: number;
 	y: number;
 	active: boolean;
-	/** Only while Show trend is on with the Games layer, and never on a no games marker. */
 	trend?: GamesTrendLevel;
-	/** Games layer only: no games in the current window, drawn in the inactive marker style. */
 	noGames?: boolean;
 }
 
@@ -177,3 +170,19 @@ export interface SessionLegendFiltersProps {
 	canRemove: boolean;
 	onRemove: (field: SessionLegendFilterField, id: string) => void;
 }
+
+export interface InactiveGamesMarkerStyle {
+	opacity: number;
+	ringWidth: number;
+	ringStyle: "solid" | "dashed";
+	ringColor: string;
+	label: string;
+}
+
+export interface TrendRing {
+	disc: number;
+	outer: number;
+	inner: number;
+}
+
+export type TrendTipShape = ReturnType<typeof trendTipShape>;

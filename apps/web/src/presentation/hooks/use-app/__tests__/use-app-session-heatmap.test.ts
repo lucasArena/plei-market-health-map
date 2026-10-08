@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
+import { withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import {
 	useAppSessionFilterOptions,
 	useAppSessionHeatmap,
@@ -32,7 +33,9 @@ describe("useAppSessionHeatmap", () => {
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 		expect(result.current.data).toEqual([{ lat: 29.75, lng: -95.35, sessionWeight: 10 }]);
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/app-session-heatmap?period=week");
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(
+			withStatsTimeZone("/api/v1/app-session-heatmap?period=week"),
+		);
 	});
 });
 
@@ -46,7 +49,9 @@ it("encodes combined demographics in the request and caches separate cohorts", a
 	);
 	await waitFor(() => expect(result.current.isSuccess).toBe(true));
 	expect(fetchMock.mock.calls[0]?.[0]).toBe(
-		"/api/v1/app-session-heatmap?period=week&gender=Female+%26+other&ageMin=25&ageMax=34",
+		withStatsTimeZone(
+			"/api/v1/app-session-heatmap?period=week&gender=Female+%26+other&ageMin=25&ageMax=34",
+		),
 	);
 	rerender({ gender: "Male" });
 	await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -65,7 +70,7 @@ it("sorts array demographics in the query string", async () => {
 	});
 	await waitFor(() => expect(result.current.isSuccess).toBe(true));
 	expect(fetchMock.mock.calls[0]?.[0]).toBe(
-		"/api/v1/app-session-heatmap?period=week&skill=Advanced&skill=Beginner",
+		withStatsTimeZone("/api/v1/app-session-heatmap?period=week&skill=Advanced&skill=Beginner"),
 	);
 	vi.unstubAllGlobals();
 });
@@ -80,7 +85,7 @@ it("requests registrations for the selected period", async () => {
 	);
 	await waitFor(() => expect(result.current.isSuccess).toBe(true));
 	expect(fetchMock.mock.calls[0]?.[0]).toBe(
-		"/api/v1/app-session-heatmap?period=month&metric=registrations",
+		withStatsTimeZone("/api/v1/app-session-heatmap?period=month&metric=registrations"),
 	);
 	vi.unstubAllGlobals();
 });
