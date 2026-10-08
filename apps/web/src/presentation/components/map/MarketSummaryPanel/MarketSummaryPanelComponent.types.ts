@@ -1,7 +1,10 @@
 import type { Messages } from "@market-health-map/core/i18n";
 import type { ReactNode } from "react";
 import type { WeeklyActivityPointView } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent.types";
-import type { FacilityStatTile } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
+import type {
+	DetailMessages,
+	FacilityStatTile,
+} from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import type { PopularTimeCellView } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.types";
 
 export type MarketSummaryMessages = Messages["marketSummary"];
@@ -52,7 +55,25 @@ export interface MarketSummaryComparison {
 export interface InsightCardProps {
 	children: ReactNode;
 	isRedesigned: boolean;
+}
+
+export interface MarketRankRowsProps {
+	rows: MarketRankRowView[];
+	emptyLabel: string;
+}
+
+export interface MarketSummaryMetricsProps {
+	detailMessages: DetailMessages;
+	isRedesigned: boolean;
 	messages: MarketSummaryMessages;
+	rankingsEmptyLabel: string;
+	tiles: MarketSummarySectionTiles;
+	view: MarketSummaryViewModel;
+}
+
+export interface MarketSummarySectionTiles {
+	games: FacilityStatTile[];
+	users: FacilityStatTile[];
 }
 
 export interface MarketSummaryHeaderProps {

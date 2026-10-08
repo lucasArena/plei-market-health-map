@@ -41,6 +41,7 @@ import type {
 	MarketSummaryHeading,
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
+	MarketSummarySectionTiles,
 	MarketSummaryViewModel,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
@@ -313,6 +314,15 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
+const GAME_TILE_KEYS: readonly string[] = ["played", "confirmation"];
+
+export function splitTilesBySection(tiles: FacilityStatTile[]): MarketSummarySectionTiles {
+	return {
+		games: tiles.filter((tile) => GAME_TILE_KEYS.includes(tile.key)),
+		users: tiles.filter((tile) => !GAME_TILE_KEYS.includes(tile.key)),
+	};
+}
+
 function utcDate(isoDate: string): Date {
 	return new Date(`${isoDate}T00:00:00Z`);
 }
@@ -569,6 +579,7 @@ export function useMarketSummaryPanelRules({
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
+		sectionTiles: splitTilesBySection(insightsView?.tiles ?? []),
 		status,
 		view: insightsView,
 	};

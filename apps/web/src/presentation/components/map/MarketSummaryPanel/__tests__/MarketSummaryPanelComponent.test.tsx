@@ -80,6 +80,7 @@ function rulesWith(overrides: object = {}) {
 		isRedesigned: false,
 		reportWrongNumber: vi.fn(),
 		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
+		sectionTiles: { games: [], users: VIEW.tiles },
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
 		heading: { title: "All markets", subtitle: EN_MESSAGES.marketSummary.subtitle },
@@ -142,6 +143,17 @@ describe("MarketSummaryPanel", () => {
 		);
 		expect(screen.getByTestId("health-strip")).toHaveTextContent(VIEW.summary);
 		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
+		expect(screen.getByRole("region", { name: "Games" })).toContainElement(
+			screen.getByRole("heading", { name: "Weekly activity" }),
+		);
+		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
+			screen.getByTestId("market-stat-players-skeleton"),
+		);
+		expect(screen.getByRole("region", { name: "Markets" })).toHaveTextContent("Houston");
+		expect(screen.getByRole("region", { name: "Facilities" })).toHaveTextContent(
+			"No games played last week.",
+		);
+		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
 		expect(screen.getByText("Data as of Oct 7, 2026, 9:35 PM")).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Report a wrong number" }));

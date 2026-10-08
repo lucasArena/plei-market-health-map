@@ -5,6 +5,7 @@ import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { MARKET_PLAYER_STATS, MARKET_SUMMARY } from "@/application/test/market-summary";
 import { EN_MESSAGES } from "@/application/test/messages";
 import { createDetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
+import { ChangeDirection } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import {
 	buildComparisonRange,
 	buildDataAsOf,
@@ -18,6 +19,7 @@ import {
 	buildScopeLine,
 	buildScopeTiles,
 	contributorFactsFrom,
+	splitTilesBySection,
 	useMarketSummaryPanelRules,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
@@ -330,6 +332,21 @@ describe("redesigned panel header and footer", () => {
 				formatters,
 			),
 		).toBe(heading.subtitle);
+	});
+
+	it("puts game tiles under Games and player tiles under Users", () => {
+		const tile = (key: string) => ({
+			key,
+			label: key,
+			value: "1",
+			hint: null,
+			hintDirection: ChangeDirection.flat,
+			isLoading: false,
+		});
+		const split = splitTilesBySection(["played", "confirmation", "players", "activated"].map(tile));
+
+		expect(split.games.map((item) => item.key)).toEqual(["played", "confirmation"]);
+		expect(split.users.map((item) => item.key)).toEqual(["players", "activated"]);
 	});
 
 	it("says when the data was loaded, and nothing before it loads", () => {
