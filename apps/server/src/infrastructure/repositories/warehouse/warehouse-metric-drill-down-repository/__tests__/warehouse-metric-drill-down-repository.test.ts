@@ -244,6 +244,54 @@ describe("WarehouseMetricDrillDownRepository", () => {
 		expect(activated.rows).toEqual([expect.objectContaining({ id: "organizers", value: 1 })]);
 	});
 
+	it("scopes reservation measures to a facility and ignores unknown departments", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [baseRow] });
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		query.mockResolvedValueOnce({ rows: [baseRow] }).mockResolvedValueOnce({
+			rows: [
+				{
+					location_id: 1,
+					scheduled: 8,
+					played: 6,
+					scheduled_magic: 8,
+					scheduled_organizers: 0,
+					scheduled_partnerships: 0,
+					played_magic: 6,
+					played_organizers: 0,
+					played_partnerships: 0,
+				},
+			],
+		});
+		const scheduled = await repository.group({
+			measure: "scheduled-games",
+			range: "28d",
+			slice: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+			facilityId: "1",
+		});
+		expect(scheduled.total).toBe(8);
+		const emptyRate = await repository.group({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+			facilityId: "missing",
+		});
+		expect(emptyRate.total).toBeNull();
+		expect(emptyRate.rows).toEqual([]);
+		expect(
+			playerFactsFrom(
+				[toDrillDownFacility(baseRow) as Facility],
+				[{ location_id: 1, player_id: "p9", department: null }],
+				"activated-players",
+			)[0],
+		).toMatchObject({ activatedPlayerIds: ["p9"] });
+	});
+
 	it("returns an empty view when the scope has no facilities", async () => {
 		const query = vi.fn().mockResolvedValue({ rows: [baseRow] });
 		const repository = new WarehouseMetricDrillDownRepository({ query });

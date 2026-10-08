@@ -1,3 +1,7 @@
+import {
+	canSegmentDrillDown,
+	canSliceDrillDownByDepartment,
+} from "@core/application/dtos/metric-drill-down-dto";
 import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { DrillDownFacilityFact } from "@core/application/services/aggregate-metric-drill-down.types";
@@ -5,10 +9,12 @@ import {
 	aggregateCountDrillDown,
 	aggregateDistinctCountDrillDown,
 	aggregateRateDrillDown,
+	distinctContributionsFromFacts,
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
 	makeGetMetricDrillDown,
+	rateContributionsFromFacts,
 	rateValue,
 } from "@core/application/services/get-metric-drill-down";
 import { FixedClock } from "@core/application/testing/fakes";
@@ -207,6 +213,24 @@ describe("getMetricDrillDown", () => {
 		await expect(
 			none({ measure: "confirmation-rate", range: "28d", slice: "facility" }),
 		).resolves.toMatchObject({ total: null, rows: [{ value: null }] });
+		const uniqueByDepartment = await getMetricDrillDown({
+			measure: "unique-players",
+			range: "28d",
+			slice: "department",
+		});
+		expect(uniqueByDepartment.rows.map((row) => [row.id, row.value])).toEqual([
+			["magic", 1],
+			["organizers", 2],
+			["partnerships", 0],
+		]);
+		expect(uniqueByDepartment.total).toBe(3);
+		const rateByDepartment = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "department",
+			departments: ["magic"],
+		});
+		expect(rateByDepartment.rows).toEqual([expect.objectContaining({ id: "magic", value: 80 })]);
 		const unique = await getMetricDrillDown({
 			measure: "unique-players",
 			range: "28d",
@@ -417,6 +441,54 @@ describe("aggregateCountDrillDown", () => {
 	});
 });
 
+describe("drill-down measure helpers", () => {
+	it("allows department slices and segments except for active facilities", () => {
+		expect(canSliceDrillDownByDepartment("confirmation-rate")).toBe(true);
+		expect(canSliceDrillDownByDepartment("active-facilities")).toBe(false);
+		expect(canSegmentDrillDown("scheduled-games", "market")).toBe(true);
+		expect(canSegmentDrillDown("unique-players", "department")).toBe(false);
+		expect(canSegmentDrillDown("active-facilities", "facility")).toBe(false);
+	});
+
+	it("builds department contributions from facility facts", () => {
+		expect(
+			rateContributionsFromFacts([facility], "department", { gameDepartments: ["magic"] }),
+		).toEqual([{ id: "magic", name: "magic", numerator: 2, denominator: 3 }]);
+		expect(
+			distinctContributionsFromFacts([facility], "department", "unique-players", {
+				gameDepartments: ["organizers"],
+			}),
+		).toEqual([{ id: "organizers", name: "organizers", memberKeys: ["p2"] }]);
+		expect(
+			distinctContributionsFromFacts(
+				[{ ...facility, activatedPlayerIds: undefined, activatedPlayerIdsByDepartment: null }],
+				"facility",
+				"activated-players",
+			),
+		).toEqual([
+			{
+				id: "a",
+				name: "Arena",
+				memberKeys: [],
+				departments: { magic: [], organizers: [], partnerships: [] },
+			},
+		]);
+		expect(
+			rateContributionsFromFacts(
+				[{ ...facility, gamesByDepartment: null, scheduledByDepartment: null }],
+				"department",
+			),
+		).toEqual(
+			["magic", "organizers", "partnerships"].map((department) => ({
+				id: department,
+				name: department,
+				numerator: null,
+				denominator: null,
+			})),
+		);
+	});
+});
+
 describe("drill-down window helpers", () => {
 	it("maps ranges to day counts and windows ending yesterday", () => {
 		expect(drillDownRangeDays("90d")).toBe(90);
@@ -472,5 +544,11 @@ describe("drill-down window helpers", () => {
 				"90d",
 			)[0],
 		).toMatchObject({ games: 9, gamesByDepartment: null });
+		expect(
+			factsFromFacilityPoints(
+				[{ id: "a", name: "Arena", marketId: "miami", marketName: "Miami" }],
+				"28d",
+			)[0],
+		).toMatchObject({ games: null, gamesByDepartment: null });
 	});
 });
