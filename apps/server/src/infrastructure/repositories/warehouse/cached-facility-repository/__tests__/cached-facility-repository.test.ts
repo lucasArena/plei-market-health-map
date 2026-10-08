@@ -11,7 +11,6 @@ const FACILITY = Facility.create({
 	metrics: { activePlayers: 0, gamesLastWeek: 0, gamesLast28Days: 0, utilization: 0 },
 });
 
-/** The viewer's local today. */
 const TODAY = "2026-10-08";
 
 function setup() {

@@ -23,6 +23,5 @@ export interface ActivitySummarySubject {
 	stats: ActivitySummaryStats;
 	scope?: MarketSummaryScopeView;
 	insightFacts?: string;
-	/** Set when the Layers game department filter narrows the games behind these facts. */
 	gameDepartments?: GameDepartment[];
 }

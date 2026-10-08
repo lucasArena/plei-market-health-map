@@ -23,7 +23,6 @@ import type {
 
 const GAME_DATE = "g.date_with_time::date";
 
-/** `$1` holds the viewer's today; the 7D and 28D windows are the full days ending the day before. */
 export const ACTIVE_LOCATIONS_SQL = `
 with bounds as (
   select ${todayParameterSql(1)} as today
@@ -35,8 +34,6 @@ classified_games as (
   ${organizerPartnersJoin("r")}
 ),
 facility_activity as (
-  /* One pass over both windows: the last ${GAMES_WINDOW_DAYS} full days and the equal length window
-     just before them, split with conditional aggregates so the trend needs no second query. */
   select r.location_id,
          count(distinct r.reservation_id) filter (where r.in_current) as played_last_28_days,
          count(distinct r.reservation_id) filter (where r.in_last_week) as played_last_week,

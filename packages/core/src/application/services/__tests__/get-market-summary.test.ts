@@ -8,7 +8,6 @@ import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { asEntityId, Facility, type GameDepartmentCounts } from "@core/domain";
 
-/** Thu Oct 8, 2026 at noon in New York, so the default zone's today is 2026-10-08. */
 const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 function facility(
@@ -281,7 +280,6 @@ function departments(
 	return { magic, organizers, partnerships };
 }
 
-/** A facility with every per department window filled in, as the warehouse returns it. */
 function departmentFacility(id: string, marketId: string, month: GameDepartmentCounts) {
 	const total = month.magic + month.organizers + month.partnerships;
 	return Facility.create({

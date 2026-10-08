@@ -15,7 +15,6 @@ import {
 
 export const MARKET_SUMMARY_RANK_LIMIT = 5;
 
-/** A facility's games in the period, only from the selected departments when there are any. */
 function gamesOf(
 	facility: Facility,
 	period: StatsPeriod,

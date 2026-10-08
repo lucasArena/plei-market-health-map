@@ -6,13 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
 import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 
-/** One query key part per department filter; "all" when every game counts. */
 export function marketDepartmentsKey(departments: readonly GameDepartment[] = []): string {
 	const selected = normalizeGameDepartments(departments);
 	return selected.length > 0 ? selected.join(",") : "all";
 }
 
-/** Adds `departments=` only when filtered, so the unfiltered URL stays as it was. */
 export function setMarketDepartments(
 	params: URLSearchParams,
 	departments: readonly GameDepartment[] = [],

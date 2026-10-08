@@ -333,7 +333,6 @@ export function buildMarketAiSubject(
 	const isFiltered = gameDepartments.length > 0;
 	return {
 		kind: scope.kind === "market" ? "market" : "all-markets",
-		// A filtered summary is a different subject, so it never reuses an unfiltered AI summary.
 		id: isFiltered ? `${id}~${gameDepartments.join("+")}` : id,
 		name: heading.title,
 		stats: activityPeriodFor(summary.stats, playerStats, period),

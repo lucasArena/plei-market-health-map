@@ -5,7 +5,6 @@ import {
 
 const CELL = { lat: 29.746, lng: -95.352, sessionWeight: 1134 };
 
-/** The viewer's local today. */
 const TODAY = "2026-10-08";
 
 function setup() {

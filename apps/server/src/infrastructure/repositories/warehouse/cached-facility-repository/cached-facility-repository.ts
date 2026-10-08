@@ -17,7 +17,6 @@ export class CachedFacilityRepository implements FacilityRepository {
 		private readonly ttlMs: number = FACILITY_CACHE_TTL_MS,
 	) {}
 
-	/** One entry per viewer's today, so viewers whose dates differ never share a list. */
 	listAll(today: string): Promise<Facility[]> {
 		const now = this.clock.now().getTime();
 		const cached = this.cache.get(today);

@@ -27,7 +27,6 @@ import type {
 
 const GAME_DATE = "r.date_with_time::date";
 
-/** `$1` holds the location ids and `$2` the viewer's today; every window ends the day before. */
 export const FACILITY_GAME_COMPARISONS_SQL = `
 with bounds as (
   select ${todayParameterSql(2)} as today
@@ -54,12 +53,6 @@ where r.location_id = any($1::int[])
  and r.date_with_time::date < b.today
 group by r.location_id`;
 
-/**
- * `$1` holds the location ids and `$2` the viewer's today. With a department filter, `$3` holds
- * the departments and only their games are counted. The 7D and 28D windows are the full days
- * ending yesterday, and the weekly chart is the four 7 day blocks ending yesterday, so its last
- * block is the 7D window and the four add up to the 28D window.
- */
 function reservationStatsSql(byDepartment: boolean): string {
 	const organizerPartners = byDepartment ? `${ORGANIZER_PARTNERS_CTE},\n` : "";
 	const join = (indent: string) => (byDepartment ? `\n${indent}${organizerPartnersJoin("r")}` : "");
@@ -193,10 +186,8 @@ group by b.today`;
 
 export const FACILITY_RESERVATION_STATS_SQL = reservationStatsSql(false);
 
-/** The same stats, counting only games from the departments passed as `$2`. */
 export const FACILITY_RESERVATION_STATS_BY_DEPARTMENT_SQL = reservationStatsSql(true);
 
-/** `$1` holds the location ids and `$2` the viewer's today; every window ends the day before. */
 export const FACILITY_PLAYER_STATS_SQL = `
 with bounds as (
   select ${todayParameterSql(2)} as today

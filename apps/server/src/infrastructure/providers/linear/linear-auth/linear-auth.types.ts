@@ -16,3 +16,8 @@ export interface LinearAppAuthOptions {
 	now?: () => number;
 	timeoutMs?: number;
 }
+
+export interface CachedToken {
+	accessToken: string;
+	expiresAt: number;
+}

@@ -7,7 +7,6 @@ import {
 	WarehouseFacilityStatsRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
 
-/** The viewer's local today; every window ends the day before. */
 const TODAY = "2026-10-08";
 
 const RESERVATION_ROW = {
@@ -85,7 +84,6 @@ describe("facility stats SQL", () => {
 	});
 
 	it("buckets weekly activity into the four 7 day blocks ending yesterday", () => {
-		// Each block is 7 full days, so the last block is the 7D window and all four make the 28D one.
 		expect(FACILITY_RESERVATION_STATS_SQL).toContain(
 			"g.game_date >= w.week_start and g.game_date < w.week_start + 7",
 		);

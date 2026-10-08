@@ -1,4 +1,5 @@
 "use client";
+import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -7,7 +8,6 @@ import { FacilityDetailPanel } from "@/presentation/components/map/FacilityDetai
 import { FacilityHoverCard } from "@/presentation/components/map/FacilityHoverCard/FacilityHoverCardComponent";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { useHeaderSlot } from "@/presentation/components/providers/HeaderSlotProvider/HeaderSlotProviderComponent";
-import { useFacilitiesMapScreenRules } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.rules";
 import {
 	SESSION_HEATMAP_BUCKET_COLORS,
 	SESSION_HEATMAP_LEGEND_CLASS,

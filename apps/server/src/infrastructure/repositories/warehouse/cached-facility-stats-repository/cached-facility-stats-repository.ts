@@ -70,12 +70,10 @@ export class CachedFacilityStatsRepository implements FacilityStatsRepository {
 		return cached.value;
 	}
 
-	/** The viewer's today is part of every key, so viewers whose dates differ never share stats. */
 	private keyFor(facilityIds: EntityId[], today: string): string {
 		return `${today}|${[...facilityIds].sort().join(",")}`;
 	}
 
-	/** A department filter gets its own entry next to the unfiltered one. */
 	private reservationKeyFor(
 		facilityIds: EntityId[],
 		today: string,

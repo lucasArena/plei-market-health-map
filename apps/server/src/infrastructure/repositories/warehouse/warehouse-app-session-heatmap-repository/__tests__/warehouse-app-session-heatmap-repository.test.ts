@@ -31,7 +31,6 @@ describe("toAppSessionHeatmapCell", () => {
 	});
 });
 
-/** The viewer's local today (a Tuesday); every window ends the day before. */
 const TODAY = "2026-10-06";
 
 describe("sessionWindow", () => {
