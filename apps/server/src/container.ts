@@ -5,6 +5,7 @@ import type {
 	GetMarketGameInsightsInput,
 	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
+	GetMetricDrillDownInput,
 	IssueTracker,
 	ListAppMetricsPeopleInput,
 	ListRecentLoginsInput,
@@ -25,6 +26,7 @@ import {
 	makeGetMarketGameInsights,
 	makeGetMarketPlayerStats,
 	makeGetMarketSummary,
+	makeGetMetricDrillDown,
 	makeListAppMetricsPeople,
 	makeListAppSessionFilterOptions,
 	makeListAppSessionHeatmap,
@@ -66,12 +68,15 @@ import { MemoryDailyActivityRepository } from "@server/infrastructure/repositori
 import { MemoryFeatureFlagRepository } from "@server/infrastructure/repositories/sample/memory-feature-flag-repository/memory-feature-flag-repository";
 import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
 import { SampleFacilityStatsRepository } from "@server/infrastructure/repositories/sample/sample-facility-stats-repository/sample-facility-stats-repository";
+import { SampleMetricDrillDownRepository } from "@server/infrastructure/repositories/sample/sample-metric-drill-down-repository/sample-metric-drill-down-repository";
 import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
 import { CachedFacilityRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-repository/cached-facility-repository";
 import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
+import { CachedMetricDrillDownRepository } from "@server/infrastructure/repositories/warehouse/cached-metric-drill-down-repository/cached-metric-drill-down-repository";
 import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository";
 import { WarehouseFacilityRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
 import { WarehouseFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
+import { WarehouseMetricDrillDownRepository } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository";
 import { getWarehousePool } from "@server/infrastructure/repositories/warehouse/warehouse-pool/warehouse-pool";
 
 function buildDailyActivityRepository() {
@@ -137,15 +142,24 @@ function buildFacilityRepositories() {
 	const warehouseUrl = getServerEnv().DATA_WAREHOUSE_URL;
 	const clock = new SystemClock();
 	if (!warehouseUrl) {
+		const facilities = new SampleFacilityRepository();
 		return {
-			facilities: new SampleFacilityRepository(),
+			facilities,
 			stats: new CachedFacilityStatsRepository(new SampleFacilityStatsRepository(clock), clock),
+			drillDown: new CachedMetricDrillDownRepository(
+				new SampleMetricDrillDownRepository(facilities),
+				clock,
+			),
 		};
 	}
 	const pool = getWarehousePool(warehouseUrl);
 	return {
 		facilities: new CachedFacilityRepository(new WarehouseFacilityRepository(pool), clock),
 		stats: new CachedFacilityStatsRepository(new WarehouseFacilityStatsRepository(pool), clock),
+		drillDown: new CachedMetricDrillDownRepository(
+			new WarehouseMetricDrillDownRepository(pool),
+			clock,
+		),
 	};
 }
 
@@ -170,6 +184,11 @@ function buildFacilities() {
 		getMarketSummary: makeGetMarketSummary(repositories),
 		getMarketGameInsights: makeGetMarketGameInsights(repositories),
 		getMarketPlayerStats: makeGetMarketPlayerStats(repositories),
+		getMetricDrillDown: makeGetMetricDrillDown({
+			drillDown: repositories.drillDown,
+			clock: repositories.clock,
+			enabledFeatureFlags,
+		}),
 	};
 }
 
@@ -309,6 +328,8 @@ const container = {
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
 	getMarketPlayerStats: (input?: GetMarketPlayerStatsInput) =>
 		facilityModule().getMarketPlayerStats(input),
+	getMetricDrillDown: (input: GetMetricDrillDownInput) =>
+		facilityModule().getMetricDrillDown(input),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),
 	recordDailyActivity: (input: RecordDailyActivityInput) =>
 		appMetricsModule().recordDailyActivity(input),

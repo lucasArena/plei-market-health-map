@@ -1,78 +1,57 @@
-import { STATS_PERIOD_DAYS } from "@core/application/dtos/facility-detail-dto";
+import { getMetricDrillDownSchema } from "@core/application/dtos/metric-drill-down-dto";
 import type {
-	MetricDrillDownInput,
-	MetricDrillDownRow,
+	GetMetricDrillDownInput,
 	MetricDrillDownView,
-} from "@core/application/services/get-metric-drill-down.types";
-import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
-import { localDay, statsWindow } from "@core/domain";
+} from "@core/application/dtos/metric-drill-down-dto.types";
+import { ForbiddenError } from "@core/application/errors/forbidden-error";
+import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
+import type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
+import { statsToday } from "@core/application/services/stats-today";
 
-export const DRILL_DOWN_DEPARTMENTS = ["magic", "organizers", "partnerships"] as const;
+export {
+	aggregateCountDrillDown,
+	aggregateDistinctCountDrillDown,
+	aggregateRateDrillDown,
+	DRILL_DOWN_DEPARTMENTS,
+	drillDownRangeDays,
+	drillDownWindow,
+	factsFromFacilityPoints,
+	rateValue,
+} from "@core/application/services/aggregate-metric-drill-down";
 
-function sumKnown(left: number | null, right: number | null): number | null {
-	if (left === null || right === null) return null;
-	return left + right;
-}
-function emptyDepartments(): GameDepartmentCounts {
-	return { magic: 0, organizers: 0, partnerships: 0 };
-}
-export function makeGetMetricDrillDown() {
-	return (input: MetricDrillDownInput): MetricDrillDownView => {
-		const { start, end } = statsWindow(
-			localDay(input.now, input.timeZone),
-			STATS_PERIOD_DAYS[input.period],
-		);
-		const facilities = [
-			...new Map(input.facilities.map((facility) => [facility.id, facility])).values(),
-		].filter(
-			(facility) =>
-				(!input.marketId || facility.marketId === input.marketId) &&
-				(!input.facilityId || facility.id === input.facilityId),
-		);
-		const rows = new Map<string, MetricDrillDownRow>();
-		let total: number | null = 0;
-		const selectedDepartments = input.gameDepartments?.length
-			? input.gameDepartments
-			: DRILL_DOWN_DEPARTMENTS;
-		for (const facility of facilities) {
-			const games = input.period === "week" ? facility.gamesLastWeek : facility.gamesLast28Days;
-			const rawDepartments =
-				input.period === "week" ? facility.gamesLastWeekByDepartment : facility.gamesByDepartment;
-			const departments = rawDepartments ? { ...rawDepartments } : undefined;
-			if (departments)
-				for (const department of DRILL_DOWN_DEPARTMENTS)
-					if (!selectedDepartments.includes(department)) departments[department] = 0;
-			const filteredGames = departments
-				? selectedDepartments.reduce((sum, department) => sum + departments[department], 0)
-				: null;
-			if (input.gameDepartments?.length && filteredGames === 0) continue;
-			let value: number | null = input.gameDepartments?.length ? filteredGames : (games ?? null);
-			if (input.department) value = departments?.[input.department] ?? null;
-			if (input.measure === "active-facilities")
-				value =
-					input.gameDepartments?.length && filteredGames === null
-						? null
-						: Number(input.period === "week" ? facility.isActiveLastWeek : facility.isActive);
-			total = sumKnown(total, value);
-			const groups =
-				input.slice === "department"
-					? selectedDepartments
-					: [input.slice === "market" ? facility.marketId : facility.id];
-			for (const id of groups) {
-				const isDepartment = input.slice === "department";
-				const name = { market: facility.marketName, facility: facility.name, department: id }[
-					input.slice
-				];
-				const row = rows.get(id) ?? { id, name, value: 0, departments: emptyDepartments() };
-				const groupValue = isDepartment ? (departments?.[id as GameDepartment] ?? null) : value;
-				row.value = sumKnown(row.value, groupValue);
-				if (!departments || !row.departments) row.departments = null;
-				else
-					for (const department of DRILL_DOWN_DEPARTMENTS)
-						row.departments[department] += departments[department];
-				rows.set(id, row);
-			}
-		}
-		return { total, rows: [...rows.values()], start, end };
+export function makeGetMetricDrillDown({
+	drillDown,
+	clock,
+	enabledFeatureFlags,
+}: GetMetricDrillDownDeps) {
+	return async function getMetricDrillDown(
+		input: GetMetricDrillDownInput,
+	): Promise<MetricDrillDownView> {
+		const parsed = getMetricDrillDownSchema.safeParse(input);
+		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
+		const { enabled } = await enabledFeatureFlags();
+		if (!enabled.includes("metric-drill-down")) throw new ForbiddenError("metric drill-down");
+		const {
+			measure,
+			range,
+			slice,
+			marketId,
+			facilityId,
+			department,
+			departments,
+			timeZone,
+			grain,
+		} = parsed.data;
+		return drillDown.group({
+			measure,
+			range,
+			slice,
+			marketId,
+			facilityId,
+			department,
+			departments,
+			grain,
+			today: statsToday(clock, timeZone),
+		});
 	};
 }

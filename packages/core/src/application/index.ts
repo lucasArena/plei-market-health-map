@@ -108,6 +108,28 @@ export type {
 	MarketSummaryView,
 } from "@core/application/dtos/market-summary-dto.types";
 export {
+	DRILL_DOWN_GRAINS,
+	DRILL_DOWN_MEASURE_KIND,
+	DRILL_DOWN_MEASURE_KINDS,
+	DRILL_DOWN_MEASURES,
+	DRILL_DOWN_RANGE_DAYS,
+	DRILL_DOWN_RANGES,
+	DRILL_DOWN_SEGMENTS,
+	DRILL_DOWN_SLICES,
+	getMetricDrillDownSchema,
+} from "@core/application/dtos/metric-drill-down-dto";
+export type {
+	DrillDownGrain,
+	DrillDownMeasure,
+	DrillDownMeasureKind,
+	DrillDownRange,
+	DrillDownSegment,
+	DrillDownSlice,
+	GetMetricDrillDownInput,
+	MetricDrillDownRow,
+	MetricDrillDownView,
+} from "@core/application/dtos/metric-drill-down-dto.types";
+export {
 	MIN_PLACE_QUERY_LENGTH,
 	PLACE_RESULT_LIMIT,
 	searchPlacesSchema,
@@ -176,6 +198,16 @@ export type {
 } from "@core/application/repositories/facility-stats-repository.types";
 export type { FeatureFlagRepository } from "@core/application/repositories/feature-flag-repository.types";
 export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
+export type {
+	MetricDrillDownQuery,
+	MetricDrillDownRepository,
+} from "@core/application/repositories/metric-drill-down-repository.types";
+export type {
+	AggregateCountDrillDownInput,
+	DistinctCountContribution,
+	DrillDownFacilityFact,
+	RateContribution,
+} from "@core/application/services/aggregate-metric-drill-down.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
@@ -184,17 +216,17 @@ export { makeGetMarketGameInsights } from "@core/application/services/get-market
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 export {
+	aggregateCountDrillDown,
+	aggregateDistinctCountDrillDown,
+	aggregateRateDrillDown,
 	DRILL_DOWN_DEPARTMENTS,
+	drillDownRangeDays,
+	drillDownWindow,
+	factsFromFacilityPoints,
 	makeGetMetricDrillDown,
+	rateValue,
 } from "@core/application/services/get-metric-drill-down";
-export type {
-	DrillDownMeasure,
-	DrillDownSegment,
-	DrillDownSlice,
-	MetricDrillDownInput,
-	MetricDrillDownRow,
-	MetricDrillDownView,
-} from "@core/application/services/get-metric-drill-down.types";
+export type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
 export { makeListAppSessionFilterOptions } from "@core/application/services/list-app-session-filter-options";
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
