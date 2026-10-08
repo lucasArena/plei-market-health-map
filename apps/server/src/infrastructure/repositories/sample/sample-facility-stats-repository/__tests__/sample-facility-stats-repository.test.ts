@@ -5,7 +5,6 @@ const repository = new SampleFacilityStatsRepository(
 	new FixedClock(new Date("2026-09-29T12:00:00Z")),
 );
 
-/** The viewer's local today; every window ends the day before. */
 const TODAY = "2026-10-08";
 
 describe("SampleFacilityStatsRepository", () => {

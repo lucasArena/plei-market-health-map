@@ -12,7 +12,6 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 	readonly reservationRequested: EntityId[][] = [];
 	readonly reservationFilters: (FacilityReservationStatsFilters | undefined)[] = [];
 	readonly playerRequested: EntityId[][] = [];
-	/** The `today` each call was made for, in call order across all three methods. */
 	readonly requestedDays: string[] = [];
 
 	constructor(

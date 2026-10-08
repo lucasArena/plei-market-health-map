@@ -7,6 +7,10 @@ import type {
 } from "maplibre-gl";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { PLEI_LOGO_IMAGE_ID, PLEI_LOGO_MUTED_IMAGE_ID } from "@/application/constants/plei-logo";
+import type {
+	InactiveGamesMarkerStyle,
+	TrendRing,
+} from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
@@ -65,19 +69,6 @@ export const FACILITY_GLASS_STROKE = 2;
 export const FACILITY_GLASS_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE}px ${CLUSTER_BORDER_COLOR}, 0 10px 24px rgba(0,0,0,0.12)`;
 export const FACILITY_GLASS_INACTIVE_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE}px ${PLEIFUL_COLORS.neutral[50]}, 0 10px 24px rgba(0,0,0,0.12)`;
 export const FACILITY_GLASS_SELECTED_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE + 1}px ${SELECTED_RING_COLOR}, 0 10px 24px rgba(0,0,0,0.12)`;
-
-/**
- * Games layer marker with no games in the current window (it is only on the map while Show
- * trend is on, because it had games before). One style set on the existing glass disc: faded,
- * with a dashed ring, so it never reads as a stable trend, and no trend color or pointer.
- */
-export interface InactiveGamesMarkerStyle {
-	opacity: number;
-	ringWidth: number;
-	ringStyle: "solid" | "dashed";
-	ringColor: string;
-	label: string;
-}
 
 export const INACTIVE_GAMES_MARKER_STYLE: Readonly<InactiveGamesMarkerStyle> = {
 	opacity: 0.6,
@@ -216,31 +207,13 @@ export function selectedRingWidth(facilityId: string | null): ExpressionSpecific
 export const CLUSTER_GAME_COUNT_KEY = "gameCount";
 export const CLUSTER_PREVIOUS_GAME_COUNT_KEY = "gamePreviousCount";
 
-/**
- * Cluster sums for the games layer and its trend. Both windows are summed, so a cluster's
- * trend comes from its totals, never from averaged percents.
- */
 export const GAMES_CLUSTER_PROPERTIES: Record<string, ExpressionSpecification> = {
 	[CLUSTER_GAME_COUNT_KEY]: ["+", ["get", "gamesLast28Days"]],
 	[CLUSTER_PREVIOUS_GAME_COUNT_KEY]: ["+", ["get", "gamesPrevious28Days"]],
 };
 
-/**
- * Trend ring and pointer: a CSS pseudo element on the existing glass disc (no extra DOM, no
- * map layers) paints the ring and, for up and down, a tip bounded by the two tangents from the
- * apex to the ring's outer edge, so ring and tip read as one pin shape. The paint is a glass
- * gradient over the trend color; the hole keeps it off the count.
- */
 export const TREND_TIP_CLASS = "games-trend-tip";
-/** The tip apex sits this far past the glass disc edge. */
 export const TREND_TIP_LENGTH = 5;
-
-export interface TrendRing {
-	/** Disc diameter the ring belongs to. */
-	disc: number;
-	outer: number;
-	inner: number;
-}
 
 export const GAMES_TREND_DIAMETER = 45;
 
@@ -260,11 +233,6 @@ function circlePath(center: number, radius: number) {
 	return `M ${num(center + radius)} ${num(center)} A ${r} ${r} 0 1 0 ${num(center - radius)} ${num(center)} A ${r} ${r} 0 1 0 ${num(center + radius)} ${num(center)} Z`;
 }
 
-/**
- * Ring and tip as one even odd path in a square box centered on the disc: the outer edge runs
- * around the ring and out along the two tangents to the apex, and the inner circle is the hole,
- * so the glass paint covers ring and tip as a single shape with no seam.
- */
 export function trendTipShape(ring: TrendRing) {
 	const apex = ring.disc / 2 + TREND_TIP_LENGTH;
 	const box = Math.ceil(apex + 1) * 2;
@@ -286,8 +254,6 @@ export function trendTipShape(ring: TrendRing) {
 		stable: tip(1, 0),
 	};
 }
-
-export type TrendTipShape = ReturnType<typeof trendTipShape>;
 
 export const CLUSTER_TREND_TIP = trendTipShape(CLUSTER_TREND_RING);
 export const FACILITY_TREND_TIP = trendTipShape(FACILITY_TREND_RING);

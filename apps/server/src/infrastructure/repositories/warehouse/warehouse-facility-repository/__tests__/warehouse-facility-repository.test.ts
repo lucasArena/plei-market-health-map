@@ -20,7 +20,6 @@ import {
 
 const allFlagsOn = async () => ({ enabled: [...FEATURE_FLAG_KEYS] });
 
-/** The viewer's local today; every window ends the day before. */
 const TODAY = "2026-10-08";
 const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 

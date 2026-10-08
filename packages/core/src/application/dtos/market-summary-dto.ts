@@ -2,7 +2,6 @@ import { STATS_PERIODS, statsTimeZoneSchema } from "@core/application/dtos/facil
 import { GAME_DEPARTMENTS, normalizeGameDepartments } from "@core/domain";
 import { z } from "zod";
 
-/** Optional game department filter; empty or absent means every department. */
 export const gameDepartmentsSchema = z
 	.array(z.enum(GAME_DEPARTMENTS))
 	.max(GAME_DEPARTMENTS.length * 2)

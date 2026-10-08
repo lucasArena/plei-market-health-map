@@ -43,13 +43,11 @@ export interface FacilityPlayerStats {
 
 export interface FacilityWeeklyCounts extends FacilityReservationStats, FacilityPlayerStats {}
 
-/** Narrows reservation stats to games from these departments; empty or absent means all. */
 export interface FacilityReservationStatsFilters {
 	departments?: readonly GameDepartment[];
 }
 
 export interface FacilityReservationStatsRepository {
-	/** Windows end the day before `today` (YYYY-MM-DD, the viewer's local date). */
 	getReservationStats(
 		facilityIds: EntityId[],
 		today: string,

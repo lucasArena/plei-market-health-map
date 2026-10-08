@@ -22,7 +22,6 @@ const RESERVATION_STATS = {
 	popularTimes: [],
 };
 
-/** The viewer's local today. */
 const TODAY = "2026-10-08";
 
 const PLAYER_STATS = {

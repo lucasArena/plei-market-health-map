@@ -2,7 +2,6 @@ import { makeListAppSessionHeatmap } from "@core/application/services/list-app-s
 import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryAppSessionHeatmapRepository } from "@core/application/testing/in-memory-app-session-heatmap-repository";
 
-/** Thu Oct 8, 2026 at noon in New York, so the default zone's today is 2026-10-08. */
 const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 const CELL = { lat: 29.746, lng: -95.352, sessionWeight: 1134 };

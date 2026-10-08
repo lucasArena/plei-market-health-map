@@ -19,10 +19,6 @@ FROM plei_gold.dim_player
 WHERE EXISTS (SELECT 1 FROM plei_gold.players_behaviour s WHERE s.player_id = dim_player.player_id AND s.date >= CURRENT_DATE - 28 AND s.date < CURRENT_DATE)
   OR (confirmed_at >= CURRENT_DATE - 28 AND confirmed_at < CURRENT_DATE AND players_type = 'pleiapp_player')`;
 
-/**
- * `[start, end)` for the period's full days ending the day before the viewer's `today`; the
- * end bound is today itself, so today is never included.
- */
 export function sessionWindow(period: StatsPeriod, today: string): [start: string, end: string] {
 	return [addDays(today, -STATS_PERIOD_DAYS[period]), today];
 }
@@ -40,7 +36,6 @@ WHERE date >= $1::date
   AND NOT (ABS(lat) < 0.01 AND ABS(lng) < 0.01)
 GROUP BY 1, 2`;
 
-/** `$1` holds the viewer's today: registrations in the 28 full days ending the day before. */
 export const REGISTRATION_HEATMAP_LAST_28D_SQL = `
 WITH region_coordinates AS (
   SELECT region_id,

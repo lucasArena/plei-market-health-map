@@ -6,7 +6,6 @@ import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-
 import { InMemoryFacilityStatsRepository } from "@core/application/testing/in-memory-facility-stats-repository";
 import { asEntityId, Facility } from "@core/domain";
 
-/** Thu Oct 8, 2026 at noon in New York, so the default zone's today is 2026-10-08. */
 const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
 
 const FACILITY = Facility.create({

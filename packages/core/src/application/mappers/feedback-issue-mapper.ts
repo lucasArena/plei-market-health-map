@@ -9,7 +9,6 @@ export const FEEDBACK_TITLES: Record<FeedbackType, string> = {
 	bug: "Bug Report",
 };
 
-/** "Bug Report from Lucas Arena". Uses the email without a name, and the plain title without either. */
 export function toFeedbackIssueTitle(
 	type: FeedbackType,
 	submitter?: Feedback["submitter"],
