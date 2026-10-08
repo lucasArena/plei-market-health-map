@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
+import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import {
 	marketGameInsightsQueryKey,
 	useMarketGameInsights,
@@ -38,7 +39,7 @@ describe("market summary hooks", () => {
 
 		expect(second.result.current.data).toEqual({ scope: { facilityCount: 3 } });
 		expect(fetchMock).toHaveBeenCalledOnce();
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/market-summary");
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(withStatsTimeZone("/api/v1/market-summary"));
 		expect(client.getQueryState(marketSummaryQueryKey())?.isInvalidated).toBe(false);
 	});
 
@@ -49,8 +50,13 @@ describe("market summary hooks", () => {
 		const { result } = renderHook(() => useMarketPlayerStats(), { wrapper: Wrapper });
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/market-summary/players");
-		expect(marketPlayerStatsQueryKey()).toEqual(["market-summary", "players", "all"]);
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(withStatsTimeZone("/api/v1/market-summary/players"));
+		expect(marketPlayerStatsQueryKey()).toEqual([
+			"market-summary",
+			"players",
+			"all",
+			statsDayKey(),
+		]);
 	});
 
 	it("caches each market scope separately and passes the market as a query parameter", async () => {
@@ -63,8 +69,8 @@ describe("market summary hooks", () => {
 		await waitFor(() => expect(summary.result.current.isSuccess).toBe(true));
 		await waitFor(() => expect(players.result.current.isSuccess).toBe(true));
 		expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
-			"/api/v1/market-summary?market=philly%20%26%20co",
-			"/api/v1/market-summary/players?market=philly%20%26%20co",
+			withStatsTimeZone("/api/v1/market-summary?market=philly%20%26%20co"),
+			withStatsTimeZone("/api/v1/market-summary/players?market=philly%20%26%20co"),
 		]);
 		expect(client.getQueryData(marketSummaryQueryKey("philly & co"))).toEqual({
 			scope: { facilityCount: 2 },
@@ -97,8 +103,8 @@ it("loads market insights separately and caches them by scope", async () => {
 	const month = renderHook(() => useMarketGameInsights(null, "month", true), { wrapper: Wrapper });
 	await waitFor(() => expect(month.result.current.isSuccess).toBe(true));
 	expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-		"/api/v1/market-summary/insights?period=week&market=philly+%26+co",
-		"/api/v1/market-summary/insights?period=month",
+		withStatsTimeZone("/api/v1/market-summary/insights?period=week&market=philly+%26+co"),
+		withStatsTimeZone("/api/v1/market-summary/insights?period=month"),
 	]);
 	vi.unstubAllGlobals();
 });
@@ -121,27 +127,39 @@ describe("market summary department filter", () => {
 		await waitFor(() => expect(summary.result.current.isSuccess).toBe(true));
 		await waitFor(() => expect(insights.result.current.isSuccess).toBe(true));
 		expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-			"/api/v1/market-summary?market=philly&departments=magic%2Corganizers",
-			"/api/v1/market-summary/insights?period=week&departments=partnerships",
+			withStatsTimeZone("/api/v1/market-summary?market=philly&departments=magic%2Corganizers"),
+			withStatsTimeZone("/api/v1/market-summary/insights?period=week&departments=partnerships"),
 		]);
 		expect(client.getQueryData(marketSummaryQueryKey("philly", ["magic", "organizers"]))).toEqual(
 			[],
 		);
 		expect(client.getQueryData(marketSummaryQueryKey("philly"))).toBeUndefined();
-		expect(marketPlayerStatsQueryKey("philly")).toEqual(["market-summary", "players", "philly"]);
+		expect(marketPlayerStatsQueryKey("philly")).toEqual([
+			"market-summary",
+			"players",
+			"philly",
+			statsDayKey(),
+		]);
 	});
 
 	it("shares one cache entry for no filter and for every department", () => {
 		expect(marketSummaryQueryKey(null, ["magic", "organizers", "partnerships"])).toEqual(
 			marketSummaryQueryKey(),
 		);
-		expect(marketSummaryQueryKey()).toEqual(["market-summary", "reservations", "all", "all"]);
+		expect(marketSummaryQueryKey()).toEqual([
+			"market-summary",
+			"reservations",
+			"all",
+			"all",
+			statsDayKey(),
+		]);
 		expect(marketGameInsightsQueryKey("houston", "month", ["organizers"])).toEqual([
 			"market-summary",
 			"insights",
 			"houston",
 			"month",
 			"organizers",
+			statsDayKey(),
 		]);
 		expect(marketGameInsightsQueryKey("houston", "month")).not.toEqual(
 			marketGameInsightsQueryKey("houston", "month", ["organizers"]),

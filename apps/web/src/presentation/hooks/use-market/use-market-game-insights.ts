@@ -3,6 +3,7 @@ import type { MarketGameChangeView, StatsPeriod } from "@market-health-map/core/
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/infrastructure/api/client";
+import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import {
 	marketDepartmentsKey,
 	setMarketDepartments,
@@ -19,6 +20,7 @@ export const marketGameInsightsQueryKey = (
 		marketId ?? "all",
 		period,
 		marketDepartmentsKey(departments),
+		statsDayKey(),
 	] as const;
 
 export function marketGameInsightsPath(
@@ -28,7 +30,9 @@ export function marketGameInsightsPath(
 ): string {
 	const params = new URLSearchParams({ period });
 	if (marketId !== null) params.set("market", marketId);
-	return `/api/v1/market-summary/insights?${setMarketDepartments(params, departments).toString()}`;
+	return withStatsTimeZone(
+		`/api/v1/market-summary/insights?${setMarketDepartments(params, departments).toString()}`,
+	);
 }
 
 export function marketGameInsightsQueryOptions(

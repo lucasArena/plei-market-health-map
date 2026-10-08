@@ -258,7 +258,7 @@ describe("market summary builders", () => {
 		});
 		expect(
 			buildScopeHeading({ kind: "market", id: "houston", name: "Houston" }, messages, WEEK),
-		).toEqual({ title: "Houston", subtitle: "Market summary, last week" });
+		).toEqual({ title: "Houston", subtitle: "Market summary, last 7 days" });
 		expect(
 			buildScopeHeading({ kind: "market", id: "houston", name: "Houston" }, messages, MONTH),
 		).toEqual({ title: "Houston", subtitle: "Market summary, last 28 days" });
@@ -359,19 +359,19 @@ describe("useMarketSummaryPanelRules", () => {
 		expect(result.current.aiContext?.cacheKey).toContain("all-markets-all~magic+organizers-month");
 	});
 
-	it("shows last week against the week before when the week is selected", () => {
+	it("shows the last 7 days against the 7 days before when the week is selected", () => {
 		mockPeriod = "week";
 		const { result } = renderRules();
 
 		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "week", true, []);
-		expect(result.current.heading.subtitle).toBe("All facilities and markets, last week");
+		expect(result.current.heading.subtitle).toBe("All facilities and markets, last 7 days");
 		expect(result.current.view?.tiles.map((tile) => tile.value)[0]).toBe("55");
-		expect(result.current.view?.summary).toContain("versus the previous week");
+		expect(result.current.view?.summary).toContain("versus the previous 7 days");
 		expect(result.current.aiContext?.cacheKey).toContain("all-markets-all-week");
 		expect(result.current.view?.scopeTiles.map((tile) => tile.value)).toEqual(["51", "8"]);
 		expect(result.current.view?.topMarkets?.map((row) => row.value)).toEqual(["30 games"]);
 		expect(result.current.view?.topFacilities?.map((row) => row.value)).toEqual(["12 games"]);
-		expect(result.current.rankingsEmptyLabel).toBe("No games played last week.");
+		expect(result.current.rankingsEmptyLabel).toBe("No games played in the last 7 days.");
 	});
 
 	it("follows a market scope and updates when the filter changes while open", () => {

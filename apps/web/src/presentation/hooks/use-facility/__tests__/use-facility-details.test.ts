@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
+import { statsDayKey, withStatsTimeZone } from "@/infrastructure/time/stats-day";
 import {
 	facilityDetailsQueryKey,
 	useFacilityDetails,
@@ -20,7 +21,7 @@ describe("useFacilityDetails", () => {
 		const { result } = renderHook(() => useFacilityDetails("889"), { wrapper: Wrapper });
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/facilities/889");
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(withStatsTimeZone("/api/v1/facilities/889"));
 	});
 
 	it("stays idle without a selection", () => {
@@ -32,6 +33,6 @@ describe("useFacilityDetails", () => {
 
 		expect(result.current.fetchStatus).toBe("idle");
 		expect(fetchMock).not.toHaveBeenCalled();
-		expect(facilityDetailsQueryKey(null)).toEqual(["facilities", "detail", null]);
+		expect(facilityDetailsQueryKey(null)).toEqual(["facilities", "detail", null, statsDayKey()]);
 	});
 });

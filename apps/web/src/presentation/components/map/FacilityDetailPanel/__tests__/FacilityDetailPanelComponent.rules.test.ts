@@ -191,7 +191,7 @@ describe("buildSummary", () => {
 			"No games were played here in the last 28 days.",
 		);
 		expect(buildSummary({ ...MONTH_VIEW, played: 0 }, messages, WEEK, formatters)).toBe(
-			"No games were played here last week.",
+			"No games were played here in the last 7 days.",
 		);
 	});
 
@@ -200,7 +200,7 @@ describe("buildSummary", () => {
 			buildSummary({ ...MONTH_VIEW, confirmationRate: null }, messages, MONTH, formatters),
 		).toContain("versus the previous 28 days");
 		expect(buildSummary(MONTH_VIEW, messages, WEEK, formatters)).toContain(
-			"versus the previous week",
+			"versus the previous 7 days",
 		);
 	});
 });
@@ -333,7 +333,7 @@ describe("buildProgressiveDetailViewModel", () => {
 			formatters,
 		);
 		expect(week.tiles.map((tile) => tile.value)).toEqual(["12", "75%", "30", "6"]);
-		expect(week.summary).toContain("versus the previous week");
+		expect(week.summary).toContain("versus the previous 7 days");
 	});
 
 	it("says when nothing was ever played", () => {
