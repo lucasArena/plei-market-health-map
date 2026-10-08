@@ -75,3 +75,5 @@ Count marker rings follow facility activity in both trend states: active facilit
 Active and inactive count circles use the exact 35px ring assets from Figma nodes 21038:2078 and 21038:2082, with the white translucent overlay above the vertical glass highlight. Count typography remains at the user-preferred 12px in both trend states.
 
 The stable trend arrow is the same 12px arrow geometry as the upward icon, rotated right and colored gray, with the same 1.33px rounded stroke.
+
+MapMetricSelect uses the filter menu glass surface, checkmarks and keyboard navigation. MapScopeProvider carries metric focus and explicit camera navigation separately from shared scope; SidePanelProvider supports the exclusive drill-down panel ID. Existing panel offsets share consistent glass positioning.

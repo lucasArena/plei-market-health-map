@@ -141,3 +141,5 @@ The 7D | 28D switch also drives Games counts, department totals and the trend. `
 Count marker rings follow facility activity in both trend states: active facilities use green and inactive facilities use gray; clusters use green when any member is active. Show inactive facilities uses the same text size and weight as Show trend.
 
 The framework-free makeGetMetricDrillDown service aggregates existing facility DTOs for Games played and Active facilities by Market, Facility or Department. It deduplicates merged IDs and preserves unavailable counts. The metric-drill-down flag starts off; catalogs include English, Portuguese and Spanish UI text for subsequent drawer integration.
+
+MapMetricSelect uses the filter menu glass surface, checkmarks and keyboard navigation. MapScopeProvider carries metric focus and explicit camera navigation separately from shared scope; SidePanelProvider supports the exclusive drill-down panel ID. Existing panel offsets share consistent glass positioning.
