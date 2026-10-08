@@ -139,3 +139,5 @@ Games trend direction follows every count change without percentage or minimum-g
 The 7D | 28D switch also drives Games counts, department totals and the trend. `/api/v1/facilities` carries `gamesLastWeek`/`gamesLastWeekByDepartment` (with games) and `gamesPreviousWeek`/`gamesPreviousWeekByDepartment` (with the trend) for the last completed Monday–Sunday week and the week before; on 7D `facilitiesForPeriod` copies them into the 28-day fields the map reads, and hover trend copy says 7 days.
 
 Count marker rings follow facility activity in both trend states: active facilities use green and inactive facilities use gray; clusters use green when any member is active. Show inactive facilities uses the same text size and weight as Show trend.
+
+The framework-free makeGetMetricDrillDown service aggregates existing facility DTOs for Games played and Active facilities by Market, Facility or Department. It deduplicates merged IDs and preserves unavailable counts. The metric-drill-down flag starts off; catalogs include English, Portuguese and Spanish UI text for subsequent drawer integration.

@@ -176,6 +176,18 @@ export { makeGetFacilityReservationStats } from "@core/application/services/get-
 export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
+export {
+	DRILL_DOWN_DEPARTMENTS,
+	makeGetMetricDrillDown,
+} from "@core/application/services/get-metric-drill-down";
+export type {
+	DrillDownMeasure,
+	DrillDownSegment,
+	DrillDownSlice,
+	MetricDrillDownInput,
+	MetricDrillDownRow,
+	MetricDrillDownView,
+} from "@core/application/services/get-metric-drill-down.types";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
 export { makeListAppSessionFilterOptions } from "@core/application/services/list-app-session-filter-options";
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";
