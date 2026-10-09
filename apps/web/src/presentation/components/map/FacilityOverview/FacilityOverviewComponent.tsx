@@ -8,12 +8,13 @@ import { Scorecards } from "@/presentation/components/displays/Scorecards/Scorec
 import { StatusSummary } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent";
 import { useFacilityOverviewRules } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent.rules";
 import type { FacilityOverviewProps } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent.types";
+import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 
 export function FacilityOverview(props: Readonly<FacilityOverviewProps>) {
 	const {
 		demand,
 		header,
-		rank,
+		popularTimes,
 		satisfaction,
 		satisfactionPending,
 		scorecardsTitle,
@@ -34,11 +35,7 @@ export function FacilityOverview(props: Readonly<FacilityOverviewProps>) {
 					</PanelSection>
 				</>
 			)}
-			{rank && (
-				<PanelSection title={rank.title} testId="facility-rank">
-					<MetricRows metrics={rank.rows} testId="facility-rank-rows" />
-				</PanelSection>
-			)}
+			{popularTimes && <PopularTimesHeatmap {...popularTimes} />}
 			<PanelSection title={demand.title} testId="facility-demand">
 				<MetricRows metrics={demand.rows} testId="facility-demand-rows" />
 			</PanelSection>

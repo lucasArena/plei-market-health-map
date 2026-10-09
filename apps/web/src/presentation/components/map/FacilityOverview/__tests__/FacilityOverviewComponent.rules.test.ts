@@ -6,7 +6,6 @@ import { EN_MESSAGES } from "@/application/test/messages";
 import {
 	averageMetric,
 	buildFacilityDemand,
-	buildFacilityRank,
 	buildFacilitySatisfaction,
 	useFacilityOverviewRules,
 } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent.rules";
@@ -17,7 +16,6 @@ const mockSetPeriod = vi.fn();
 const mockSetMapNavigation = vi.fn();
 let mockPeriod: StatsPeriod = "month";
 const mockReservations = vi.fn();
-const mockInsights = vi.fn();
 const mockQuality = vi.fn();
 
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
@@ -31,27 +29,12 @@ vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderCo
 vi.mock("@/presentation/hooks/use-facility/use-facility-reservation-stats", () => ({
 	useFacilityReservationStats: (...args: unknown[]) => mockReservations(...args),
 }));
-vi.mock("@/presentation/hooks/use-market/use-market-game-insights", () => ({
-	useMarketGameInsights: (...args: unknown[]) => mockInsights(...args),
-}));
 vi.mock("@/presentation/hooks/use-facility/use-facility-quality", () => ({
 	useFacilityQuality: (...args: unknown[]) => mockQuality(...args),
 }));
 
 const messages = EN_MESSAGES.facilityView;
 const summaryMessages = EN_MESSAGES.marketSummary;
-const number = new Intl.NumberFormat("en");
-
-function facility(id: string, playedPrevious: number, played: number) {
-	return {
-		id,
-		name: `Facility ${id}`,
-		played,
-		playedPrevious,
-		change: played - playedPrevious,
-		changePercent: null,
-	};
-}
 
 const QUALITY: FacilityQualityPeriodView = {
 	averagePlayersPerGame: 11.4,
@@ -70,26 +53,6 @@ const QUALITY: FacilityQualityPeriodView = {
 };
 
 describe("facility overview rules", () => {
-	it("ranks the facility in its market by games and by change", () => {
-		const rank = buildFacilityRank(
-			"b",
-			[facility("a", 10, 30), facility("b", 20, 12), facility("c", 5, 9), facility("z", 0, 0)],
-			"Houston",
-			messages,
-			number,
-		);
-
-		expect(rank).toEqual({
-			title: "Rank in Houston",
-			rows: [
-				{ key: "games", label: "By games", value: "#2", previous: "of 3", change: null },
-				{ key: "change", label: "By change", value: "#3", previous: "of 3", change: null },
-			],
-		});
-		expect(buildFacilityRank("z", [facility("z", 0, 0)], "Houston", messages, number)).toBeNull();
-		expect(buildFacilityRank("b", undefined, "Houston", messages, number)).toBeNull();
-	});
-
 	it("compares averages with their own precision", () => {
 		const oneDecimal = new Intl.NumberFormat("en", {
 			maximumFractionDigits: 1,
@@ -166,14 +129,6 @@ describe("useFacilityOverviewRules", () => {
 
 	it("builds the facility view from its stats, its market and its quality", () => {
 		mockReservations.mockReturnValue({ data: FACILITY_DETAIL });
-		mockInsights.mockReturnValue({
-			data: [
-				{
-					id: FACILITY_DETAIL.facility.marketId,
-					facilities: [facility(FACILITY_DETAIL.facility.id, 5, 9)],
-				},
-			],
-		});
 		mockQuality.mockReturnValue({
 			data: { periods: { week: QUALITY, month: QUALITY }, lowReviews: [] },
 		});
@@ -188,7 +143,6 @@ describe("useFacilityOverviewRules", () => {
 			{ wrapper },
 		);
 
-		expect(mockInsights).toHaveBeenCalledWith(FACILITY_DETAIL.facility.marketId, "month", true, []);
 		expect(result.current.header).toMatchObject({
 			title: "Pegaso HTX",
 			level: "Facility",
@@ -196,7 +150,11 @@ describe("useFacilityOverviewRules", () => {
 		});
 		expect(result.current.sections?.scorecards.played.label).toBe("Games played");
 		expect(result.current.sections?.trend.metrics).toEqual([]);
-		expect(result.current.rank?.rows[0]?.value).toBe("#1");
+		expect(result.current.popularTimes).toMatchObject({
+			title: "Popular times · last 28 days",
+			dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+		});
+		expect(result.current.popularTimes?.cells).toHaveLength(28);
 		expect(result.current.demand.rows[0]?.isPending).toBeUndefined();
 		expect(result.current.satisfaction?.emptyReviews).toBe("No low reviews in the last 28 days.");
 
@@ -212,7 +170,6 @@ describe("useFacilityOverviewRules", () => {
 
 	it("keeps loading placeholders until the data arrives", () => {
 		mockReservations.mockReturnValue({ data: undefined });
-		mockInsights.mockReturnValue({ data: undefined });
 		mockQuality.mockReturnValue({ data: undefined });
 
 		const { result } = renderHook(
@@ -225,9 +182,8 @@ describe("useFacilityOverviewRules", () => {
 			{ wrapper },
 		);
 
-		expect(mockInsights).toHaveBeenCalledWith(null, "month", false, []);
 		expect(result.current.sections).toBeNull();
-		expect(result.current.rank).toBeNull();
+		expect(result.current.popularTimes).toBeNull();
 		expect(result.current.satisfaction).toBeNull();
 		expect(result.current.demand.rows.every((row) => row.isPending)).toBe(true);
 		expect(result.current.satisfactionPending.rows).toHaveLength(3);

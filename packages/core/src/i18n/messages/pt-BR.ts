@@ -183,11 +183,6 @@ export const ptBR: Messages = {
 	},
 	facilityView: {
 		level: "Local",
-		rankTitle: "Posição em {market}",
-		rankByGames: "Por jogos",
-		rankByChange: "Por variação",
-		rankValue: "#{rank}",
-		rankOf: "de {total}",
 		demandTitle: "Demanda",
 		averagePlayers: "Média de jogadores por jogo",
 		waitlistGames: "Jogos com lista de espera",

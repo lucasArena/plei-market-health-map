@@ -163,11 +163,6 @@ export interface Messages {
 	};
 	facilityView: {
 		level: string;
-		rankTitle: string;
-		rankByGames: string;
-		rankByChange: string;
-		rankValue: string;
-		rankOf: string;
 		demandTitle: string;
 		averagePlayers: string;
 		waitlistGames: string;
