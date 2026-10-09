@@ -1,27 +1,19 @@
-import type { FacilityQualityPeriodView, StatsPeriod } from "@market-health-map/core/application";
+import type { StatsPeriod } from "@market-health-map/core/application";
 import { act, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 import { EN_MESSAGES } from "@/application/test/messages";
-import {
-	averageMetric,
-	buildFacilityDemand,
-	buildFacilitySatisfaction,
-	useFacilityOverviewRules,
-} from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent.rules";
+import { useFacilityOverviewRules } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent.rules";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockSetScope = vi.fn();
-const mockSetPeriod = vi.fn();
 const mockSetMapNavigation = vi.fn();
 let mockPeriod: StatsPeriod = "month";
 const mockReservations = vi.fn();
-const mockQuality = vi.fn();
 
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
 	useMapScope: () => ({
 		period: mockPeriod,
-		setPeriod: mockSetPeriod,
 		setScope: mockSetScope,
 		setMapNavigation: mockSetMapNavigation,
 	}),
@@ -29,96 +21,17 @@ vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderCo
 vi.mock("@/presentation/hooks/use-facility/use-facility-reservation-stats", () => ({
 	useFacilityReservationStats: (...args: unknown[]) => mockReservations(...args),
 }));
-vi.mock("@/presentation/hooks/use-facility/use-facility-quality", () => ({
-	useFacilityQuality: (...args: unknown[]) => mockQuality(...args),
-}));
-
-const messages = EN_MESSAGES.facilityView;
-const summaryMessages = EN_MESSAGES.marketSummary;
-
-const QUALITY: FacilityQualityPeriodView = {
-	averagePlayersPerGame: 11.4,
-	averagePlayersPerGamePrevious: 10.9,
-	waitlistGamesRate: 12.5,
-	waitlistGamesRatePrevious: 15,
-	almostFilledRate: 40,
-	almostFilledRatePrevious: 30,
-	averageRating: 4.62,
-	averageRatingPrevious: 4.7,
-	ratingCount: 84,
-	incidentGamesRate: 3.2,
-	incidentGamesRatePrevious: 3.2,
-	returningPlayersRate: 41,
-	returningPlayersRatePrevious: 38,
-};
-
-describe("facility overview rules", () => {
-	it("compares averages with their own precision", () => {
-		const oneDecimal = new Intl.NumberFormat("en", {
-			maximumFractionDigits: 1,
-			minimumFractionDigits: 1,
-		});
-
-		expect(
-			averageMetric("a", "Avg", 11.4, 10.9, "higherIsBetter", summaryMessages, oneDecimal),
-		).toEqual({
-			key: "a",
-			label: "Avg",
-			value: "11.4",
-			previous: "vs 10.9",
-			change: { label: "+0.5", direction: "up", tone: "good" },
-		});
-		expect(
-			averageMetric("a", "Avg", null, 10.9, "higherIsBetter", summaryMessages, oneDecimal),
-		).toMatchObject({ value: "—", change: null });
-	});
-
-	it("builds demand with good and bad changes", () => {
-		const demand = buildFacilityDemand(QUALITY, messages, summaryMessages, "en");
-
-		expect(demand.title).toBe("Demand");
-		expect(
-			demand.rows.map((row) => [row.label, row.value, row.change?.label, row.change?.tone]),
-		).toEqual([
-			["Avg players per game", "11.4", "+0.5", "good"],
-			["Games with a waitlist", "13%", "−2 pts", "bad"],
-			["Cancelled 1–3 players short", "40%", "+10 pts", "bad"],
-		]);
-	});
-
-	it("builds satisfaction with the review count and recent low reviews", () => {
-		const satisfaction = buildFacilitySatisfaction(
-			QUALITY,
-			[
-				{ id: "r1", rate: 2, date: "2026-10-03", title: "Field was flooded" },
-				{ id: "r2", rate: 1, date: "2026-09-28", title: null },
-			],
-			messages,
-			summaryMessages,
-			"en",
-		);
-
-		expect(
-			satisfaction.rows.map((row) => [row.value, row.change?.label, row.change?.tone]),
-		).toEqual([
-			["4.62", "−0.08", "bad"],
-			["3%", "0 pts", "neutral"],
-			["41%", "+3 pts", "good"],
-		]);
-		expect(satisfaction.footnote).toBe("Based on 84 reviews");
-		expect(satisfaction.reviews).toEqual([
-			{ id: "r1", rate: "2 ★", date: "Oct 3", title: "Field was flooded" },
-			{ id: "r2", rate: "1 ★", date: "Sep 28", title: "No title" },
-		]);
-		expect(
-			buildFacilitySatisfaction({ ...QUALITY, ratingCount: 0 }, [], messages, summaryMessages, "en")
-				.footnote,
-		).toBeNull();
-	});
-});
 
 function wrapper({ children }: { children: ReactNode }) {
 	return createElement(MessagesProvider, { locale: "en", messages: EN_MESSAGES, children });
+}
+
+function renderRules(facilityId = FACILITY_DETAIL.facility.id) {
+	return renderHook(
+		() =>
+			useFacilityOverviewRules({ facilityId, facilityName: "Pegaso HTX", marketName: "Houston" }),
+		{ wrapper },
+	);
 }
 
 describe("useFacilityOverviewRules", () => {
@@ -127,27 +40,20 @@ describe("useFacilityOverviewRules", () => {
 		mockPeriod = "month";
 	});
 
-	it("builds the facility view from its stats, its market and its quality", () => {
+	it("builds the facility header, status, scorecards, trend and popular times", () => {
 		mockReservations.mockReturnValue({ data: FACILITY_DETAIL });
-		mockQuality.mockReturnValue({
-			data: { periods: { week: QUALITY, month: QUALITY }, lowReviews: [] },
-		});
 
-		const { result } = renderHook(
-			() =>
-				useFacilityOverviewRules({
-					facilityId: FACILITY_DETAIL.facility.id,
-					facilityName: "Pegaso HTX",
-					marketName: "Houston",
-				}),
-			{ wrapper },
-		);
+		const { result } = renderRules();
 
+		expect(mockReservations).toHaveBeenCalledWith(FACILITY_DETAIL.facility.id);
 		expect(result.current.header).toMatchObject({
 			title: "Pegaso HTX",
 			level: "Facility",
 			subtitle: FACILITY_DETAIL.facility.address,
+			footnote: null,
 		});
+		expect(result.current.sections?.status.headline).toMatch(/^Pegaso HTX: /);
+		expect(result.current.sections?.status.detail).toBeNull();
 		expect(result.current.sections?.scorecards.played.label).toBe("Games played");
 		expect(result.current.sections?.trend.metrics).toEqual([]);
 		expect(result.current.popularTimes).toMatchObject({
@@ -155,8 +61,6 @@ describe("useFacilityOverviewRules", () => {
 			dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 		});
 		expect(result.current.popularTimes?.cells).toHaveLength(28);
-		expect(result.current.demand.rows[0]?.isPending).toBeUndefined();
-		expect(result.current.satisfaction?.emptyReviews).toBe("No low reviews in the last 28 days.");
 
 		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
 		expect(mockSetScope).toHaveBeenCalledWith({ kind: "all" });
@@ -168,26 +72,16 @@ describe("useFacilityOverviewRules", () => {
 		});
 	});
 
-	it("keeps loading placeholders until the data arrives", () => {
+	it("waits for the facility stats before building sections", () => {
 		mockReservations.mockReturnValue({ data: undefined });
-		mockQuality.mockReturnValue({ data: undefined });
 
-		const { result } = renderHook(
-			() =>
-				useFacilityOverviewRules({
-					facilityId: "889",
-					facilityName: "Pegaso HTX",
-					marketName: "Houston",
-				}),
-			{ wrapper },
-		);
+		const { result } = renderRules("889");
 
 		expect(result.current.sections).toBeNull();
 		expect(result.current.popularTimes).toBeNull();
-		expect(result.current.satisfaction).toBeNull();
-		expect(result.current.demand.rows.every((row) => row.isPending)).toBe(true);
-		expect(result.current.satisfactionPending.rows).toHaveLength(3);
 		expect(result.current.header.breadcrumb[1]?.onSelect).toBeUndefined();
 		expect(result.current.header.subtitle).toBeNull();
+		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
+		expect(mockSetMapNavigation).not.toHaveBeenCalled();
 	});
 });
