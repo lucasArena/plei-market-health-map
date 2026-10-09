@@ -1,0 +1,99 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { MarketOverview } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent";
+
+const mockRules = vi.fn();
+const setPeriod = vi.fn();
+const showAllMarkets = vi.fn();
+
+vi.mock("@/presentation/components/map/MarketOverview/MarketOverviewComponent.rules", () => ({
+	useMarketOverviewRules: () => mockRules(),
+}));
+
+const HEADER = {
+	breadcrumb: [
+		{ key: "all", label: "All markets", onSelect: showAllMarkets },
+		{ key: "miami", label: "Miami Metro" },
+	],
+	breadcrumbLabel: "Location",
+	title: "Miami Metro",
+	level: "Market",
+	periodLabel: "Comparison period",
+	periodOptions: [
+		{ value: "week", label: "7D" },
+		{ value: "month", label: "28D" },
+	],
+	comparison: { current: "Sep 9 – Oct 6, 2026", previous: "vs Aug 12 – Sep 8" },
+	facilitiesActive: "11 of 14 facilities active",
+};
+
+const CARD = { label: "Games played", info: "Played games.", value: "48", change: null };
+
+const SECTIONS = {
+	status: {
+		tone: "attention",
+		label: "Needs attention",
+		headline: "Miami Metro: down 3 weeks in a row, driven by 2 facilities.",
+		detail: "11 of the 12 games lost (60 → 48) came from Pegaso and Doral.",
+	},
+	scorecards: {
+		played: { ...CARD, aside: "Main metric", caption: "vs 60 in the previous 28 days" },
+		confirmation: { ...CARD, label: "Confirmation rate", value: "75%" },
+		cancellation: { ...CARD, label: "Cancellation rate", value: "11%" },
+	},
+	trend: {
+		title: "Games trend",
+		aside: "Weekly, last 8 weeks",
+		caption: null,
+		points: [],
+		groups: [],
+	},
+};
+
+describe("MarketOverview", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("shows the market header, its status, the scorecards and the weekly trend", () => {
+		mockRules.mockReturnValue({
+			header: HEADER,
+			period: "month",
+			scorecardsTitle: "Scorecards",
+			sections: SECTIONS,
+			setPeriod,
+		});
+
+		render(<MarketOverview marketId="miami" marketName="Miami Metro" />);
+
+		expect(screen.getByRole("heading", { name: "Miami Metro" })).toBeInTheDocument();
+		expect(screen.getByTestId("market-overview-dates")).toHaveTextContent(
+			"Sep 9 – Oct 6, 2026vs Aug 12 – Sep 8",
+		);
+		expect(screen.getByText("11 of 14 facilities active")).toBeInTheDocument();
+		expect(screen.getByTestId("status-summary")).toHaveTextContent("Needs attention");
+		expect(screen.getByRole("region", { name: "Scorecards" })).toContainElement(
+			screen.getByTestId("score-played"),
+		);
+		expect(screen.getByTestId("score-confirmation")).toHaveTextContent("75%");
+		expect(screen.getByTestId("score-cancellation")).toHaveTextContent("11%");
+		expect(screen.getByTestId("market-games-trend")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "All markets" }));
+		expect(showAllMarkets).toHaveBeenCalledOnce();
+		fireEvent.click(screen.getByRole("button", { name: "7D" }));
+		expect(setPeriod).toHaveBeenCalledWith("week");
+	});
+
+	it("shows only the header until the summary loads", () => {
+		mockRules.mockReturnValue({
+			header: { ...HEADER, facilitiesActive: null },
+			period: "month",
+			scorecardsTitle: "Scorecards",
+			sections: null,
+			setPeriod,
+		});
+
+		render(<MarketOverview marketId="miami" marketName="Miami Metro" />);
+
+		expect(screen.queryByTestId("status-summary")).not.toBeInTheDocument();
+		expect(screen.queryByText("11 of 14 facilities active")).not.toBeInTheDocument();
+	});
+});

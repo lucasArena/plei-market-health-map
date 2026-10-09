@@ -11,6 +11,7 @@ import { PANEL_SECTION_CLASS } from "@/presentation/components/displays/PanelSec
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
+import { MarketOverview } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
 import type {
@@ -264,6 +265,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		isUsersPending,
 		playersTrend,
 		userMetrics,
+		marketView,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -286,55 +288,61 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 				)}
 				{status === "ready" && view && (
 					<div className="space-y-4 p-5">
-						<MarketSummaryHeader
-							comparison={comparison}
-							heading={heading}
-							isRedesigned={isRedesigned}
-							scopeLine={scopeLine}
-						/>
-						{aiContext && view.summary && (
-							<InsightCard isRedesigned={isRedesigned}>
-								<AiSummary
-									context={aiContext}
-									fallback={view.summary}
-									introFirst
-									title={insight.title}
-									tone={insight.tone}
+						{marketView ? (
+							<MarketOverview marketId={marketView.id} marketName={marketView.name} />
+						) : (
+							<>
+								<MarketSummaryHeader
+									comparison={comparison}
+									heading={heading}
+									isRedesigned={isRedesigned}
+									scopeLine={scopeLine}
 								/>
-							</InsightCard>
-						)}
-						{!(aiContext && view.summary) && isSummaryPending && (
-							<InsightCard isRedesigned={isRedesigned}>
-								<AiSummarySkeleton testId="market-summary-text-skeleton" />
-							</InsightCard>
-						)}
-						{!aiContext && !isSummaryPending && view.summary && (
-							<InsightCard isRedesigned={isRedesigned} tone={insight.tone}>
-								<KeyInsights
-									title={insight.title}
-									text={view.summary}
-									introFirst
-									tone={insight.tone}
+								{aiContext && view.summary && (
+									<InsightCard isRedesigned={isRedesigned}>
+										<AiSummary
+											context={aiContext}
+											fallback={view.summary}
+											introFirst
+											title={insight.title}
+											tone={insight.tone}
+										/>
+									</InsightCard>
+								)}
+								{!(aiContext && view.summary) && isSummaryPending && (
+									<InsightCard isRedesigned={isRedesigned}>
+										<AiSummarySkeleton testId="market-summary-text-skeleton" />
+									</InsightCard>
+								)}
+								{!aiContext && !isSummaryPending && view.summary && (
+									<InsightCard isRedesigned={isRedesigned} tone={insight.tone}>
+										<KeyInsights
+											title={insight.title}
+											text={view.summary}
+											introFirst
+											tone={insight.tone}
+										/>
+									</InsightCard>
+								)}
+								{isInsightsFailed && (
+									<p role="status" className="text-xs text-muted-foreground">
+										{messages.insightsFailed}
+									</p>
+								)}
+								<MarketSummaryMetrics
+									detailMessages={detailMessages}
+									gamesTrend={gamesTrend}
+									isRedesigned={isRedesigned}
+									messages={messages}
+									rankingsEmptyLabel={rankingsEmptyLabel}
+									gamesTitle={gamesTitle}
+									isUsersPending={isUsersPending}
+									playersTrend={playersTrend}
+									userMetrics={userMetrics}
+									view={view}
 								/>
-							</InsightCard>
+							</>
 						)}
-						{isInsightsFailed && (
-							<p role="status" className="text-xs text-muted-foreground">
-								{messages.insightsFailed}
-							</p>
-						)}
-						<MarketSummaryMetrics
-							detailMessages={detailMessages}
-							gamesTrend={gamesTrend}
-							isRedesigned={isRedesigned}
-							messages={messages}
-							rankingsEmptyLabel={rankingsEmptyLabel}
-							gamesTitle={gamesTitle}
-							isUsersPending={isUsersPending}
-							playersTrend={playersTrend}
-							userMetrics={userMetrics}
-							view={view}
-						/>
 						<footer className="flex items-start justify-between gap-3 border-t pt-3 text-[11px] text-muted-foreground">
 							<div>
 								<p>{view.lastPlayedLabel}</p>
