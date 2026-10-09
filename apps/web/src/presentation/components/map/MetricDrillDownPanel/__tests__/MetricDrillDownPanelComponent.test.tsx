@@ -661,6 +661,39 @@ describe("time slices", () => {
 			}),
 		};
 	});
+	it("labels weeks by Sunday end dates and months by abbreviated month and year", () => {
+		if (!timeView) throw new Error("Missing fixture");
+		timeView = {
+			...timeView,
+			rows: [
+				{
+					...timeView.rows[0],
+					value: 12,
+					departments: null,
+					id: "2026-09-07",
+					name: "2026-09-07",
+					bucketStart: "2026-09-10",
+					bucketEnd: "2026-09-13",
+					partial: true,
+				},
+			],
+		};
+		setup();
+		select("Slice", "time:week");
+		expect(screen.getByRole("button", { name: "Sep 13, 2026 · partial: 12" })).toBeInTheDocument();
+		expect(
+			within(screen.getByRole("table")).getByText("Sep 13, 2026 · partial"),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Sep 7, 2026 · partial")).not.toBeInTheDocument();
+		select("Slice", "time:month");
+		expect(screen.getByRole("button", { name: "Sep 2026 · partial: 12" })).toBeInTheDocument();
+		expect(within(screen.getByRole("table")).getByText("Sep 2026 · partial")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Sep 2026 · partial: 12" }));
+		expect(screen.getByText("Sep 2026 · partial", { selector: "p" })).toBeInTheDocument();
+		select("Slice", "time");
+		expect(screen.getByRole("button", { name: "Sep 7, 2026 · partial: 12" })).toBeInTheDocument();
+	});
+
 	it("shows every chronological bucket, partial labels, and a scrollable chart", () => {
 		setup();
 		select("Slice", "time");
@@ -690,7 +723,7 @@ describe("time slices", () => {
 		select("Slice", "time:month");
 		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "month" }));
 		select("Segment", "department");
-		expect(screen.getByRole("button", { name: /Jun 28, 2026.*Magic.*12/ })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Jun 2026.*Magic.*12/ })).toBeInTheDocument();
 	});
 	it("keeps Time when switching to app measures and places the source marker on the timeline", () => {
 		setup();

@@ -254,11 +254,21 @@ export function useMetricDrillDownPanelRules({
 		organizers: messages.map.gameDepartmentOrganizers,
 		partnerships: messages.map.gameDepartmentPartnerships,
 	};
+	const monthDate = new Intl.DateTimeFormat(locale, {
+		year: "numeric",
+		month: "short",
+		timeZone: "UTC",
+	});
+	function bucketLabel(row: MetricDrillDownRow) {
+		const day = grain === "week" ? (row.bucketEnd ?? row.id) : row.id;
+		const label = (grain === "month" ? monthDate : date).format(new Date(`${day}T00:00:00Z`));
+		return `${label}${row.partial ? ` · ${messages.drillDown.partial}` : ""}`;
+	}
 	const rowName = (row: MetricDrillDownRow) =>
 		selection.slice === "department"
 			? departmentNames[row.id as GameDepartment]
 			: isTime
-				? `${date.format(new Date(`${row.id}T00:00:00Z`))}${row.partial ? ` · ${messages.drillDown.partial}` : ""}`
+				? bucketLabel(row)
 				: row.name;
 	const visibleRows = hasFocus
 		? [
