@@ -130,10 +130,9 @@ describe("buildGamesCardView", () => {
 			comparison: "vs 200 in the previous 28 days",
 			change: { direction: "up", tone: "better", label: "+6%", description: "Improved +6%" },
 		});
-		// Fixed 0–2,000 scale with locale thousands separators.
-		expect(view.axisMax).toBe(2000);
-		expect(view.ticks.map((tick) => tick.value)).toEqual([0, 1000, 2000]);
-		expect(view.ticks.map((tick) => tick.label)).toEqual(["0", "1,000", "2,000"]);
+		expect(view.axisMax).toBe(60);
+		expect(view.ticks.map((tick) => tick.value)).toEqual([0, 30, 60]);
+		expect(view.ticks.map((tick) => tick.label)).toEqual(["0", "30", "60"]);
 		expect(
 			view.series.map((point) => [point.label, point.valueLabel, point.tooltipDetail]),
 		).toEqual([
@@ -256,14 +255,12 @@ describe("weekly tooltip data", () => {
 });
 
 describe("buildGamesAxis", () => {
-	it("keeps the top at 2,000 with 3 even lines for any smaller value", () => {
-		for (const largest of [0, 3, 58, 1750, 2000]) {
-			expect(buildGamesAxis(largest)).toEqual({ max: 2000, ticks: [0, 1000, 2000] });
-		}
-	});
-
-	it("grows to the next 1,000 above a bigger week, still 3 even lines", () => {
-		expect(buildGamesAxis(2001)).toEqual({ max: 3000, ticks: [0, 1500, 3000] });
+	it("fits a round top to the largest week so a facility's line is not flattened", () => {
+		expect(buildGamesAxis(0)).toEqual({ max: 10, ticks: [0, 5, 10] });
+		expect(buildGamesAxis(58)).toEqual({ max: 60, ticks: [0, 30, 60] });
+		expect(buildGamesAxis(75)).toEqual({ max: 80, ticks: [0, 40, 80] });
+		expect(buildGamesAxis(362)).toEqual({ max: 400, ticks: [0, 200, 400] });
+		expect(buildGamesAxis(1337)).toEqual({ max: 2000, ticks: [0, 1000, 2000] });
 		expect(buildGamesAxis(3600)).toEqual({ max: 4000, ticks: [0, 2000, 4000] });
 	});
 
@@ -277,7 +274,7 @@ describe("buildGamesAxis", () => {
 			MONTH,
 			createDetailFormatters("es"),
 		);
-		expect(view.ticks.at(-1)?.label).toBe(new Intl.NumberFormat("es").format(2000));
+		expect(view.ticks.at(-1)?.label).toBe(new Intl.NumberFormat("es").format(view.axisMax));
 	});
 });
 
