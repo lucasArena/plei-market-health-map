@@ -20,6 +20,8 @@ export function metricDrillDownQueryKey(input: {
 	slice: DrillDownSlice;
 	marketId?: string;
 	facilityId?: string;
+	grain?: GetMetricDrillDownInput["grain"];
+	comparison?: GetMetricDrillDownInput["comparison"];
 	department?: GameDepartment;
 	departments?: readonly GameDepartment[];
 	enabled: boolean;
@@ -29,6 +31,8 @@ export function metricDrillDownQueryKey(input: {
 		input.measure,
 		input.range,
 		input.slice,
+		input.grain ?? "range",
+		input.comparison ?? "previous-period",
 		input.marketId ?? "all",
 		input.facilityId ?? "all",
 		input.department ?? "all",
@@ -45,6 +49,8 @@ export function metricDrillDownPath(input: GetMetricDrillDownInput): string {
 		range: input.range,
 		slice: input.slice,
 	});
+	if (input.comparison) params.set("comparison", input.comparison);
+	if (input.grain) params.set("grain", input.grain);
 	if (input.marketId) params.set("marketId", input.marketId);
 	if (input.facilityId) params.set("facilityId", input.facilityId);
 	if (input.department) params.set("department", input.department);

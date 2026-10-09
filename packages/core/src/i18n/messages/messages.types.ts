@@ -175,6 +175,32 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		compare: string;
+		compareWeek: string;
+		compareMonth: string;
+		compareYear: string;
+		compareHelp: string;
+
+		change: string;
+		changeNew: string;
+		changeStable: string;
+		changePrior: string;
+
+		noCompletedBuckets: string;
+		bucketHelp: string;
+		time: string;
+		bucket: string;
+		day: string;
+		week: string;
+		month: string;
+		partial: string;
+
+		appSessions: string;
+		registrations: string;
+		uniqueUsers: string;
+		appActivityNote: string;
+		sourceSwitch: string;
+
 		title: string;
 		expand: string;
 		collapse: string;
@@ -198,6 +224,23 @@ export interface Messages {
 		activatedPlayers: string;
 		almostFilledRate: string;
 		incidentGamesRate: string;
+		avgDailyGames: string;
+		activeOrganizers: string;
+		measureTips: Record<
+			| "games"
+			| "avgDailyGames"
+			| "scheduledGames"
+			| "incidentGamesRate"
+			| "confirmationRate"
+			| "almostFilledRate"
+			| "registrations"
+			| "uniqueUsers"
+			| "activatedPlayers"
+			| "uniquePlayers"
+			| "activeOrganizers"
+			| "activeFacilities",
+			string
+		>;
 		ratio: string;
 		ratioWithErrors: string;
 		almostFilledParts: string;

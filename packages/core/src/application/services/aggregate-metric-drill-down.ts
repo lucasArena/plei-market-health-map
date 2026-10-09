@@ -92,9 +92,12 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 				: [input.slice === "market" ? facility.marketId : facility.id];
 		for (const id of groups) {
 			const isDepartment = input.slice === "department";
-			const name = { market: facility.marketName, facility: facility.name, department: id }[
-				input.slice
-			];
+			const name = {
+				market: facility.marketName,
+				time: facility.name,
+				facility: facility.name,
+				department: id,
+			}[input.slice];
 			const row = rows.get(id) ?? { id, name, value: 0, departments: emptyDepartments() };
 			const groupValue = isDepartment ? (departments?.[id as GameDepartment] ?? null) : value;
 			row.value = sumKnown(row.value, groupValue);
@@ -406,7 +409,7 @@ export function rateContributionsFromFacts(
 export function distinctContributionsFromFacts(
 	facilities: readonly DrillDownFacilityFact[],
 	slice: DrillDownSlice,
-	measure: Extract<DrillDownMeasure, "unique-players" | "activated-players">,
+	measure: Extract<DrillDownMeasure, "unique-players" | "activated-players" | "active-organizers">,
 	options: {
 		marketId?: string;
 		facilityId?: string;
@@ -419,12 +422,16 @@ export function distinctContributionsFromFacts(
 	return scopedFacilities(facilities, options.marketId, options.facilityId).flatMap(
 		(facility): DistinctCountContribution[] => {
 			const memberKeys =
-				(measure === "unique-players" ? facility.uniquePlayerIds : facility.activatedPlayerIds) ??
-				[];
-			const source =
-				measure === "unique-players"
-					? facility.uniquePlayerIdsByDepartment
-					: facility.activatedPlayerIdsByDepartment;
+				{
+					"unique-players": facility.uniquePlayerIds,
+					"activated-players": facility.activatedPlayerIds,
+					"active-organizers": facility.activeOrganizerIds,
+				}[measure] ?? [];
+			const source = {
+				"unique-players": facility.uniquePlayerIdsByDepartment,
+				"activated-players": facility.activatedPlayerIdsByDepartment,
+				"active-organizers": null,
+			}[measure];
 			const departments = {
 				magic: source?.magic ?? [],
 				organizers: source?.organizers ?? [],
@@ -461,7 +468,11 @@ export function aggregateDrillDownFromFacts(
 			start: input.start,
 			end: input.end,
 		});
-	if (input.measure === "unique-players" || input.measure === "activated-players")
+	if (
+		input.measure === "unique-players" ||
+		input.measure === "activated-players" ||
+		input.measure === "active-organizers"
+	)
 		return aggregateDistinctCountDrillDown({
 			contributions: distinctContributionsFromFacts(
 				input.facilities,

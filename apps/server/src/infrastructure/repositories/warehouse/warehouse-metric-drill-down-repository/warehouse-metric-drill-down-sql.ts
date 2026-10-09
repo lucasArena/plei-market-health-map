@@ -82,6 +82,28 @@ from games g
 group by g.location_id`;
 }
 
+export function metricDrillDownOrganizerSql(days: number, byDepartment: boolean): string {
+	const departmentFilter = byDepartment
+		? `
+  and ${gameDepartmentCase("r")} = any($3::text[])`
+		: "";
+	return `
+with bounds as (
+  select ${todayParameterSql(2)} as today
+),
+${ORGANIZER_PARTNERS_CTE}
+select distinct r.location_id, r.partner_id
+from plei_gold.dim_reservation r
+${organizerPartnersJoin("r")}
+cross join bounds b
+where r.location_id = any($1::int[])
+  and op.partner_id is not null
+  and r.reservation_type = 'OpenReservation'
+  and ${inLastDaysSql(GAME_DATE, "b.today", days)}
+  and not (${isOperationalCancellationSql("r")})
+  and ${isPlayedGameSql("r")}${departmentFilter}`;
+}
+
 export const QUALITY_COUNTS = [
 	"almost_filled",
 	"rostered_canceled",
@@ -100,26 +122,30 @@ function qualityCountColumns(): string {
 	]).join(",\n  ");
 }
 
-export function metricDrillDownQualitySql(days: number, byDepartment: boolean): string {
+export function metricDrillDownQualityPopulationSql(
+	days: number,
+	byDepartment: boolean,
+	temporal = false,
+): string {
 	const departmentFilter = byDepartment
 		? `
     and ${gameDepartmentCase("r")} = any($3::text[])`
 		: "";
 	const hasRoster = "coalesce(ro.payout_rows = 1 and ro.real_player_count is not null, false)";
 	return `
-with bounds as (
+${temporal ? "" : "with "}bounds as (
   select ${todayParameterSql(2)} as today
 ),
 ${ORGANIZER_PARTNERS_CTE},
 games as (
-  select r.reservation_id, r.location_id, r.status, r.confirmed, r.cancellation_reason,
+  select r.reservation_id, r.location_id, r.date_with_time::date as game_date, r.status, r.confirmed, r.cancellation_reason,
     r.min_player_count, ${gameDepartmentCase("r")} as department
   from plei_gold.dim_reservation r
   ${organizerPartnersJoin("r")}
   cross join bounds b
-  where r.location_id = any($1::int[])
+  where ${temporal ? "r.location_id::text in (select key from jsonb_each_text($4::jsonb))" : "r.location_id = any($1::int[])"}
     and r.reservation_type = 'OpenReservation'
-    and ${inLastDaysSql(GAME_DATE, "b.today", days)}${departmentFilter}
+    and ${temporal ? `${GAME_DATE} >= $1::date and ${GAME_DATE} < $2::date` : inLastDaysSql(GAME_DATE, "b.today", days)}${departmentFilter}
 ),
 rosters as (
   select p.reservation_id, count(*) as payout_rows, max(p.real_player_count) as real_player_count
@@ -136,7 +162,7 @@ low_rating_games as (
     and v.reservation_id in (select g.reservation_id from games g where ${isPlayedGameSql("g")})
 ),
 classified as (
-  select g.reservation_id, g.location_id, g.department,
+  select g.reservation_id, g.location_id, g.game_date, g.department,
     ${isPlayedGameSql("g")} as happened,
     ${isPlayedGameSql("g")} and lrg.reservation_id is not null as incident_games,
     ${isEligibleCancellationSql("g")} and ${hasRoster} as rostered_canceled,
@@ -146,9 +172,13 @@ classified as (
   from games g
   left join rosters ro on ro.reservation_id = g.reservation_id
   left join low_rating_games lrg on lrg.reservation_id = g.reservation_id
-)
+ )`;
+}
+
+export function metricDrillDownQualitySql(days: number, byDepartment: boolean): string {
+	return `${metricDrillDownQualityPopulationSql(days, byDepartment)}
 select c.location_id,
-  ${qualityCountColumns()}
+ ${qualityCountColumns()}
 from classified c
 group by c.location_id`;
 }

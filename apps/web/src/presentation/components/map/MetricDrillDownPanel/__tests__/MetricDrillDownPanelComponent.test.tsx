@@ -1,11 +1,14 @@
 import type {
 	FacilityPointView,
 	GetMetricDrillDownInput,
+	MetricDrillDownView,
 } from "@market-health-map/core/application";
 import {
 	aggregateDrillDownFromFacts,
+	DRILL_DOWN_MEASURE_KIND,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { createRef } from "react";
@@ -16,6 +19,8 @@ import type { MapScope } from "@/presentation/components/providers/MapScopeProvi
 const navigate = vi.fn();
 const retry = vi.fn();
 const setMetricFocus = vi.fn();
+const demandInputs = vi.fn();
+const comparisonInputs = vi.fn();
 let scope: MapScope = { kind: "all" };
 let period = "month";
 const facility: FacilityPointView = {
@@ -33,6 +38,8 @@ const facility: FacilityPointView = {
 	gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
 };
 let data: FacilityPointView[] = [];
+let timeView: MetricDrillDownView | undefined;
+let comparisonView: MetricDrillDownView | undefined;
 let pending = false;
 let failed = false;
 let gameDepartments: ("magic" | "organizers" | "partnerships")[] = [];
@@ -48,9 +55,12 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 }));
 vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 	useMetricDrillDown: (input: GetMetricDrillDownInput & { enabled?: boolean }) => {
+		comparisonInputs(input);
 		if (!input.enabled) {
 			return { data: undefined, isPending: false, isError: false, refetch: retry };
 		}
+		if (comparisonView && input.slice !== "time")
+			return { data: comparisonView, isPending: false, isError: false, refetch: retry };
 		if (pending) return { data: undefined, isPending: true, isError: false, refetch: retry };
 		if (failed) return { data: undefined, isPending: false, isError: true, refetch: retry };
 		const { start, end } = drillDownWindow(
@@ -58,6 +68,27 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 			"America/New_York",
 			input.range,
 		);
+		if (input.slice === "time") {
+			demandInputs(input);
+			return { data: timeView, isPending: false, isError: false, refetch: retry };
+		}
+		if (isAppActivityMeasure(input.measure)) {
+			demandInputs(input);
+			return {
+				data: {
+					measure: input.measure,
+					range: input.range,
+					kind: DRILL_DOWN_MEASURE_KIND[input.measure],
+					start,
+					end,
+					total: 3,
+					rows: [{ id: "miami", name: "Miami", value: 3, departments: null }],
+				},
+				isPending: false,
+				isError: false,
+				refetch: retry,
+			};
+		}
 		const view = aggregateDrillDownFromFacts({
 			facilities: factsFromFacilityPoints(data, input.range === "7d" ? "7d" : "28d").map(
 				(facility) => ({
@@ -137,15 +168,30 @@ function setup(isOpen = true) {
 	};
 }
 function select(name: string, value: string) {
+	if (value.startsWith("time:")) {
+		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+		fireEvent.click(screen.getByRole("option", { name: "Date" }));
+		fireEvent.click(screen.getByRole("option", { name: value === "time:week" ? "Week" : "Month" }));
+		return;
+	}
+
 	const labels = {
+		registrations: "New users",
+		"unique-users": "Active users",
 		games: "Games played",
+		"avg-daily-games": "Avg daily games",
+		"active-organizers": "Active organizers",
 		"active-facilities": "Active facilities",
-		"scheduled-games": "Scheduled games",
+		"scheduled-games": "Games scheduled",
 		"confirmation-rate": "Confirmation rate",
-		"unique-players": "Unique players",
+		"unique-players": "Active players",
 		"activated-players": "Activated players",
 		"almost-filled-rate": "Almost-filled rate",
-		"incident-games-rate": "Incident games %",
+		"incident-games-rate": "Incident games",
+		time: "Date",
+		day: "Day",
+		week: "Week",
+		month: "Month",
 		market: "Market",
 		facility: "Facility",
 		department: "Department",
@@ -158,9 +204,11 @@ function select(name: string, value: string) {
 	};
 	fireEvent.click(screen.getByRole("combobox", { name }));
 	fireEvent.click(screen.getByRole("option", { name: labels[value as keyof typeof labels] }));
+	if (value === "time") fireEvent.click(screen.getByRole("option", { name: "Day" }));
 }
 describe("MetricDrillDownPanel", () => {
 	beforeEach(() => {
+		timeView = undefined;
 		gameDepartments = [];
 		showSupply = true;
 		scope = { kind: "all" };
@@ -324,7 +372,7 @@ describe("MetricDrillDownPanel", () => {
 		setup();
 		const table = screen.getByRole("table");
 		expect(within(table).getAllByRole("row")[1]).toHaveTextContent("10");
-		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Count/ }));
 		expect(within(table).getAllByRole("row")[1]).toHaveTextContent("10");
 		select("Measure", "active-facilities");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
@@ -354,13 +402,42 @@ describe("MetricDrillDownPanel", () => {
 		expect(screen.queryByRole("button", { name: /Explore facilities/ })).not.toBeInTheDocument();
 		const mapButton = screen.getByRole("button", { name: "View on map: Miami" });
 		expect(mapButton).not.toHaveTextContent("View on map");
-		expect(screen.getByRole("button", { name: /Count ↕/ })).toHaveClass(
+		expect(screen.getByRole("button", { name: /Count/ })).toHaveClass(
 			"whitespace-nowrap",
 			"inline-flex",
 		);
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	it("lists the measures in order, each with a plain-language tooltip", () => {
+		setup();
+		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
+		const options = screen.getAllByRole("option");
+		expect(options.map((option) => option.textContent)).toEqual([
+			"Games played",
+			"Avg daily games",
+			"Games scheduled",
+			"Incident games",
+			"Confirmation rate",
+			"Almost-filled rate",
+			"New users",
+			"Active users",
+			"Activated players",
+			"Active players",
+			"Active organizers",
+			"Active facilities",
+		]);
+		for (const option of options) expect(option.getAttribute("title")).toBeTruthy();
+		expect(options[0]).toHaveAttribute("title", "Games that actually took place.");
+		expect(screen.queryByRole("option", { name: "App sessions" })).not.toBeInTheDocument();
+	});
+	it("hides department slices for active organizers like active facilities", () => {
+		setup();
+		select("Measure", "active-organizers");
+		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+		expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
+		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
+	});
 	it("offers department slices for game and player measures and hides them for active facilities", () => {
 		setup();
 		select("Slice", "department");
@@ -368,14 +445,14 @@ describe("MetricDrillDownPanel", () => {
 		expect(within(screen.getByRole("table")).getByText("Magic")).toBeInTheDocument();
 		select("Measure", "scheduled-games");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Department");
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Scheduled games");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Games scheduled");
 		select("Measure", "confirmation-rate");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Confirmation rate",
 		);
-		expect(screen.getByRole("button", { name: /Rate ↕/ })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		select("Measure", "unique-players");
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Unique players");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Active players");
 		select("Measure", "activated-players");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Activated players",
@@ -414,13 +491,10 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Arena · Magic: 50.0%" }));
 		expect(screen.queryByText(/almost-filled canceled games of/)).not.toBeInTheDocument();
 	});
-	it("offers only the incident rate, with the reviews-lag note and its parts", () => {
+	it("shows the incident rate with the reviews-lag note and its parts", () => {
 		setup();
-		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
-		expect(screen.queryByRole("option", { name: "Incident games" })).not.toBeInTheDocument();
-		fireEvent.keyDown(screen.getByRole("combobox", { name: "Measure" }), { key: "Escape" });
 		select("Measure", "incident-games-rate");
-		expect(screen.getByRole("button", { name: /Rate ↕/ })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
 		expect(screen.getByText("3 incident games of 16 happened games")).toBeInTheDocument();
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -439,12 +513,12 @@ describe("MetricDrillDownPanel", () => {
 		setup();
 		expect(screen.getByText("Top 10")).toBeInTheDocument();
 		expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(13);
-		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Count/ }));
 		expect(within(screen.getByRole("table")).getAllByRole("row")[1]).toHaveTextContent("Market 0");
-		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
-		fireEvent.click(screen.getByRole("button", { name: /Market ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Count/ }));
+		fireEvent.click(screen.getByRole("button", { name: "Market" }));
 		expect(within(screen.getByRole("table")).getAllByRole("row")[1]).toHaveTextContent("Market 0");
-		fireEvent.click(screen.getByRole("button", { name: /Market ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: "Market" }));
 		expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute("aria-sort", "descending");
 	});
 	it("requests zoom only from the map icon without closing or changing metric scope", () => {
@@ -508,9 +582,16 @@ describe("MetricDrillDownPanel", () => {
 		pending = true;
 		const { rerender, props } = setup();
 		expect(screen.getByRole("status")).toHaveTextContent("Loading metrics");
+		expect(screen.getByTestId("drill-down-skeleton")).toBeInTheDocument();
+		for (const name of ["Measure", "Slice", "Segment"]) {
+			expect(screen.getByRole("combobox", { name })).toBeVisible();
+			expect(screen.getByRole("combobox", { name }).querySelector(".truncate")).toBeNull();
+		}
+		expect(screen.queryByText(/1970/)).not.toBeInTheDocument();
 		pending = false;
 		failed = true;
 		rerender(<MetricDrillDownPanel {...props} />);
+		expect(screen.queryByTestId("drill-down-skeleton")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 		expect(retry).toHaveBeenCalled();
 		failed = false;
@@ -522,5 +603,392 @@ describe("MetricDrillDownPanel", () => {
 		data = [];
 		act(() => rerender(<MetricDrillDownPanel {...props} />));
 		expect(screen.getByText("No activity in this scope and period.")).toBeInTheDocument();
+	});
+});
+
+describe("app activity measures", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		period = "month";
+		data = [facility];
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		showSupply = true;
+		demandInputs.mockClear();
+	});
+	it.each(["registrations", "unique-users"])(
+		"resets facility and department slices for %s",
+		(measure) => {
+			gameDepartments = ["magic"];
+			setup();
+			select("Slice", "facility");
+			select("Segment", "department");
+			select("Measure", measure);
+			expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+			expect(screen.queryByRole("combobox", { name: "Segment" })).not.toBeInTheDocument();
+			expect(screen.getByText(/App activity isn’t linked/)).toHaveTextContent(
+				"Department filters don’t apply.",
+			);
+			fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+			expect(screen.queryByRole("option", { name: "Facility" })).not.toBeInTheDocument();
+			expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
+			fireEvent.keyDown(screen.getByRole("combobox", { name: "Slice" }), { key: "Escape" });
+			select("Measure", "games");
+			select("Slice", "department");
+			select("Measure", measure);
+			expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+			expect(demandInputs).toHaveBeenLastCalledWith(
+				expect.objectContaining({ departments: [], slice: "market" }),
+			);
+		},
+	);
+	it("loads app activity while supply is hidden and marks ranges spanning the source change", () => {
+		showSupply = false;
+		setup();
+		select("Measure", "unique-users");
+		expect(screen.queryByText(/Supply is hidden/)).not.toBeInTheDocument();
+		expect(screen.queryByRole("note")).not.toBeInTheDocument();
+		select("Date range", "6m");
+		expect(screen.getByRole("note")).toHaveTextContent("June 29, 2026");
+		select("Measure", "registrations");
+		expect(screen.queryByRole("note")).not.toBeInTheDocument();
+	});
+	it("uses the facility’s market for app measures and keeps that slice on scope changes", () => {
+		scope = { kind: "facility", id: "a", name: "Arena", marketName: "Miami" };
+		data = [facility];
+		const result = setup();
+		select("Measure", "registrations");
+		expect(demandInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ marketId: "miami", facilityId: undefined }),
+		);
+		scope = { kind: "market", id: "miami", name: "Miami" };
+		result.rerender(<MetricDrillDownPanel {...result.props} />);
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+	});
+});
+
+describe("time slices", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		showSupply = true;
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		data = [facility];
+		timeView = {
+			measure: "games",
+			range: "12m",
+			kind: "count",
+			start: "2026-06-28",
+			end: "2026-10-07",
+			total: 12,
+			rows: Array.from({ length: 12 }, (_, index) => {
+				const day = new Date("2026-06-28T00:00:00Z");
+				day.setUTCDate(day.getUTCDate() + index);
+				const id = day.toISOString().slice(0, 10);
+				return {
+					id,
+					name: id,
+					bucketStart: id,
+					bucketEnd: id,
+					partial: index === 0,
+					value: index === 0 ? 12 : 0,
+					departments: { magic: index === 0 ? 12 : 0, organizers: 0, partnerships: 0 },
+					facilityIds: index === 0 ? ["a"] : [],
+				};
+			}),
+		};
+	});
+	it("labels weeks by Sunday end dates and months by abbreviated month and year", () => {
+		if (!timeView) throw new Error("Missing fixture");
+		timeView = {
+			...timeView,
+			rows: [
+				{
+					...timeView.rows[0],
+					value: 12,
+					departments: null,
+					id: "2026-09-07",
+					name: "2026-09-07",
+					bucketStart: "2026-09-10",
+					bucketEnd: "2026-09-13",
+					partial: true,
+				},
+			],
+		};
+		setup();
+		select("Slice", "time:week");
+		expect(screen.getByRole("button", { name: "Sep 13, 2026 · partial: 12" })).toBeInTheDocument();
+		expect(
+			within(screen.getByRole("table")).getByText("Sep 13, 2026 · partial"),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Sep 7, 2026 · partial")).not.toBeInTheDocument();
+		select("Slice", "time:month");
+		expect(screen.getByRole("button", { name: "Sep 2026 · partial: 12" })).toBeInTheDocument();
+		expect(within(screen.getByRole("table")).getByText("Sep 2026 · partial")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Sep 2026 · partial: 12" }));
+		expect(screen.getByText("Sep 2026 · partial", { selector: "p" })).toBeInTheDocument();
+		select("Slice", "time");
+		expect(screen.getByRole("button", { name: "Sep 7, 2026 · partial: 12" })).toBeInTheDocument();
+	});
+
+	it("shows every chronological bucket, partial labels, and a scrollable chart", () => {
+		setup();
+		select("Slice", "time");
+		expect(demandInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ slice: "time", grain: "day" }),
+		);
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Date · Day");
+		expect(screen.queryByRole("combobox", { name: "Bucket" })).not.toBeInTheDocument();
+		expect(screen.queryByText(/Showing the top/)).not.toBeInTheDocument();
+		const chart = screen.getByRole("region", { name: "Metric by group" });
+		expect(within(chart).getAllByRole("button")).toHaveLength(12);
+		expect(within(chart).getAllByRole("button")[0]).toHaveAccessibleName(/Jun 28, 2026.*partial/);
+		expect(chart.querySelector('[style*="min-width"]')).toHaveStyle({ minWidth: "504px" });
+		expect(screen.queryByRole("button", { name: /View on map:/ })).not.toBeInTheDocument();
+	});
+	it("selects and clears buckets, filters Supply to their facility IDs, and resets on grain change", () => {
+		setup();
+		select("Slice", "time");
+		const bar = screen.getByRole("button", { name: /Jun 28, 2026.*12/ });
+		fireEvent.click(bar);
+		expect(setMetricFocus).toHaveBeenLastCalledWith({ facilityIds: ["a"], department: undefined });
+		expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(1);
+		fireEvent.click(bar);
+		expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(12);
+		select("Slice", "time:week");
+		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "week" }));
+		select("Slice", "time:month");
+		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "month" }));
+		select("Segment", "department");
+		expect(screen.getByRole("button", { name: /Jun 2026.*Magic.*12/ })).toBeInTheDocument();
+	});
+	it("keeps Time when switching to app measures and places the source marker on the timeline", () => {
+		setup();
+		select("Slice", "time");
+		select("Measure", "registrations");
+		expect(demandInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ slice: "time", grain: "day", departments: [] }),
+		);
+		expect(screen.queryByText("2026-06-29")).not.toBeInTheDocument();
+		select("Measure", "unique-users");
+		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
+	});
+	it("shows rate components for segments and filters Supply to the segment's facilities", () => {
+		if (!timeView) throw new Error("Missing fixture");
+		timeView = {
+			...timeView,
+			kind: "rate",
+			total: 25,
+			numerator: 3,
+			denominator: 12,
+			rows: [
+				{
+					...timeView.rows[0],
+					id: "2026-06-28",
+					name: "2026-06-28",
+					value: 25,
+					departments: { magic: 50, organizers: null, partnerships: 0 },
+					numerator: 3,
+					denominator: 12,
+					departmentParts: { magic: { numerator: 2, denominator: 4, dataErrors: 1 } },
+					departmentFacilityIds: { magic: ["b"] },
+				},
+			],
+		};
+		setup();
+		select("Measure", "almost-filled-rate");
+		select("Slice", "time");
+		select("Segment", "department");
+		const bar = screen.getByRole("button", { name: /Jun 28, 2026.*Magic: 50.0%.*2 of 4/ });
+		fireEvent.click(bar);
+		expect(setMetricFocus).toHaveBeenLastCalledWith({ facilityIds: ["b"], department: "magic" });
+		expect(
+			screen.getByText("2 almost-filled canceled games of 4 eligible canceled games"),
+		).toBeInTheDocument();
+		expect(screen.getByRole("alert")).toHaveTextContent(/Data error: 1/);
+	});
+	it("explains ranges with no completed bucket and still displays zero count buckets", () => {
+		if (!timeView) throw new Error("Missing fixture");
+		timeView = { ...timeView, total: 0, rows: timeView.rows.map((row) => ({ ...row, value: 0 })) };
+		const result = setup();
+		select("Slice", "time");
+		expect(screen.getByRole("region", { name: "Metric by group" })).toBeInTheDocument();
+		timeView = { ...timeView, start: "2026-10-01", end: "2026-09-30", rows: [] };
+		result.rerender(<MetricDrillDownPanel {...result.props} />);
+		expect(screen.getByText("No completed buckets in this date range.")).toBeInTheDocument();
+	});
+});
+
+describe("drill-down changes", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		period = "month";
+		showSupply = true;
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		data = [facility];
+		comparisonView = {
+			measure: "games",
+			range: "28d",
+			kind: "count",
+			start: "2026-09-10",
+			end: "2026-10-07",
+			previousStart: "2026-08-13",
+			previousEnd: "2026-09-09",
+			total: 32,
+			previousTotal: 30,
+			rows: [
+				{
+					id: "up",
+					name: "Up",
+					value: 12,
+					previousValue: 10,
+					departments: { magic: 12, organizers: 0, partnerships: 0 },
+					previousDepartments: { magic: 8, organizers: 0, partnerships: 0 },
+				},
+				{ id: "down", name: "Down", value: 0, previousValue: 10, departments: null },
+				{ id: "stable", name: "Equal", value: 10, previousValue: 10, departments: null },
+				{ id: "new", name: "New market", value: 10, previousValue: 0, departments: null },
+				{ id: "missing", name: "Missing", value: null, previousValue: null, departments: null },
+				{ id: "empty", name: "Empty region", value: 0, previousValue: 0, departments: null },
+			],
+		};
+	});
+	afterEach(() => {
+		comparisonView = undefined;
+	});
+	it("uses consistent rounding, colors and sorting with new and missing last", () => {
+		setup();
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 6.7% (+2)");
+		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
+		expect(screen.getByText("↑ 20%").parentElement).toHaveClass("text-foreground");
+		expect(
+			within(screen.getByText("↑ 20%").parentElement as HTMLElement).getByText("(+2)"),
+		).not.toHaveAttribute("style");
+		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
+		expect(screen.getByText("↓ 100%").parentElement).toHaveClass("text-foreground");
+		expect(screen.getByText("(-10)")).not.toHaveAttribute("style");
+		expect(screen.getByText("Stable").parentElement).toHaveTextContent("Stable (+0)");
+		expect(screen.getByText("↑ New")).toBeInTheDocument();
+		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Change" }));
+		const names = () =>
+			within(screen.getByRole("table"))
+				.getAllByRole("row")
+				.slice(1)
+				.map((row) => row.querySelector("td")?.textContent);
+		expect(names()).toEqual(["Up", "Equal", "Down", "Missing", "New market"]);
+		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
+		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
+		fireEvent.click(screen.getByText("Up", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 20% (+2)");
+		expect(within(screen.getByRole("table")).getByText("↑ 20%").parentElement).toHaveTextContent(
+			"↑ 20% (+2)",
+		);
+	});
+	it("compares the selected department against its own prior value", () => {
+		setup();
+		select("Segment", "department");
+		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 50% (+4)");
+		expect(within(screen.getByRole("table")).getByText("↑ 50%").parentElement).toHaveTextContent(
+			"↑ 50% (+4)",
+		);
+	});
+	it("shows Stable and zero change without an arrow in the headline and table", () => {
+		setup();
+		fireEvent.click(screen.getByText("Equal", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("Stable (+0)");
+		expect(screen.getByTestId("drill-down-headline-change").querySelector("img")).toBeNull();
+		expect(within(screen.getByRole("table")).getByText("Stable").parentElement).toHaveTextContent(
+			"Stable (+0)",
+		);
+	});
+	it("shows the absolute decrease in the selected headline", () => {
+		setup();
+		fireEvent.click(screen.getByText("Down", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↓ 100% (-10)");
+		expect(
+			within(screen.getByTestId("drill-down-headline-change")).getByText("↓ 100%"),
+		).toHaveStyle({ color: "#EF4444" });
+	});
+	it("shows new activity with its raw difference", () => {
+		setup();
+		fireEvent.click(screen.getByText("New market", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ New (+10)");
+	});
+	it("shows signed raw changes for distinct counts", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = { ...comparisonView, kind: "distinct-count", total: 2, previousTotal: 1 };
+		setup();
+		select("Measure", "unique-players");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 100% (+1)");
+	});
+	it("changes comparison independently from sorting and range", () => {
+		setup();
+		const compare = screen.getByRole("combobox", { name: "Compare" });
+		expect(compare).toHaveTextContent("MoM");
+		expect(compare).toHaveAttribute("title", expect.stringContaining("Month over month"));
+		expect(compare.closest("fieldset")?.parentElement).toBe(
+			screen.getByRole("combobox", { name: "Date range" }).closest("fieldset")?.parentElement,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Change" }));
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		expect(screen.getByRole("option", { name: "YoY" })).toHaveAttribute("title", "Year over year");
+		expect(screen.getByRole("option", { name: "MoM" })).toHaveAttribute(
+			"title",
+			"Month over month",
+		);
+		expect(screen.getByRole("option", { name: "WoW" })).toHaveAttribute("title", "Week over week");
+		fireEvent.click(screen.getByRole("option", { name: "YoY" }));
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "28d", comparison: "year" }),
+		);
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveClass("font-normal");
+		expect(compare).toHaveTextContent("YoY");
+		expect(compare).toHaveAttribute("title", expect.stringContaining("Year over year"));
+		expect(screen.getByRole("button", { name: "Change ↓" }).closest("th")).toHaveAttribute(
+			"aria-sort",
+			"descending",
+		);
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		fireEvent.click(screen.getByRole("option", { name: "WoW" }));
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "28d", comparison: "week" }),
+		);
+		expect(compare).toHaveTextContent("WoW");
+		select("Slice", "time");
+		expect(screen.queryByRole("combobox", { name: "Compare" })).not.toBeInTheDocument();
+	});
+	it("uses points for rates and keeps unavailable comparisons unavailable", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = {
+			...comparisonView,
+			kind: "rate",
+			total: 82.1,
+			previousTotal: 80,
+			rows: [
+				{ id: "a", name: "Arena", value: 82.1, previousValue: 80, departments: null },
+				{
+					id: "b",
+					name: "No prior denominator",
+					value: 20,
+					previousValue: null,
+					departments: null,
+				},
+			],
+		};
+		setup();
+		expect(screen.getAllByText("↑ 2.1 pts")).toHaveLength(2);
+	});
+	it("shows the source-switch note when the previous app window crosses the transition", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = { ...comparisonView, previousStart: "2026-06-28", previousEnd: "2026-07-25" };
+		setup();
+		select("Measure", "unique-users");
+		expect(screen.getByRole("note")).toHaveTextContent("Tracking source changed");
 	});
 });
