@@ -199,7 +199,7 @@ export const ptBR: Messages = {
 		noCompletedBuckets: "Nenhum intervalo completo neste período.",
 		bucketHelp:
 			"Somente intervalos completos. Semanas começam na segunda. O primeiro pode ser parcial.",
-		time: "Tempo",
+		time: "Data",
 		bucket: "Intervalo",
 		day: "Dia",
 		week: "Semana",

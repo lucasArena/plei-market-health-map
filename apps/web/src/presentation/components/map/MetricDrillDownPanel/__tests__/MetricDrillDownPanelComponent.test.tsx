@@ -163,6 +163,13 @@ function setup(isOpen = true) {
 	};
 }
 function select(name: string, value: string) {
+	if (value.startsWith("time:")) {
+		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+		fireEvent.click(screen.getByRole("option", { name: "Date" }));
+		fireEvent.click(screen.getByRole("option", { name: value === "time:week" ? "Week" : "Month" }));
+		return;
+	}
+
 	const labels = {
 		"app-sessions": "App sessions",
 		registrations: "Registrations",
@@ -175,7 +182,7 @@ function select(name: string, value: string) {
 		"activated-players": "Activated players",
 		"almost-filled-rate": "Almost-filled rate",
 		"incident-games-rate": "Incident games %",
-		time: "Time",
+		time: "Date",
 		day: "Day",
 		week: "Week",
 		month: "Month",
@@ -191,6 +198,7 @@ function select(name: string, value: string) {
 	};
 	fireEvent.click(screen.getByRole("combobox", { name }));
 	fireEvent.click(screen.getByRole("option", { name: labels[value as keyof typeof labels] }));
+	if (value === "time") fireEvent.click(screen.getByRole("option", { name: "Day" }));
 }
 describe("MetricDrillDownPanel", () => {
 	beforeEach(() => {
@@ -659,6 +667,8 @@ describe("time slices", () => {
 		expect(demandInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ slice: "time", grain: "day" }),
 		);
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Date · Day");
+		expect(screen.queryByRole("combobox", { name: "Bucket" })).not.toBeInTheDocument();
 		expect(screen.queryByText(/Showing the top/)).not.toBeInTheDocument();
 		const chart = screen.getByRole("region", { name: "Metric by group" });
 		expect(within(chart).getAllByRole("button")).toHaveLength(12);
@@ -675,9 +685,9 @@ describe("time slices", () => {
 		expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(1);
 		fireEvent.click(bar);
 		expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(12);
-		select("Bucket", "week");
+		select("Slice", "time:week");
 		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "week" }));
-		select("Bucket", "month");
+		select("Slice", "time:month");
 		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "month" }));
 		select("Segment", "department");
 		expect(screen.getByRole("button", { name: /Jun 28, 2026.*Magic.*12/ })).toBeInTheDocument();

@@ -1,11 +1,9 @@
 "use client";
 
 import type {
-	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownRange,
 	DrillDownSegment,
-	DrillDownSlice,
 } from "@market-health-map/core/application";
 import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 import { useMetricDrillDownPanelRules } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.rules";
@@ -139,11 +137,19 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					<MapMetricSelect
 						label={m.slice}
 						help={m.sliceHelp}
-						value={selection.slice}
-						onChange={(value) => rules.setSlice(value as DrillDownSlice)}
+						value={rules.sliceValue}
+						onChange={rules.setSliceValue}
 						options={[
 							{ value: "market", label: m.market },
-							{ value: "time", label: m.time },
+							{
+								value: "time",
+								label: m.time,
+								children: [
+									{ value: "time:day", label: m.day },
+									{ value: "time:week", label: m.week },
+									{ value: "time:month", label: m.month },
+								],
+							},
 							...(!rules.isAppActivity ? [{ value: "facility", label: m.facility }] : []),
 							...(rules.canSliceByDepartment ? [{ value: "department", label: m.department }] : []),
 						]}
@@ -164,19 +170,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						/>
 					)}
 				</div>
-				{rules.isTime && (
-					<MapMetricSelect
-						label={m.bucket}
-						help={m.bucketHelp}
-						value={rules.grain}
-						onChange={(value) => rules.setGrain(value as DrillDownGrain)}
-						options={[
-							{ value: "day", label: m.day },
-							{ value: "week", label: m.week },
-							{ value: "month", label: m.month },
-						]}
-					/>
-				)}
 				{rules.isAppActivity && (
 					<p className="text-xs text-muted-foreground">{m.appActivityNote}</p>
 				)}

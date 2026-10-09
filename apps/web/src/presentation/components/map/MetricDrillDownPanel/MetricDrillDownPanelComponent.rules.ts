@@ -377,9 +377,11 @@ export function useMetricDrillDownPanelRules({
 		setFocus(null);
 		setSelection((current) => ({ ...current, segment: next }));
 	}
-	function setGrain(next: DrillDownGrain) {
-		setFocus(null);
-		setGrainState(next);
+	function setSliceValue(value: string) {
+		if (value.startsWith("time:")) {
+			setGrainState(value.slice(5) as DrillDownGrain);
+			setSlice("time");
+		} else setSlice(value as DrillDownSlice);
 	}
 	function setRange(next: DrillDownRange) {
 		setFocus(null);
@@ -422,7 +424,8 @@ export function useMetricDrillDownPanelRules({
 		selection,
 		isTime,
 		grain,
-		setGrain,
+		sliceValue: isTime ? `time:${grain}` : selection.slice,
+		setSliceValue,
 		range,
 		segment,
 		canSegment,

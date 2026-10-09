@@ -200,7 +200,7 @@ export const es: Messages = {
 		noCompletedBuckets: "No hay intervalos completos en este período.",
 		bucketHelp:
 			"Solo intervalos completos. Las semanas empiezan el lunes. El primero puede ser parcial.",
-		time: "Tiempo",
+		time: "Fecha",
 		bucket: "Intervalo",
 		day: "Día",
 		week: "Semana",

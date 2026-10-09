@@ -195,7 +195,7 @@ export const en: Messages = {
 		noCompletedBuckets: "No completed buckets in this date range.",
 		bucketHelp:
 			"Completed calendar buckets only. Weeks start Monday. The first bucket can be partial.",
-		time: "Time",
+		time: "Date",
 		bucket: "Bucket",
 		day: "Day",
 		week: "Week",
