@@ -150,3 +150,14 @@ describe("useMetricDrillDown", () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
+
+it("sends calendar grain and separates cached day, week and month views", () => {
+	const input = { measure: "games", range: "12m", slice: "time", enabled: true } as const;
+	expect(metricDrillDownPath({ ...input, grain: "week" })).toContain("grain=week");
+	expect(metricDrillDownQueryKey({ ...input, grain: "day" })).not.toEqual(
+		metricDrillDownQueryKey({ ...input, grain: "week" }),
+	);
+	expect(metricDrillDownQueryKey({ ...input, grain: "month" })).not.toEqual(
+		metricDrillDownQueryKey({ ...input, grain: "week" }),
+	);
+});

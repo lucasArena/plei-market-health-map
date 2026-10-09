@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownRange,
 	DrillDownSegment,
@@ -142,6 +143,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						onChange={(value) => rules.setSlice(value as DrillDownSlice)}
 						options={[
 							{ value: "market", label: m.market },
+							{ value: "time", label: m.time },
 							...(!rules.isAppActivity ? [{ value: "facility", label: m.facility }] : []),
 							...(rules.canSliceByDepartment ? [{ value: "department", label: m.department }] : []),
 						]}
@@ -162,6 +164,19 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						/>
 					)}
 				</div>
+				{rules.isTime && (
+					<MapMetricSelect
+						label={m.bucket}
+						help={m.bucketHelp}
+						value={rules.grain}
+						onChange={(value) => rules.setGrain(value as DrillDownGrain)}
+						options={[
+							{ value: "day", label: m.day },
+							{ value: "week", label: m.week },
+							{ value: "month", label: m.month },
+						]}
+					/>
+				)}
 				{rules.isAppActivity && (
 					<p className="text-xs text-muted-foreground">{m.appActivityNote}</p>
 				)}
@@ -242,77 +257,100 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 										))}
 									</div>
 								)}
-								<div className="relative pr-9">
-									<div className={`relative ${rules.isExpanded ? "h-80" : "h-52"}`}>
-										<div aria-hidden="true" className="absolute inset-0">
-											{rules.ticks.map((tick) => (
-												<div
-													key={tick}
-													className="absolute inset-x-0 border-t border-dashed border-foreground/15"
-													style={{ bottom: `${(tick / rules.max) * 100}%` }}
-												>
-													<span className="absolute -right-9 -translate-y-1/2 w-7 text-right text-[10px] tabular-nums text-muted-foreground">
-														{formatValue(tick)}
-													</span>
-												</div>
-											))}
-										</div>
-										<div className="relative flex h-full items-end justify-around gap-2 px-1">
-											{chartRows.map((row) => (
-												<div
-													key={row.id}
-													className="flex h-full min-w-0 flex-1 items-end justify-center"
-												>
-													<div className="flex h-full w-3 flex-col-reverse justify-start min-[400px]:w-4">
-														{row.bars.length === 0 && (
-															<span
-																title={m.unavailable}
-																className="text-center text-xs text-muted-foreground"
-															>
-																—
-															</span>
-														)}
-														{row.bars.map((bar) => (
-															<button
-																key={bar.id}
-																type="button"
-																onClick={() => rules.toggleFocus(row, bar.department)}
-																aria-pressed={rules.isSelected(row, bar.department)}
-																aria-label={bar.label}
-																style={{
-																	height: `${bar.height}%`,
-																	backgroundColor:
-																		bar.value === 0
-																			? "transparent"
-																			: drillDownGlassColor(
-																					DRILL_DOWN_COLORS[bar.department ?? "organizers"],
-																				),
-																}}
-																className={`${DRILL_DOWN_BAR_CLASS} ${bar.isTop ? DRILL_DOWN_BAR_TOP_CLASS : ""}`}
-															>
-																<span
-																	aria-hidden="true"
-																	className={`pointer-events-none absolute bottom-full ${rules.tooltipAlignment(row)} z-20 mb-2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground opacity-0 shadow-sm group-hover:opacity-100 group-focus-visible:opacity-100`}
-																>
-																	{bar.label}
-																</span>
-															</button>
-														))}
+								<div className="overflow-x-auto pb-3">
+									<div
+										className="relative pr-9"
+										style={
+											rules.isTime
+												? { minWidth: `${Math.max(300, chartRows.length * 42)}px` }
+												: undefined
+										}
+									>
+										<div className={`relative ${rules.isExpanded ? "h-80" : "h-52"}`}>
+											<div aria-hidden="true" className="absolute inset-0">
+												{rules.ticks.map((tick) => (
+													<div
+														key={tick}
+														className="absolute inset-x-0 border-t border-dashed border-foreground/15"
+														style={{ bottom: `${(tick / rules.max) * 100}%` }}
+													>
+														<span className="absolute -right-9 -translate-y-1/2 w-7 text-right text-[10px] tabular-nums text-muted-foreground">
+															{formatValue(tick)}
+														</span>
 													</div>
-												</div>
+												))}
+											</div>
+											{rules.isTime &&
+												rules.showSourceSwitch &&
+												rules.sourceSwitchPosition !== undefined && (
+													<div
+														role="note"
+														aria-label={m.sourceSwitch}
+														className="absolute inset-y-0 z-10 border-l border-dashed border-foreground/60"
+														style={{ left: `${rules.sourceSwitchPosition}%` }}
+													>
+														<span className="absolute top-0 left-1 text-[10px] whitespace-nowrap bg-background/90 px-1">
+															2026-06-29
+														</span>
+													</div>
+												)}
+											<div className="relative flex h-full items-end justify-around gap-2 px-1">
+												{chartRows.map((row) => (
+													<div
+														key={row.id}
+														className="flex h-full min-w-0 flex-1 items-end justify-center"
+													>
+														<div className="flex h-full w-3 flex-col-reverse justify-start min-[400px]:w-4">
+															{row.bars.length === 0 && (
+																<span
+																	title={m.unavailable}
+																	className="text-center text-xs text-muted-foreground"
+																>
+																	—
+																</span>
+															)}
+															{row.bars.map((bar) => (
+																<button
+																	key={bar.id}
+																	type="button"
+																	onClick={() => rules.toggleFocus(row, bar.department)}
+																	aria-pressed={rules.isSelected(row, bar.department)}
+																	aria-label={bar.label}
+																	style={{
+																		height: `${bar.height}%`,
+																		backgroundColor:
+																			bar.value === 0
+																				? "transparent"
+																				: drillDownGlassColor(
+																						DRILL_DOWN_COLORS[bar.department ?? "organizers"],
+																					),
+																	}}
+																	className={`${DRILL_DOWN_BAR_CLASS} ${bar.isTop ? DRILL_DOWN_BAR_TOP_CLASS : ""}`}
+																>
+																	<span
+																		aria-hidden="true"
+																		className={`pointer-events-none absolute bottom-full ${rules.tooltipAlignment(row)} z-20 mb-2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground opacity-0 shadow-sm group-hover:opacity-100 group-focus-visible:opacity-100`}
+																	>
+																		{bar.label}
+																	</span>
+																</button>
+															))}
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+										<div aria-hidden="true" className="mt-2 flex justify-around gap-2 px-1">
+											{chartRows.map((row) => (
+												<span
+													key={row.id}
+													title={rowName(row)}
+													className="min-w-0 flex-1 truncate text-center text-[10px] text-muted-foreground"
+												>
+													{rowName(row)}
+												</span>
 											))}
 										</div>
-									</div>
-									<div aria-hidden="true" className="mt-2 flex justify-around gap-2 px-1">
-										{chartRows.map((row) => (
-											<span
-												key={row.id}
-												title={rowName(row)}
-												className="min-w-0 flex-1 truncate text-center text-[10px] text-muted-foreground"
-											>
-												{rowName(row)}
-											</span>
-										))}
 									</div>
 								</div>
 							</section>
@@ -368,7 +406,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 														{departmentNames[department]}
 													</th>
 												))}
-											{selection.slice !== "department" && (
+											{selection.slice !== "department" && !rules.isTime && (
 												<th>
 													<span className="sr-only">{m.viewOnMap}</span>
 												</th>
@@ -406,9 +444,14 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													rules.departments.map((department) => (
 														<td key={department} className="px-2 text-right tabular-nums">
 															{formatValue(row.departments?.[department] ?? null)}
+															{row.departmentParts?.[department] && (
+																<span className="block text-[10px] text-muted-foreground">
+																	{rules.rateParts(row.departmentParts[department])}
+																</span>
+															)}
 														</td>
 													))}
-												{selection.slice !== "department" && (
+												{selection.slice !== "department" && !rules.isTime && (
 													<td className="py-2 pl-3 text-right">
 														<button
 															type="button"

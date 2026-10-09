@@ -175,6 +175,15 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		noCompletedBuckets: string;
+		bucketHelp: string;
+		time: string;
+		bucket: string;
+		day: string;
+		week: string;
+		month: string;
+		partial: string;
+
 		appSessions: string;
 		registrations: string;
 		uniqueUsers: string;

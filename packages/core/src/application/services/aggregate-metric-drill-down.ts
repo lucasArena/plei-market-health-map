@@ -92,9 +92,12 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 				: [input.slice === "market" ? facility.marketId : facility.id];
 		for (const id of groups) {
 			const isDepartment = input.slice === "department";
-			const name = { market: facility.marketName, facility: facility.name, department: id }[
-				input.slice
-			];
+			const name = {
+				market: facility.marketName,
+				time: facility.name,
+				facility: facility.name,
+				department: id,
+			}[input.slice];
 			const row = rows.get(id) ?? { id, name, value: 0, departments: emptyDepartments() };
 			const groupValue = isDepartment ? (departments?.[id as GameDepartment] ?? null) : value;
 			row.value = sumKnown(row.value, groupValue);

@@ -192,6 +192,16 @@ export const en: Messages = {
 		neverPlayed: "No games played yet",
 	},
 	drillDown: {
+		noCompletedBuckets: "No completed buckets in this date range.",
+		bucketHelp:
+			"Completed calendar buckets only. Weeks start Monday. The first bucket can be partial.",
+		time: "Time",
+		bucket: "Bucket",
+		day: "Day",
+		week: "Week",
+		month: "Month",
+		partial: "partial",
+
 		appSessions: "App sessions",
 		registrations: "Registrations",
 		uniqueUsers: "Unique users",

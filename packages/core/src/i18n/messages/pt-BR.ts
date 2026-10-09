@@ -196,6 +196,16 @@ export const ptBR: Messages = {
 		neverPlayed: "Nenhum jogo realizado ainda",
 	},
 	drillDown: {
+		noCompletedBuckets: "Nenhum intervalo completo neste período.",
+		bucketHelp:
+			"Somente intervalos completos. Semanas começam na segunda. O primeiro pode ser parcial.",
+		time: "Tempo",
+		bucket: "Intervalo",
+		day: "Dia",
+		week: "Semana",
+		month: "Mês",
+		partial: "parcial",
+
 		appSessions: "Sessões do app",
 		registrations: "Cadastros",
 		uniqueUsers: "Usuários únicos",

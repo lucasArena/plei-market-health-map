@@ -36,6 +36,20 @@ export const getMetricDrillDownSchema = z
 		grain: z.enum(DRILL_DOWN_GRAINS).default("range"),
 	})
 	.superRefine((value, context) => {
+		if (value.slice === "time" && value.grain === "range") {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["grain"],
+				message: "Time requires a calendar grain.",
+			});
+		}
+		if (value.slice !== "time" && value.grain !== "range") {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["grain"],
+				message: "Calendar grains require Time.",
+			});
+		}
 		if (value.measure === "active-facilities" && value.slice === "department") {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,

@@ -718,3 +718,38 @@ it.each([
 ])("marks the tracking switch for %s through %s", (start, end, expected) => {
 	expect(crossesAppTrackingSourceSwitch(String(start), String(end))).toBe(expected);
 });
+
+describe("time slice validation", () => {
+	it.each(["day", "week", "month"] as const)("preserves %s for app time slices", async (grain) => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const spy = vi.spyOn(drillDown, "group").mockResolvedValue({
+			measure: "unique-users",
+			range: "28d",
+			kind: "distinct-count",
+			start: "2026-09-10",
+			end: "2026-10-04",
+			total: 0,
+			rows: [],
+		});
+		await getMetricDrillDown({
+			measure: "unique-users",
+			range: "28d",
+			slice: "time",
+			grain,
+			departments: ["magic"],
+			timeZone: "America/New_York",
+		});
+		expect(spy).toHaveBeenCalledWith(
+			expect.objectContaining({ slice: "time", grain, departments: [], today: "2026-10-08" }),
+		);
+	});
+	it("rejects mismatched calendar grain and slice", async () => {
+		const { getMetricDrillDown } = setup();
+		await expect(
+			getMetricDrillDown({ measure: "games", range: "28d", slice: "time" }),
+		).rejects.toBeInstanceOf(InvalidRequestError);
+		await expect(
+			getMetricDrillDown({ measure: "games", range: "28d", slice: "market", grain: "week" }),
+		).rejects.toBeInstanceOf(InvalidRequestError);
+	});
+});

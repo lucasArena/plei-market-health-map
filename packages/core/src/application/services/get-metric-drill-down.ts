@@ -54,7 +54,7 @@ export function makeGetMetricDrillDown({
 		return drillDown.group({
 			measure,
 			range,
-			slice: isAppActivityMeasure(measure) ? "market" : slice,
+			slice: isAppActivityMeasure(measure) && slice !== "time" ? "market" : slice,
 			marketId,
 			facilityId: isAppActivityMeasure(measure) ? undefined : facilityId,
 			department: isAppActivityMeasure(measure) ? undefined : department,

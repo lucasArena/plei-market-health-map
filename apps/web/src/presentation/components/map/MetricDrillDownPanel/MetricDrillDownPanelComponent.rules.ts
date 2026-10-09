@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownRange,
 	DrillDownSegment,
@@ -30,6 +31,13 @@ import { useMapScope } from "@/presentation/components/providers/MapScopeProvide
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
 import { useMetricDrillDown } from "@/presentation/hooks/use-metric/use-metric-drill-down";
+
+function sourceSwitchPosition(rows: readonly MetricDrillDownRow[]): number | undefined {
+	const index = rows.findIndex(
+		(row) => row.id <= "2026-06-29" && (row.bucketEnd ?? row.id) >= "2026-06-29",
+	);
+	return index < 0 ? undefined : ((index + 0.5) / rows.length) * 100;
+}
 
 function rangeFromPeriod(period: string): DrillDownRange {
 	return period === "week" ? "7d" : "28d";
@@ -65,6 +73,8 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const [grain, setGrainState] = useState<DrillDownGrain>("day");
+	const isTime = selection.slice === "time";
 	const isAppActivity = isAppActivityMeasure(selection.measure);
 	const effectiveSupply = isAppActivity || showSupply;
 	const activityMarketId =
@@ -125,6 +135,7 @@ export function useMetricDrillDownPanelRules({
 		range,
 		slice: selection.slice,
 		segment: selection.segment,
+		grain: isTime ? grain : "range",
 		marketId: {
 			[`${isAppActivity}`]: activityMarketId,
 			[`${scope.kind === "market"}`]: scope.kind === "market" ? scope.id : undefined,
@@ -147,15 +158,19 @@ export function useMetricDrillDownPanelRules({
 			setMetricFocus(null);
 			return;
 		}
-		const facilityIds = (facilitiesQuery.data ?? [])
-			.filter(
-				(facility) =>
-					(scope.kind !== "market" || facility.marketId === scope.id) &&
-					(isAppActivity || scope.kind !== "facility" || facility.id === scope.id) &&
-					(selection.slice !== "market" || facility.marketId === focusedRow.id) &&
-					(selection.slice !== "facility" || facility.id === focusedRow.id),
-			)
-			.map((facility) => facility.id);
+		const facilityIds = isTime
+			? focus?.department
+				? (focusedRow.departmentFacilityIds?.[focus.department] ?? focusedRow.facilityIds ?? [])
+				: (focusedRow.facilityIds ?? [])
+			: (facilitiesQuery.data ?? [])
+					.filter(
+						(facility) =>
+							(scope.kind !== "market" || facility.marketId === scope.id) &&
+							(isAppActivity || scope.kind !== "facility" || facility.id === scope.id) &&
+							(selection.slice !== "market" || facility.marketId === focusedRow.id) &&
+							(selection.slice !== "facility" || facility.id === focusedRow.id),
+					)
+					.map((facility) => facility.id);
 		const department =
 			selection.slice === "department" ? (focusedRow.id as GameDepartment) : focus?.department;
 		setMetricFocus({ facilityIds, department });
@@ -167,6 +182,7 @@ export function useMetricDrillDownPanelRules({
 		focus?.department,
 		setMetricFocus,
 		isAppActivity,
+		isTime,
 	]);
 	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
 	function toggleFocus(row: MetricDrillDownRow, department?: GameDepartment) {
@@ -239,8 +255,20 @@ export function useMetricDrillDownPanelRules({
 		partnerships: messages.map.gameDepartmentPartnerships,
 	};
 	const rowName = (row: MetricDrillDownRow) =>
-		selection.slice === "department" ? departmentNames[row.id as GameDepartment] : row.name;
-	const visibleRows = hasFocus ? [{ ...focusedRow, value: focusedValue }] : view.rows;
+		selection.slice === "department"
+			? departmentNames[row.id as GameDepartment]
+			: isTime
+				? `${date.format(new Date(`${row.id}T00:00:00Z`))}${row.partial ? ` · ${messages.drillDown.partial}` : ""}`
+				: row.name;
+	const visibleRows = hasFocus
+		? [
+				{
+					...focusedRow,
+					...(focus?.department ? focusedRow.departmentParts?.[focus.department] : {}),
+					value: focusedValue,
+				},
+			]
+		: view.rows;
 	const rows = [...visibleRows].sort((a, b) => {
 		if (sort === "name-asc") return rowName(a).localeCompare(rowName(b), locale);
 		if (sort === "name-desc") return rowName(b).localeCompare(rowName(a), locale);
@@ -250,8 +278,19 @@ export function useMetricDrillDownPanelRules({
 		const delta = a.value - b.value;
 		return (sort === "count-asc" ? delta : -delta) || rowName(a).localeCompare(rowName(b), locale);
 	});
-	const topRows = [...visibleRows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
-	const largest = Math.max(1, ...topRows.map((row) => row.value ?? 0));
+	const topRows = isTime
+		? [...visibleRows].sort((a, b) => a.id.localeCompare(b.id))
+		: [...visibleRows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
+	function selectedBarTotal(row: MetricDrillDownRow) {
+		return Object.values(row.departments ?? {}).reduce<number>(
+			(sum, value) => sum + (value ?? 0),
+			0,
+		);
+	}
+	const largest = Math.max(
+		1,
+		...topRows.map((row) => (segment === "department" ? selectedBarTotal(row) : (row.value ?? 0))),
+	);
 	const magnitude = 10 ** Math.floor(Math.log10(largest / 5));
 	const step = Math.max(1, Math.ceil(largest / magnitude / 5) * magnitude);
 	const max = Math.ceil(largest / step) * step;
@@ -275,7 +314,12 @@ export function useMetricDrillDownPanelRules({
 							{
 								id: department,
 								department,
-								label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(value)}`,
+								label: [
+									`${rowName(row)} · ${departmentNames[department]}: ${formatValue(value)}`,
+									rateParts(row.departmentParts?.[department] ?? {}),
+								]
+									.filter(Boolean)
+									.join(" · "),
 								value,
 								height: (value / max) * 100,
 							},
@@ -314,7 +358,7 @@ export function useMetricDrillDownPanelRules({
 			...current,
 			measure,
 			slice:
-				isAppActivityMeasure(measure) ||
+				(isAppActivityMeasure(measure) && current.slice !== "time") ||
 				(!canSliceDrillDownByDepartment(measure) && current.slice === "department")
 					? "market"
 					: current.slice,
@@ -332,6 +376,10 @@ export function useMetricDrillDownPanelRules({
 	function setSegment(next: DrillDownSegment) {
 		setFocus(null);
 		setSelection((current) => ({ ...current, segment: next }));
+	}
+	function setGrain(next: DrillDownGrain) {
+		setFocus(null);
+		setGrainState(next);
 	}
 	function setRange(next: DrillDownRange) {
 		setFocus(null);
@@ -351,13 +399,16 @@ export function useMetricDrillDownPanelRules({
 
 	let heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
 	if (isAppActivity && scope.kind === "facility") heading = scope.marketName;
-	const headlineSource = focusedRow ?? view;
+	const headlineSource = focus?.department
+		? (focusedRow?.departmentParts?.[focus.department] ?? {
+				numerator: undefined,
+				denominator: undefined,
+				dataErrors: undefined,
+			})
+		: (focusedRow ?? view);
 	const headlineTemplate = headlinePartsTemplates[selection.measure];
 	const headlineParts =
-		headlineTemplate &&
-		!focus?.department &&
-		headlineSource.numerator != null &&
-		headlineSource.denominator != null
+		headlineTemplate && headlineSource.numerator != null && headlineSource.denominator != null
 			? formatMessage(headlineTemplate, {
 					numerator: number.format(headlineSource.numerator),
 					denominator: number.format(headlineSource.denominator),
@@ -369,6 +420,9 @@ export function useMetricDrillDownPanelRules({
 		measureLabel: measureLabels[selection.measure],
 		valueLabel: view.kind === "rate" ? messages.drillDown.rate : messages.drillDown.value,
 		selection,
+		isTime,
+		grain,
+		setGrain,
 		range,
 		segment,
 		canSegment,
@@ -386,7 +440,7 @@ export function useMetricDrillDownPanelRules({
 		toggleExpanded,
 		handleAnimationEnd,
 		view,
-		chartTruncated: !hasFocus && view.rows.length > 10,
+		chartTruncated: !isTime && !hasFocus && view.rows.length > 10,
 		headlineValue: hasFocus ? focusedValue : view.total,
 		headlineParts,
 		dataErrorsMessage:
@@ -411,6 +465,7 @@ export function useMetricDrillDownPanelRules({
 		departments: selectedDepartments,
 		filteredDepartments: isAppActivity ? [] : (gameDepartments ?? []),
 		isAppActivity,
+		sourceSwitchPosition: sourceSwitchPosition(chartRows),
 		showSourceSwitch:
 			isAppActivity &&
 			selection.measure !== "registrations" &&
@@ -422,11 +477,14 @@ export function useMetricDrillDownPanelRules({
 		panelRef,
 		sort,
 		setSort,
-		dateRange: `${date.format(new Date(`${view.start}T00:00:00Z`))} – ${date.format(new Date(`${view.end}T00:00:00Z`))}`,
+		dateRange:
+			view.start > view.end
+				? messages.drillDown.noCompletedBuckets
+				: `${date.format(new Date(`${view.start}T00:00:00Z`))} – ${date.format(new Date(`${view.end}T00:00:00Z`))}`,
 		isLoading: effectiveSupply && query.isPending,
 		isError: effectiveSupply && query.isError,
 		retry: () => void query.refetch(),
-		isEmpty: view.rows.length === 0 || view.total === 0,
+		isEmpty: view.rows.length === 0 || (!isTime && view.total === 0),
 		incomplete:
 			view.total === null ||
 			view.rows.some(

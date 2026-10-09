@@ -43,6 +43,7 @@ import type {
 	WarehouseDrillDownReservationRow,
 	WarehouseQualityCount,
 	WarehouseQueryable,
+	WarehouseTimeRow,
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
 import {
 	metricDrillDownFacilitiesSql,
@@ -50,6 +51,11 @@ import {
 	metricDrillDownQualitySql,
 	metricDrillDownReservationSql,
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-sql";
+import {
+	timeDrillDownView,
+	timeDrillDownWindow,
+} from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-time";
+import { metricDrillDownTimeSql } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-time-sql";
 
 const GAME_DATE = "g.date_with_time::date";
 const UNASSIGNED_MARKET = "unassigned";
@@ -293,6 +299,7 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 	constructor(private readonly warehouse: WarehouseQueryable) {}
 
 	async group(query: MetricDrillDownQuery): Promise<MetricDrillDownView> {
+		if (query.slice === "time") return this.groupTime(query);
 		const days = DRILL_DOWN_RANGE_DAYS[query.range];
 		const { start, end } = statsWindow(query.today, days);
 		if (isAppActivityMeasure(query.measure)) {
@@ -389,6 +396,32 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 			end,
 			range: query.range,
 		});
+	}
+
+	private async groupTime(query: MetricDrillDownQuery): Promise<MetricDrillDownView> {
+		const { start, until } = timeDrillDownWindow(query);
+		if (start >= until) return timeDrillDownView(query, []);
+		const facilities = isAppActivityMeasure(query.measure)
+			? []
+			: (await this.listMergedFacilities()).filter(
+					(facility) =>
+						(!query.marketId || facility.marketId === query.marketId) &&
+						(!query.facilityId || facility.id === query.facilityId),
+				);
+		const mapping = Object.fromEntries(
+			facilities.flatMap((facility) =>
+				facility.memberIds.map((id) => [String(id), String(facility.id)]),
+			),
+		);
+		const departments = query.department ? [query.department] : query.departments;
+		const { rows } = await this.warehouse.query<WarehouseTimeRow>(metricDrillDownTimeSql(query), [
+			start,
+			until,
+			departments,
+			JSON.stringify(mapping),
+			query.marketId ?? null,
+		]);
+		return timeDrillDownView(query, rows);
 	}
 
 	private async groupCounts(

@@ -197,6 +197,16 @@ export const es: Messages = {
 		neverPlayed: "Aún no se jugaron partidos",
 	},
 	drillDown: {
+		noCompletedBuckets: "No hay intervalos completos en este período.",
+		bucketHelp:
+			"Solo intervalos completos. Las semanas empiezan el lunes. El primero puede ser parcial.",
+		time: "Tiempo",
+		bucket: "Intervalo",
+		day: "Día",
+		week: "Semana",
+		month: "Mes",
+		partial: "parcial",
+
 		appSessions: "Sesiones de la app",
 		registrations: "Registros",
 		uniqueUsers: "Usuarios únicos",

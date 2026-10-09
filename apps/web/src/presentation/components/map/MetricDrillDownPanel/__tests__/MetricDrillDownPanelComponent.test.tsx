@@ -1,6 +1,7 @@
 import type {
 	FacilityPointView,
 	GetMetricDrillDownInput,
+	MetricDrillDownView,
 } from "@market-health-map/core/application";
 import {
 	aggregateDrillDownFromFacts,
@@ -36,6 +37,7 @@ const facility: FacilityPointView = {
 	gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
 };
 let data: FacilityPointView[] = [];
+let timeView: MetricDrillDownView | undefined;
 let pending = false;
 let failed = false;
 let gameDepartments: ("magic" | "organizers" | "partnerships")[] = [];
@@ -61,6 +63,10 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 			"America/New_York",
 			input.range,
 		);
+		if (input.slice === "time") {
+			demandInputs(input);
+			return { data: timeView, isPending: false, isError: false, refetch: retry };
+		}
 		if (isAppActivityMeasure(input.measure)) {
 			demandInputs(input);
 			return {
@@ -169,6 +175,10 @@ function select(name: string, value: string) {
 		"activated-players": "Activated players",
 		"almost-filled-rate": "Almost-filled rate",
 		"incident-games-rate": "Incident games %",
+		time: "Time",
+		day: "Day",
+		week: "Week",
+		month: "Month",
 		market: "Market",
 		facility: "Facility",
 		department: "Department",
@@ -184,6 +194,7 @@ function select(name: string, value: string) {
 }
 describe("MetricDrillDownPanel", () => {
 	beforeEach(() => {
+		timeView = undefined;
 		gameDepartments = [];
 		showSupply = true;
 		scope = { kind: "all" };
@@ -607,5 +618,125 @@ describe("app activity measures", () => {
 		scope = { kind: "market", id: "miami", name: "Miami" };
 		result.rerender(<MetricDrillDownPanel {...result.props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+	});
+});
+
+describe("time slices", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		showSupply = true;
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		data = [facility];
+		timeView = {
+			measure: "games",
+			range: "12m",
+			kind: "count",
+			start: "2026-06-28",
+			end: "2026-10-07",
+			total: 12,
+			rows: Array.from({ length: 12 }, (_, index) => {
+				const day = new Date("2026-06-28T00:00:00Z");
+				day.setUTCDate(day.getUTCDate() + index);
+				const id = day.toISOString().slice(0, 10);
+				return {
+					id,
+					name: id,
+					bucketStart: id,
+					bucketEnd: id,
+					partial: index === 0,
+					value: index === 0 ? 12 : 0,
+					departments: { magic: index === 0 ? 12 : 0, organizers: 0, partnerships: 0 },
+					facilityIds: index === 0 ? ["a"] : [],
+				};
+			}),
+		};
+	});
+	it("shows every chronological bucket, partial labels, and a scrollable chart", () => {
+		setup();
+		select("Slice", "time");
+		expect(demandInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ slice: "time", grain: "day" }),
+		);
+		expect(screen.queryByText(/Showing the top/)).not.toBeInTheDocument();
+		const chart = screen.getByRole("region", { name: "Metric by group" });
+		expect(within(chart).getAllByRole("button")).toHaveLength(12);
+		expect(within(chart).getAllByRole("button")[0]).toHaveAccessibleName(/Jun 28, 2026.*partial/);
+		expect(chart.querySelector('[style*="min-width"]')).toHaveStyle({ minWidth: "504px" });
+		expect(screen.queryByRole("button", { name: /View on map:/ })).not.toBeInTheDocument();
+	});
+	it("selects and clears buckets, filters Supply to their facility IDs, and resets on grain change", () => {
+		setup();
+		select("Slice", "time");
+		const bar = screen.getByRole("button", { name: /Jun 28, 2026.*12/ });
+		fireEvent.click(bar);
+		expect(setMetricFocus).toHaveBeenLastCalledWith({ facilityIds: ["a"], department: undefined });
+		expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(1);
+		fireEvent.click(bar);
+		expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(12);
+		select("Bucket", "week");
+		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "week" }));
+		select("Bucket", "month");
+		expect(demandInputs).toHaveBeenLastCalledWith(expect.objectContaining({ grain: "month" }));
+		select("Segment", "department");
+		expect(screen.getByRole("button", { name: /Jun 28, 2026.*Magic.*12/ })).toBeInTheDocument();
+	});
+	it("keeps Time when switching to app measures and places the source marker on the timeline", () => {
+		setup();
+		select("Slice", "time");
+		select("Measure", "app-sessions");
+		expect(demandInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ slice: "time", grain: "day", departments: [] }),
+		);
+		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
+		select("Measure", "unique-users");
+		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
+		select("Measure", "registrations");
+		expect(screen.queryByText("2026-06-29")).not.toBeInTheDocument();
+	});
+	it("shows rate components for segments and filters Supply to the segment's facilities", () => {
+		if (!timeView) throw new Error("Missing fixture");
+		timeView = {
+			...timeView,
+			kind: "rate",
+			total: 25,
+			numerator: 3,
+			denominator: 12,
+			rows: [
+				{
+					...timeView.rows[0],
+					id: "2026-06-28",
+					name: "2026-06-28",
+					value: 25,
+					departments: { magic: 50, organizers: null, partnerships: 0 },
+					numerator: 3,
+					denominator: 12,
+					departmentParts: { magic: { numerator: 2, denominator: 4, dataErrors: 1 } },
+					departmentFacilityIds: { magic: ["b"] },
+				},
+			],
+		};
+		setup();
+		select("Measure", "almost-filled-rate");
+		select("Slice", "time");
+		select("Segment", "department");
+		const bar = screen.getByRole("button", { name: /Jun 28, 2026.*Magic: 50.0%.*2 of 4/ });
+		fireEvent.click(bar);
+		expect(setMetricFocus).toHaveBeenLastCalledWith({ facilityIds: ["b"], department: "magic" });
+		expect(
+			screen.getByText("2 almost-filled canceled games of 4 eligible canceled games"),
+		).toBeInTheDocument();
+		expect(screen.getByRole("alert")).toHaveTextContent(/Data error: 1/);
+	});
+	it("explains ranges with no completed bucket and still displays zero count buckets", () => {
+		if (!timeView) throw new Error("Missing fixture");
+		timeView = { ...timeView, total: 0, rows: timeView.rows.map((row) => ({ ...row, value: 0 })) };
+		const result = setup();
+		select("Slice", "time");
+		expect(screen.getByRole("region", { name: "Metric by group" })).toBeInTheDocument();
+		timeView = { ...timeView, start: "2026-10-01", end: "2026-09-30", rows: [] };
+		result.rerender(<MetricDrillDownPanel {...result.props} />);
+		expect(screen.getByText("No completed buckets in this date range.")).toBeInTheDocument();
 	});
 });

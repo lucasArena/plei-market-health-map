@@ -58,3 +58,14 @@ export interface WarehouseAppActivityRow {
 	is_total: number;
 	value: number | string | null;
 }
+
+export interface WarehouseTimeRow {
+	bucket: string | null;
+	department: GameDepartment | null;
+	is_total: number;
+	value: number | string | null;
+	numerator: number | string;
+	denominator: number | string;
+	data_errors: number | string;
+	facility_ids: string[] | null;
+}
