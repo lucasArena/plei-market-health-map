@@ -188,3 +188,6 @@ The map remembers its filters and dates per browser (ENG-6126). Besides the 7D |
 The redesigned insight panel's loading state is `InsightPanelSkeleton` (ENG-6134), chosen by the scope level the panel is loading: All markets shows the Key insights placeholder, the Games and Users chart boxes (hero, dashed gridlines with axis labels, week labels, metric rows) and the Active markets and Active facilities lists; a market drops the markets list; a facility shows the address row, Games, Users with one row and the Popular times grid instead of the lists. When the level changes (All markets, market, facility, either way), the panel's scroll area (`bodyRef`) goes back to the top along with the focus move to the heading.
 
 Clicking a facility marker on the map zooms to street level (`FACILITY_FOCUS_ZOOM`, 14, the same as picking a facility in search or the insight panel) unless the map is already closer, centered with the panel offset, and opens the facility.
+
+
+In the redesigned insight panel, a single market's Active facilities list is built from every facility in that market's per-period comparison (`marketFacilities`, facilities with games in either period, by games), not the summary's top five, so its "See all N facilities" expands to the whole market. All markets keeps the summary's top five.

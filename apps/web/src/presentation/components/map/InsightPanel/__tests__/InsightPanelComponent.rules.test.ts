@@ -23,6 +23,7 @@ import {
 	buildScopeHeading,
 	contributorFactsFrom,
 	formatChangePercent,
+	marketFacilities,
 	marketTrendStatusOf,
 	useInsightPanelRules,
 } from "@/presentation/components/map/InsightPanel/InsightPanelComponent.rules";
@@ -258,6 +259,79 @@ describe("market summary builders", () => {
 			changeLabel: "\u2014",
 		});
 		expect(rows[1]?.ariaLabel).toContain(messages.changeUnavailable);
+	});
+
+	it("lists every facility of a single market, by games, not just the top five", () => {
+		const facility = (id: string, played: number, playedPrevious: number) => ({
+			id,
+			name: `Facility ${id}`,
+			played,
+			playedPrevious,
+			change: played - playedPrevious,
+			changePercent: null,
+		});
+		const changes = [
+			{
+				id: "houston",
+				name: "Houston",
+				played: 30,
+				playedPrevious: 25,
+				change: 5,
+				changePercent: 20,
+				facilities: [
+					facility("a", 3, 1),
+					facility("b", 9, 8),
+					facility("c", 0, 0),
+					facility("d", 0, 4),
+					facility("e", 6, 2),
+					facility("f", 5, 5),
+					facility("g", 7, 3),
+					facility("h", 9, 2),
+				],
+			},
+		];
+
+		expect(marketFacilities(changes).map((row) => [row.id, row.games, row.marketName])).toEqual([
+			["b", 9, "Houston"],
+			["h", 9, "Houston"],
+			["g", 7, "Houston"],
+			["e", 6, "Houston"],
+			["f", 5, "Houston"],
+			["a", 3, "Houston"],
+			["d", 0, "Houston"],
+		]);
+		const single = buildFacilityRows(
+			MARKET_SUMMARY.periods.month.topFacilities,
+			changes,
+			messages,
+			detailMessages,
+			MONTH,
+			formatters,
+			true,
+		);
+		expect(single).toHaveLength(7);
+		expect(single[6]).toMatchObject({ id: "d", rank: 7 });
+		expect(
+			buildFacilityRows(
+				MARKET_SUMMARY.periods.month.topFacilities,
+				changes,
+				messages,
+				detailMessages,
+				MONTH,
+				formatters,
+			),
+		).toHaveLength(MARKET_SUMMARY.periods.month.topFacilities.length);
+		expect(
+			buildFacilityRows(
+				MARKET_SUMMARY.periods.month.topFacilities,
+				undefined,
+				messages,
+				detailMessages,
+				MONTH,
+				formatters,
+				true,
+			),
+		).toHaveLength(MARKET_SUMMARY.periods.month.topFacilities.length);
 	});
 
 	it("builds the whole view and falls back when nothing was played yet", () => {
