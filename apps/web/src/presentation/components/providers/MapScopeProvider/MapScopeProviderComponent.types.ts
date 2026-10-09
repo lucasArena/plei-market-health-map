@@ -5,7 +5,14 @@ import type { ReactNode } from "react";
 export type MapScope =
 	| { kind: "all" }
 	| { kind: "market"; id: string; name: string }
-	| { kind: "facility"; id: string; name: string; marketName: string };
+	| {
+			kind: "facility";
+			id: string;
+			name: string;
+			marketName: string;
+			/** Lets the insight panel breadcrumb go back up to the facility's market. */
+			marketId?: string;
+	  };
 
 export type MapNavigation = MapScope | { kind: "metric-focus"; facilityIds: readonly string[] };
 

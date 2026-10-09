@@ -47,4 +47,8 @@ export interface DetailFormatters {
 	plural: Intl.PluralRules;
 	dayWithYear: Intl.DateTimeFormat;
 	week: Intl.DateTimeFormat;
+	/** "Mon" */
+	weekday: Intl.DateTimeFormat;
+	/** "Mon, Oct 5" */
+	weekdayDate: Intl.DateTimeFormat;
 }

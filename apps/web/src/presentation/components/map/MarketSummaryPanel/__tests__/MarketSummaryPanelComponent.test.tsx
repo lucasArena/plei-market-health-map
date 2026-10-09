@@ -3,6 +3,15 @@ import { EN_MESSAGES } from "@/application/test/messages";
 import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent";
 
 const mockRules = vi.fn();
+const mockIsIteration = vi.fn(() => false);
+
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockIsIteration(),
+}));
+
+vi.mock("@/presentation/components/map/InsightPanel/InsightPanelComponent", () => ({
+	InsightPanel: () => <div data-testid="insight-panel" />,
+}));
 
 vi.mock("@/presentation/components/map/FacilityOverview/FacilityOverviewComponent", () => ({
 	FacilityOverview: ({ facilityName }: { facilityName: string }) => (
@@ -133,6 +142,13 @@ function rulesWith(overrides: object = {}) {
 const PROPS = { isClosing: false, onClose: vi.fn(), onClosed: vi.fn() };
 
 describe("MarketSummaryPanel", () => {
+	it("renders the iterated InsightPanel behind insights-panel-v3", () => {
+		mockIsIteration.mockReturnValueOnce(true);
+		render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByTestId("insight-panel")).toBeInTheDocument();
+		expect(mockRules).not.toHaveBeenCalled();
+	});
+
 	it("renders the market-wide report", () => {
 		mockRules.mockReturnValue(rulesWith());
 

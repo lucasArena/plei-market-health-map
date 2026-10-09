@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 
-function renderHeatmap(periodRanges: string[]) {
+function renderHeatmap(periodRanges: string[], hasGlassTooltips = false) {
 	render(
 		<PopularTimesHeatmap
 			title="Popular times"
@@ -21,6 +21,7 @@ function renderHeatmap(periodRanges: string[]) {
 			]}
 			quietLabel="Quiet"
 			busyLabel="Busy"
+			hasGlassTooltips={hasGlassTooltips}
 		/>,
 	);
 }
@@ -47,5 +48,10 @@ describe("PopularTimesHeatmap", () => {
 	it("keeps the period label when no range is provided", () => {
 		renderHeatmap([]);
 		expect(screen.getByRole("button", { name: "Morning" })).toBeInTheDocument();
+	});
+
+	it("uses the glass tooltip surface in the insight panel", () => {
+		renderHeatmap(["7am–12pm"], true);
+		expect(screen.getByText("3 games")).toHaveClass("map-glass", "text-foreground");
 	});
 });

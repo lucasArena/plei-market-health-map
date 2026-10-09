@@ -47,6 +47,13 @@ export function createDetailFormatters(locale: string): DetailFormatters {
 			timeZone: "UTC",
 		}),
 		week: new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", timeZone: "UTC" }),
+		weekday: new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }),
+		weekdayDate: new Intl.DateTimeFormat(locale, {
+			weekday: "short",
+			month: "short",
+			day: "numeric",
+			timeZone: "UTC",
+		}),
 	};
 }
 

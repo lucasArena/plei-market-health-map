@@ -14,6 +14,8 @@ export interface AiSummaryProps {
 	introFirst?: boolean;
 	title?: string;
 	tone?: InsightTone;
+	/** Insight panel: no box, flat on the panel background. */
+	isFlat?: boolean;
 }
 
 export type AiSummaryStatus =

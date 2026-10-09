@@ -119,4 +119,16 @@ describe("AiSummary", () => {
 			"true",
 		);
 	});
+
+	it("sits flat with a masked fade and a green Show more in the insight panel", () => {
+		mockRules.mockReturnValue(rulesWith("ready", { isOverflowing: true }));
+		render(<AiSummary context={{ cacheKey: "k", prompt: [] }} fallback="Summary text." isFlat />);
+
+		expect(screen.getByTestId("ai-summary-content")).toHaveClass(
+			"[mask-image:linear-gradient(to_bottom,black_calc(100%-3rem),transparent)]",
+		);
+		expect(screen.getByRole("button", { name: messages.showMore })).toHaveClass(
+			"text-pleiful-pitch-green-50",
+		);
+	});
 });

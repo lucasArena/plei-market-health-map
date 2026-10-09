@@ -206,6 +206,8 @@ export function useFacilitiesMapScreenRules() {
 	const hoverDismissTimerRef = useRef<number | null>(null);
 	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
 	const showMetricFocus = useFeatureFlag("metric-drill-down");
+	/** insights-panel-v3: facilities open as the Facility level of the insight panel, not a drawer. */
+	const isInsightIteration = useFeatureFlag("insights-panel-v3");
 	const scopedFacilities = useMemo(() => {
 		if (!showMetricFocus) return facilities;
 		return facilities.filter(
@@ -405,6 +407,16 @@ export function useFacilitiesMapScreenRules() {
 	const openFacilityPanel = useCallback(
 		(facility: FacilityPointView, zoom?: number) => {
 			handleHoverEnd();
+			// The insight panel follows the scope, so a map click opens its facility level.
+			if (isInsightIteration) {
+				setScope({
+					kind: "facility",
+					id: facility.id,
+					name: facility.name,
+					marketName: facility.marketName,
+					marketId: facility.marketId,
+				});
+			}
 			setIsPanelClosing(false);
 			setSelectedFacilityId(facility.id);
 			const camera = {
@@ -415,7 +427,7 @@ export function useFacilitiesMapScreenRules() {
 			const motion = { true: { ...camera, zoom }, false: camera }[`${zoom !== undefined}`];
 			mapRef.current?.easeTo(motion);
 		},
-		[handleHoverEnd],
+		[handleHoverEnd, isInsightIteration, setScope],
 	);
 
 	const selectFacility = useCallback(
@@ -430,9 +442,29 @@ export function useFacilitiesMapScreenRules() {
 	);
 
 	const closePanel = useCallback(() => {
-		setIsPanelClosing(true);
 		mapRef.current?.easeTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
-	}, []);
+		if (!isInsightIteration) {
+			setIsPanelClosing(true);
+			return;
+		}
+		// No drawer: deselecting goes one level up in the insight panel, to the
+		// facility's market when known, otherwise All markets.
+		setSelectedFacilityId(null);
+		setIsPanelClosing(false);
+		if (scope.kind !== "facility") return;
+		setScope(
+			scope.marketId
+				? { kind: "market", id: scope.marketId, name: scope.marketName }
+				: ALL_MARKETS_SCOPE,
+		);
+	}, [isInsightIteration, scope, setScope]);
+
+	// insights-panel-v3: the map highlight follows the panel level, so leaving the
+	// facility level (breadcrumb, search, clear) drops the highlighted facility.
+	useEffect(() => {
+		if (!isInsightIteration) return;
+		if (scope.kind !== "facility" && selectedFacilityId !== null) setSelectedFacilityId(null);
+	}, [isInsightIteration, scope.kind, selectedFacilityId]);
 
 	const handlePanelClosed = useCallback(() => {
 		setSelectedFacilityId(null);
@@ -479,6 +511,7 @@ export function useFacilitiesMapScreenRules() {
 				id: facility.id,
 				name: facility.name,
 				marketName: facility.marketName,
+				marketId: facility.marketId,
 			});
 			setIsPanelClosing(false);
 			setSelectedFacilityId(facility.id);
@@ -497,6 +530,11 @@ export function useFacilitiesMapScreenRules() {
 	const selectSearchMarket = useCallback(
 		(market: MarketSearchResult) => {
 			setScope({ kind: "market", id: market.id, name: market.name });
+			if (isInsightIteration) {
+				// Leaving a facility always clears it, even when the market has nothing to frame.
+				setSelectedFacilityId(null);
+				setIsPanelClosing(false);
+			}
 			const map = mapRef.current;
 			const bounds = marketBounds(market.facilities);
 			if (!map || !bounds) return;
@@ -515,7 +553,7 @@ export function useFacilitiesMapScreenRules() {
 			}
 			map.fitBounds(bounds, { padding: 72, maxZoom: 11, duration: 700 });
 		},
-		[setScope],
+		[isInsightIteration, setScope],
 	);
 
 	useEffect(() => {
@@ -642,7 +680,7 @@ export function useFacilitiesMapScreenRules() {
 	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
 	useExclusiveSidePanel(
 		"facility-detail",
-		selectedFacilityId !== null && !isPanelClosing,
+		!isInsightIteration && selectedFacilityId !== null && !isPanelClosing,
 		closePanel,
 	);
 
@@ -1015,6 +1053,7 @@ export function useFacilitiesMapScreenRules() {
 	}[legendMotion];
 
 	return {
+		showsFacilityDrawer: !isInsightIteration,
 		sessionFilterChips,
 		sessionFilterSummary,
 		sessionLegendState,

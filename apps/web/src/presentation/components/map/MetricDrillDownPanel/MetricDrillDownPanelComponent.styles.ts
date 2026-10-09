@@ -36,3 +36,22 @@ export const DRILL_DOWN_EXPANDED_PANEL_CLASS = `${MARKET_SUMMARY_PANEL_CLASS.rep
 
 export const DRILL_DOWN_SKELETON_CLASS =
 	"animate-pulse rounded bg-foreground/[0.07] motion-reduce:animate-none";
+
+/** Chart pieces shared with the insight panel's games line chart. */
+export const CHART_GRIDLINE_CLASS =
+	"absolute inset-x-0 border-t border-dashed border-foreground/15";
+export const CHART_TICK_LABEL_POSITION_CLASS =
+	"absolute -right-9 -translate-y-1/2 w-7 text-right tabular-nums text-muted-foreground";
+/**
+ * Glass tooltip surface used by the insight panel tooltips: the panels' own
+ * map-glass (65% background tint, 18px blur, 1.5 saturation), the panel border
+ * and map shadow, 6px radius, 11px foreground text (~19:1 over the white panel).
+ */
+export const GLASS_TOOLTIP_SURFACE_CLASS =
+	"map-glass rounded-md border border-border px-2 py-1 text-[11px] text-foreground shadow-[var(--map-shadow)]";
+export const CHART_TOOLTIP_CLASS = `pointer-events-none absolute bottom-full z-20 mb-2 whitespace-nowrap opacity-0 ${GLASS_TOOLTIP_SURFACE_CLASS}`;
+
+/** Drill-down table tokens, shared with the insight panel's Markets and Facilities lists. */
+export const DRILL_DOWN_TABLE_HEADER_CELL_CLASS = "py-2";
+export const DRILL_DOWN_TABLE_HEADER_TEXT_CLASS = "font-bold text-foreground";
+export const DRILL_DOWN_TABLE_NUMBER_CELL_CLASS = "text-right tabular-nums";

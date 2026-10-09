@@ -33,6 +33,7 @@ export function FacilitiesMapScreen() {
 		releaseClusterHover,
 		removeSessionFilter,
 		selectedFacilityId,
+		showsFacilityDrawer,
 		selectedTrend,
 		selectFacility,
 		selectSearchFacility,
@@ -183,7 +184,7 @@ export function FacilitiesMapScreen() {
 					</div>,
 					legendSlot,
 				)}
-			{selectedFacilityId && (
+			{showsFacilityDrawer && selectedFacilityId && (
 				<FacilityDetailPanel
 					facilityId={selectedFacilityId}
 					isClosing={isPanelClosing}

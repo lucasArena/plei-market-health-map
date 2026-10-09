@@ -162,6 +162,7 @@ const mockDemandFlag = vi.fn(() => false);
 const mockSupplyFlag = vi.fn(() => false);
 const mockMetricFocusFlag = vi.fn(() => false);
 const mockTrendFlag = vi.fn(() => true);
+const mockInsightFlag = vi.fn(() => false);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 	useFeatureFlag: (key: string) =>
 		(
@@ -169,6 +170,7 @@ vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 				"metric-drill-down": mockMetricFocusFlag,
 				"facility-games-trend": mockTrendFlag,
 				"facility-games-layer": mockSupplyFlag,
+				"insights-panel-v3": mockInsightFlag,
 			})[key] ?? mockDemandFlag
 		)(),
 }));
@@ -857,6 +859,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			id: "f1",
 			name: FACILITY.name,
 			marketName: "Austin",
+			marketId: "austin",
 		});
 
 		act(() =>
@@ -872,6 +875,56 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.scope).toEqual({ kind: "all" });
 		act(() => result.current.rules.handlePanelClosed());
 		expect(result.current.feedbackFacilityId).toBeNull();
+	});
+
+	it("with insights-panel-v3, opens facilities as the panel's facility level and steps back up on close", async () => {
+		mockInsightFlag.mockReturnValue(true);
+		const container = document.createElement("div");
+		const { result } = renderHook(
+			() => {
+				const rules = useFacilitiesMapScreenRules();
+				rules.containerRef.current ??= container;
+				return {
+					rules,
+					scope: useMapScope().scope,
+					selectedFacilityId: useMapScope().selectedFacilityId,
+				};
+			},
+			{
+				wrapper: ({ children }: { children: ReactNode }) =>
+					wrapper({ children: createElement(MapScopeProvider, null, children) }),
+			},
+		);
+		await waitFor(() => expect(mapState.instances).toHaveLength(1));
+		act(() => mapState.handlers.get("load")?.());
+		expect(result.current.rules.showsFacilityDrawer).toBe(false);
+
+		act(() => result.current.rules.selectFacility(FACILITY));
+		expect(result.current.scope).toMatchObject({ kind: "facility", id: "f1", marketId: "austin" });
+		expect(result.current.selectedFacilityId).toBe("f1");
+
+		act(() => result.current.rules.closePanel());
+		expect(result.current.scope).toEqual({ kind: "market", id: "austin", name: "Austin" });
+		expect(result.current.selectedFacilityId).toBeNull();
+		act(() => result.current.rules.closePanel());
+		expect(result.current.scope).toEqual({ kind: "market", id: "austin", name: "Austin" });
+
+		act(() =>
+			result.current.rules.selectSearchFacility({ ...FACILITY, marketId: undefined } as never),
+		);
+		act(() => result.current.rules.closePanel());
+		expect(result.current.scope).toEqual({ kind: "all" });
+
+		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		act(() => result.current.rules.clearSearchScope());
+		await waitFor(() => expect(result.current.selectedFacilityId).toBeNull());
+
+		act(() => result.current.rules.selectSearchFacility(FACILITY));
+		act(() =>
+			result.current.rules.selectSearchMarket({ id: "austin", name: "Austin", facilities: [] }),
+		);
+		expect(result.current.selectedFacilityId).toBeNull();
+		mockInsightFlag.mockReturnValue(false);
 	});
 
 	it("zooms to search selections", async () => {

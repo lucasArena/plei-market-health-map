@@ -2,6 +2,7 @@ import type {
 	InsightTone,
 	InsightToneStyle,
 } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
+import { PANEL_SECTION_TITLE_CLASS } from "@/presentation/components/map/InsightPanel/InsightPanelComponent.styles";
 
 export const INSIGHT_TONE_STYLE: Record<InsightTone, InsightToneStyle> = {
 	neutral: {
@@ -33,3 +34,6 @@ export const INSIGHT_TONE_STYLE: Record<InsightTone, InsightToneStyle> = {
 		skeleton: "bg-[#bbf7d0]/60",
 	},
 };
+
+/** Insight panel (flat): the title uses the panel's section heading style. */
+export const KEY_INSIGHTS_FLAT_TITLE_CLASS = `mb-2 flex items-center gap-1.5 ${PANEL_SECTION_TITLE_CLASS}`;
