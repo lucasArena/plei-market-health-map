@@ -136,9 +136,9 @@ it("counts confirmed app registrations once per region over completed days", asy
 	]);
 	const sql = query.mock.calls[0]?.[0];
 	expect(sql).toContain("COUNT(DISTINCT p.player_id)");
-	expect(query.mock.calls[0]?.[1]).toEqual([TODAY]);
-	expect(sql).toContain("p.confirmed_at >= $1::date - 28");
-	expect(sql).toContain("p.confirmed_at < $1::date");
+	expect(query.mock.calls[0]?.[1]).toEqual(["2026-09-08", TODAY]);
+	expect(sql).toContain("p.confirmed_at >= $1::date");
+	expect(sql).toContain("p.confirmed_at < $2::date");
 	expect(sql).not.toContain("CURRENT_DATE");
 	expect(sql).toContain("p.players_type = 'pleiapp_player'");
 	expect(sql).toContain("GROUP BY region_id");
@@ -155,8 +155,25 @@ it("counts confirmed app registrations once per region over completed days", asy
 		},
 		TODAY,
 	);
-	expect(query.mock.calls[1]?.[1]).toEqual([TODAY, ["Female", "Male"], "Advanced", 18, 40]);
+	expect(query.mock.calls[1]?.[1]).toEqual([
+		"2026-09-08",
+		TODAY,
+		["Female", "Male"],
+		"Advanced",
+		18,
+		40,
+	]);
 	expect(query.mock.calls[1]?.[0]).toContain(
-		"AND NULLIF(TRIM(p.gender::text), '') = ANY($2::text[])",
+		"AND NULLIF(TRIM(p.gender::text), '') = ANY($3::text[])",
 	);
+});
+
+it("uses 7 completed days for registrations", async () => {
+	const query = vi.fn().mockResolvedValue({ rows: [] });
+	await new WarehouseAppSessionHeatmapRepository({ query }).listSessions(
+		"week",
+		{ metric: "registrations" },
+		TODAY,
+	);
+	expect(query.mock.calls[0]?.[1]).toEqual(["2026-09-29", TODAY]);
 });

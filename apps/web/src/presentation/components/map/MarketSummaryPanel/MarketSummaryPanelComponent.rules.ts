@@ -4,19 +4,34 @@ import {
 	type FacilityPlayerStatsView,
 	type FacilityReservationDetailView,
 	type FacilityReservationStatsView,
+	type MarketAudienceView,
 	type MarketSummaryFacilityRankView,
 	type MarketSummaryMarketRankView,
 	type MarketSummaryScopeView,
 	type MarketSummaryView,
+	type OverallGamesTrend,
+	type ReservationPeriodView,
+	STATS_PERIOD_DAYS,
 	type StatsPeriod,
+	toGamesTrend,
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@market-health-map/core/application";
-import type { GameDepartment } from "@market-health-map/core/domain";
+import { type GameDepartment, localDay, statsWindow } from "@market-health-map/core/domain";
 import { formatMessage, type StatsPeriodMessages } from "@market-health-map/core/i18n";
 import { useCallback, useEffect, useMemo } from "react";
 import type { ActivitySummarySubject } from "@/infrastructure/ai/prompts/activity-summary-prompt.types";
+import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import { aiSummaryContextFor } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
+import { niceAxisMax } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.rules";
+import type {
+	GamesMetricTone,
+	GamesMetricView,
+	GamesTrendChangeView,
+	GamesTrendDirection,
+	GamesTrendView,
+} from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
+import type { InsightTone } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 import {
 	activityPeriodFor,
 	buildPopularTimes,
@@ -35,16 +50,22 @@ import {
 } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import type {
 	MarketRankRowView,
+	MarketSummaryComparison,
 	MarketSummaryHeading,
+	MarketSummaryInsightHeading,
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
 	MarketSummaryViewModel,
+	TrendViewInput,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityPlayerStats } from "@/presentation/hooks/use-facility/use-facility-player-stats";
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
+import { requestFeedback } from "@/presentation/hooks/use-feedback/feedback-requests";
+import { useMarketAudience } from "@/presentation/hooks/use-market/use-market-audience";
 import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
 import { useMarketPlayerStats } from "@/presentation/hooks/use-market/use-market-player-stats";
 import { useMarketSummary } from "@/presentation/hooks/use-market/use-market-summary";
@@ -308,6 +329,371 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
+export const CURRENT_WEEKS: Record<StatsPeriod, number> = { week: 1, month: 4 };
+
+export function signed(value: number, magnitude: string): string {
+	if (value < 0) return `−${magnitude}`;
+	if (value > 0) return `+${magnitude}`;
+	return magnitude;
+}
+
+export function directionOfChange(value: number): GamesTrendDirection {
+	if (value < 0) return "down";
+	if (value > 0) return "up";
+	return "flat";
+}
+
+export const TONE_WHEN_HIGHER: Record<
+	"higherIsBetter" | "lowerIsBetter",
+	Record<GamesTrendDirection, GamesMetricTone>
+> = {
+	higherIsBetter: { up: "good", down: "bad", flat: "neutral" },
+	lowerIsBetter: { up: "bad", down: "good", flat: "neutral" },
+};
+
+function rateMetric(
+	key: string,
+	label: string,
+	rate: number | null,
+	previousRate: number | null,
+	changePoints: number | null,
+	polarity: keyof typeof TONE_WHEN_HIGHER,
+	messages: MarketSummaryMessages,
+): GamesMetricView {
+	const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value)}%`);
+	const rounded = changePoints === null ? null : Math.round(changePoints);
+	const direction = rounded === null ? null : directionOfChange(rounded);
+	return {
+		key,
+		label,
+		value: percent(rate),
+		previous: formatMessage(messages.metricVs, { value: percent(previousRate) }),
+		change:
+			rounded === null || direction === null
+				? null
+				: {
+						label: formatMessage(messages.changePoints, {
+							change: signed(rounded, String(Math.abs(rounded))),
+						}),
+						direction,
+						tone: TONE_WHEN_HIGHER[polarity][direction],
+					},
+	};
+}
+
+function changeView(percent: number | null, played: number): GamesTrendChangeView | null {
+	if (percent === null) return null;
+	const rounded = Math.round(percent);
+	if (rounded === 0) return { label: played > 0 ? "0%" : "—", direction: "flat" };
+	return {
+		label: `${signed(rounded, String(Math.abs(rounded)))}%`,
+		direction: directionOfChange(rounded),
+	};
+}
+
+function countMetric(
+	key: string,
+	label: string,
+	value: number,
+	previous: number,
+	changePercent: number | null,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): GamesMetricView {
+	const rounded = changePercent === null ? null : Math.round(changePercent);
+	const direction = rounded === null ? null : directionOfChange(rounded);
+	return {
+		key,
+		label,
+		value: formatters.number.format(value),
+		previous: formatMessage(messages.metricVs, { value: formatters.number.format(previous) }),
+		change:
+			rounded === null || direction === null
+				? null
+				: {
+						label: `${signed(rounded, String(Math.abs(rounded)))}%`,
+						direction,
+						tone: TONE_WHEN_HIGHER.higherIsBetter[direction],
+					},
+	};
+}
+
+function pendingMetric(key: string, label: string): GamesMetricView {
+	return { key, label, value: "", previous: "", change: null, isPending: true };
+}
+
+export function buildUserMetrics(
+	audience: MarketAudienceView | undefined,
+	isAudiencePending: boolean,
+	playerStats: FacilityPlayerStatsView | undefined,
+	isPlayersPending: boolean,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): GamesMetricView[] {
+	const count = (
+		key: string,
+		label: string,
+		values: [value: number, previous: number, changePercent: number | null] | null,
+		isPending: boolean,
+	): GamesMetricView[] => {
+		if (values) return [countMetric(key, label, ...values, messages, formatters)];
+		return isPending ? [pendingMetric(key, label)] : [];
+	};
+	const users = audience?.periods[period];
+	const players = playerStats ? toPlayerPeriodView(playerStats, period) : null;
+	return [
+		...(!players && isPlayersPending
+			? [pendingMetric("activePlayers", messages.metricActivePlayers)]
+			: []),
+		...count(
+			"registrations",
+			messages.metricRegistrations,
+			users
+				? [users.registrations, users.registrationsPrevious, users.registrationsChangePercent]
+				: null,
+			isAudiencePending,
+		),
+		...count(
+			"activeUsers",
+			messages.metricActiveUsers,
+			users ? [users.activeUsers, users.activeUsersPrevious, users.activeUsersChangePercent] : null,
+			isAudiencePending,
+		),
+		...count(
+			"uniqueUsers",
+			messages.metricUniqueUsers,
+			players
+				? [players.uniquePlayers, players.uniquePlayersPrevious, players.uniquePlayersChangePercent]
+				: null,
+			isPlayersPending,
+		),
+	];
+}
+
+export function buildGamesMetrics(
+	games: ReservationPeriodView,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): GamesMetricView[] {
+	return [
+		rateMetric(
+			"confirmation",
+			messages.metricConfirmation,
+			games.confirmationRate,
+			games.confirmationRatePrevious,
+			games.confirmationRateChangePoints,
+			"higherIsBetter",
+			messages,
+		),
+		rateMetric(
+			"cancellation",
+			messages.metricCancellation,
+			games.cancellationRate,
+			games.cancellationRatePrevious,
+			games.cancellationRateChangePoints,
+			"lowerIsBetter",
+			messages,
+		),
+		countMetric(
+			"posted",
+			messages.metricPosted,
+			games.scheduled,
+			games.scheduledPrevious,
+			games.scheduledChangePercent,
+			messages,
+			formatters,
+		),
+	];
+}
+
+export function buildTrendView(
+	input: TrendViewInput,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	periodMessages: StatsPeriodMessages,
+	formatters: DetailFormatters,
+): GamesTrendView {
+	const change = changeView(input.changePercent, input.value);
+	const firstCurrent = input.weeks.length - CURRENT_WEEKS[period];
+	const axisMax = niceAxisMax(input.weeks.map((week) => week.value));
+	return {
+		total: formatters.number.format(input.value),
+		change,
+		comparison: formatMessage(messages.gamesComparedWith, {
+			previous: formatters.number.format(input.previous),
+			comparison: periodMessages.comparison,
+		}),
+		direction: change?.direction ?? (input.value > 0 ? "up" : "flat"),
+		axisMax,
+		axisLabel: axisMax === null ? null : formatters.number.format(axisMax),
+		metrics: input.metrics,
+		points: input.weeks.map((week, index) => {
+			const weekLabel = formatters.week.format(utcDate(week.weekStart));
+			const valueLabel = formatters.number.format(week.value);
+			return {
+				key: week.weekStart,
+				value: week.value,
+				valueLabel,
+				weekLabel,
+				tooltipLabel: formatMessage(input.tooltip, { week: weekLabel }),
+				ariaLabel: formatMessage(input.pointLabel, {
+					games: valueLabel,
+					players: valueLabel,
+					week: weekLabel,
+				}),
+				isCurrentPeriod: index >= firstCurrent,
+			};
+		}),
+	};
+}
+
+export function buildGamesTrendView(
+	stats: FacilityReservationStatsView,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	periodMessages: StatsPeriodMessages,
+	formatters: DetailFormatters,
+): GamesTrendView {
+	const games = toReservationPeriodView(stats, period);
+	return buildTrendView(
+		{
+			value: games.played,
+			previous: games.playedPrevious,
+			changePercent: games.playedChangePercent,
+			weeks: stats.weeklyActivity.map((week) => ({
+				weekStart: week.weekStart,
+				value: week.gamesPlayed,
+			})),
+			tooltip: messages.gamesPointTooltip,
+			pointLabel: messages.gamesPointLabel,
+			metrics: buildGamesMetrics(games, messages, formatters),
+		},
+		period,
+		messages,
+		periodMessages,
+		formatters,
+	);
+}
+
+export function buildPlayersTrendView(
+	stats: FacilityPlayerStatsView,
+	metrics: GamesMetricView[],
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	periodMessages: StatsPeriodMessages,
+	formatters: DetailFormatters,
+): GamesTrendView {
+	const players = toPlayerPeriodView(stats, period);
+	const view = buildTrendView(
+		{
+			value: players.activatedPlayers,
+			previous: players.activatedPlayersPrevious,
+			changePercent: players.activatedPlayersChangePercent,
+			weeks: stats.weeklyActivatedPlayers.map((week) => ({
+				weekStart: week.weekStart,
+				value: week.players,
+			})),
+			tooltip: messages.playersPointTooltip,
+			pointLabel: messages.playersPointLabel,
+			metrics,
+		},
+		period,
+		messages,
+		periodMessages,
+		formatters,
+	);
+	return { ...view, label: messages.metricActivePlayers };
+}
+
+const TREND_TONE: Record<OverallGamesTrend, InsightTone> = {
+	declining: "attention",
+	stable: "stable",
+	growing: "growing",
+};
+
+export function buildInsightHeading(
+	isToned: boolean,
+	summary: MarketSummaryView | undefined,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+): MarketSummaryInsightHeading {
+	if (!isToned || !summary) return { title: messages.keyInsights, tone: "neutral" };
+	const games = toReservationPeriodView(summary.stats, period);
+	const trend = toGamesTrend(games.played, games.playedPrevious);
+	const status = {
+		declining: messages.trendDeclining,
+		stable: messages.trendStable,
+		growing: messages.trendGrowing,
+	}[trend];
+	return {
+		title: formatMessage(messages.trendTitle, { status, title: messages.keyInsights }),
+		tone: TREND_TONE[trend],
+	};
+}
+
+export function utcDate(isoDate: string): Date {
+	return new Date(`${isoDate}T00:00:00Z`);
+}
+
+export function buildComparisonRange(
+	today: string,
+	period: StatsPeriod,
+	locale: string,
+	messages: MarketSummaryMessages,
+): MarketSummaryComparison {
+	const window = statsWindow(today, STATS_PERIOD_DAYS[period]);
+	const withYear = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC",
+	});
+	const withoutYear = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		day: "numeric",
+		timeZone: "UTC",
+	});
+	return {
+		current: withYear.formatRange(utcDate(window.start), utcDate(window.end)),
+		previous: formatMessage(messages.comparedWith, {
+			range: withoutYear.formatRange(utcDate(window.previousStart), utcDate(window.previousEnd)),
+		}),
+	};
+}
+
+export function buildScopeLine(
+	scope: MapScope,
+	counts: MarketSummaryScopeView | undefined,
+	heading: MarketSummaryHeading,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): string {
+	if (scope.kind === "facility" || !counts) return heading.subtitle;
+	const facilities = formatMessage(messages.facilitiesActive, {
+		active: formatters.number.format(counts.activeFacilityCount),
+		total: formatters.number.format(counts.facilityCount),
+	});
+	if (scope.kind === "market") return facilities;
+	const markets = formatMessage(messages.marketsActive, {
+		active: formatters.number.format(counts.activeMarketCount),
+		total: formatters.number.format(counts.marketCount),
+	});
+	return formatMessage(messages.scopeCounts, { facilities, markets });
+}
+
+export function buildDataAsOf(
+	updatedAt: number | undefined,
+	locale: string,
+	messages: MarketSummaryMessages,
+): string | null {
+	if (!updatedAt) return null;
+	const time = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
+		new Date(updatedAt),
+	);
+	return formatMessage(messages.dataAsOf, { time });
+}
+
 export function buildMarketAiSubject(
 	scope: MapScope,
 	heading: MarketSummaryHeading,
@@ -353,6 +739,7 @@ export function useMarketSummaryPanelRules({
 	const marketId = scope.kind === "market" ? scope.id : null;
 	const isMarketScope = facilityId === null;
 	const { departments } = useMarketSummaryFilters();
+	const isRedesigned = useFeatureFlag("insights-panel-v3");
 	const summaryQuery = useMarketSummary(marketId, isMarketScope, departments);
 	const insightsQuery = useMarketGameInsights(
 		marketId,
@@ -361,6 +748,7 @@ export function useMarketSummaryPanelRules({
 		departments,
 	);
 	const marketPlayerQuery = useMarketPlayerStats(marketId, isMarketScope, departments);
+	const audienceQuery = useMarketAudience(marketId, isRedesigned && isMarketScope);
 	const facilityQuery = useFacilityReservationStats(facilityId);
 	const facilityPlayerQuery = useFacilityPlayerStats(facilityId);
 	const reportQuery = isMarketScope ? summaryQuery : facilityQuery;
@@ -448,6 +836,81 @@ export function useMarketSummaryPanelRules({
 		departments,
 	]);
 	const status = resolveDetailStatus(reportQuery.isPending, reportQuery.isError);
+	const comparison = useMemo(
+		() =>
+			buildComparisonRange(
+				localDay(new Date(), browserTimeZone()),
+				period,
+				locale,
+				messages.marketSummary,
+			),
+		[locale, messages.marketSummary, period],
+	);
+	const scopeLine = buildScopeLine(
+		scope,
+		isMarketScope ? summary?.periods[period].scope : undefined,
+		heading,
+		messages.marketSummary,
+		formatters,
+	);
+	const reportStats = isMarketScope ? summary?.stats : facilityReport?.stats;
+	const gamesTrend = useMemo(
+		() =>
+			reportStats
+				? buildGamesTrendView(
+						reportStats,
+						period,
+						messages.marketSummary,
+						periodMessages,
+						formatters,
+					)
+				: null,
+		[formatters, messages.marketSummary, period, periodMessages, reportStats],
+	);
+	const insight = buildInsightHeading(
+		isRedesigned && scope.kind === "all",
+		summary,
+		period,
+		messages.marketSummary,
+	);
+	const userMetrics = useMemo(
+		() =>
+			buildUserMetrics(
+				isMarketScope ? audienceQuery.data : undefined,
+				isMarketScope && audienceQuery.isPending,
+				playerStats,
+				playerQuery.isPending,
+				period,
+				messages.marketSummary,
+				formatters,
+			),
+		[
+			audienceQuery.data,
+			audienceQuery.isPending,
+			formatters,
+			isMarketScope,
+			messages.marketSummary,
+			period,
+			playerQuery.isPending,
+			playerStats,
+		],
+	);
+	const playersTrend = useMemo(
+		() =>
+			playerStats
+				? buildPlayersTrendView(
+						playerStats,
+						userMetrics,
+						period,
+						messages.marketSummary,
+						periodMessages,
+						formatters,
+					)
+				: null,
+		[formatters, messages.marketSummary, period, periodMessages, playerStats, userMetrics],
+	);
+	const dataAsOf = buildDataAsOf(reportQuery.dataUpdatedAt, locale, messages.marketSummary);
+	const reportWrongNumber = useCallback(() => requestFeedback("bug"), []);
 
 	const handleAnimationEnd = useCallback(() => {
 		if (isClosing) onClosed();
@@ -467,16 +930,28 @@ export function useMarketSummaryPanelRules({
 
 	return {
 		aiContext,
+		comparison,
+		dataAsOf,
+		isRedesigned,
 		rankingsEmptyLabel,
+		reportWrongNumber,
+		scopeLine,
 		detailMessages: messages.facilityDetail,
 		handleAnimationEnd,
+		gamesTrend,
 		heading,
+		insight,
 		isClosing,
 		isSummaryPending:
 			status === "ready" && ((isMarketScope && insightsQuery.isPending) || playerQuery.isPending),
 		isInsightsFailed: isMarketScope && insightsQuery.isError,
 		messages: messages.marketSummary,
 		onClose,
+		isUsersPending: !playerStats && playerQuery.isPending,
+		playersTrend,
+		userMetrics,
+		marketView: isRedesigned && scope.kind === "market" ? { id: scope.id, name: scope.name } : null,
+		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,
 		view: insightsView,
 	};

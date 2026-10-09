@@ -7,6 +7,7 @@ import {
 } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.styles";
 import type { AiSummaryProps } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.types";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
+import { INSIGHT_TONE_STYLE } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.styles";
 
 const AI_SUMMARY_TOGGLE_ROW_CLASS = { collapsed: "-mt-6", expanded: "" };
 
@@ -23,10 +24,12 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 		text,
 		toggleExpanded,
 	} = useAiSummaryRules(props);
+	const tone = props.tone ?? "neutral";
+	const toneStyle = INSIGHT_TONE_STYLE[tone];
 
 	return (
 		<div
-			className={AI_SUMMARY_BOX_CLASS}
+			className={`${AI_SUMMARY_BOX_CLASS} ${toneStyle.box}`}
 			aria-busy={status === "loading" || status === "generating"}
 		>
 			<div
@@ -35,7 +38,8 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 				className={`relative overflow-hidden ${AI_SUMMARY_HEIGHT_CLASS[isExpanded ? "expanded" : "collapsed"]}`}
 			>
 				<KeyInsights
-					title={messages.label}
+					title={props.title ?? messages.label}
+					tone={tone}
 					text={text ?? ""}
 					introFirst={props.introFirst}
 					isLoading={!text}
@@ -43,7 +47,7 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 				{isOverflowing && !isExpanded && (
 					<div
 						aria-hidden="true"
-						className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-pleiful-moonlight-5"
+						className={`pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t ${toneStyle.fade}`}
 					/>
 				)}
 			</div>
@@ -56,7 +60,7 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 						type="button"
 						onClick={toggleExpanded}
 						aria-expanded={isExpanded}
-						className="rounded-full border border-pleiful-moonlight-10 bg-white/90 px-3 py-1 text-xs font-medium text-pleiful-moonlight-70 shadow-sm transition-colors hover:bg-white"
+						className={`rounded-full border bg-white/90 px-3 py-1 text-xs font-medium shadow-sm transition-colors hover:bg-white ${toneStyle.button}`}
 					>
 						{isExpanded ? messages.showLess : messages.showMore}
 					</button>

@@ -1,11 +1,13 @@
 import { useKeyInsightsRules } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.rules";
+import { INSIGHT_TONE_STYLE } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.styles";
 import type { KeyInsightsProps } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 
 export function KeyInsights(props: Readonly<KeyInsightsProps>) {
 	const { intro, lines, isList } = useKeyInsightsRules(props);
+	const { accent, skeleton } = INSIGHT_TONE_STYLE[props.tone ?? "neutral"];
 	return (
 		<>
-			<h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-pleiful-moonlight-70">
+			<h3 className={`mb-2 flex items-center gap-1.5 text-xs font-semibold ${accent}`}>
 				<svg
 					aria-hidden="true"
 					data-testid="key-insights-ai-icon"
@@ -22,10 +24,10 @@ export function KeyInsights(props: Readonly<KeyInsightsProps>) {
 					aria-hidden="true"
 					className="animate-pulse space-y-2.5 pt-1"
 				>
-					<div className="h-3 w-11/12 rounded bg-pleiful-moonlight-10" />
-					<div className="h-3 w-full rounded bg-pleiful-moonlight-10" />
-					<div className="h-3 w-4/5 rounded bg-pleiful-moonlight-10" />
-					<div className="h-3 w-2/3 rounded bg-pleiful-moonlight-10" />
+					<div className={`h-3 w-11/12 rounded ${skeleton}`} />
+					<div className={`h-3 w-full rounded ${skeleton}`} />
+					<div className={`h-3 w-4/5 rounded ${skeleton}`} />
+					<div className={`h-3 w-2/3 rounded ${skeleton}`} />
 				</div>
 			)}
 			{!props.isLoading && intro && <p className="mb-3 text-sm leading-relaxed">{intro}</p>}

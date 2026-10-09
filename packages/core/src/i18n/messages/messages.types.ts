@@ -144,6 +144,52 @@ export interface Messages {
 		week: StatsPeriodMessages;
 		month: StatsPeriodMessages;
 	};
+	facilitiesTable: {
+		topGroup: string;
+		bottomGroup: string;
+		hiddenCount: string;
+		title: string;
+		columnFacility: string;
+		columnGames: string;
+		columnChange: string;
+		attention: string;
+		watch: string;
+		onTrack: string;
+		previous: string;
+		noBaseline: string;
+		openFacility: string;
+		showAll: string;
+		showFewer: string;
+	};
+	marketView: {
+		level: string;
+		breadcrumb: string;
+		statusAttention: string;
+		statusOnTrack: string;
+		statusGrowing: string;
+		streakDown: string;
+		streakUp: string;
+		periodDown: string;
+		periodUp: string;
+		periodSteady: string;
+		drivenByOne: string;
+		drivenBy: string;
+		sentenceEnd: string;
+		driversLost: string;
+		driversLostOffset: string;
+		driversGained: string;
+		driversGainedOffset: string;
+		driver: string;
+		scorecards: string;
+		mainMetric: string;
+		gamesPlayed: string;
+		infoGamesPlayed: string;
+		infoConfirmation: string;
+		infoCancellation: string;
+		pointsVsPrevious: string;
+		trendTitle: string;
+		trendAside: string;
+	};
 	facilityDetail: {
 		label: string;
 		close: string;
@@ -175,6 +221,32 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		compare: string;
+		compareWeek: string;
+		compareMonth: string;
+		compareYear: string;
+		compareHelp: string;
+
+		change: string;
+		changeNew: string;
+		changeStable: string;
+		changePrior: string;
+
+		noCompletedBuckets: string;
+		bucketHelp: string;
+		time: string;
+		bucket: string;
+		day: string;
+		week: string;
+		month: string;
+		partial: string;
+
+		appSessions: string;
+		registrations: string;
+		uniqueUsers: string;
+		appActivityNote: string;
+		sourceSwitch: string;
+
 		title: string;
 		expand: string;
 		collapse: string;
@@ -184,21 +256,62 @@ export interface Messages {
 		measure: string;
 		slice: string;
 		segment: string;
+		range: string;
 		measureHelp: string;
 		sliceHelp: string;
 		segmentHelp: string;
+		rangeHelp: string;
 		help: string;
 		games: string;
 		activeFacilities: string;
+		scheduledGames: string;
+		confirmationRate: string;
+		uniquePlayers: string;
+		activatedPlayers: string;
+		almostFilledRate: string;
+		incidentGamesRate: string;
+		avgDailyGames: string;
+		activeOrganizers: string;
+		measureTips: Record<
+			| "games"
+			| "avgDailyGames"
+			| "scheduledGames"
+			| "incidentGamesRate"
+			| "confirmationRate"
+			| "almostFilledRate"
+			| "registrations"
+			| "uniqueUsers"
+			| "activatedPlayers"
+			| "uniquePlayers"
+			| "activeOrganizers"
+			| "activeFacilities",
+			string
+		>;
+		ratio: string;
+		ratioWithErrors: string;
+		almostFilledParts: string;
+		incidentRateParts: string;
+		confirmationParts: string;
+		rosterDataErrors: string;
+		reviewsLag: string;
 		market: string;
 		facility: string;
 		department: string;
+		organizer: string;
+		unknownOrganizer: string;
 		none: string;
+		range7d: string;
+		range28d: string;
+		range90d: string;
+		range6m: string;
+		range12m: string;
 		selectedDepartmentHelp: string;
+		selectedOrganizerHelp: string;
 		segmentUnavailable: string;
 		topTen: string;
 		chart: string;
 		value: string;
+		rate: string;
 		viewOnMap: string;
 		back: string;
 		allMarkets: string;
@@ -237,6 +350,33 @@ export interface Messages {
 		marketSubtitle: string;
 		facilitySubtitle: string;
 		marketSummaryNone: string;
+		scopeCounts: string;
+		facilitiesActive: string;
+		marketsActive: string;
+		comparedWith: string;
+		sectionGames: string;
+		sectionUsers: string;
+		dataAsOf: string;
+		gamesInPeriod: string;
+		metricConfirmation: string;
+		metricCancellation: string;
+		metricPosted: string;
+		metricVs: string;
+		metricActiveUsers: string;
+		metricUniqueUsers: string;
+		metricActivePlayers: string;
+		metricRegistrations: string;
+		changePoints: string;
+		gamesComparedWith: string;
+		gamesPointTooltip: string;
+		gamesPointLabel: string;
+		playersPointTooltip: string;
+		playersPointLabel: string;
+		trendDeclining: string;
+		trendStable: string;
+		trendGrowing: string;
+		trendTitle: string;
+		reportWrongNumber: string;
 	};
 	feedback: {
 		open: string;

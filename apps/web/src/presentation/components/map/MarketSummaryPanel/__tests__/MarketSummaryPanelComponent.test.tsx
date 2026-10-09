@@ -4,6 +4,12 @@ import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryP
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/map/MarketOverview/MarketOverviewComponent", () => ({
+	MarketOverview: ({ marketName }: { marketName: string }) => (
+		<div data-testid="market-overview">{marketName}</div>
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent", () => ({
 	AiSummarySkeleton: ({ testId }: { testId: string }) => (
 		<div data-testid={testId} aria-busy="true" />
@@ -75,6 +81,34 @@ const VIEW = {
 function rulesWith(overrides: object = {}) {
 	return {
 		aiContext: { cacheKey: "v4:all-markets-all:2026-09-21:en", prompt: [] },
+		comparison: { current: "Sep 9 – Oct 6, 2026", previous: "vs Aug 12 – Sep 8" },
+		dataAsOf: "Data as of Oct 7, 2026, 9:35 PM",
+		isRedesigned: false,
+		reportWrongNumber: vi.fn(),
+		insight: { title: "Key insights", tone: "neutral" },
+		gamesTrend: null,
+		playersTrend: null,
+		isUsersPending: false,
+		marketView: null,
+		gamesTitle: "Games the last 7 days",
+		userMetrics: [
+			{
+				key: "activeUsers",
+				label: "Active users",
+				value: "12,000",
+				previous: "vs 10,000",
+				change: { label: "+20%", direction: "up", tone: "good" },
+			},
+			{
+				key: "registrations",
+				label: "New registrations",
+				value: "",
+				previous: "",
+				change: null,
+				isPending: true,
+			},
+		],
+		scopeLine: "42 of 58 facilities active · 8 of 12 markets active",
 		detailMessages: EN_MESSAGES.facilityDetail,
 		handleAnimationEnd: vi.fn(),
 		heading: { title: "All markets", subtitle: EN_MESSAGES.marketSummary.subtitle },
@@ -110,6 +144,144 @@ describe("MarketSummaryPanel", () => {
 		expect(screen.getByText("6 of 9 facilities active")).toBeInTheDocument();
 		expect(screen.getByText("No games played last week.")).toBeInTheDocument();
 		expect(screen.getByText(VIEW.lastPlayedLabel)).toBeInTheDocument();
+	});
+
+	it("keeps the current header and footer while the redesign is off", () => {
+		mockRules.mockReturnValue(rulesWith());
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.queryByTestId("market-summary-dates")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("health-strip")).not.toBeInTheDocument();
+		expect(screen.queryByText("Data as of Oct 7, 2026, 9:35 PM")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Report a wrong number" })).not.toBeInTheDocument();
+	});
+
+	it("shows the redesigned header, health strip and data freshness footer", () => {
+		const reportWrongNumber = vi.fn();
+		mockRules.mockReturnValue(rulesWith({ isRedesigned: true, reportWrongNumber }));
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(
+			screen.getByText("42 of 58 facilities active · 8 of 12 markets active"),
+		).toBeInTheDocument();
+		expect(screen.getByTestId("market-summary-dates")).toHaveTextContent(
+			"Sep 9 – Oct 6, 2026vs Aug 12 – Sep 8",
+		);
+		expect(screen.getByText(VIEW.summary)).toBeInTheDocument();
+		expect(screen.queryByText("of 142")).not.toBeInTheDocument();
+		expect(screen.getByRole("region", { name: "Games the last 7 days" })).toContainElement(
+			screen.getByRole("heading", { name: "Weekly activity" }),
+		);
+		const users = screen.getByRole("region", { name: "Users" });
+		expect(users).toContainElement(screen.getByTestId("user-metrics"));
+		expect(users).toHaveTextContent("Active users12,000vs 10,000+20%");
+		expect(users).toHaveTextContent("New registrations");
+		expect(screen.queryByRole("region", { name: "Markets" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("region", { name: "Facilities" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("heading", { name: "Top markets" })).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: "Popular times · last 28 days" }),
+		).not.toBeInTheDocument();
+		expect(screen.getByText("Data as of Oct 7, 2026, 9:35 PM")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Report a wrong number" }));
+		expect(reportWrongNumber).toHaveBeenCalledOnce();
+	});
+
+	it("charts active players at the top of Users with the other user rows below", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				isRedesigned: true,
+				playersTrend: {
+					label: "Active players",
+					total: "3,146",
+					change: { label: "−19%", direction: "down" },
+					comparison: "vs 3,877 in the previous 28 days",
+					direction: "down",
+					axisMax: 1000,
+					axisLabel: "1,000",
+					points: [
+						{
+							key: "2026-10-01",
+							value: 700,
+							valueLabel: "700",
+							weekLabel: "Oct 1",
+							tooltipLabel: "active players · Oct 1",
+							ariaLabel: "700 active players, week ending Oct 1",
+							isCurrentPeriod: true,
+						},
+					],
+					metrics: [
+						{
+							key: "registrations",
+							label: "New registrations",
+							value: "6,815",
+							previous: "vs 7,922",
+							change: { label: "−14%", direction: "down", tone: "bad" },
+						},
+					],
+				},
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		const users = screen.getByRole("region", { name: "Users" });
+		expect(users).toContainElement(screen.getByTestId("players-trend-chart"));
+		expect(users).toHaveTextContent("Active players3,146−19%vs 3,877 in the previous 28 days");
+		expect(screen.getByTestId("user-metrics")).toHaveTextContent(
+			"New registrations6,815vs 7,922−14%",
+		);
+		expect(
+			screen.getByRole("button", { name: "700 active players, week ending Oct 1" }),
+		).toBeInTheDocument();
+	});
+
+	it("loads a selected market with the market-shaped skeleton", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				status: "loading",
+				view: null,
+				isRedesigned: true,
+				marketView: { id: "miami", name: "Miami Metro" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-overview-skeleton")).toBeInTheDocument();
+		expect(screen.queryByTestId("games-trend-skeleton")).not.toBeInTheDocument();
+	});
+
+	it("hands a selected market to the market view and keeps the footer", () => {
+		mockRules.mockReturnValue(
+			rulesWith({ isRedesigned: true, marketView: { id: "miami", name: "Miami Metro" } }),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-overview")).toHaveTextContent("Miami Metro");
+		expect(screen.queryByTestId("market-summary-dates")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Report a wrong number" })).toBeInTheDocument();
+	});
+
+	it("tints the written insight with the overall trend", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				aiContext: null,
+				isRedesigned: true,
+				insight: { title: "Needs attention · Key insights", tone: "attention" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("health-strip")).toHaveAttribute("data-tone", "attention");
+		expect(
+			screen.getByRole("heading", { name: "Needs attention · Key insights" }),
+		).toBeInTheDocument();
 	});
 
 	it("hides the scope tiles and rankings a single facility does not need", () => {
@@ -185,5 +357,24 @@ describe("MarketSummaryPanel", () => {
 		mockRules.mockReturnValue(rulesWith({ status: "error", view: null }));
 		render(<MarketSummaryPanel {...PROPS} />);
 		expect(screen.getByRole("alert")).toHaveTextContent("Could not load the market summary.");
+	});
+
+	it("loads the redesigned panel with chart-shaped skeletons for Games and Users", () => {
+		mockRules.mockReturnValue(rulesWith({ status: "loading", view: null, isRedesigned: true }));
+		const { unmount } = render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByTestId("market-summary-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("market-summary-insight-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("games-trend-skeleton")).toBeInTheDocument();
+		expect(screen.getByTestId("users-trend-skeleton")).toBeInTheDocument();
+		unmount();
+
+		mockRules.mockReturnValue(
+			rulesWith({ isRedesigned: true, isUsersPending: true, userMetrics: [] }),
+		);
+		render(<MarketSummaryPanel {...PROPS} />);
+		expect(screen.getByRole("region", { name: "Users" })).toContainElement(
+			screen.getByTestId("users-trend-skeleton"),
+		);
+		expect(screen.queryByTestId("user-metrics")).not.toBeInTheDocument();
 	});
 });

@@ -220,12 +220,14 @@ export function buildProgressiveTiles(
 	];
 }
 
+export const CLASSIC_WEEKLY_POINTS = 4;
+
 export function buildWeeklyActivity(
 	stats: FacilityReservationStatsView,
 	messages: DetailMessages,
 	formatters: DetailFormatters,
 ) {
-	return stats.weeklyActivity.map((point) => {
+	return stats.weeklyActivity.slice(-CLASSIC_WEEKLY_POINTS).map((point) => {
 		const label = formatters.week.format(localDate(weekEndOf(point.weekStart)));
 		const games = formatGames(point.gamesPlayed, messages, formatters);
 		return {

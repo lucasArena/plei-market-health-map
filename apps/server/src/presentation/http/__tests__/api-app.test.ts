@@ -14,6 +14,16 @@ function setup(access: AccessDecision = ALLOWED) {
 		getMarketGameInsights: vi.fn().mockResolvedValue([]),
 		getMarketSummary: vi.fn().mockResolvedValue({ scope: { facilityCount: 42 } }),
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
+		getMarketAudience: vi.fn().mockResolvedValue({ periods: { week: { activeUsers: 5590 } } }),
+		getMetricDrillDown: vi.fn().mockResolvedValue({
+			total: 10,
+			rows: [],
+			start: "2026-09-10",
+			end: "2026-10-07",
+			measure: "games",
+			range: "28d",
+			kind: "count",
+		}),
 		listAppSessionFilterOptions: vi
 			.fn()
 			.mockResolvedValue({ genders: ["Female"], skills: ["Advanced"], ages: [25] }),
@@ -100,6 +110,28 @@ describe("createApiApp", () => {
 
 		expect((await get("/market-summary?market=nowhere")).status).toBe(404);
 		expect((await get("/market-summary/players?market=")).status).toBe(400);
+	});
+
+	it("returns the market audience and passes the market through", async () => {
+		const { get, services } = setup();
+
+		expect(await get("/market-summary/audience")).toEqual({
+			status: 200,
+			body: { data: { periods: { week: { activeUsers: 5590 } } } },
+		});
+		await get("/market-summary/audience?market=2");
+
+		expect(services.getMarketAudience).toHaveBeenNthCalledWith(1, { market: undefined });
+		expect(services.getMarketAudience).toHaveBeenNthCalledWith(2, { market: "2" });
+	});
+
+	it("maps an unknown audience market to 404 and an invalid one to 400", async () => {
+		const { get, services } = setup();
+		services.getMarketAudience.mockRejectedValueOnce(new NotFoundError("Market"));
+		services.getMarketAudience.mockRejectedValueOnce(new InvalidRequestError([]));
+
+		expect((await get("/market-summary/audience?market=nowhere")).status).toBe(404);
+		expect((await get("/market-summary/audience?market=")).status).toBe(400);
 	});
 
 	it("rejects anonymous market summary requests before running any query", async () => {
@@ -251,6 +283,56 @@ describe("session demographics API", () => {
 	});
 });
 
+describe("metric drill-down route", () => {
+	it("forwards measure, range, slice, scope and departments", async () => {
+		const { get, services } = setup();
+		expect(
+			(
+				await get(
+					"/metric-drill-down?measure=games&range=90d&slice=facility&marketId=miami&facilityId=a&departments=magic,%20organizers&department=magic&segment=department&grain=range",
+				)
+			).status,
+		).toBe(200);
+		expect(services.getMetricDrillDown).toHaveBeenCalledWith({
+			measure: "games",
+			range: "90d",
+			slice: "facility",
+			segment: "department",
+			marketId: "miami",
+			facilityId: "a",
+			department: "magic",
+			grain: "range",
+			departments: ["magic", "organizers"],
+		});
+		await get(
+			"/metric-drill-down?measure=confirmation-rate&range=7d&slice=department&departments=magic",
+		);
+		expect(services.getMetricDrillDown).toHaveBeenLastCalledWith({
+			measure: "confirmation-rate",
+			range: "7d",
+			slice: "department",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			departments: ["magic"],
+		});
+		await get("/metric-drill-down?measure=games&range=28d&slice=market&departments=");
+		expect(services.getMetricDrillDown).toHaveBeenLastCalledWith({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			departments: [],
+		});
+	});
+});
+
 describe("viewer time zone", () => {
 	it("forwards ?tz= to every period endpoint so today follows the browser's zone", async () => {
 		const { get, services } = setup();
@@ -264,7 +346,11 @@ describe("viewer time zone", () => {
 		expect((await get(`/market-summary?market=houston&${tz}`)).status).toBe(200);
 		expect((await get(`/market-summary/insights?period=week&${tz}`)).status).toBe(200);
 		expect((await get(`/market-summary/players?${tz}`)).status).toBe(200);
+		expect((await get(`/market-summary/audience?market=2&${tz}`)).status).toBe(200);
 		expect((await get(`/app-session-heatmap?period=week&gender=Female&${tz}`)).status).toBe(200);
+		expect(
+			(await get(`/metric-drill-down?measure=games&range=28d&slice=market&${tz}`)).status,
+		).toBe(200);
 
 		expect(services.listFacilities).toHaveBeenCalledWith({ timeZone });
 		expect(services.getFacilityDetail).toHaveBeenCalledWith({ facilityId: "889", timeZone });
@@ -280,10 +366,22 @@ describe("viewer time zone", () => {
 			timeZone,
 		});
 		expect(services.getMarketPlayerStats).toHaveBeenCalledWith({ market: undefined, timeZone });
+		expect(services.getMarketAudience).toHaveBeenCalledWith({ market: "2", timeZone });
 		expect(services.listAppSessionHeatmap).toHaveBeenCalledWith(
 			{ gender: "Female" },
 			"week",
 			timeZone,
 		);
+		expect(services.getMetricDrillDown).toHaveBeenCalledWith({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			timeZone,
+		});
 	});
 });

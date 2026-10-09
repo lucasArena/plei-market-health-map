@@ -1,32 +1,18 @@
-import type { StatsPeriod } from "@core/application/dtos/facility-detail-dto.types";
-import type { FacilityPointView } from "@core/application/dtos/facility-dto.types";
-import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
+import type { EnabledFeatureFlagsView } from "@core/application/dtos/feature-flags-dto.types";
+import type { Clock } from "@core/application/providers/clock.types";
+import type { MetricDrillDownRepository } from "@core/application/repositories/metric-drill-down-repository.types";
 
-export type DrillDownMeasure = "games" | "active-facilities";
-export type DrillDownSlice = "market" | "facility" | "department";
-export type DrillDownSegment = "none" | "department";
-export interface MetricDrillDownInput {
-	facilities: readonly FacilityPointView[];
-	period: StatsPeriod;
-	measure: DrillDownMeasure;
-	slice: DrillDownSlice;
-	segment: DrillDownSegment;
-	marketId?: string;
-	facilityId?: string;
-	department?: GameDepartment;
-	gameDepartments?: readonly GameDepartment[];
-	now: Date;
-	timeZone: string;
-}
-export interface MetricDrillDownRow {
-	id: string;
-	name: string;
-	value: number | null;
-	departments: GameDepartmentCounts | null;
-}
-export interface MetricDrillDownView {
-	total: number | null;
-	rows: MetricDrillDownRow[];
-	start: string;
-	end: string;
+export type {
+	DrillDownMeasure,
+	DrillDownSegment,
+	DrillDownSlice,
+	GetMetricDrillDownInput,
+	MetricDrillDownRow,
+	MetricDrillDownView,
+} from "@core/application/dtos/metric-drill-down-dto.types";
+
+export interface GetMetricDrillDownDeps {
+	drillDown: MetricDrillDownRepository;
+	clock: Clock;
+	enabledFeatureFlags: () => Promise<EnabledFeatureFlagsView>;
 }

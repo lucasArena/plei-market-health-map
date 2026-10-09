@@ -13,6 +13,8 @@ export type ApiServices = Pick<
 	| "getMarketSummary"
 	| "getMarketGameInsights"
 	| "getMarketPlayerStats"
+	| "getMarketAudience"
+	| "getMetricDrillDown"
 	| "listAppSessionHeatmap"
 	| "listAppSessionFilterOptions"
 	| "listRecentLogins"

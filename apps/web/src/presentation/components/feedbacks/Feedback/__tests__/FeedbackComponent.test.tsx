@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { createQueryWrapper } from "@/application/test/query-wrapper";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { Feedback } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent";
+import { requestFeedback } from "@/presentation/hooks/use-feedback/feedback-requests";
 
 vi.mock("@/infrastructure/auth/actions", () => ({ signOutOfApp: vi.fn() }));
 
@@ -112,6 +113,19 @@ describe("Feedback", () => {
 		expect(dialog).toHaveTextContent("Sign out");
 		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
 	});
+	it("sits below the summary and drill-down panels until the menu opens", () => {
+		renderWidget(
+			<Feedback
+				user={{ name: "Lucas Arena", email: "lucas@plei.com", image: null, isAdmin: false }}
+			/>,
+		);
+		const widget = screen.getByTestId("feedback-widget");
+		expect(widget).toHaveClass("z-20");
+		expect(widget).not.toHaveClass("z-40");
+		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+		expect(widget).toHaveClass("z-40");
+		expect(widget).not.toHaveClass("z-20");
+	});
 	beforeEach(() => {
 		Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
 		Object.defineProperty(URL, "revokeObjectURL", { value: revokeObjectURL, configurable: true });
@@ -176,6 +190,18 @@ describe("Feedback", () => {
 		expect(screen.getByRole("dialog")).toHaveAttribute("data-state", "closing");
 		fireEvent.click(trigger);
 		expect(screen.getByRole("dialog")).toHaveAttribute("data-state", "open");
+	});
+
+	it("opens straight on the bug form when another part of the app asks for it", () => {
+		renderWidget();
+
+		act(() => requestFeedback("bug"));
+
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+		expect(screen.getByRole("textbox")).toHaveAttribute(
+			"placeholder",
+			"What happened, and what did you expect to happen instead?",
+		);
 	});
 
 	it("ignores animations that are not the panel closing", () => {

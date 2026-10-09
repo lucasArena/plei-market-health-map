@@ -47,5 +47,13 @@ export function marketSummaryController(services: () => ApiServices) {
 					...statsTimeZoneFrom(context),
 				}),
 			),
+		)
+		.get("/audience", async (context) =>
+			ok(
+				await services().getMarketAudience({
+					market: context.req.query("market"),
+					...statsTimeZoneFrom(context),
+				}),
+			),
 		);
 }

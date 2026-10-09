@@ -1,4 +1,5 @@
 import {
+	confirmationRate,
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@core/application/mappers/facility-stats-mapper";
@@ -16,6 +17,9 @@ const RESERVATIONS = {
 	scheduledLastWeek: 60,
 	scheduledPreviousWeek: 0,
 	cancelledLastWeek: 15,
+	cancelledPreviousWeek: 15,
+	cancelledLast28Days: 60,
+	cancelledPrevious28Days: 60,
 	upcomingNextSevenDays: 41,
 	lastPlayedDate: "2026-10-04",
 	weeklyActivity: [],
@@ -31,7 +35,18 @@ const PLAYERS = {
 	activatedPlayersPreviousWeek: 12,
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
+	weeklyActivatedPlayers: [],
 };
+
+describe("confirmationRate", () => {
+	it("is played divided by scheduled and stays empty without scheduled games", () => {
+		expect(confirmationRate(45, 60)).toBe(75);
+		expect(confirmationRate(212, 250)).toBe(84.8);
+		expect(confirmationRate(0, 0)).toBeNull();
+		expect(confirmationRate(10, 0)).toBeNull();
+		expect(confirmationRate(45, 60)).not.toBe(1 - 15 / 60);
+	});
+});
 
 describe("period views", () => {
 	it("compares the last completed week with the week before", () => {
@@ -43,7 +58,14 @@ describe("period views", () => {
 			playedPrevious: 50,
 			playedChangePercent: -10,
 			confirmationRate: 75,
+			confirmationRatePrevious: null,
 			confirmationRateChangePoints: null,
+			scheduled: 60,
+			scheduledPrevious: 0,
+			scheduledChangePercent: null,
+			cancellationRate: 25,
+			cancellationRatePrevious: null,
+			cancellationRateChangePoints: null,
 		});
 		expect(toPlayerPeriodView(PLAYERS, "week")).toEqual({
 			uniquePlayers: 90,
@@ -64,7 +86,14 @@ describe("period views", () => {
 			playedPrevious: 200,
 			playedChangePercent: 6,
 			confirmationRate: 84.8,
+			confirmationRatePrevious: 80,
 			confirmationRateChangePoints: 4.8,
+			scheduled: 250,
+			scheduledPrevious: 250,
+			scheduledChangePercent: 0,
+			cancellationRate: 24,
+			cancellationRatePrevious: 24,
+			cancellationRateChangePoints: 0,
 		});
 		expect(toPlayerPeriodView(PLAYERS, "month")).toMatchObject({
 			uniquePlayers: 126,

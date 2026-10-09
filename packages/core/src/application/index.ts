@@ -88,6 +88,12 @@ export type {
 	LoginEventView,
 	RecordLoginInput,
 } from "@core/application/dtos/login-event-dto.types";
+export { getMarketAudienceSchema } from "@core/application/dtos/market-audience-dto";
+export type {
+	AudiencePeriodView,
+	GetMarketAudienceInput,
+	MarketAudienceView,
+} from "@core/application/dtos/market-audience-dto.types";
 export {
 	gameDepartmentsSchema,
 	getMarketGameInsightsSchema,
@@ -106,7 +112,39 @@ export type {
 	MarketSummaryPeriodView,
 	MarketSummaryScopeView,
 	MarketSummaryView,
+	OverallGamesTrend,
 } from "@core/application/dtos/market-summary-dto.types";
+export {
+	canSegmentDrillDown,
+	canSliceDrillDownByDepartment,
+	canSliceDrillDownByOrganizer,
+	crossesAppTrackingSourceSwitch,
+	DRILL_DOWN_COMPARISONS,
+	DRILL_DOWN_GRAINS,
+	DRILL_DOWN_MEASURE_KIND,
+	DRILL_DOWN_MEASURE_KINDS,
+	DRILL_DOWN_MEASURES,
+	DRILL_DOWN_RANGE_DAYS,
+	DRILL_DOWN_RANGES,
+	DRILL_DOWN_SEGMENTS,
+	DRILL_DOWN_SLICES,
+	getMetricDrillDownSchema,
+	isAppActivityMeasure,
+	needsOrganizerDimension,
+} from "@core/application/dtos/metric-drill-down-dto";
+export type {
+	DrillDownComparison,
+	DrillDownGrain,
+	DrillDownMeasure,
+	DrillDownMeasureKind,
+	DrillDownRange,
+	DrillDownSegment,
+	DrillDownSlice,
+	GetMetricDrillDownInput,
+	MetricDrillDownOrganizer,
+	MetricDrillDownRow,
+	MetricDrillDownView,
+} from "@core/application/dtos/metric-drill-down-dto.types";
 export {
 	MIN_PLACE_QUERY_LENGTH,
 	PLACE_RESULT_LIMIT,
@@ -127,6 +165,7 @@ export { PayloadTooLargeError } from "@core/application/errors/payload-too-large
 export { UnauthorizedError } from "@core/application/errors/unauthorized-error";
 export { toFacilityPointView } from "@core/application/mappers/facility-mapper";
 export {
+	confirmationRate,
 	toFacilityPlayerStatsView,
 	toFacilityReservationStatsView,
 	toFacilityStatsView,
@@ -140,6 +179,7 @@ export {
 	toFeedbackIssueSubmitter,
 	toFeedbackIssueTitle,
 } from "@core/application/mappers/feedback-issue-mapper";
+export { STABLE_CHANGE_PERCENT, toGamesTrend } from "@core/application/mappers/games-trend";
 export { toLoginEventView } from "@core/application/mappers/login-event-mapper";
 export {
 	MARKET_SUMMARY_RANK_LIMIT,
@@ -172,29 +212,56 @@ export type {
 	FacilityReservationStatsFilters,
 	FacilityReservationStatsRepository,
 	FacilityStatsRepository,
+	FacilityWeeklyActivatedPlayers,
 	FacilityWeeklyCounts,
 } from "@core/application/repositories/facility-stats-repository.types";
 export type { FeatureFlagRepository } from "@core/application/repositories/feature-flag-repository.types";
 export type { LoginEventRepository } from "@core/application/repositories/login-event-repository.types";
+export type {
+	MarketAudienceCounts,
+	MarketAudiencePeriodCounts,
+	MarketAudienceRepository,
+} from "@core/application/repositories/market-audience-repository.types";
+export type {
+	MetricDrillDownQuery,
+	MetricDrillDownRepository,
+} from "@core/application/repositories/metric-drill-down-repository.types";
+export type {
+	AggregateCountDrillDownInput,
+	DistinctCountContribution,
+	DrillDownFacilityFact,
+	DrillDownOrganizerFact,
+	DrillDownRateMeasure,
+	RateContribution,
+	RateFactParts,
+} from "@core/application/services/aggregate-metric-drill-down.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
 export { makeGetFacilityPlayerStats } from "@core/application/services/get-facility-player-stats";
 export { makeGetFacilityReservationStats } from "@core/application/services/get-facility-reservation-stats";
+export { makeGetMarketAudience } from "@core/application/services/get-market-audience";
 export { makeGetMarketGameInsights } from "@core/application/services/get-market-game-insights";
 export { makeGetMarketPlayerStats } from "@core/application/services/get-market-player-stats";
 export { makeGetMarketSummary } from "@core/application/services/get-market-summary";
 export {
+	aggregateCountDrillDown,
+	aggregateDistinctCountDrillDown,
+	aggregateDrillDownFromFacts,
+	aggregateRateDrillDown,
 	DRILL_DOWN_DEPARTMENTS,
+	distinctContributionsFromFacts,
+	drillDownRangeDays,
+	drillDownWindow,
+	factsFromFacilityPoints,
 	makeGetMetricDrillDown,
+	measureRateValue,
+	organizerDisplayName,
+	rateContributionsFromFacts,
+	rateFactParts,
+	rateValue,
+	scheduledFactsFrom,
 } from "@core/application/services/get-metric-drill-down";
-export type {
-	DrillDownMeasure,
-	DrillDownSegment,
-	DrillDownSlice,
-	MetricDrillDownInput,
-	MetricDrillDownRow,
-	MetricDrillDownView,
-} from "@core/application/services/get-metric-drill-down.types";
+export type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
 export { makeListAppMetricsPeople } from "@core/application/services/list-app-metrics-people";
 export { makeListAppSessionFilterOptions } from "@core/application/services/list-app-session-filter-options";
 export { makeListAppSessionHeatmap } from "@core/application/services/list-app-session-heatmap";

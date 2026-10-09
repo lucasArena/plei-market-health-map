@@ -31,6 +31,7 @@ import type {
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+import { onFeedbackRequest } from "@/presentation/hooks/use-feedback/feedback-requests";
 import { useFeedbackSubmit } from "@/presentation/hooks/use-feedback/use-feedback-submit";
 
 const FEEDBACK_VIEW = "facilities-map";
@@ -170,6 +171,17 @@ export function useFeedbackRules({ facilityId: suppliedFacilityId, user }: Feedb
 	useEffect(() => {
 		if (isOpen && step === "form") textareaRef.current?.focus();
 	}, [isOpen, step]);
+
+	useEffect(
+		() =>
+			onFeedbackRequest((requested) => {
+				setType(requested);
+				setStep("form");
+				setIsClosing(false);
+				setIsOpen(true);
+			}),
+		[],
+	);
 
 	useEffect(
 		() => () => {

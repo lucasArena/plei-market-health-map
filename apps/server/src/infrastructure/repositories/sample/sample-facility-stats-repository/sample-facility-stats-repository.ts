@@ -14,6 +14,17 @@ import {
 } from "@market-health-map/core/domain";
 import { createSeededRandom } from "@server/infrastructure/repositories/sample/seeded-random/seeded-random";
 
+function splitIntoWeeks(total: number, weeks = 4): number[] {
+	return Array.from(
+		{ length: weeks },
+		(_, week) => Math.floor(total / weeks) + Number(week < total % weeks),
+	);
+}
+
+function sumMembers(members: FacilityPlayerStats[], pick: (member: FacilityPlayerStats) => number) {
+	return members.reduce((total, member) => total + pick(member), 0);
+}
+
 export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 	constructor(private readonly clock: Clock) {}
 
@@ -30,6 +41,7 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			activatedPlayersPreviousWeek: _activatedPlayersPreviousWeek,
 			activatedPlayersLast28Days: _activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
+			weeklyActivatedPlayers: _weeklyActivatedPlayers,
 			...reservationStats
 		} = this.makeCounts(facilityIds, today);
 		const members = facilityIds.map((id) => this.makeCounts([id], today));
@@ -53,6 +65,15 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 				0,
 			),
 			cancelledLastWeek: members.reduce((total, member) => total + member.cancelledLastWeek, 0),
+			cancelledPreviousWeek: members.reduce(
+				(total, member) => total + member.cancelledPreviousWeek,
+				0,
+			),
+			cancelledLast28Days: members.reduce((total, member) => total + member.cancelledLast28Days, 0),
+			cancelledPrevious28Days: members.reduce(
+				(total, member) => total + member.cancelledPrevious28Days,
+				0,
+			),
 			upcomingNextSevenDays: members.reduce(
 				(total, member) => total + member.upcomingNextSevenDays,
 				0,
@@ -93,15 +114,32 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 
 	async getPlayerStats(facilityIds: EntityId[], today: string): Promise<FacilityPlayerStats> {
 		const counts = this.makeCounts(facilityIds, today);
+		const members = facilityIds.map((id) => this.makeCounts([id], today));
 		return {
 			uniquePlayersLastWeek: counts.uniquePlayersLastWeek,
 			uniquePlayersPreviousWeek: counts.uniquePlayersPreviousWeek,
 			uniquePlayersLast28Days: counts.uniquePlayersLast28Days,
 			uniquePlayersPrevious28Days: counts.uniquePlayersPrevious28Days,
-			activatedPlayersLastWeek: counts.activatedPlayersLastWeek,
-			activatedPlayersPreviousWeek: counts.activatedPlayersPreviousWeek,
-			activatedPlayersLast28Days: counts.activatedPlayersLast28Days,
-			activatedPlayersPrevious28Days: counts.activatedPlayersPrevious28Days,
+			activatedPlayersLastWeek: sumMembers(members, (member) => member.activatedPlayersLastWeek),
+			activatedPlayersPreviousWeek: sumMembers(
+				members,
+				(member) => member.activatedPlayersPreviousWeek,
+			),
+			activatedPlayersLast28Days: sumMembers(
+				members,
+				(member) => member.activatedPlayersLast28Days,
+			),
+			activatedPlayersPrevious28Days: sumMembers(
+				members,
+				(member) => member.activatedPlayersPrevious28Days,
+			),
+			weeklyActivatedPlayers: counts.weeklyActivatedPlayers.map((week, index) => ({
+				...week,
+				players: sumMembers(
+					members,
+					(member) => member.weeklyActivatedPlayers[index]?.players ?? 0,
+				),
+			})),
 		};
 	}
 
@@ -126,7 +164,7 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			playedPrevious28Days + Math.round(playedPrevious28Days * random() * 0.3);
 		const uniquePlayersLast28Days = Math.round(playedLast28Days * (3 + random() * 2));
 		const uniquePlayersPrevious28Days = Math.round(playedPrevious28Days * (3 + random() * 2));
-		const activatedPlayersLast28Days = Math.round(playedLast28Days * (0.25 + random() * 0.3));
+		const sampledActivatedLast28Days = Math.round(playedLast28Days * (0.25 + random() * 0.3));
 		const activatedPlayersPrevious28Days = Math.round(
 			playedPrevious28Days * (0.25 + random() * 0.3),
 		);
@@ -136,6 +174,14 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 		const uniquePlayersPreviousWeek = Math.round(playedPreviousWeek * (3 + random() * 2));
 		const activatedPlayersLastWeek = Math.round(playedLastWeek * (0.25 + random() * 0.3));
 		const activatedPlayersPreviousWeek = Math.round(playedPreviousWeek * (0.25 + random() * 0.3));
+		const activatedPlayersLast28Days = Math.max(
+			sampledActivatedLast28Days,
+			activatedPlayersLastWeek + activatedPlayersPreviousWeek,
+		);
+		const earlierActivatedWeeks = splitIntoWeeks(
+			activatedPlayersLast28Days - activatedPlayersLastWeek - activatedPlayersPreviousWeek,
+			2,
+		);
 		const week = statsWindow(today, 7);
 		const month = statsWindow(today, 28);
 		return {
@@ -159,11 +205,25 @@ export class SampleFacilityStatsRepository implements FacilityStatsRepository {
 			scheduledLastWeek,
 			scheduledPreviousWeek,
 			cancelledLastWeek,
+			cancelledPreviousWeek: scheduledPreviousWeek - playedPreviousWeek,
+			cancelledLast28Days: scheduledLast28Days - playedLast28Days,
+			cancelledPrevious28Days: scheduledPrevious28Days - playedPrevious28Days,
 			upcomingNextSevenDays: Math.round(random() * 30),
 			lastPlayedDate: month.end,
-			weeklyActivity: weeklyGames.map((gamesPlayed, index) => ({
-				weekStart: statsWindow(today, 28 - index * 7).start,
-				gamesPlayed,
+			weeklyActivity: [...splitIntoWeeks(playedPrevious28Days), ...weeklyGames].map(
+				(gamesPlayed, index) => ({
+					weekStart: statsWindow(today, 56 - index * 7).start,
+					gamesPlayed,
+				}),
+			),
+			weeklyActivatedPlayers: [
+				...splitIntoWeeks(activatedPlayersPrevious28Days),
+				...earlierActivatedWeeks,
+				activatedPlayersPreviousWeek,
+				activatedPlayersLastWeek,
+			].map((players, index) => ({
+				weekStart: statsWindow(today, 56 - index * 7).start,
+				players,
 			})),
 			popularTimes: Array.from({ length: 28 }, (_, index) => ({
 				dayOfWeek: (index % 7) + 1,

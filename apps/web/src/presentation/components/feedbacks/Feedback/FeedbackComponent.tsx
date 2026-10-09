@@ -19,6 +19,7 @@ import {
 	FEEDBACK_PANEL_ANIMATION_CLASS,
 	FEEDBACK_PANEL_CLASS,
 	FEEDBACK_STACK_CLASS,
+	FEEDBACK_STACK_LAYER_CLASS,
 	FEEDBACK_TRIGGER_CLASS,
 	FEEDBACK_TYPE_OPTIONS,
 } from "@/presentation/components/feedbacks/Feedback/FeedbackComponent.styles";
@@ -132,7 +133,11 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 	const showAdminControls = Boolean(user?.isAdmin);
 
 	return (
-		<div ref={containerRef} data-testid="feedback-widget" className={FEEDBACK_STACK_CLASS}>
+		<div
+			ref={containerRef}
+			data-testid="feedback-widget"
+			className={`${FEEDBACK_STACK_CLASS} ${FEEDBACK_STACK_LAYER_CLASS[isOpen ? "open" : "closed"]}`}
+		>
 			<div
 				ref={setLegendSlot}
 				data-testid="profile-legend-slot"

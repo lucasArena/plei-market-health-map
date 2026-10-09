@@ -52,9 +52,17 @@ export function useMapSearchRules({
 }: MapSearchProps) {
 	const { locale } = useMessages();
 	const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
-	const { period } = useMapScope();
+	const { period, scope } = useMapScope();
 	const { departments } = useMarketSummaryFilters();
 	const [query, setQuery] = useState("");
+	const scopeName = scope.kind === "all" ? "" : scope.name;
+	const scopeKey = scope.kind === "all" ? "all" : `${scope.kind}:${scope.id}`;
+	const [previousScope, setPreviousScope] = useState({ key: scopeKey, name: scopeName });
+	if (previousScope.key !== scopeKey) {
+		setPreviousScope({ key: scopeKey, name: scopeName });
+		if (scopeName) setQuery(scopeName);
+		else if (query === previousScope.name) setQuery("");
+	}
 	const [placeQuery, setPlaceQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const { finishReveal, isShown, motion } = useRevealMotion(isOpen);
