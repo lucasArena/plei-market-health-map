@@ -231,5 +231,20 @@ describe("calendar drill-down", () => {
 		expect(view.rows[0]?.organizers).toEqual([
 			expect.objectContaining({ id: "9", name: "Club", value: 2, facilityIds: ["a"] }),
 		]);
+		expect(metricDrillDownTimeSql({ ...query, grain: "range" })).toContain("date_trunc('day'");
+		expect(
+			timeDrillDownView({ ...query, segment: "organizer" }, [
+				result,
+				{
+					...result,
+					organizer_id: "8",
+					organizer_name: "Solo",
+					facility_ids: null,
+					value: "1",
+				},
+			]).rows[0]?.organizers,
+		).toEqual(
+			expect.arrayContaining([expect.objectContaining({ id: "8", name: "Solo", facilityIds: [] })]),
+		);
 	});
 });

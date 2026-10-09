@@ -329,7 +329,7 @@ describe("MetricDrillDownPanel", () => {
 			department: "organizers",
 		});
 		expect(screen.getByText("4", { selector: "p" })).toBeInTheDocument();
-		expect(screen.getByText("Club")).toBeInTheDocument();
+		expect(screen.getAllByText("Club").length).toBeGreaterThan(0);
 	});
 	it("can clear shared market scope after View on map", () => {
 		scope = { kind: "market", id: "miami", name: "Miami" };

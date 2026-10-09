@@ -662,7 +662,6 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 		if (!needsOrganizerDimension(query.slice, query.segment)) return [...facts];
 		if (query.departments.length > 0 && !query.departments.includes("organizers"))
 			return facts.map((fact) => ({ ...fact, organizers: [] }));
-		if (query.measure === "active-organizers") return [...facts];
 		const locationIds = params[0] as number[];
 		if (!locationIds?.length) return facts.map((fact) => ({ ...fact, organizers: [] }));
 		const byDepartment = query.departments.length > 0;

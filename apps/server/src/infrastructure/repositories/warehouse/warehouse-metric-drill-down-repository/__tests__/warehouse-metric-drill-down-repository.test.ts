@@ -146,6 +146,70 @@ describe("active organizers", () => {
 		expect(fact?.organizers).toEqual([
 			expect.objectContaining({ id: "9", name: "Harbor FC", games: 4, scheduled: 5 }),
 		]);
+		expect(
+			organizerBreakdownByLocation([
+				{ location_id: 1, partner_id: 9, happened: 2, incident_games: 1 },
+			]).get("1"),
+		).toEqual([
+			expect.objectContaining({ id: "9", name: "Organizer 9", games: 2, incidentGames: 1 }),
+		]);
+		const colocated = Facility.restore({
+			id: asEntityId("1"),
+			name: "Arena",
+			address: "1 Main",
+			marketId: asEntityId("10"),
+			marketName: "Miami",
+			location: { latitude: 25.7, longitude: -80.2 },
+			avatarUrl: null,
+			metrics: {
+				activePlayers: 0,
+				gamesLastWeek: 0,
+				gamesLast28Days: 12,
+				utilization: 0,
+			},
+			memberIds: [asEntityId("1"), asEntityId("2")],
+		});
+		expect(
+			attachOrganizerFacts(
+				[colocated],
+				[toDrillDownFacilityFact(colocated)],
+				new Map([
+					["1", [{ id: "11", name: "", games: 2, uniquePlayerIds: ["p1"], scheduled: null }]],
+					[
+						"2",
+						[
+							{
+								id: "11",
+								name: "Club",
+								games: 3,
+								uniquePlayerIds: ["p2"],
+								activatedPlayerIds: ["p2"],
+								scheduled: 5,
+							},
+						],
+					],
+				]),
+			)[0]?.organizers,
+		).toEqual([
+			expect.objectContaining({
+				id: "11",
+				name: "Club",
+				games: 5,
+				scheduled: 5,
+				uniquePlayerIds: ["p1", "p2"],
+				activatedPlayerIds: ["p2"],
+			}),
+		]);
+		expect(
+			attachOrganizerFacts(
+				[colocated],
+				[toDrillDownFacilityFact(colocated)],
+				new Map([
+					["1", [{ id: "12", name: "Solo", games: 1 }]],
+					["2", [{ id: "12", name: "", games: 2, scheduled: 3 }]],
+				]),
+			)[0]?.organizers,
+		).toEqual([expect.objectContaining({ id: "12", name: "Solo", games: 3, scheduled: 3 })]);
 	});
 
 	it("groups games by organizer without a second query unless requested", async () => {
@@ -177,6 +241,145 @@ describe("active organizers", () => {
 			expect.objectContaining({ id: "11", name: "Club", value: 4, departments: null }),
 		]);
 		expect(view.total).toBe(4);
+	});
+
+	it("covers organizer SQL filters for department and activated players", () => {
+		expect(metricDrillDownOrganizerBreakdownSql(28, true)).toContain("any($3::text[])");
+		expect(metricDrillDownOrganizerQualitySql(28, false)).toContain("c.department = 'organizers'");
+		expect(metricDrillDownOrganizerPlayerSql(28, true, true)).toContain(
+			"player_lifecycle = 'Activated'",
+		);
+		expect(metricDrillDownOrganizerPlayerSql(28, true, true)).toContain("any($3::text[])");
+	});
+
+	it("loads organizer players and keeps Magic out of the slice", async () => {
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({
+				rows: [{ location_id: 1, player_id: "p2", department: "organizers" }],
+			})
+			.mockResolvedValueOnce({
+				rows: [{ location_id: 1, player_id: "p2", partner_id: 11, partner_name: "Club" }],
+			})
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({
+				rows: [{ location_id: 1, player_id: "p2", department: "organizers" }],
+			})
+			.mockResolvedValueOnce({
+				rows: [{ location_id: 1, player_id: "p2", partner_id: 11, partner_name: "Club" }],
+			});
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		const unique = await repository.group({
+			measure: "unique-players",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query.mock.calls[2]?.[0]).toContain("= 'organizers'");
+		expect(unique.rows).toEqual([
+			expect.objectContaining({ id: "11", name: "Club", value: 1, facilityIds: ["1"] }),
+		]);
+		const activated = await repository.group({
+			measure: "activated-players",
+			range: "28d",
+			slice: "organizer",
+			departments: ["organizers"],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query.mock.calls[5]?.[0]).toContain("player_lifecycle = 'Activated'");
+		expect(activated.total).toBe(1);
+	});
+
+	it("skips organizer lookups when Magic is the only department or no locations match", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [baseRow] });
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		const filtered = await repository.group({
+			measure: "games",
+			range: "28d",
+			slice: "organizer",
+			departments: ["magic"],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledTimes(1);
+		expect(filtered.rows).toEqual([]);
+		query.mockReset();
+		query.mockResolvedValue({ rows: [] });
+		const empty = await repository.group({
+			measure: "unique-players",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledTimes(1);
+		expect(empty.total).toBe(0);
+	});
+
+	it("reuses organizer facts for the organizer slice of active organizers", async () => {
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({
+				rows: [{ location_id: 1, partner_id: 11, partner_name: "Club" }],
+			});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure: "active-organizers",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledTimes(2);
+		expect(view.rows).toEqual([expect.objectContaining({ id: "11", name: "Club", value: 1 })]);
+	});
+
+	it("loads organizer scheduled games from the reservation breakdown", async () => {
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({
+				rows: [
+					{
+						location_id: 1,
+						scheduled: 12,
+						played: 10,
+						scheduled_magic: 3,
+						scheduled_organizers: 4,
+						scheduled_partnerships: 5,
+						played_magic: 2,
+						played_organizers: 3,
+						played_partnerships: 5,
+					},
+				],
+			})
+			.mockResolvedValueOnce({
+				rows: [
+					{
+						location_id: 1,
+						partner_id: 11,
+						partner_name: "Club",
+						played: 3,
+						scheduled: 4,
+					},
+				],
+			});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure: "scheduled-games",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query.mock.calls[2]?.[0]).toContain("= 'organizers'");
+		expect(view.rows).toEqual([expect.objectContaining({ id: "11", name: "Club", value: 4 })]);
 	});
 });
 
@@ -608,6 +811,45 @@ describe("almost-filled and incident drill-down", () => {
 				expect.objectContaining({ id: "organizers", dataErrors: 0 }),
 			]),
 		);
+	});
+
+	it("slices almost-filled rate by organizer from the quality breakdown", async () => {
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({
+				rows: [qualityRow(1, { almost_filled: 1, rostered_canceled: 4, missing_roster: 3 })],
+			})
+			.mockResolvedValueOnce({
+				rows: [
+					{
+						location_id: 1,
+						partner_id: 11,
+						partner_name: "Club",
+						almost_filled: 1,
+						rostered_canceled: 4,
+						missing_roster: 3,
+					},
+				],
+			});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query.mock.calls[2]?.[0]).toContain("c.department = 'organizers'");
+		expect(view.rows).toEqual([
+			expect.objectContaining({
+				id: "11",
+				name: "Club",
+				numerator: 1,
+				denominator: 4,
+				dataErrors: 3,
+			}),
+		]);
 	});
 
 	it("keeps unreviewed happened games in the incident rate", async () => {
