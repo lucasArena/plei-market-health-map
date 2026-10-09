@@ -472,6 +472,13 @@ export function useMetricDrillDownPanelRules({
 		setRangeState(next);
 	}
 	function viewOnMap(row: MetricDrillDownRow) {
+		const isMarketRow =
+			selection.slice === "market" &&
+			(facilitiesQuery.data ?? []).some((facility) => facility.marketId === row.id);
+		if (isMarketRow) {
+			setMapNavigation({ kind: "market", id: row.id, name: row.name });
+			return;
+		}
 		const facilityIds = (facilitiesQuery.data ?? [])
 			.filter(
 				(facility) =>

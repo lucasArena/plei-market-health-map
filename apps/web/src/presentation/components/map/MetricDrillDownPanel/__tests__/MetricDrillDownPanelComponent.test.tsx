@@ -521,16 +521,34 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Market" }));
 		expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute("aria-sort", "descending");
 	});
-	it("requests zoom only from the map icon without closing or changing metric scope", () => {
-		const { onClose } = setup();
+	it("selects the market from its map icon and shows that market's drill-down for the same metric", () => {
+		const { onClose, props, rerender } = setup();
+		select("Measure", "scheduled-games");
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Miami" }));
-		expect(navigate).toHaveBeenLastCalledWith({ kind: "metric-focus", facilityIds: ["a", "b"] });
+		expect(navigate).toHaveBeenLastCalledWith({ kind: "market", id: "miami", name: "Miami" });
 		expect(onClose).not.toHaveBeenCalled();
-		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
-		select("Slice", "facility");
+
+		scope = { kind: "market", id: "miami", name: "Miami" };
+		rerender(<MetricDrillDownPanel {...props} />);
+		expect(screen.getByRole("button", { name: /All markets/ })).toBeInTheDocument();
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Games scheduled");
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Facility");
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ measure: "scheduled-games", slice: "facility", marketId: "miami" }),
+		);
+		expect(screen.queryByRole("button", { name: "View on map: Court" })).not.toBeInTheDocument();
+
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Arena" }));
 		expect(navigate).toHaveBeenLastCalledWith({ kind: "metric-focus", facilityIds: ["a"] });
 		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it("falls back to zooming on facilities when a market row has none on the map", () => {
+		data = data.filter((item) => item.marketId !== "miami");
+		setup();
+		select("Measure", "registrations");
+		fireEvent.click(screen.getByRole("button", { name: "View on map: Miami" }));
+		expect(navigate).toHaveBeenLastCalledWith({ kind: "metric-focus", facilityIds: [] });
 	});
 
 	it("resets navigation on scope changes and keeps valid choices on period changes", () => {
