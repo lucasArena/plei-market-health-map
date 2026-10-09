@@ -289,4 +289,4 @@ Time drill-down (ENG-6070, behind `metric-drill-down`) adds Date to Slice with a
 
 Drill-down loading preserves the Measure, Slice and Segment controls, with wrapped values instead of truncation. Muted animated skeletons reserve headline, date, chart and table space until results arrive, with reduced-motion support and an accessible loading status. All three field dropdowns share the same trigger and glass menu styling.
 
-Drill-down field menus align below their controls at the same width. The chart reserves space above its highest tick and a wider numeric axis gutter. Table sorting uses a small directional chevron for the active column, with inactive indicators revealed on hover or keyboard focus; column headers retain accessible sort state.
+Drill-down field menus align below their controls with the compact 12rem minimum width. The chart reserves space above its highest tick and a wider numeric axis gutter. Table sorting uses a small directional chevron for the active column, with inactive indicators revealed on hover or keyboard focus; column headers retain accessible sort state.
