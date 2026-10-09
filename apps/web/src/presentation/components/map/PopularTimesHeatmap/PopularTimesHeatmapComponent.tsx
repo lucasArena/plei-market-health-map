@@ -3,6 +3,7 @@
 import { edgeTooltipClass } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.rules";
 import {
 	HEATMAP_CELL_CLASS,
+	HEATMAP_GLASS_TOOLTIP_CLASS,
 	HEATMAP_PERIOD_LABEL_CLASS,
 	HEATMAP_TOOLTIP_CLASS,
 } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent.styles";
@@ -19,10 +20,12 @@ export function PopularTimesHeatmap({
 	cells,
 	quietLabel,
 	busyLabel,
+	titleClassName = "text-sm font-semibold",
+	hasGlassTooltips = false,
 }: Readonly<PopularTimesHeatmapProps>) {
 	return (
 		<section aria-labelledby="popular-times-title" className="space-y-2">
-			<h3 id="popular-times-title" className="text-sm font-semibold">
+			<h3 id="popular-times-title" className={titleClassName}>
 				{title}
 			</h3>
 			<div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] gap-1 text-center text-[9px] text-muted-foreground">
@@ -37,6 +40,7 @@ export function PopularTimesHeatmap({
 						periodRange={periodRanges[periodIndex] ?? ""}
 						cells={cells.filter((cell) => cell.periodLabel === periodLabel)}
 						periodIndex={periodIndex}
+						tooltipClass={hasGlassTooltips ? HEATMAP_GLASS_TOOLTIP_CLASS : HEATMAP_TOOLTIP_CLASS}
 					/>
 				))}
 			</div>
@@ -56,6 +60,7 @@ function FragmentRow({
 	periodRange,
 	cells,
 	periodIndex,
+	tooltipClass,
 }: Readonly<PopularTimesHeatmapRowProps>) {
 	return (
 		<>
@@ -69,7 +74,7 @@ function FragmentRow({
 				<span
 					id={`popular-times-period-${periodIndex}`}
 					role="tooltip"
-					className={`${HEATMAP_TOOLTIP_CLASS} left-0 translate-x-0`}
+					className={`${tooltipClass} left-0 translate-x-0`}
 				>
 					{periodRange}
 				</span>
@@ -84,7 +89,7 @@ function FragmentRow({
 				>
 					<span
 						role="tooltip"
-						className={`${HEATMAP_TOOLTIP_CLASS} ${edgeTooltipClass(index, cells.length)}`}
+						className={`${tooltipClass} ${edgeTooltipClass(index, cells.length)}`}
 					>
 						{cell.tooltip}
 					</span>

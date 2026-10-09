@@ -857,6 +857,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			id: "f1",
 			name: FACILITY.name,
 			marketName: "Austin",
+			marketId: "austin",
 		});
 
 		act(() =>

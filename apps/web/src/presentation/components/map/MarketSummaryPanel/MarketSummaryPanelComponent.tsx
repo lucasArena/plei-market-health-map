@@ -12,6 +12,7 @@ import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTile
 import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { FacilityOverview } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent";
+import { InsightPanel } from "@/presentation/components/map/InsightPanel/InsightPanelComponent";
 import { MarketOverview } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent";
 import { MarketOverviewSkeleton } from "@/presentation/components/map/MarketOverviewSkeleton/MarketOverviewSkeletonComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
@@ -26,6 +27,7 @@ import type {
 	UsersSectionBodyProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 
 const SKELETON_SECTIONS = [
 	{ key: "games", hasLabel: false },
@@ -245,7 +247,17 @@ function MarketSummaryMetrics({
 	);
 }
 
+/**
+ * Behind `insights-panel-v3` the insight panel is the iterated InsightPanel
+ * (modules, breadcrumb navigation, facility level in the panel); without the
+ * flag it is the original summary panel below.
+ */
 export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
+	const isIteration = useFeatureFlag("insights-panel-v3");
+	return isIteration ? <InsightPanel {...props} /> : <OriginalMarketSummaryPanel {...props} />;
+}
+
+function OriginalMarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 	const {
 		aiContext,
 		comparison,

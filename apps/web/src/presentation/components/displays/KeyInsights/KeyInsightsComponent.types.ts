@@ -4,6 +4,8 @@ export interface KeyInsightsProps {
 	introFirst?: boolean;
 	isLoading?: boolean;
 	tone?: InsightTone;
+	/** Insight panel: title uses the panel section heading instead of the small boxed label. */
+	isFlat?: boolean;
 }
 
 export type InsightTone = "neutral" | "attention" | "stable" | "growing";
