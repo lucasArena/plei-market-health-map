@@ -10,6 +10,7 @@ import type {
 import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { MetricDrillDownQuery } from "@core/application/repositories/metric-drill-down-repository.types";
+import { toAverageDailyGamesView } from "@core/application/services/average-daily-games-view";
 import { drillDownComparisonWindow } from "@core/application/services/drill-down-comparison-window";
 import type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
 import { statsToday } from "@core/application/services/stats-today";
@@ -56,8 +57,11 @@ export function makeGetMetricDrillDown({
 			timeZone,
 			grain,
 		} = parsed.data;
+		const isAverage = measure === "avg-daily-games";
+		const finish = (view: MetricDrillDownView) =>
+			isAverage ? toAverageDailyGamesView(view) : view;
 		const query: MetricDrillDownQuery = {
-			measure,
+			measure: isAverage ? "games" : measure,
 			range,
 			slice: isAppActivityMeasure(measure) && slice !== "time" ? "market" : slice,
 			marketId,
@@ -67,14 +71,16 @@ export function makeGetMetricDrillDown({
 			grain,
 			today: statsToday(clock, timeZone),
 		};
-		const current = await drillDown.group(query);
+		const current = finish(await drillDown.group(query));
 		if (slice === "time") return current;
 		const window = drillDownComparisonWindow(query.today, DRILL_DOWN_RANGE_DAYS[range], comparison);
-		const previous = await drillDown.group({
-			...query,
-			today: addDays(window.end, 1),
-			previousPeriod: true,
-		});
+		const previous = finish(
+			await drillDown.group({
+				...query,
+				today: addDays(window.end, 1),
+				previousPeriod: true,
+			}),
+		);
 		const previousRows = new Map(previous.rows.map((row) => [row.id, row]));
 		const currentIds = new Set(current.rows.map((row) => row.id));
 		const rows = [

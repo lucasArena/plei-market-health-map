@@ -15,17 +15,19 @@ export const DRILL_DOWN_RANGE_DAYS = {
 } as const satisfies Record<DrillDownRange, number>;
 
 export const DRILL_DOWN_MEASURES = [
-	"app-sessions",
+	"games",
+	"avg-daily-games",
+	"scheduled-games",
+	"incident-games-rate",
+	"confirmation-rate",
+	"almost-filled-rate",
 	"registrations",
 	"unique-users",
-	"games",
-	"active-facilities",
-	"scheduled-games",
-	"confirmation-rate",
-	"unique-players",
 	"activated-players",
-	"almost-filled-rate",
-	"incident-games-rate",
+	"unique-players",
+	"active-organizers",
+	"active-facilities",
+	"app-sessions",
 ] as const;
 export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
 
@@ -43,6 +45,8 @@ export const DRILL_DOWN_MEASURE_KIND = {
 	registrations: "distinct-count",
 	"unique-users": "distinct-count",
 	games: "count",
+	"avg-daily-games": "count",
+	"active-organizers": "distinct-count",
 	"active-facilities": "count",
 	"scheduled-games": "count",
 	"confirmation-rate": "rate",

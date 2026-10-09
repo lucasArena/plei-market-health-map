@@ -132,6 +132,10 @@ describe("calendar drill-down", () => {
 				expect(sql).toContain("select distinct v.reservation_id");
 			if (measure === "active-facilities")
 				expect(sql).toContain("count(distinct a.facility_id) filter (where a.played)");
+			if (measure === "active-organizers") {
+				expect(sql).toContain("r.partner_id::text as entity_id");
+				expect(sql).toContain("op.partner_id is not null");
+			}
 		},
 	);
 	it("returns no completed month without querying when the range is entirely current-month", async () => {

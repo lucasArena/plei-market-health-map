@@ -176,17 +176,18 @@ function select(name: string, value: string) {
 	}
 
 	const labels = {
-		"app-sessions": "App sessions",
-		registrations: "Registrations",
-		"unique-users": "Unique users",
+		registrations: "New users",
+		"unique-users": "Active users",
 		games: "Games played",
+		"avg-daily-games": "Avg daily games",
+		"active-organizers": "Active organizers",
 		"active-facilities": "Active facilities",
-		"scheduled-games": "Scheduled games",
+		"scheduled-games": "Games scheduled",
 		"confirmation-rate": "Confirmation rate",
-		"unique-players": "Unique players",
+		"unique-players": "Active players",
 		"activated-players": "Activated players",
 		"almost-filled-rate": "Almost-filled rate",
-		"incident-games-rate": "Incident games %",
+		"incident-games-rate": "Incident games",
 		time: "Date",
 		day: "Day",
 		week: "Week",
@@ -408,6 +409,35 @@ describe("MetricDrillDownPanel", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	it("lists the measures in order, each with a plain-language tooltip", () => {
+		setup();
+		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
+		const options = screen.getAllByRole("option");
+		expect(options.map((option) => option.textContent)).toEqual([
+			"Games played",
+			"Avg daily games",
+			"Games scheduled",
+			"Incident games",
+			"Confirmation rate",
+			"Almost-filled rate",
+			"New users",
+			"Active users",
+			"Activated players",
+			"Active players",
+			"Active organizers",
+			"Active facilities",
+		]);
+		for (const option of options) expect(option.getAttribute("title")).toBeTruthy();
+		expect(options[0]).toHaveAttribute("title", "Games that actually took place.");
+		expect(screen.queryByRole("option", { name: "App sessions" })).not.toBeInTheDocument();
+	});
+	it("hides department slices for active organizers like active facilities", () => {
+		setup();
+		select("Measure", "active-organizers");
+		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+		expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
+		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
+	});
 	it("offers department slices for game and player measures and hides them for active facilities", () => {
 		setup();
 		select("Slice", "department");
@@ -415,14 +445,14 @@ describe("MetricDrillDownPanel", () => {
 		expect(within(screen.getByRole("table")).getByText("Magic")).toBeInTheDocument();
 		select("Measure", "scheduled-games");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Department");
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Scheduled games");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Games scheduled");
 		select("Measure", "confirmation-rate");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Confirmation rate",
 		);
 		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		select("Measure", "unique-players");
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Unique players");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Active players");
 		select("Measure", "activated-players");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Activated players",
@@ -461,11 +491,8 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Arena · Magic: 50.0%" }));
 		expect(screen.queryByText(/almost-filled canceled games of/)).not.toBeInTheDocument();
 	});
-	it("offers only the incident rate, with the reviews-lag note and its parts", () => {
+	it("shows the incident rate with the reviews-lag note and its parts", () => {
 		setup();
-		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
-		expect(screen.queryByRole("option", { name: "Incident games" })).not.toBeInTheDocument();
-		fireEvent.keyDown(screen.getByRole("combobox", { name: "Measure" }), { key: "Escape" });
 		select("Measure", "incident-games-rate");
 		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
@@ -590,7 +617,7 @@ describe("app activity measures", () => {
 		showSupply = true;
 		demandInputs.mockClear();
 	});
-	it.each(["app-sessions", "registrations", "unique-users"])(
+	it.each(["registrations", "unique-users"])(
 		"resets facility and department slices for %s",
 		(measure) => {
 			gameDepartments = ["magic"];
@@ -631,7 +658,7 @@ describe("app activity measures", () => {
 		scope = { kind: "facility", id: "a", name: "Arena", marketName: "Miami" };
 		data = [facility];
 		const result = setup();
-		select("Measure", "app-sessions");
+		select("Measure", "registrations");
 		expect(demandInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ marketId: "miami", facilityId: undefined }),
 		);
@@ -740,15 +767,13 @@ describe("time slices", () => {
 	it("keeps Time when switching to app measures and places the source marker on the timeline", () => {
 		setup();
 		select("Slice", "time");
-		select("Measure", "app-sessions");
+		select("Measure", "registrations");
 		expect(demandInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ slice: "time", grain: "day", departments: [] }),
 		);
-		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
+		expect(screen.queryByText("2026-06-29")).not.toBeInTheDocument();
 		select("Measure", "unique-users");
 		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
-		select("Measure", "registrations");
-		expect(screen.queryByText("2026-06-29")).not.toBeInTheDocument();
 	});
 	it("shows rate components for segments and filters Supply to the segment's facilities", () => {
 		if (!timeView) throw new Error("Missing fixture");
@@ -963,7 +988,7 @@ describe("drill-down changes", () => {
 		if (!comparisonView) throw new Error("Missing fixture");
 		comparisonView = { ...comparisonView, previousStart: "2026-06-28", previousEnd: "2026-07-25" };
 		setup();
-		select("Measure", "app-sessions");
+		select("Measure", "unique-users");
 		expect(screen.getByRole("note")).toHaveTextContent("Tracking source changed");
 	});
 });

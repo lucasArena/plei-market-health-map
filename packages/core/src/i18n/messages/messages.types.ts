@@ -224,6 +224,23 @@ export interface Messages {
 		activatedPlayers: string;
 		almostFilledRate: string;
 		incidentGamesRate: string;
+		avgDailyGames: string;
+		activeOrganizers: string;
+		measureTips: Record<
+			| "games"
+			| "avgDailyGames"
+			| "scheduledGames"
+			| "incidentGamesRate"
+			| "confirmationRate"
+			| "almostFilledRate"
+			| "registrations"
+			| "uniqueUsers"
+			| "activatedPlayers"
+			| "uniquePlayers"
+			| "activeOrganizers"
+			| "activeFacilities",
+			string
+		>;
 		ratio: string;
 		ratioWithErrors: string;
 		almostFilledParts: string;

@@ -266,6 +266,8 @@ export function useMetricDrillDownPanelRules({
 		registrations: messages.drillDown.registrations,
 		"unique-users": messages.drillDown.uniqueUsers,
 		games: messages.drillDown.games,
+		"avg-daily-games": messages.drillDown.avgDailyGames,
+		"active-organizers": messages.drillDown.activeOrganizers,
 		"active-facilities": messages.drillDown.activeFacilities,
 		"scheduled-games": messages.drillDown.scheduledGames,
 		"confirmation-rate": messages.drillDown.confirmationRate,
@@ -368,12 +370,13 @@ export function useMetricDrillDownPanelRules({
 			0,
 		);
 	}
+	const smallestStep = selection.measure === "avg-daily-games" ? 0.1 : 1;
 	const largest = Math.max(
-		1,
+		smallestStep,
 		...topRows.map((row) => (segment === "department" ? selectedBarTotal(row) : (row.value ?? 0))),
 	);
 	const magnitude = 10 ** Math.floor(Math.log10(largest / 5));
-	const step = Math.max(1, Math.ceil(largest / magnitude / 5) * magnitude);
+	const step = Math.max(smallestStep, Math.ceil(largest / magnitude / 5) * magnitude);
 	const max = Math.ceil(largest / step) * step;
 	const ticks = Array.from({ length: Math.ceil(max / step) + 1 }, (_, index) => index * step);
 

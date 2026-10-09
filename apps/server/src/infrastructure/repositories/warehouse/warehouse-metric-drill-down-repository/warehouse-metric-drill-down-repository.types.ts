@@ -48,6 +48,11 @@ export interface WarehouseDrillDownPlayerRow {
 	department: string | null;
 }
 
+export interface WarehouseDrillDownOrganizerRow {
+	location_id: number | string;
+	partner_id: number | string;
+}
+
 export interface WarehouseQueryable {
 	query<Row>(sql: string, values?: unknown[]): Promise<{ rows: Row[] }>;
 }

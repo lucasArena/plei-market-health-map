@@ -161,17 +161,58 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						value={selection.measure}
 						onChange={(value) => rules.setMeasure(value as DrillDownMeasure)}
 						options={[
-							{ value: "app-sessions", label: m.appSessions },
-							{ value: "registrations", label: m.registrations },
-							{ value: "unique-users", label: m.uniqueUsers },
-							{ value: "games", label: m.games },
-							{ value: "active-facilities", label: m.activeFacilities },
-							{ value: "scheduled-games", label: m.scheduledGames },
-							{ value: "confirmation-rate", label: m.confirmationRate },
-							{ value: "unique-players", label: m.uniquePlayers },
-							{ value: "activated-players", label: m.activatedPlayers },
-							{ value: "almost-filled-rate", label: m.almostFilledRate },
-							{ value: "incident-games-rate", label: m.incidentGamesRate },
+							{ value: "games", label: m.games, tooltip: m.measureTips.games },
+							{
+								value: "avg-daily-games",
+								label: m.avgDailyGames,
+								tooltip: m.measureTips.avgDailyGames,
+							},
+							{
+								value: "scheduled-games",
+								label: m.scheduledGames,
+								tooltip: m.measureTips.scheduledGames,
+							},
+							{
+								value: "incident-games-rate",
+								label: m.incidentGamesRate,
+								tooltip: m.measureTips.incidentGamesRate,
+							},
+							{
+								value: "confirmation-rate",
+								label: m.confirmationRate,
+								tooltip: m.measureTips.confirmationRate,
+							},
+							{
+								value: "almost-filled-rate",
+								label: m.almostFilledRate,
+								tooltip: m.measureTips.almostFilledRate,
+							},
+							{
+								value: "registrations",
+								label: m.registrations,
+								tooltip: m.measureTips.registrations,
+							},
+							{ value: "unique-users", label: m.uniqueUsers, tooltip: m.measureTips.uniqueUsers },
+							{
+								value: "activated-players",
+								label: m.activatedPlayers,
+								tooltip: m.measureTips.activatedPlayers,
+							},
+							{
+								value: "unique-players",
+								label: m.uniquePlayers,
+								tooltip: m.measureTips.uniquePlayers,
+							},
+							{
+								value: "active-organizers",
+								label: m.activeOrganizers,
+								tooltip: m.measureTips.activeOrganizers,
+							},
+							{
+								value: "active-facilities",
+								label: m.activeFacilities,
+								tooltip: m.measureTips.activeFacilities,
+							},
 						]}
 					/>
 					<MapMetricSelect
