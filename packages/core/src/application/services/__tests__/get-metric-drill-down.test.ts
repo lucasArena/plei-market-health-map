@@ -8,8 +8,13 @@ import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { DrillDownFacilityFact } from "@core/application/services/aggregate-metric-drill-down.types";
 import {
+	inclusiveDays,
+	toAverageDailyGamesView,
+} from "@core/application/services/average-daily-games-view";
+import {
 	aggregateCountDrillDown,
 	aggregateDistinctCountDrillDown,
+	aggregateDrillDownFromFacts,
 	aggregateRateDrillDown,
 	distinctContributionsFromFacts,
 	drillDownRangeDays,
@@ -60,7 +65,7 @@ describe("getMetricDrillDown", () => {
 		const { getMetricDrillDown } = setup();
 		await expect(
 			getMetricDrillDown({ measure: "games", range: "28d", slice: "market" }),
-		).resolves.toEqual({
+		).resolves.toMatchObject({
 			total: 10,
 			start: "2026-09-10",
 			end: "2026-10-07",
@@ -680,7 +685,7 @@ describe("drill-down window helpers", () => {
 it.each(["app-sessions", "registrations", "unique-users"] as const)(
 	"normalizes %s to market and ignores supply filters",
 	async (measure) => {
-		const group = vi.fn().mockResolvedValue({});
+		const group = vi.fn().mockResolvedValue({ total: null, rows: [] });
 		const get = makeGetMetricDrillDown({
 			drillDown: { group },
 			clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
@@ -751,5 +756,187 @@ describe("time slice validation", () => {
 		await expect(
 			getMetricDrillDown({ measure: "games", range: "28d", slice: "market", grain: "week" }),
 		).rejects.toBeInstanceOf(InvalidRequestError);
+	});
+});
+
+describe("previous period drill-down", () => {
+	it.each(["7d", "28d", "90d", "6m", "12m"] as const)(
+		"uses adjacent equal-length %s windows and matches group IDs",
+		async (range) => {
+			const { getMetricDrillDown, drillDown } = setup();
+			const group = vi.spyOn(drillDown, "group");
+			const view = await getMetricDrillDown({
+				measure: "games",
+				range,
+				slice: "market",
+				departments: ["magic"],
+				timeZone: "Pacific/Honolulu",
+			});
+			expect(group).toHaveBeenCalledTimes(2);
+			expect(group.mock.calls[1]?.[0]).toMatchObject({
+				today: view.start,
+				previousPeriod: true,
+				departments: ["magic"],
+				measure: "games",
+				range,
+				slice: "market",
+			});
+			expect(view.previousTotal).toBe(view.total);
+			expect(view.rows[0]?.previousValue).toBe(view.rows[0]?.value);
+			expect(view.rows[0]?.previousDepartments).toEqual(view.rows[0]?.departments);
+			expect(Date.parse(view.end) - Date.parse(view.start)).toBe(
+				Date.parse(view.previousEnd as string) - Date.parse(view.previousStart as string),
+			);
+			expect(Date.parse(view.start) - Date.parse(view.previousEnd as string)).toBe(86400000);
+		},
+	);
+	it("does not request comparisons for time grouping", async () => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const group = vi.spyOn(drillDown, "group");
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "time",
+			grain: "day",
+		});
+		expect(group).toHaveBeenCalledTimes(1);
+		expect(view.previousTotal).toBeUndefined();
+	});
+	it("retains prior-only markets and distinguishes missing rates from zero counts", async () => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const current = await drillDown.group({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		vi.spyOn(drillDown, "group")
+			.mockResolvedValueOnce(current)
+			.mockResolvedValueOnce({
+				...current,
+				total: 20,
+				rows: [{ id: "old", name: "Old", value: 20, departments: null }],
+			});
+		const view = await getMetricDrillDown({ measure: "games", range: "28d", slice: "market" });
+		expect(view.rows).toEqual([
+			expect.objectContaining({ id: "miami", value: 10, previousValue: 0 }),
+			expect.objectContaining({ id: "old", value: 0, previousValue: 20 }),
+		]);
+	});
+});
+
+it.each([
+	["week", "2026-10-01", "2026-09-03", "2026-09-30"],
+	["month", "2026-09-08", "2026-08-11", "2026-09-07"],
+	["year", "2025-10-08", "2025-09-10", "2025-10-07"],
+] as const)(
+	"queries the selected %s comparison with the same measure and filters",
+	async (comparison, today, start, end) => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const group = vi.spyOn(drillDown, "group");
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "facility",
+			comparison,
+			marketId: "miami",
+			departments: ["magic"],
+		});
+		expect(group.mock.calls[1]?.[0]).toMatchObject({
+			today,
+			range: "28d",
+			measure: "games",
+			slice: "facility",
+			marketId: "miami",
+			departments: ["magic"],
+		});
+		expect(view).toMatchObject({ previousStart: start, previousEnd: end });
+	},
+);
+
+describe("average daily games", () => {
+	it("divides games played by the days in the window, for the total, rows and previous period", async () => {
+		const { getMetricDrillDown } = setup();
+		const view = await getMetricDrillDown({
+			measure: "avg-daily-games",
+			range: "28d",
+			slice: "market",
+			departments: [],
+			timeZone: "America/New_York",
+		});
+		expect(view.measure).toBe("avg-daily-games");
+		expect(view.kind).toBe("count");
+		expect(view.total).toBe(0.4);
+		expect(view.rows[0]?.value).toBe(0.4);
+		expect(view.rows[0]?.departments).toEqual({ magic: 0.1, organizers: 0.1, partnerships: 0.2 });
+	});
+
+	it("uses each bucket's own length on the time slice", () => {
+		const view = toAverageDailyGamesView({
+			measure: "games",
+			range: "28d",
+			kind: "count",
+			start: "2026-09-01",
+			end: "2026-09-14",
+			total: 28,
+			rows: [
+				{
+					id: "2026-09-07",
+					name: "2026-09-07",
+					bucketStart: "2026-09-07",
+					bucketEnd: "2026-09-13",
+					value: 14,
+					departments: null,
+				},
+				{
+					id: "2026-09-01",
+					name: "2026-09-01",
+					bucketStart: "2026-09-01",
+					bucketEnd: "2026-09-06",
+					value: null,
+					departments: null,
+				},
+			],
+		});
+		expect(view.total).toBe(2);
+		expect(view.rows.map((row) => row.value)).toEqual([2, null]);
+		expect(inclusiveDays("2026-09-01", "2026-09-01")).toBe(1);
+	});
+});
+
+describe("active organizers", () => {
+	it("counts distinct organizers per group and in the total", () => {
+		const facts: DrillDownFacilityFact[] = [
+			{ ...facility, activeOrganizerIds: ["o1", "o2"] },
+			{ ...facility, id: "b", name: "Harbor", activeOrganizerIds: ["o2"] },
+			{ ...facility, id: "c", name: "Quiet" },
+		];
+		const view = aggregateDrillDownFromFacts({
+			facilities: facts,
+			measure: "active-organizers",
+			slice: "market",
+			start: "2026-09-10",
+			end: "2026-10-07",
+			range: "28d",
+		});
+		expect(view.kind).toBe("distinct-count");
+		expect(view.total).toBe(2);
+		expect(view.rows.map((row) => row.value)).toEqual([2]);
+	});
+
+	it("cannot be sliced by department", async () => {
+		const { getMetricDrillDown } = setup();
+		await expect(
+			getMetricDrillDown({
+				measure: "active-organizers",
+				range: "7d",
+				slice: "department",
+				departments: [],
+				timeZone: "America/New_York",
+			}),
+		).rejects.toBeInstanceOf(InvalidRequestError);
+		expect(canSliceDrillDownByDepartment("active-organizers")).toBe(false);
 	});
 });

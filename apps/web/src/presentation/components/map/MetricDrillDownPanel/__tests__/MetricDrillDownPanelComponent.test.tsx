@@ -20,6 +20,7 @@ const navigate = vi.fn();
 const retry = vi.fn();
 const setMetricFocus = vi.fn();
 const demandInputs = vi.fn();
+const comparisonInputs = vi.fn();
 let scope: MapScope = { kind: "all" };
 let period = "month";
 const facility: FacilityPointView = {
@@ -38,6 +39,7 @@ const facility: FacilityPointView = {
 };
 let data: FacilityPointView[] = [];
 let timeView: MetricDrillDownView | undefined;
+let comparisonView: MetricDrillDownView | undefined;
 let pending = false;
 let failed = false;
 let gameDepartments: ("magic" | "organizers" | "partnerships")[] = [];
@@ -53,9 +55,12 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 }));
 vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 	useMetricDrillDown: (input: GetMetricDrillDownInput & { enabled?: boolean }) => {
+		comparisonInputs(input);
 		if (!input.enabled) {
 			return { data: undefined, isPending: false, isError: false, refetch: retry };
 		}
+		if (comparisonView && input.slice !== "time")
+			return { data: comparisonView, isPending: false, isError: false, refetch: retry };
 		if (pending) return { data: undefined, isPending: true, isError: false, refetch: retry };
 		if (failed) return { data: undefined, isPending: false, isError: true, refetch: retry };
 		const { start, end } = drillDownWindow(
@@ -171,17 +176,18 @@ function select(name: string, value: string) {
 	}
 
 	const labels = {
-		"app-sessions": "App sessions",
-		registrations: "Registrations",
-		"unique-users": "Unique users",
+		registrations: "New users",
+		"unique-users": "Active users",
 		games: "Games played",
+		"avg-daily-games": "Avg daily games",
+		"active-organizers": "Active organizers",
 		"active-facilities": "Active facilities",
-		"scheduled-games": "Scheduled games",
+		"scheduled-games": "Games scheduled",
 		"confirmation-rate": "Confirmation rate",
-		"unique-players": "Unique players",
+		"unique-players": "Active players",
 		"activated-players": "Activated players",
 		"almost-filled-rate": "Almost-filled rate",
-		"incident-games-rate": "Incident games %",
+		"incident-games-rate": "Incident games",
 		time: "Date",
 		day: "Day",
 		week: "Week",
@@ -403,6 +409,35 @@ describe("MetricDrillDownPanel", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	it("lists the measures in order, each with a plain-language tooltip", () => {
+		setup();
+		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
+		const options = screen.getAllByRole("option");
+		expect(options.map((option) => option.textContent)).toEqual([
+			"Games played",
+			"Avg daily games",
+			"Games scheduled",
+			"Incident games",
+			"Confirmation rate",
+			"Almost-filled rate",
+			"New users",
+			"Active users",
+			"Activated players",
+			"Active players",
+			"Active organizers",
+			"Active facilities",
+		]);
+		for (const option of options) expect(option.getAttribute("title")).toBeTruthy();
+		expect(options[0]).toHaveAttribute("title", "Games that actually took place.");
+		expect(screen.queryByRole("option", { name: "App sessions" })).not.toBeInTheDocument();
+	});
+	it("hides department slices for active organizers like active facilities", () => {
+		setup();
+		select("Measure", "active-organizers");
+		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+		expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
+		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
+	});
 	it("offers department slices for game and player measures and hides them for active facilities", () => {
 		setup();
 		select("Slice", "department");
@@ -410,14 +445,14 @@ describe("MetricDrillDownPanel", () => {
 		expect(within(screen.getByRole("table")).getByText("Magic")).toBeInTheDocument();
 		select("Measure", "scheduled-games");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Department");
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Scheduled games");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Games scheduled");
 		select("Measure", "confirmation-rate");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Confirmation rate",
 		);
 		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		select("Measure", "unique-players");
-		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Unique players");
+		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Active players");
 		select("Measure", "activated-players");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Activated players",
@@ -456,11 +491,8 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Arena · Magic: 50.0%" }));
 		expect(screen.queryByText(/almost-filled canceled games of/)).not.toBeInTheDocument();
 	});
-	it("offers only the incident rate, with the reviews-lag note and its parts", () => {
+	it("shows the incident rate with the reviews-lag note and its parts", () => {
 		setup();
-		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
-		expect(screen.queryByRole("option", { name: "Incident games" })).not.toBeInTheDocument();
-		fireEvent.keyDown(screen.getByRole("combobox", { name: "Measure" }), { key: "Escape" });
 		select("Measure", "incident-games-rate");
 		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
@@ -585,7 +617,7 @@ describe("app activity measures", () => {
 		showSupply = true;
 		demandInputs.mockClear();
 	});
-	it.each(["app-sessions", "registrations", "unique-users"])(
+	it.each(["registrations", "unique-users"])(
 		"resets facility and department slices for %s",
 		(measure) => {
 			gameDepartments = ["magic"];
@@ -626,7 +658,7 @@ describe("app activity measures", () => {
 		scope = { kind: "facility", id: "a", name: "Arena", marketName: "Miami" };
 		data = [facility];
 		const result = setup();
-		select("Measure", "app-sessions");
+		select("Measure", "registrations");
 		expect(demandInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ marketId: "miami", facilityId: undefined }),
 		);
@@ -735,15 +767,13 @@ describe("time slices", () => {
 	it("keeps Time when switching to app measures and places the source marker on the timeline", () => {
 		setup();
 		select("Slice", "time");
-		select("Measure", "app-sessions");
+		select("Measure", "registrations");
 		expect(demandInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ slice: "time", grain: "day", departments: [] }),
 		);
-		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
+		expect(screen.queryByText("2026-06-29")).not.toBeInTheDocument();
 		select("Measure", "unique-users");
 		expect(screen.getByText("2026-06-29")).toBeInTheDocument();
-		select("Measure", "registrations");
-		expect(screen.queryByText("2026-06-29")).not.toBeInTheDocument();
 	});
 	it("shows rate components for segments and filters Supply to the segment's facilities", () => {
 		if (!timeView) throw new Error("Missing fixture");
@@ -788,5 +818,177 @@ describe("time slices", () => {
 		timeView = { ...timeView, start: "2026-10-01", end: "2026-09-30", rows: [] };
 		result.rerender(<MetricDrillDownPanel {...result.props} />);
 		expect(screen.getByText("No completed buckets in this date range.")).toBeInTheDocument();
+	});
+});
+
+describe("drill-down changes", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		period = "month";
+		showSupply = true;
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		data = [facility];
+		comparisonView = {
+			measure: "games",
+			range: "28d",
+			kind: "count",
+			start: "2026-09-10",
+			end: "2026-10-07",
+			previousStart: "2026-08-13",
+			previousEnd: "2026-09-09",
+			total: 32,
+			previousTotal: 30,
+			rows: [
+				{
+					id: "up",
+					name: "Up",
+					value: 12,
+					previousValue: 10,
+					departments: { magic: 12, organizers: 0, partnerships: 0 },
+					previousDepartments: { magic: 8, organizers: 0, partnerships: 0 },
+				},
+				{ id: "down", name: "Down", value: 0, previousValue: 10, departments: null },
+				{ id: "stable", name: "Equal", value: 10, previousValue: 10, departments: null },
+				{ id: "new", name: "New market", value: 10, previousValue: 0, departments: null },
+				{ id: "missing", name: "Missing", value: null, previousValue: null, departments: null },
+				{ id: "empty", name: "Empty region", value: 0, previousValue: 0, departments: null },
+			],
+		};
+	});
+	afterEach(() => {
+		comparisonView = undefined;
+	});
+	it("uses consistent rounding, colors and sorting with new and missing last", () => {
+		setup();
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 6.7% (+2)");
+		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
+		expect(screen.getByText("↑ 20%").parentElement).toHaveClass("text-foreground");
+		expect(
+			within(screen.getByText("↑ 20%").parentElement as HTMLElement).getByText("(+2)"),
+		).not.toHaveAttribute("style");
+		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
+		expect(screen.getByText("↓ 100%").parentElement).toHaveClass("text-foreground");
+		expect(screen.getByText("(-10)")).not.toHaveAttribute("style");
+		expect(screen.getByText("Stable").parentElement).toHaveTextContent("Stable (+0)");
+		expect(screen.getByText("↑ New")).toBeInTheDocument();
+		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Change" }));
+		const names = () =>
+			within(screen.getByRole("table"))
+				.getAllByRole("row")
+				.slice(1)
+				.map((row) => row.querySelector("td")?.textContent);
+		expect(names()).toEqual(["Up", "Equal", "Down", "Missing", "New market"]);
+		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
+		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
+		fireEvent.click(screen.getByText("Up", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 20% (+2)");
+		expect(within(screen.getByRole("table")).getByText("↑ 20%").parentElement).toHaveTextContent(
+			"↑ 20% (+2)",
+		);
+	});
+	it("compares the selected department against its own prior value", () => {
+		setup();
+		select("Segment", "department");
+		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 50% (+4)");
+		expect(within(screen.getByRole("table")).getByText("↑ 50%").parentElement).toHaveTextContent(
+			"↑ 50% (+4)",
+		);
+	});
+	it("shows Stable and zero change without an arrow in the headline and table", () => {
+		setup();
+		fireEvent.click(screen.getByText("Equal", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("Stable (+0)");
+		expect(screen.getByTestId("drill-down-headline-change").querySelector("img")).toBeNull();
+		expect(within(screen.getByRole("table")).getByText("Stable").parentElement).toHaveTextContent(
+			"Stable (+0)",
+		);
+	});
+	it("shows the absolute decrease in the selected headline", () => {
+		setup();
+		fireEvent.click(screen.getByText("Down", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↓ 100% (-10)");
+		expect(
+			within(screen.getByTestId("drill-down-headline-change")).getByText("↓ 100%"),
+		).toHaveStyle({ color: "#EF4444" });
+	});
+	it("shows new activity with its raw difference", () => {
+		setup();
+		fireEvent.click(screen.getByText("New market", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ New (+10)");
+	});
+	it("shows signed raw changes for distinct counts", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = { ...comparisonView, kind: "distinct-count", total: 2, previousTotal: 1 };
+		setup();
+		select("Measure", "unique-players");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 100% (+1)");
+	});
+	it("changes comparison independently from sorting and range", () => {
+		setup();
+		const compare = screen.getByRole("combobox", { name: "Compare" });
+		expect(compare).toHaveTextContent("MoM");
+		expect(compare).toHaveAttribute("title", expect.stringContaining("Month over month"));
+		expect(compare.closest("fieldset")?.parentElement).toBe(
+			screen.getByRole("combobox", { name: "Date range" }).closest("fieldset")?.parentElement,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Change" }));
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		expect(screen.getByRole("option", { name: "YoY" })).toHaveAttribute("title", "Year over year");
+		expect(screen.getByRole("option", { name: "MoM" })).toHaveAttribute(
+			"title",
+			"Month over month",
+		);
+		expect(screen.getByRole("option", { name: "WoW" })).toHaveAttribute("title", "Week over week");
+		fireEvent.click(screen.getByRole("option", { name: "YoY" }));
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "28d", comparison: "year" }),
+		);
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveClass("font-normal");
+		expect(compare).toHaveTextContent("YoY");
+		expect(compare).toHaveAttribute("title", expect.stringContaining("Year over year"));
+		expect(screen.getByRole("button", { name: "Change ↓" }).closest("th")).toHaveAttribute(
+			"aria-sort",
+			"descending",
+		);
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		fireEvent.click(screen.getByRole("option", { name: "WoW" }));
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "28d", comparison: "week" }),
+		);
+		expect(compare).toHaveTextContent("WoW");
+		select("Slice", "time");
+		expect(screen.queryByRole("combobox", { name: "Compare" })).not.toBeInTheDocument();
+	});
+	it("uses points for rates and keeps unavailable comparisons unavailable", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = {
+			...comparisonView,
+			kind: "rate",
+			total: 82.1,
+			previousTotal: 80,
+			rows: [
+				{ id: "a", name: "Arena", value: 82.1, previousValue: 80, departments: null },
+				{
+					id: "b",
+					name: "No prior denominator",
+					value: 20,
+					previousValue: null,
+					departments: null,
+				},
+			],
+		};
+		setup();
+		expect(screen.getAllByText("↑ 2.1 pts")).toHaveLength(2);
+	});
+	it("shows the source-switch note when the previous app window crosses the transition", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = { ...comparisonView, previousStart: "2026-06-28", previousEnd: "2026-07-25" };
+		setup();
+		select("Measure", "unique-users");
+		expect(screen.getByRole("note")).toHaveTextContent("Tracking source changed");
 	});
 });

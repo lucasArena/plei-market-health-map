@@ -8,6 +8,7 @@ import type {
 import type { GameDepartment } from "@core/domain";
 
 export interface MetricDrillDownQuery {
+	previousPeriod?: boolean;
 	measure: DrillDownMeasure;
 	range: DrillDownRange;
 	slice: DrillDownSlice;

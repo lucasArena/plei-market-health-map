@@ -78,6 +78,17 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
     and ${QUALIFYING_OPENED_GAME_SQL} and ${OPENED_GAME_PLAYER_TYPE_SQL} and ${CONFIRMED_PLEIAPP_PLAYER_SQL}
     ${measure === "activated-players" ? "and f.player_lifecycle = 'Activated'" : ""}
     and (cardinality($3::text[]) = 0 or ${gameDepartmentCase("r")} = any($3::text[]))`;
+		} else if (measure === "active-organizers") {
+			ctes = `${ORGANIZER_PARTNERS_CTE},`;
+			population = `select r.date_with_time::date as event_date, r.partner_id::text as entity_id,
+    ${gameDepartmentCase("r")} as department, m.value as facility_id
+    from plei_gold.dim_reservation r ${organizerPartnersJoin("r")}
+    join ${mapping} on m.key = r.location_id::text
+    where r.date_with_time::date >= $1::date and r.date_with_time::date < $2::date
+    and op.partner_id is not null
+    and r.reservation_type = 'OpenReservation' and not (${isOperationalCancellationSql("r")})
+    and ${isPlayedGameSql("r")}
+    and (cardinality($3::text[]) = 0 or ${gameDepartmentCase("r")} = any($3::text[]))`;
 		} else {
 			ctes = `${ORGANIZER_PARTNERS_CTE},`;
 			population = `select r.date_with_time::date as event_date, r.reservation_id::text as entity_id,

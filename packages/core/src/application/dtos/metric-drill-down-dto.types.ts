@@ -1,5 +1,8 @@
 import type { GameDepartment } from "@core/domain";
 
+export const DRILL_DOWN_COMPARISONS = ["previous-period", "week", "month", "year"] as const;
+export type DrillDownComparison = (typeof DRILL_DOWN_COMPARISONS)[number];
+
 export const DRILL_DOWN_RANGES = ["7d", "28d", "90d", "6m", "12m"] as const;
 export type DrillDownRange = (typeof DRILL_DOWN_RANGES)[number];
 
@@ -12,17 +15,19 @@ export const DRILL_DOWN_RANGE_DAYS = {
 } as const satisfies Record<DrillDownRange, number>;
 
 export const DRILL_DOWN_MEASURES = [
-	"app-sessions",
+	"games",
+	"avg-daily-games",
+	"scheduled-games",
+	"incident-games-rate",
+	"confirmation-rate",
+	"almost-filled-rate",
 	"registrations",
 	"unique-users",
-	"games",
-	"active-facilities",
-	"scheduled-games",
-	"confirmation-rate",
-	"unique-players",
 	"activated-players",
-	"almost-filled-rate",
-	"incident-games-rate",
+	"unique-players",
+	"active-organizers",
+	"active-facilities",
+	"app-sessions",
 ] as const;
 export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
 
@@ -40,6 +45,8 @@ export const DRILL_DOWN_MEASURE_KIND = {
 	registrations: "distinct-count",
 	"unique-users": "distinct-count",
 	games: "count",
+	"avg-daily-games": "count",
+	"active-organizers": "distinct-count",
 	"active-facilities": "count",
 	"scheduled-games": "count",
 	"confirmation-rate": "rate",
@@ -53,6 +60,7 @@ export const DRILL_DOWN_GRAINS = ["range", "day", "week", "month"] as const;
 export type DrillDownGrain = (typeof DRILL_DOWN_GRAINS)[number];
 
 export interface GetMetricDrillDownInput {
+	comparison?: DrillDownComparison;
 	measure: DrillDownMeasure;
 	range: DrillDownRange;
 	slice: DrillDownSlice;
@@ -72,6 +80,8 @@ export interface MetricDrillDownRateParts {
 }
 
 export interface MetricDrillDownRow {
+	previousValue?: number | null;
+	previousDepartments?: Record<GameDepartment, number | null> | null;
 	id: string;
 	name: string;
 	bucketStart?: string;
@@ -88,6 +98,9 @@ export interface MetricDrillDownRow {
 }
 
 export interface MetricDrillDownView {
+	previousTotal?: number | null;
+	previousStart?: string;
+	previousEnd?: string;
 	total: number | null;
 	rows: MetricDrillDownRow[];
 	numerator?: number | null;

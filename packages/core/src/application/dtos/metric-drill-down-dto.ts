@@ -1,6 +1,7 @@
 import { statsTimeZoneSchema } from "@core/application/dtos/facility-detail-dto";
 import { gameDepartmentsSchema } from "@core/application/dtos/market-summary-dto";
 import {
+	DRILL_DOWN_COMPARISONS,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURES,
 	DRILL_DOWN_RANGES,
@@ -12,6 +13,7 @@ import { GAME_DEPARTMENTS } from "@core/domain";
 import { z } from "zod";
 
 export {
+	DRILL_DOWN_COMPARISONS,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_MEASURE_KINDS,
@@ -24,6 +26,7 @@ export {
 
 export const getMetricDrillDownSchema = z
 	.object({
+		comparison: z.enum(DRILL_DOWN_COMPARISONS).default("previous-period"),
 		measure: z.enum(DRILL_DOWN_MEASURES),
 		range: z.enum(DRILL_DOWN_RANGES),
 		slice: z.enum(DRILL_DOWN_SLICES),
@@ -50,17 +53,24 @@ export const getMetricDrillDownSchema = z
 				message: "Calendar grains require Time.",
 			});
 		}
-		if (value.measure === "active-facilities" && value.slice === "department") {
+		if (
+			(value.measure === "active-facilities" || value.measure === "active-organizers") &&
+			value.slice === "department"
+		) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["slice"],
-				message: "Active facilities cannot be sliced by department.",
+				message: "This measure cannot be sliced by department.",
 			});
 		}
 	});
 
 export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolean {
-	return measure !== "active-facilities" && !isAppActivityMeasure(measure);
+	return (
+		measure !== "active-facilities" &&
+		measure !== "active-organizers" &&
+		!isAppActivityMeasure(measure)
+	);
 }
 
 export function canSegmentDrillDown(

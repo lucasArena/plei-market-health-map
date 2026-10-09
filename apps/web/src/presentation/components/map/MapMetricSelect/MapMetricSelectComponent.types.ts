@@ -1,6 +1,7 @@
 export interface MapMetricSelectOption {
 	value: string;
 	label: string;
+	tooltip?: string;
 	children?: readonly MapMetricSelectOption[];
 }
 export type MapMetricSelectVariant = "field" | "pill";
@@ -8,6 +9,7 @@ export interface MapMetricSelectProps {
 	label: string;
 	help: string;
 	value: string;
+	selectedLabel?: string;
 	options: readonly MapMetricSelectOption[];
 	disabled?: boolean;
 	descriptionId?: string;

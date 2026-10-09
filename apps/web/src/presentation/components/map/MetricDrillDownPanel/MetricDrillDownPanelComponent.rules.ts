@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+	DrillDownComparison,
 	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownRange,
@@ -17,8 +18,10 @@ import {
 	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
+import { classifyGamesTrend } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
+import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type {
 	DrillDownChartRow,
@@ -73,6 +76,9 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const [comparison, setComparison] = useState<DrillDownComparison>(() =>
+		period === "week" ? "week" : "month",
+	);
 	const [grain, setGrainState] = useState<DrillDownGrain>("day");
 	const isTime = selection.slice === "time";
 	const isAppActivity = isAppActivityMeasure(selection.measure);
@@ -136,6 +142,7 @@ export function useMetricDrillDownPanelRules({
 		slice: selection.slice,
 		segment: selection.segment,
 		grain: isTime ? grain : "range",
+		comparison,
 		marketId: {
 			[`${isAppActivity}`]: activityMarketId,
 			[`${scope.kind === "market"}`]: scope.kind === "market" ? scope.id : undefined,
@@ -201,6 +208,53 @@ export function useMetricDrillDownPanelRules({
 		minimumFractionDigits: 1,
 		maximumFractionDigits: 1,
 	});
+	function changeValue(current: number | null, previous: number | null | undefined) {
+		if (current === null || previous == null) return null;
+		if (view.kind === "rate") return current - previous;
+		return previous === 0 ? null : ((current - previous) / previous) * 100;
+	}
+	function changeDisplay(current: number | null, previous: number | null | undefined) {
+		if (current === null || previous == null)
+			return {
+				label: messages.drillDown.unavailable,
+				countLabel: undefined,
+				className: "text-muted-foreground",
+				color: undefined,
+			};
+		const level =
+			view.kind === "rate"
+				? current === previous
+					? "stable"
+					: current > previous
+						? "up"
+						: "down"
+				: classifyGamesTrend(current, previous);
+		const className = {
+			up: "text-pleiful-pitch-green-50",
+			down: "",
+			stable: "text-muted-foreground",
+		}[level];
+		const value = changeValue(current, previous);
+		const arrow = { up: "↑", down: "↓", stable: "→" }[level];
+		const formattedChange =
+			value === null
+				? messages.drillDown.changeNew
+				: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`;
+		const label =
+			level === "stable" ? messages.drillDown.changeStable : `${arrow} ${formattedChange}`;
+		const countLabel =
+			level === "stable"
+				? `(+${number.format(0)})`
+				: view.kind === "rate"
+					? undefined
+					: `(${current > previous ? "+" : "-"}${number.format(Math.abs(current - previous))})`;
+		return {
+			label,
+			countLabel,
+			className,
+			color: level === "down" ? PLEIFUL_COLORS.negative[50] : undefined,
+		};
+	}
 	const date = new Intl.DateTimeFormat(locale, {
 		year: "numeric",
 		month: "short",
@@ -212,6 +266,8 @@ export function useMetricDrillDownPanelRules({
 		registrations: messages.drillDown.registrations,
 		"unique-users": messages.drillDown.uniqueUsers,
 		games: messages.drillDown.games,
+		"avg-daily-games": messages.drillDown.avgDailyGames,
+		"active-organizers": messages.drillDown.activeOrganizers,
 		"active-facilities": messages.drillDown.activeFacilities,
 		"scheduled-games": messages.drillDown.scheduledGames,
 		"confirmation-rate": messages.drillDown.confirmationRate,
@@ -270,18 +326,35 @@ export function useMetricDrillDownPanelRules({
 			: isTime
 				? bucketLabel(row)
 				: row.name;
+	const availableRows = view.rows.filter(
+		(row) => isTime || view.kind === "rate" || row.value !== 0 || row.previousValue !== 0,
+	);
 	const visibleRows = hasFocus
 		? [
 				{
 					...focusedRow,
 					...(focus?.department ? focusedRow.departmentParts?.[focus.department] : {}),
 					value: focusedValue,
+					previousValue: focus?.department
+						? (focusedRow.previousDepartments?.[focus.department] ?? null)
+						: focusedRow.previousValue,
 				},
 			]
-		: view.rows;
+		: availableRows;
 	const rows = [...visibleRows].sort((a, b) => {
 		if (sort === "name-asc") return rowName(a).localeCompare(rowName(b), locale);
 		if (sort === "name-desc") return rowName(b).localeCompare(rowName(a), locale);
+		if (!isTime && sort.startsWith("change")) {
+			const left = changeValue(a.value, a.previousValue);
+			const right = changeValue(b.value, b.previousValue);
+			if (left === null && right === null) return rowName(a).localeCompare(rowName(b), locale);
+			if (left === null) return 1;
+			if (right === null) return -1;
+			return (
+				(sort === "change-asc" ? left - right : right - left) ||
+				rowName(a).localeCompare(rowName(b), locale)
+			);
+		}
 		if (a.value === null && b.value === null) return 0;
 		if (a.value === null) return 1;
 		if (b.value === null) return -1;
@@ -297,12 +370,13 @@ export function useMetricDrillDownPanelRules({
 			0,
 		);
 	}
+	const smallestStep = selection.measure === "avg-daily-games" ? 0.1 : 1;
 	const largest = Math.max(
-		1,
+		smallestStep,
 		...topRows.map((row) => (segment === "department" ? selectedBarTotal(row) : (row.value ?? 0))),
 	);
 	const magnitude = 10 ** Math.floor(Math.log10(largest / 5));
-	const step = Math.max(1, Math.ceil(largest / magnitude / 5) * magnitude);
+	const step = Math.max(smallestStep, Math.ceil(largest / magnitude / 5) * magnitude);
 	const max = Math.ceil(largest / step) * step;
 	const ticks = Array.from({ length: Math.ceil(max / step) + 1 }, (_, index) => index * step);
 
@@ -427,7 +501,26 @@ export function useMetricDrillDownPanelRules({
 				})
 			: undefined;
 	const dataErrors = headlineSource.dataErrors ?? 0;
+	const headlineChange = changeDisplay(
+		hasFocus ? focusedValue : view.total,
+		hasFocus
+			? focus?.department
+				? focusedRow.previousDepartments?.[focus.department]
+				: focusedRow.previousValue
+			: view.previousTotal,
+	);
 	return {
+		comparison,
+		setComparison,
+		changeDisplay,
+		headlineChange,
+		comparisonLabel: {
+			week: "WoW",
+			month: "MoM",
+			year: "YoY",
+			"previous-period": messages.drillDown.compare,
+		}[comparison],
+		comparisonHelp: `${{ week: messages.drillDown.compareWeek, month: messages.drillDown.compareMonth, year: messages.drillDown.compareYear, "previous-period": messages.drillDown.compare }[comparison]}. ${messages.drillDown.compareHelp}`,
 		messages: messages.drillDown,
 		measureLabel: measureLabels[selection.measure],
 		valueLabel: view.kind === "rate" ? messages.drillDown.rate : messages.drillDown.value,
@@ -453,7 +546,7 @@ export function useMetricDrillDownPanelRules({
 		toggleExpanded,
 		handleAnimationEnd,
 		view,
-		chartTruncated: !isTime && !hasFocus && view.rows.length > 10,
+		chartTruncated: !isTime && !hasFocus && availableRows.length > 10,
 		headlineValue: hasFocus ? focusedValue : view.total,
 		headlineParts,
 		dataErrorsMessage:
@@ -482,7 +575,10 @@ export function useMetricDrillDownPanelRules({
 		showSourceSwitch:
 			isAppActivity &&
 			selection.measure !== "registrations" &&
-			crossesAppTrackingSourceSwitch(view.start, view.end),
+			(crossesAppTrackingSourceSwitch(view.start, view.end) ||
+				(!!view.previousStart &&
+					!!view.previousEnd &&
+					crossesAppTrackingSourceSwitch(view.previousStart, view.previousEnd))),
 		showSupply: effectiveSupply,
 		viewOnMap,
 		heading,
