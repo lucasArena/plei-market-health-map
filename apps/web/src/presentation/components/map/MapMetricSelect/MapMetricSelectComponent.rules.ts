@@ -40,18 +40,19 @@ export function useMapMetricSelectRules({
 		return () => document.removeEventListener("pointerdown", outside);
 	}, [open]);
 	useEffect(() => {
-		if (!submenu) return;
+		if (!submenu?.focus) return;
 		submenuRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
 		if (!submenuRef.current?.contains(document.activeElement))
 			submenuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
 	}, [submenu]);
-	function openSubmenu(next: string) {
+	function openSubmenu(next: string, focus = true) {
 		const button = Array.from(
 			menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [],
 		).find((button) => button.dataset.value === next);
 		if (!button) return;
 		const rect = button.getBoundingClientRect();
 		setSubmenu({
+			focus,
 			value: next,
 			left: Math.max(8, rect.right + 168 < window.innerWidth ? rect.right + 4 : rect.left - 164),
 			top: Math.min(rect.top, window.innerHeight - 120),
@@ -110,9 +111,10 @@ export function useMapMetricSelectRules({
 			return;
 		}
 		const buttons = Array.from(
-			(submenu ? submenuRef.current : menuRef.current)?.querySelectorAll<HTMLButtonElement>(
-				'[role="option"]',
-			) ?? [],
+			(submenuRef.current?.contains(document.activeElement)
+				? submenuRef.current
+				: menuRef.current
+			)?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [],
 		);
 		const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
 		let next = (index + 1) % buttons.length;
@@ -137,6 +139,10 @@ export function useMapMetricSelectRules({
 		open: open && !disabled,
 		keys,
 		choose,
+		hoverOption: (next: string) => {
+			if (options.find((option) => option.value === next)?.children) openSubmenu(next, false);
+			else setSubmenu(null);
+		},
 		toggle: () => {
 			setSubmenu(null);
 			setOpen((current) => !current);

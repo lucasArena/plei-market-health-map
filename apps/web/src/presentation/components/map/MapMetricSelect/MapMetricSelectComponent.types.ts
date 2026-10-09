@@ -17,6 +17,7 @@ export interface MapMetricSelectProps {
 }
 
 export interface MapMetricSubmenu {
+	focus: boolean;
 	value: string;
 	left: number;
 	top: number;

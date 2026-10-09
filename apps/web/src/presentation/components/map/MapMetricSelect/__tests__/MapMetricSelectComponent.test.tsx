@@ -143,6 +143,33 @@ describe("nested Date selector", () => {
 		expect(trigger).toHaveFocus();
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 	});
+	it("opens Date on hover without selecting or stealing focus and lets the pointer enter its submenu", () => {
+		const onChange = vi.fn();
+		render(
+			<MapMetricSelect
+				label="Slice"
+				help="Group"
+				value="market"
+				options={nested}
+				onChange={onChange}
+			/>,
+		);
+		fireEvent.click(screen.getByRole("combobox"));
+		const market = screen.getByRole("option", { name: "Market" });
+		const date = screen.getByRole("option", { name: "Date" });
+		fireEvent.mouseEnter(date);
+		expect(screen.getByRole("listbox", { name: "Date" })).toHaveClass("map-glass");
+		expect(market).toHaveFocus();
+		expect(onChange).not.toHaveBeenCalled();
+		fireEvent.mouseEnter(screen.getByRole("option", { name: "Week" }));
+		expect(screen.getByRole("listbox", { name: "Date" })).toBeInTheDocument();
+		fireEvent.mouseEnter(market);
+		expect(screen.queryByRole("listbox", { name: "Date" })).not.toBeInTheDocument();
+		fireEvent.mouseEnter(date);
+		fireEvent.click(screen.getByRole("option", { name: "Week" }));
+		expect(onChange).toHaveBeenCalledWith("date:week");
+	});
+
 	it("supports right/left, child arrows, two-step Escape and outside dismissal", () => {
 		render(
 			<MapMetricSelect
