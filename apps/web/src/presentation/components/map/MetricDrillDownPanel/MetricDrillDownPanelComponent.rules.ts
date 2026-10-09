@@ -23,6 +23,7 @@ import { classifyGamesTrend } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
+import { drillDownDatesPreference } from "@/infrastructure/cache/local-storage/drill-down-dates/drill-down-dates-preference";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import {
 	DRILL_DOWN_COLORS,
@@ -81,8 +82,9 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
-	const [comparison, setComparison] = useState<DrillDownComparison>(() =>
-		period === "week" ? "week" : "month",
+	const [rememberedDates] = useState(() => drillDownDatesPreference.read());
+	const [comparison, setComparison] = useState<DrillDownComparison>(
+		() => rememberedDates?.comparison ?? (period === "week" ? "week" : "month"),
 	);
 	const [grain, setGrainState] = useState<DrillDownGrain>("day");
 	const isTime = selection.slice === "time";
@@ -92,7 +94,9 @@ export function useMetricDrillDownPanelRules({
 		scope.kind === "facility"
 			? facilitiesQuery.data?.find((facility) => facility.id === scope.id)?.marketId
 			: undefined;
-	const [range, setRangeState] = useState<DrillDownRange>(() => rangeFromPeriod(period));
+	const [range, setRangeState] = useState<DrillDownRange>(
+		() => rememberedDates?.range ?? rangeFromPeriod(period),
+	);
 	const [previousPeriod, setPreviousPeriod] = useState(period);
 	if (previousPeriod !== period) {
 		setPreviousPeriod(period);
@@ -217,6 +221,10 @@ export function useMetricDrillDownPanelRules({
 		isTime,
 	]);
 	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
+
+	useEffect(() => {
+		drillDownDatesPreference.remember({ range, comparison });
+	}, [comparison, range]);
 	function toggleFocus(
 		row: MetricDrillDownRow,
 		part?: { department?: GameDepartment; organizerId?: string },

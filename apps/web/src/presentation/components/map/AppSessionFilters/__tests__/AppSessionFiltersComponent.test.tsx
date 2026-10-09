@@ -67,6 +67,8 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
+beforeEach(() => localStorage.clear());
+
 it("keeps gender choices inside the panel and applies them as removable chips", async () => {
 	const { container } = setup();
 	expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();

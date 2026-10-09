@@ -2,7 +2,8 @@
 
 import type { AppSessionFilters } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { mapFiltersPreference } from "@/infrastructure/cache/local-storage/map-filters/map-filters-preference";
 import { MAP_LAYERS_DEFAULTS } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import type {
 	MapLayersProviderProps,
@@ -40,6 +41,53 @@ export function MapLayersProvider({ children }: Readonly<MapLayersProviderProps>
 		setSupplyFiltersPresent(false);
 		setSessionFilters({ ...MAP_LAYERS_DEFAULTS.sessionFilters });
 	}, []);
+	const [isRestored, setIsRestored] = useState(false);
+
+	useEffect(() => {
+		const remembered = mapFiltersPreference.read();
+		if (remembered) {
+			setShowActiveFacilities(remembered.showActiveFacilities);
+			setShowInactiveFacilities(remembered.showInactiveFacilities);
+			setShowGamesTrend(remembered.showGamesTrend);
+			setShowSessions(remembered.showSessions);
+			setDemandMetric(remembered.demandMetric);
+			setSupplyMetric(remembered.supplyMetric);
+			setGameDepartments(remembered.gameDepartments);
+			setDemandFiltersPresent(remembered.demandFiltersPresent);
+			setSupplyFiltersPresent(remembered.supplyFiltersPresent);
+			setSessionFilters(remembered.sessionFilters);
+		}
+		setIsRestored(true);
+	}, []);
+
+	useEffect(() => {
+		if (!isRestored) return;
+		mapFiltersPreference.remember({
+			showActiveFacilities,
+			showInactiveFacilities,
+			showGamesTrend,
+			showSessions,
+			demandMetric,
+			supplyMetric,
+			gameDepartments,
+			demandFiltersPresent,
+			supplyFiltersPresent,
+			sessionFilters,
+		});
+	}, [
+		isRestored,
+		demandFiltersPresent,
+		demandMetric,
+		gameDepartments,
+		sessionFilters,
+		showActiveFacilities,
+		showGamesTrend,
+		showInactiveFacilities,
+		showSessions,
+		supplyFiltersPresent,
+		supplyMetric,
+	]);
+
 	const value = useMemo(
 		() => ({
 			demandMetric,
