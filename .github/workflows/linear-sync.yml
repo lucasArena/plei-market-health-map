@@ -61,14 +61,27 @@ jobs:
           node-version-file: .nvmrc
       - name: Read every commit title in the pull request and the pull requests they reference
         run: |
-          titles=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PULL_REQUEST/commits" --jq '.[].commit.message | split("\n")[0]')
-          stacked=""
-          for number in $(grep -oE '#[0-9]+' <<< "$titles" | tr -d '#' | sort -u); do
-            stacked+=$'\n'$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.title + " " + .head.ref' 2>/dev/null || true)
+          commit_titles() {
+            gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$1/commits" --jq '.[].commit.message | split("\n")[0]'
+          }
+          texts=$(commit_titles "$PULL_REQUEST")
+          seen=" $PULL_REQUEST "
+          queue=$(grep -oE '#[0-9]+' <<< "$texts" | tr -d '#' | sort -un)
+          while [ -n "$queue" ]; do
+            next=""
+            for number in $queue; do
+              [[ "$seen" == *" $number "* ]] && continue
+              seen+="$number "
+              stacked=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.title + " " + .head.ref' 2>/dev/null) || continue
+              titles=$(commit_titles "$number")
+              texts+=$'\n'"$stacked"$'\n'"$titles"
+              next+=" $(grep -oE '#[0-9]+' <<< "$titles" | tr -d '#' | tr '\n' ' ')"
+            done
+            queue=$next
           done
           {
             echo "COMMIT_TITLES<<COMMIT_TITLES_END"
-            echo "$titles$stacked"
+            echo "$texts"
             echo "COMMIT_TITLES_END"
           } >> "$GITHUB_ENV"
       - name: Move the tickets to Done
