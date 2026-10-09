@@ -22,7 +22,7 @@ export const METRIC_SELECT_TRIGGER_CLASS = {
 };
 
 export const METRIC_SELECT_MENU_CLASS = {
-	field: `${MAP_MENU_SURFACE_CLASS} z-50 min-w-48`,
+	field: `${MAP_MENU_SURFACE_CLASS} z-50 w-full min-w-full`,
 	pill: MAP_MENU_SURFACE_CLASS.replace("map-glass", "glass-strong").concat(
 		" z-50 min-w-32 rounded-2xl",
 	),

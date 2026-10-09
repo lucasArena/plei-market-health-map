@@ -170,7 +170,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							value={segment}
 							disabled={!rules.canSegment}
 							descriptionId={!rules.canSegment ? "drill-down-segment-help" : undefined}
-							alignRight
 							onChange={(value) => rules.setSegment(value as DrillDownSegment)}
 							options={[
 								{ value: "none", label: m.none },
@@ -280,9 +279,9 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 										))}
 									</div>
 								)}
-								<div className="overflow-x-auto pb-3">
+								<div className="overflow-x-auto pt-2 pb-3">
 									<div
-										className="relative pr-9"
+										className="relative pr-14"
 										style={
 											rules.isTime
 												? { minWidth: `${Math.max(300, chartRows.length * 42)}px` }
@@ -297,7 +296,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 														className="absolute inset-x-0 border-t border-dashed border-foreground/15"
 														style={{ bottom: `${(tick / rules.max) * 100}%` }}
 													>
-														<span className="absolute -right-9 -translate-y-1/2 w-7 text-right text-[10px] tabular-nums text-muted-foreground">
+														<span className="absolute -right-14 -translate-y-1/2 w-12 text-right text-[10px] tabular-nums text-muted-foreground">
 															{formatValue(tick)}
 														</span>
 													</div>
@@ -398,9 +397,23 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													onClick={() =>
 														rules.setSort(rules.sort === "name-asc" ? "name-desc" : "name-asc")
 													}
-													className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap"
+													className="group inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 												>
-													{m[selection.slice]} ↕
+													{m[selection.slice]}
+													<svg
+														aria-hidden="true"
+														viewBox="0 0 16 16"
+														fill="none"
+														stroke="currentColor"
+														strokeWidth="1.25"
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														className={`size-3 shrink-0 text-muted-foreground ${rules.sort.startsWith("name") ? "opacity-80" : "opacity-0 group-hover:opacity-40 group-focus-visible:opacity-40"}`}
+													>
+														<path
+															d={rules.sort === "name-asc" ? "m4 10 4-4 4 4" : "m4 6 4 4 4-4"}
+														/>
+													</svg>
 												</button>
 											</th>
 											<th
@@ -418,9 +431,23 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													onClick={() =>
 														rules.setSort(rules.sort === "count-desc" ? "count-asc" : "count-desc")
 													}
-													className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap"
+													className="group inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 												>
-													{rules.valueLabel} ↕
+													{rules.valueLabel}
+													<svg
+														aria-hidden="true"
+														viewBox="0 0 16 16"
+														fill="none"
+														stroke="currentColor"
+														strokeWidth="1.25"
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														className={`size-3 shrink-0 text-muted-foreground ${rules.sort.startsWith("count") ? "opacity-80" : "opacity-0 group-hover:opacity-40 group-focus-visible:opacity-40"}`}
+													>
+														<path
+															d={rules.sort === "count-asc" ? "m4 10 4-4 4 4" : "m4 6 4 4 4-4"}
+														/>
+													</svg>
 												</button>
 											</th>
 											{segment === "department" &&

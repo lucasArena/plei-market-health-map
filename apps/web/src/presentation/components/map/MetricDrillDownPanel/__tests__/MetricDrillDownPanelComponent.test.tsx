@@ -366,7 +366,7 @@ describe("MetricDrillDownPanel", () => {
 		setup();
 		const table = screen.getByRole("table");
 		expect(within(table).getAllByRole("row")[1]).toHaveTextContent("10");
-		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Count/ }));
 		expect(within(table).getAllByRole("row")[1]).toHaveTextContent("10");
 		select("Measure", "active-facilities");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
@@ -396,7 +396,7 @@ describe("MetricDrillDownPanel", () => {
 		expect(screen.queryByRole("button", { name: /Explore facilities/ })).not.toBeInTheDocument();
 		const mapButton = screen.getByRole("button", { name: "View on map: Miami" });
 		expect(mapButton).not.toHaveTextContent("View on map");
-		expect(screen.getByRole("button", { name: /Count ↕/ })).toHaveClass(
+		expect(screen.getByRole("button", { name: /Count/ })).toHaveClass(
 			"whitespace-nowrap",
 			"inline-flex",
 		);
@@ -415,7 +415,7 @@ describe("MetricDrillDownPanel", () => {
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent(
 			"Confirmation rate",
 		);
-		expect(screen.getByRole("button", { name: /Rate ↕/ })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		select("Measure", "unique-players");
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Unique players");
 		select("Measure", "activated-players");
@@ -462,7 +462,7 @@ describe("MetricDrillDownPanel", () => {
 		expect(screen.queryByRole("option", { name: "Incident games" })).not.toBeInTheDocument();
 		fireEvent.keyDown(screen.getByRole("combobox", { name: "Measure" }), { key: "Escape" });
 		select("Measure", "incident-games-rate");
-		expect(screen.getByRole("button", { name: /Rate ↕/ })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Rate/ })).toBeInTheDocument();
 		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
 		expect(screen.getByText("3 incident games of 16 happened games")).toBeInTheDocument();
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -481,12 +481,12 @@ describe("MetricDrillDownPanel", () => {
 		setup();
 		expect(screen.getByText("Top 10")).toBeInTheDocument();
 		expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(13);
-		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Count/ }));
 		expect(within(screen.getByRole("table")).getAllByRole("row")[1]).toHaveTextContent("Market 0");
-		fireEvent.click(screen.getByRole("button", { name: /Count ↕/ }));
-		fireEvent.click(screen.getByRole("button", { name: /Market ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Count/ }));
+		fireEvent.click(screen.getByRole("button", { name: "Market" }));
 		expect(within(screen.getByRole("table")).getAllByRole("row")[1]).toHaveTextContent("Market 0");
-		fireEvent.click(screen.getByRole("button", { name: /Market ↕/ }));
+		fireEvent.click(screen.getByRole("button", { name: "Market" }));
 		expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute("aria-sort", "descending");
 	});
 	it("requests zoom only from the map icon without closing or changing metric scope", () => {

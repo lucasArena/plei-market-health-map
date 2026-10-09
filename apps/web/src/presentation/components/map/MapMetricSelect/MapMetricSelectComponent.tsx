@@ -105,7 +105,7 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 						id={`${rules.id}-submenu`}
 						role="listbox"
 						aria-label={rules.submenuOption.label}
-						className={`${rules.classes.menu} !fixed !z-[100] !mt-0 !min-w-40 w-40`}
+						className={`${rules.classes.menu} !fixed !z-[100] !mt-0 !min-w-40 !w-40`}
 						style={{ left: rules.submenu.left, top: rules.submenu.top }}
 					>
 						{rules.submenuOption.children.map((option) => (
