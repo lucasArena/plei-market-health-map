@@ -14,7 +14,7 @@ import type {
 } from "@core/application/repositories/facility-stats-repository.types";
 import { addDays } from "@core/domain";
 
-function roundTo(value: number, decimals: number): number {
+export function roundTo(value: number, decimals: number): number {
 	const factor = 10 ** decimals;
 	return Math.round(value * factor) / factor;
 }

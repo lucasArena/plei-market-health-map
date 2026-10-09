@@ -11,6 +11,7 @@ import { PANEL_SECTION_CLASS } from "@/presentation/components/displays/PanelSec
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
 import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
+import { FacilityOverview } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent";
 import { MarketOverview } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent";
 import { MarketOverviewSkeleton } from "@/presentation/components/map/MarketOverviewSkeleton/MarketOverviewSkeletonComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
@@ -267,6 +268,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		playersTrend,
 		userMetrics,
 		marketView,
+		facilityView,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -280,8 +282,10 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 			className={`${isClosing ? "panel-slide-out" : "panel-slide-in"} ${MARKET_SUMMARY_PANEL_CLASS}`}
 		>
 			<div className="min-h-0 flex-1 overflow-y-auto">
-				{status === "loading" && marketView && <MarketOverviewSkeleton />}
-				{status === "loading" && isRedesigned && !marketView && <RedesignedSkeleton />}
+				{status === "loading" && (marketView || facilityView) && <MarketOverviewSkeleton />}
+				{status === "loading" && isRedesigned && !marketView && !facilityView && (
+					<RedesignedSkeleton />
+				)}
 				{status === "loading" && !isRedesigned && <MarketSummarySkeleton />}
 				{status === "error" && (
 					<p role="alert" className="p-5 pr-12 text-sm text-destructive">
@@ -290,9 +294,15 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 				)}
 				{status === "ready" && view && (
 					<div className="space-y-4 p-5">
-						{marketView ? (
-							<MarketOverview marketId={marketView.id} marketName={marketView.name} />
-						) : (
+						{facilityView && (
+							<FacilityOverview
+								facilityId={facilityView.id}
+								facilityName={facilityView.name}
+								marketName={facilityView.marketName}
+							/>
+						)}
+						{marketView && <MarketOverview marketId={marketView.id} marketName={marketView.name} />}
+						{!marketView && !facilityView && (
 							<>
 								<MarketSummaryHeader
 									comparison={comparison}

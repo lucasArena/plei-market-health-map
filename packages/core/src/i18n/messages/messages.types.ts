@@ -161,6 +161,27 @@ export interface Messages {
 		showAll: string;
 		showFewer: string;
 	};
+	facilityView: {
+		level: string;
+		rankTitle: string;
+		rankByGames: string;
+		rankByChange: string;
+		rankValue: string;
+		rankOf: string;
+		demandTitle: string;
+		averagePlayers: string;
+		waitlistGames: string;
+		almostFilled: string;
+		satisfactionTitle: string;
+		averageRating: string;
+		incidentGames: string;
+		returningPlayers: string;
+		ratingCount: string;
+		lowReviewsTitle: string;
+		noLowReviews: string;
+		untitledReview: string;
+		reviewRate: string;
+	};
 	marketView: {
 		level: string;
 		breadcrumb: string;

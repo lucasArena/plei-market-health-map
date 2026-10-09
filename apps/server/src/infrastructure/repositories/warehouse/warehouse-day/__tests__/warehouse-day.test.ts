@@ -1,4 +1,5 @@
 import {
+	inDaysWindowSql,
 	inLastDaysSql,
 	inPreviousDaysSql,
 	MONTH_DAYS,
@@ -24,5 +25,11 @@ describe("warehouse day", () => {
 		expect(inPreviousDaysSql("d", "b.today", 7)).toBe("d >= b.today - 14 and d < b.today - 7");
 		expect(inLastDaysSql("d", "b.today", 28)).toBe("d >= b.today - 28 and d < b.today");
 		expect(inPreviousDaysSql("d", "b.today", 28)).toBe("d >= b.today - 56 and d < b.today - 28");
+	});
+
+	it("reaches any number of whole windows before the last one", () => {
+		expect(inDaysWindowSql("d", "b.today", 28, 2)).toBe("d >= b.today - 84 and d < b.today - 56");
+		expect(inDaysWindowSql("d", "b.today", 7, 0)).toBe(inLastDaysSql("d", "b.today", 7));
+		expect(inDaysWindowSql("d", "b.today", 7, 1)).toBe(inPreviousDaysSql("d", "b.today", 7));
 	});
 });

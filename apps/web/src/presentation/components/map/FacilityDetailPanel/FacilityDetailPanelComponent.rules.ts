@@ -33,6 +33,7 @@ import { useMapScope } from "@/presentation/components/providers/MapScopeProvide
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityPlayerStats } from "@/presentation/hooks/use-facility/use-facility-player-stats";
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
+import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 
 export function createDetailFormatters(locale: string): DetailFormatters {
 	return {
@@ -396,6 +397,15 @@ export function useFacilityDetailPanelRules({
 		[locale, period, playerStats, reservationDetail],
 	);
 	const status = resolveDetailStatus(reservationQuery.isPending, reservationQuery.isError);
+	const isRedesigned = useFeatureFlag("insights-panel-v3");
+	const overview =
+		isRedesigned && reservationDetail
+			? {
+					facilityId: reservationDetail.facility.id,
+					facilityName: reservationDetail.facility.name,
+					marketName: reservationDetail.facility.marketName,
+				}
+			: null;
 
 	const handleAnimationEnd = useCallback(() => {
 		if (isClosing) onClosed();
@@ -416,6 +426,7 @@ export function useFacilityDetailPanelRules({
 		isClosing,
 		messages: messages.facilityDetail,
 		onClose,
+		overview,
 		status,
 		trend: trend
 			? { level: trend.level, ...formatGamesTrendPanel(trend, messages.map.trend) }

@@ -1,11 +1,9 @@
-import type { FacilityGameChangeView, StatsPeriod } from "@market-health-map/core/application";
+import type { FacilityGameChangeView } from "@market-health-map/core/application";
 import type { Messages } from "@market-health-map/core/i18n";
-import type { BreadcrumbItem } from "@/presentation/components/displays/Breadcrumb/BreadcrumbComponent.types";
 import type { GamesTrendView } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
-import type { ScoreCardProps } from "@/presentation/components/displays/ScoreCard/ScoreCardComponent.types";
-import type { SegmentedOption } from "@/presentation/components/displays/SegmentedControl/SegmentedControlComponent.types";
+import type { ScopeHeaderView } from "@/presentation/components/displays/ScopeHeader/ScopeHeaderComponent.types";
+import type { ScorecardView } from "@/presentation/components/displays/Scorecards/ScorecardsComponent.types";
 import type { StatusSummaryProps } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent.types";
-import type { MarketSummaryComparison } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 
 export type MarketViewMessages = Messages["marketView"];
 
@@ -25,7 +23,7 @@ export interface MarketDrivers {
 	total: number;
 }
 
-export type ScoreCardView = Omit<ScoreCardProps, "testId" | "size">;
+export type ScoreCardView = ScorecardView;
 
 export interface MarketScorecardsView {
 	played: ScoreCardView;
@@ -33,16 +31,7 @@ export interface MarketScorecardsView {
 	cancellation: ScoreCardView;
 }
 
-export interface MarketHeaderView {
-	breadcrumb: BreadcrumbItem[];
-	breadcrumbLabel: string;
-	title: string;
-	level: string;
-	periodLabel: string;
-	periodOptions: SegmentedOption<StatsPeriod>[];
-	comparison: MarketSummaryComparison;
-	facilitiesActive: string | null;
-}
+export type MarketHeaderView = ScopeHeaderView;
 
 export type MarketStatusView = StatusSummaryProps;
 
