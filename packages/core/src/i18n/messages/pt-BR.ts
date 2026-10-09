@@ -457,7 +457,7 @@ export const ptBR: Messages = {
 		doingBest: "Melhor desempenho",
 		seeAllMarkets: "Ver todos os {count} mercados",
 		seeAllFacilities: "Ver todas as {count} instalações",
-		gamesLastPeriod: "Jogos nos {span}",
+		gamesLastPeriod: "Jogos realizados",
 		usersActivePlayers: "Jogadores ativos",
 		usersNewRegistrations: "Novos cadastros",
 		usersActiveUsers: "Usuários ativos",

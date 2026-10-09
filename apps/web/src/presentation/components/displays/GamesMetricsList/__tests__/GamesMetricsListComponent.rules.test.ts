@@ -124,7 +124,7 @@ describe("buildGamesCardView", () => {
 			MONTH,
 			formatters,
 		);
-		expect(view.title).toBe("Games in the last 28 days");
+		expect(view.title).toBe("Games played");
 		expect(view.hero).toEqual({
 			value: "212",
 			comparison: "vs 200 in the previous 28 days",
@@ -162,7 +162,7 @@ describe("buildGamesCardView", () => {
 			MONTH,
 			formatters,
 		);
-		expect(week.title).toBe("Games in the last 7 days");
+		expect(week.title).toBe("Games played");
 		expect(week.hero.comparison).toBe("vs 51 in the previous 7 days");
 		expect(week.series).toEqual(month.series);
 		expect(week.series.map((point) => point.label)).toEqual([

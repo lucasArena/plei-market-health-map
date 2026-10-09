@@ -320,10 +320,22 @@ button.map-icon-button:hover,
 }
 
 button.map-icon-button:active,
-button.map-icon-button[aria-expanded="true"],
 .map-frame .maplibregl-ctrl-group button:active {
   background-color: var(--map-icon-active);
   color: var(--foreground);
+}
+
+button.map-icon-button[aria-pressed="true"],
+button.map-icon-button[aria-expanded="true"] {
+  border-color: var(--pleiful-pitch-green-80);
+  background-color: var(--pleiful-pitch-green-80);
+  color: #fff;
+}
+
+button.map-icon-button[aria-pressed="true"]:hover,
+button.map-icon-button[aria-expanded="true"]:hover {
+  background-color: var(--pleiful-pitch-green-70);
+  color: #fff;
 }
 
 .map-frame .maplibregl-ctrl.maplibregl-ctrl-group {

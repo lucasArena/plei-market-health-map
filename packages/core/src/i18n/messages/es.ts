@@ -459,7 +459,7 @@ export const es: Messages = {
 		doingBest: "Mejor desempeño",
 		seeAllMarkets: "Ver los {count} mercados",
 		seeAllFacilities: "Ver las {count} sedes",
-		gamesLastPeriod: "Partidos en los {span}",
+		gamesLastPeriod: "Partidos jugados",
 		usersActivePlayers: "Jugadores activos",
 		usersNewRegistrations: "Nuevos registros",
 		usersActiveUsers: "Usuarios activos",

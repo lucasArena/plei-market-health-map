@@ -25,7 +25,7 @@ vi.mock("@/presentation/components/map/InsightPanel/InsightPanelComponent.rules"
 const VIEW = {
 	summary: "212 games across 84 active facilities.",
 	games: {
-		title: "Games in the last 28 days",
+		title: "Games played",
 		hero: {
 			value: "212",
 			comparison: "vs 200 in the previous 28 days",
@@ -219,7 +219,7 @@ describe("InsightPanel", () => {
 		expect(row).toHaveClass("py-[calc(0.375rem+2px)]");
 		expect(row.querySelector(".tabular-nums.text-right")).toHaveTextContent("12");
 		expect(screen.getByTestId("market-stat-players-skeleton")).toBeInTheDocument();
-		expect(screen.getByRole("heading", { name: "Games in the last 28 days" })).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Games played" })).toBeInTheDocument();
 		expect(screen.getByText("vs 200 in the previous 28 days")).toBeInTheDocument();
 		expect(screen.queryByRole("heading", { name: "Weekly activity" })).not.toBeInTheDocument();
 		expect(
@@ -274,9 +274,12 @@ describe("InsightPanel", () => {
 		expect(order.at(-1)).toBe("footer");
 		expect(screen.getByTestId("market-summary-insight")).not.toHaveAttribute("data-boxed");
 		// The Games title is an h3 styled as a metric label (11px regular, like "Unique players").
-		expect(
-			screen.getByRole("heading", { level: 3, name: "Games in the last 28 days" }),
-		).toHaveClass("text-[11px]", "font-normal", "text-[#525866]", "leading-[13px]");
+		expect(screen.getByRole("heading", { level: 3, name: "Games played" })).toHaveClass(
+			"text-[11px]",
+			"font-normal",
+			"text-[#525866]",
+			"leading-[13px]",
+		);
 		// Markets module: boxed like Games, label-styled title.
 		expect(screen.getByTestId("market-summary-markets")).toHaveAttribute("data-boxed");
 		expect(screen.getByRole("heading", { name: "Active markets" })).toHaveClass(
@@ -318,7 +321,7 @@ describe("InsightPanel", () => {
 		mockRules.mockReturnValue(rulesWith());
 		render(<InsightPanel {...PROPS} />);
 		for (const [title, icon] of [
-			["Games in the last 28 days", "games"],
+			["Games played", "games"],
 			["Active players", "users"],
 			["Active markets", "markets"],
 		] as const) {

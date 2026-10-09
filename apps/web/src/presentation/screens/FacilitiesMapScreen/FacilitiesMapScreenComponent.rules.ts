@@ -209,7 +209,6 @@ export function useFacilitiesMapScreenRules() {
 			facilities.filter(
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
-					(scope.kind !== "facility" || facility.id === scope.id) &&
 					(!metricFocus || metricFocus.facilityIds.includes(facility.id)),
 			),
 		[facilities, scope, metricFocus],

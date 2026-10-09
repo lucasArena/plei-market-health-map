@@ -8,7 +8,7 @@ import {
 } from "@/presentation/components/displays/StatTiles/StatTilesComponent.styles";
 
 const VIEW: GamesCardView = {
-	title: "Games in the last 28 days",
+	title: "Games played",
 	hero: {
 		value: "172",
 		comparison: "vs 178 in the previous 28 days",
@@ -77,13 +77,13 @@ describe("GamesMetricsList", () => {
 	it("leads with games played, its pill and the previous-period comparison", () => {
 		render(<GamesMetricsList view={VIEW} messages={EN_MESSAGES.marketSummary} />);
 
-		const title = screen.getByRole("heading", { level: 3, name: "Games in the last 28 days" });
+		const title = screen.getByRole("heading", { level: 3, name: "Games played" });
 		// Styled like the "Unique players" label: 11px regular #525866 on a 13px line, 3px above the number.
 		expect(title).toHaveClass(...METRIC_LABEL_CLASS.split(" "), "leading-[13px]");
 		expect(title).not.toHaveClass("text-base", "font-semibold");
 		expect(title.parentElement).toHaveClass("gap-[3px]");
 		expect(title.nextElementSibling).toBe(screen.getByTestId("games-hero"));
-		expect(screen.getByRole("region", { name: "Games in the last 28 days" })).toBeInTheDocument();
+		expect(screen.getByRole("region", { name: "Games played" })).toBeInTheDocument();
 		const hero = screen.getByTestId("games-hero");
 		expect(within(hero).getByText("172")).toBeInTheDocument();
 		expect(within(hero).getByText("vs 178 in the previous 28 days")).toBeInTheDocument();
@@ -230,7 +230,7 @@ describe("GamesMetricsList", () => {
 			expect(screen.getByText(label)).toHaveClass(...METRIC_LABEL_CLASS.split(" "));
 		}
 		// One subtle container wraps the whole module; the rows use spacing only (no inner box or dividers).
-		const module = screen.getByRole("region", { name: "Games in the last 28 days" });
+		const module = screen.getByRole("region", { name: "Games played" });
 		expect(module).toHaveClass(
 			"rounded-[10px]",
 			"bg-foreground/[0.03]",
