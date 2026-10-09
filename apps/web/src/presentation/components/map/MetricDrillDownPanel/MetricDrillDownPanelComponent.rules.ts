@@ -512,9 +512,9 @@ export function useMetricDrillDownPanelRules({
 		changeDisplay,
 		headlineChange,
 		comparisonLabel: {
-			week: "WOW",
-			month: "MOM",
-			year: "YOY",
+			week: "WoW",
+			month: "MoM",
+			year: "YoY",
 			"previous-period": messages.drillDown.compare,
 		}[comparison],
 		comparisonHelp: `${{ week: messages.drillDown.compareWeek, month: messages.drillDown.compareMonth, year: messages.drillDown.compareYear, "previous-period": messages.drillDown.compare }[comparison]}. ${messages.drillDown.compareHelp}`,

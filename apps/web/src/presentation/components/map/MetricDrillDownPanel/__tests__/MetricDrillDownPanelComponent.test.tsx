@@ -896,30 +896,36 @@ describe("drill-down changes", () => {
 	it("changes comparison independently from sorting and range", () => {
 		setup();
 		const compare = screen.getByRole("combobox", { name: "Compare" });
-		expect(compare).toHaveTextContent("MOM");
+		expect(compare).toHaveTextContent("MoM");
 		expect(compare).toHaveAttribute("title", expect.stringContaining("Month over month"));
 		expect(compare.closest("fieldset")?.parentElement).toBe(
 			screen.getByRole("combobox", { name: "Date range" }).closest("fieldset")?.parentElement,
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Change" }));
 		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
-		fireEvent.click(screen.getByRole("option", { name: "Year over year" }));
+		expect(screen.getByRole("option", { name: "YoY" })).toHaveAttribute("title", "Year over year");
+		expect(screen.getByRole("option", { name: "MoM" })).toHaveAttribute(
+			"title",
+			"Month over month",
+		);
+		expect(screen.getByRole("option", { name: "WoW" })).toHaveAttribute("title", "Week over week");
+		fireEvent.click(screen.getByRole("option", { name: "YoY" }));
 		expect(comparisonInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ range: "28d", comparison: "year" }),
 		);
 		expect(screen.getByTestId("drill-down-headline-change")).toHaveClass("font-normal");
-		expect(compare).toHaveTextContent("YOY");
+		expect(compare).toHaveTextContent("YoY");
 		expect(compare).toHaveAttribute("title", expect.stringContaining("Year over year"));
 		expect(screen.getByRole("button", { name: "Change ↓" }).closest("th")).toHaveAttribute(
 			"aria-sort",
 			"descending",
 		);
 		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
-		fireEvent.click(screen.getByRole("option", { name: "Week over week" }));
+		fireEvent.click(screen.getByRole("option", { name: "WoW" }));
 		expect(comparisonInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ range: "28d", comparison: "week" }),
 		);
-		expect(compare).toHaveTextContent("WOW");
+		expect(compare).toHaveTextContent("WoW");
 		select("Slice", "time");
 		expect(screen.queryByRole("combobox", { name: "Compare" })).not.toBeInTheDocument();
 	});

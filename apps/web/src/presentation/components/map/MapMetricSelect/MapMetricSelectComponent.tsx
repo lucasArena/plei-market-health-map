@@ -50,6 +50,7 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 							key={option.value}
 							type="button"
 							role="option"
+							title={option.tooltip}
 							aria-selected={rules.isSelected(option.value)}
 							data-value={option.value}
 							aria-haspopup={option.children ? "listbox" : undefined}
@@ -113,6 +114,7 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 								key={option.value}
 								type="button"
 								role="option"
+								title={option.tooltip}
 								aria-selected={option.value === props.value}
 								onClick={() => rules.choose(option.value)}
 								className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs aria-selected:bg-foreground/[0.05] ${MAP_SEARCH_OPTION_HOVER_CLASS}`}
