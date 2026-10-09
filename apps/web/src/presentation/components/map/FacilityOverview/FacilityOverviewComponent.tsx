@@ -13,25 +13,18 @@ export function FacilityOverview(props: Readonly<FacilityOverviewProps>) {
 	const {
 		demand,
 		header,
-		period,
 		rank,
 		satisfaction,
 		satisfactionPending,
 		scorecardsTitle,
 		sections,
-		setPeriod,
 		trendAside,
 		trendTitle,
 	} = useFacilityOverviewRules(props);
 
 	return (
 		<div className="space-y-4" data-testid="facility-overview">
-			<ScopeHeader
-				header={header}
-				period={period}
-				onPeriodChange={setPeriod}
-				testId="facility-overview"
-			/>
+			<ScopeHeader header={header} testId="facility-overview" />
 			{sections && (
 				<>
 					<StatusSummary {...sections.status} />

@@ -79,6 +79,7 @@ describe("FacilityOverview", () => {
 		render(<FacilityOverview facilityId="889" facilityName="Pegaso HTX" marketName="Houston" />);
 
 		expect(screen.getByRole("heading", { name: "Pegaso HTX" })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "28D" })).not.toBeInTheDocument();
 		expect(screen.getByTestId("status-summary")).toHaveTextContent("Needs attention");
 		expect(screen.getByTestId("score-played")).toBeInTheDocument();
 		expect(screen.getByTestId("facility-games-trend")).toBeInTheDocument();
