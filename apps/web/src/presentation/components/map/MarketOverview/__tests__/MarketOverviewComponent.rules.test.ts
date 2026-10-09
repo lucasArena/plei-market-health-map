@@ -15,13 +15,12 @@ import {
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockSetScope = vi.fn();
-const mockSetPeriod = vi.fn();
 let mockPeriod: StatsPeriod = "month";
 const mockUseMarketSummary = vi.fn();
 const mockUseMarketGameInsights = vi.fn();
 
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
-	useMapScope: () => ({ period: mockPeriod, setPeriod: mockSetPeriod, setScope: mockSetScope }),
+	useMapScope: () => ({ period: mockPeriod, setMapNavigation: mockSetScope }),
 }));
 vi.mock("@/presentation/hooks/use-market/use-market-summary", () => ({
 	useMarketSummary: (...args: unknown[]) => mockUseMarketSummary(...args),
@@ -292,8 +291,6 @@ describe("useMarketOverviewRules", () => {
 
 		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
 		expect(mockSetScope).toHaveBeenCalledWith({ kind: "all" });
-		act(() => result.current.setPeriod("week"));
-		expect(mockSetPeriod).toHaveBeenCalledWith("week");
 	});
 
 	it("waits for the summary before building sections", () => {

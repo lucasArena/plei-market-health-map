@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { ScopeHeader } from "@/presentation/components/displays/ScopeHeader/ScopeHeaderComponent";
 
 const HEADER = {
@@ -10,21 +10,13 @@ const HEADER = {
 	title: "Pegaso HTX",
 	level: "Facility",
 	subtitle: "123 Main St, Houston",
-	periodLabel: "Comparison period",
-	periodOptions: [
-		{ value: "week" as const, label: "7D" },
-		{ value: "month" as const, label: "28D" },
-	],
 	comparison: { current: "Sep 11 – Oct 8, 2026", previous: "vs Aug 14 – Sep 10" },
 	footnote: "30 of 89 facilities active",
 };
 
 describe("ScopeHeader", () => {
-	it("shows where you are, the period switch, the dates and a footnote", () => {
-		const onPeriodChange = vi.fn();
-		render(
-			<ScopeHeader header={HEADER} period="month" onPeriodChange={onPeriodChange} testId="scope" />,
-		);
+	it("shows where you are, the dates and a footnote", () => {
+		render(<ScopeHeader header={HEADER} testId="scope" />);
 
 		expect(screen.getByRole("heading", { name: "Pegaso HTX" })).toBeInTheDocument();
 		expect(screen.getByText("Facility · 123 Main St, Houston")).toBeInTheDocument();
@@ -32,11 +24,10 @@ describe("ScopeHeader", () => {
 			"Sep 11 – Oct 8, 2026vs Aug 14 – Sep 10",
 		);
 		expect(screen.getByText("30 of 89 facilities active")).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: "7D" }));
-		expect(onPeriodChange).toHaveBeenCalledWith("week");
+		expect(screen.queryByRole("button", { name: "7D" })).not.toBeInTheDocument();
 	});
 
-	it("leaves out an empty subtitle, footnote and the period switch when not given", () => {
+	it("leaves out an empty subtitle and footnote", () => {
 		render(<ScopeHeader header={{ ...HEADER, subtitle: null, footnote: null }} testId="scope" />);
 
 		expect(screen.queryByRole("button", { name: "7D" })).not.toBeInTheDocument();

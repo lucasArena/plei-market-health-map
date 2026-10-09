@@ -13,8 +13,6 @@ const HEADER = {
 	title: "Pegaso HTX",
 	level: "Facility",
 	subtitle: "123 Main St",
-	periodLabel: "Comparison period",
-	periodOptions: [{ value: "month", label: "28D" }],
 	comparison: { current: "Sep 11 – Oct 8, 2026", previous: "vs Aug 14 – Sep 10" },
 	footnote: null,
 };
@@ -23,8 +21,6 @@ const CARD = { label: "Games played", info: "i", value: "222", change: null };
 
 const BASE = {
 	header: HEADER,
-	period: "month",
-	setPeriod: vi.fn(),
 	scorecardsTitle: "Scorecards",
 	trendTitle: "Games trend",
 	trendAside: "Weekly, last 8 weeks",

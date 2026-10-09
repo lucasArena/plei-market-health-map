@@ -61,6 +61,10 @@ export function useMarketSummaryToggleRules() {
 	}, [isOnMap]);
 
 	useEffect(() => {
+		if (activePanel === "market-summary" && state === "closed") setState("open");
+	}, [activePanel, state]);
+
+	useEffect(() => {
 		if (!opensOnLoad || !isOnMap || hasOpenedOnLoad.current) return;
 		hasOpenedOnLoad.current = true;
 		setState("open");

@@ -20,6 +20,7 @@ import {
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
+import { useSidePanels } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
 
 export function useFacilityOverviewRules({
@@ -28,17 +29,23 @@ export function useFacilityOverviewRules({
 	marketName,
 }: FacilityOverviewProps) {
 	const { locale, messages } = useMessages();
-	const { period, setMapNavigation, setScope } = useMapScope();
+	const { period, setMapNavigation } = useMapScope();
+	const { openPanel } = useSidePanels();
 	const report = useFacilityReservationStats(facilityId).data;
 	const marketId = report?.facility.marketId ?? null;
 	const formatters = useMemo(() => createDetailFormatters(locale), [locale]);
 	const periodMessages = messages.statsPeriods[period];
 	const facilityMessages = messages.facilityView;
 
-	const showAllMarkets = useCallback(() => setScope({ kind: "all" }), [setScope]);
+	const showAllMarkets = useCallback(() => {
+		openPanel("market-summary");
+		setMapNavigation({ kind: "all" });
+	}, [openPanel, setMapNavigation]);
 	const showMarket = useCallback(() => {
-		if (marketId) setMapNavigation({ kind: "market", id: marketId, name: marketName });
-	}, [marketId, marketName, setMapNavigation]);
+		if (!marketId) return;
+		openPanel("market-summary");
+		setMapNavigation({ kind: "market", id: marketId, name: marketName });
+	}, [marketId, marketName, openPanel, setMapNavigation]);
 
 	const header = useMemo<ScopeHeaderView>(
 		() => ({
@@ -51,11 +58,6 @@ export function useFacilityOverviewRules({
 			title: facilityName,
 			level: facilityMessages.level,
 			subtitle: report?.facility.address ?? null,
-			periodLabel: messages.statsPeriods.switchLabel,
-			periodOptions: [
-				{ value: "week", label: messages.statsPeriods.week.short },
-				{ value: "month", label: messages.statsPeriods.month.short },
-			],
 			comparison: buildComparisonRange(
 				localDay(new Date(), browserTimeZone()),
 				period,
