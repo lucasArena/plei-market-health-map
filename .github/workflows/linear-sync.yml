@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   opened-to-staging:
@@ -51,10 +52,24 @@ jobs:
       LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
       TITLE: ${{ github.event.pull_request.title }}
       HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      GH_TOKEN: ${{ github.token }}
+      PULL_REQUEST: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: Move the ticket to Done
-        run: node .github/scripts/linear/move-issues.mjs Done "$TITLE" "$HEAD_REF" --skip-from Released,Canceled
+      - name: Read every commit title in the pull request and the pull requests they reference
+        run: |
+          titles=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PULL_REQUEST/commits" --jq '.[].commit.message | split("\n")[0]')
+          stacked=""
+          for number in $(grep -oE '#[0-9]+' <<< "$titles" | tr -d '#' | sort -u); do
+            stacked+=$'\n'$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.title + " " + .head.ref' 2>/dev/null || true)
+          done
+          {
+            echo "COMMIT_TITLES<<COMMIT_TITLES_END"
+            echo "$titles$stacked"
+            echo "COMMIT_TITLES_END"
+          } >> "$GITHUB_ENV"
+      - name: Move the tickets to Done
+        run: node .github/scripts/linear/move-issues.mjs Done "$TITLE" "$HEAD_REF" "$COMMIT_TITLES" --skip-from Released,Canceled
