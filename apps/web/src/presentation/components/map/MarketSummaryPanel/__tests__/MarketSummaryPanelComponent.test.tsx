@@ -83,6 +83,7 @@ function rulesWith(overrides: object = {}) {
 		gamesTrend: null,
 		playersTrend: null,
 		isUsersPending: false,
+		supplyDemand: null,
 		gamesTitle: "Games the last 7 days",
 		userMetrics: [
 			{
@@ -230,6 +231,30 @@ describe("MarketSummaryPanel", () => {
 		expect(
 			screen.getByRole("button", { name: "700 active players, week ending Oct 1" }),
 		).toBeInTheDocument();
+	});
+
+	it("shows the supply and demand balance for a selected market", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				isRedesigned: true,
+				supplyDemand: {
+					status: "underSupplied",
+					statusLabel: "Under-supplied",
+					ratio: "14.0",
+					ratioLabel: "active users per game posted",
+					benchmark: "vs 10.0 across all markets · 1.4×",
+					advice: "Add game slots or facilities.",
+				},
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		const card = screen.getByRole("region", { name: "Supply & demand" });
+		expect(screen.getByTestId("supply-demand")).toHaveAttribute("data-status", "underSupplied");
+		expect(card).toHaveTextContent(
+			"Under-supplied14.0active users per game postedvs 10.0 across all markets · 1.4×Add game slots or facilities.",
+		);
 	});
 
 	it("tints the written insight with the overall trend", () => {

@@ -24,6 +24,7 @@ import {
 	buildScopeHeading,
 	buildScopeLine,
 	buildScopeTiles,
+	buildSupplyDemandView,
 	buildUserMetrics,
 	contributorFactsFrom,
 	useMarketSummaryPanelRules,
@@ -438,6 +439,51 @@ describe("redesigned panel header and footer", () => {
 			tooltipLabel: expect.stringMatching(/^active players · /),
 			ariaLabel: expect.stringMatching(/^7 active players, week ending /),
 		});
+	});
+
+	it("compares active users per game posted with all markets", () => {
+		const withPosted = (scheduledLast28Days: number) => ({
+			...MARKET_SUMMARY,
+			stats: { ...MARKET_SUMMARY.stats, scheduledLast28Days },
+		});
+		const withUsers = (activeUsers: number) => ({
+			periods: {
+				...MARKET_AUDIENCE.periods,
+				month: { ...MARKET_AUDIENCE.periods.month, activeUsers },
+			},
+		});
+		const allMarkets = { summary: withPosted(1000), audience: withUsers(10000) };
+		const view = (posted: number, users: number) =>
+			buildSupplyDemandView(
+				{ summary: withPosted(posted), audience: withUsers(users) },
+				allMarkets,
+				"month",
+				messages,
+				formatters,
+			);
+
+		expect(view(100, 1400)).toEqual({
+			status: "underSupplied",
+			statusLabel: "Under-supplied",
+			ratio: "14.0",
+			ratioLabel: "active users per game posted",
+			benchmark: "vs 10.0 across all markets · 1.40×",
+			advice: messages.supplyDemandAdvice.underSupplied,
+		});
+		expect(view(100, 1000)?.status).toBe("balanced");
+		expect(view(100, 1240)?.status).toBe("balanced");
+		expect(view(100, 800)?.status).toBe("overSupplied");
+		expect(view(0, 800)).toBeNull();
+		expect(buildSupplyDemandView(null, allMarkets, "month", messages, formatters)).toBeNull();
+		expect(
+			buildSupplyDemandView(
+				{ summary: withPosted(100), audience: withUsers(800) },
+				{ summary: withPosted(0), audience: withUsers(800) },
+				"month",
+				messages,
+				formatters,
+			),
+		).toBeNull();
 	});
 
 	it("colors the All markets insight by the overall games trend", () => {

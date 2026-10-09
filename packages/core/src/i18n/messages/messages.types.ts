@@ -323,6 +323,11 @@ export interface Messages {
 		gamesPointLabel: string;
 		playersPointTooltip: string;
 		playersPointLabel: string;
+		sectionSupplyDemand: string;
+		supplyDemandRatio: string;
+		supplyDemandBenchmark: string;
+		supplyDemandStatus: Record<"underSupplied" | "balanced" | "overSupplied", string>;
+		supplyDemandAdvice: Record<"underSupplied" | "balanced" | "overSupplied", string>;
 		trendDeclining: string;
 		trendStable: string;
 		trendGrowing: string;

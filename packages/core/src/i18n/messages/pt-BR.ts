@@ -362,6 +362,21 @@ export const ptBR: Messages = {
 		gamesPointLabel: "{games} jogos, semana até {week}",
 		playersPointTooltip: "jogadores ativos · {week}",
 		playersPointLabel: "{players} jogadores ativos, semana até {week}",
+		sectionSupplyDemand: "Oferta e demanda",
+		supplyDemandRatio: "usuários ativos por jogo publicado",
+		supplyDemandBenchmark: "vs {value} em todos os mercados · {index}×",
+		supplyDemandStatus: {
+			underSupplied: "Pouca oferta",
+			balanced: "Equilibrado",
+			overSupplied: "Muita oferta",
+		},
+		supplyDemandAdvice: {
+			underSupplied:
+				"Mais pessoas usam o app aqui do que os jogos publicados conseguem atender. Adicione horários ou locais.",
+			balanced: "Os jogos publicados acompanham a demanda aqui.",
+			overSupplied:
+				"Há mais jogos publicados aqui do que a demanda preenche. Foque em atrair jogadores.",
+		},
 		dataAsOf: "Dados de {time}",
 		reportWrongNumber: "Reportar um número errado",
 	},

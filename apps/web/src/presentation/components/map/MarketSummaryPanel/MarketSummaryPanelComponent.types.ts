@@ -82,6 +82,7 @@ export interface MarketSummaryMetricsProps {
 	gamesTitle: string;
 	isUsersPending: boolean;
 	playersTrend: GamesTrendView | null;
+	supplyDemand: SupplyDemandView | null;
 	userMetrics: GamesMetricView[];
 	view: MarketSummaryViewModel;
 }
@@ -112,4 +113,20 @@ export interface UsersSectionBodyProps {
 	isUsersPending: boolean;
 	playersTrend: GamesTrendView | null;
 	userMetrics: GamesMetricView[];
+}
+
+export type SupplyDemandStatus = "underSupplied" | "balanced" | "overSupplied";
+
+export interface SupplyDemandView {
+	status: SupplyDemandStatus;
+	statusLabel: string;
+	ratio: string;
+	ratioLabel: string;
+	benchmark: string;
+	advice: string;
+}
+
+export interface SupplyDemandCardProps {
+	title: string;
+	view: SupplyDemandView;
 }

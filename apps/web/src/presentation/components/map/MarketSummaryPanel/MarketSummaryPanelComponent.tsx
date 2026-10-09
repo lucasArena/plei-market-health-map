@@ -12,7 +12,10 @@ import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTile
 import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
-import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
+import {
+	MARKET_SUMMARY_PANEL_CLASS,
+	SUPPLY_DEMAND_PILL,
+} from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
 import type {
 	InsightCardProps,
 	MarketRankListProps,
@@ -20,6 +23,7 @@ import type {
 	MarketSummaryHeaderProps,
 	MarketSummaryMetricsProps,
 	MarketSummaryPanelProps,
+	SupplyDemandCardProps,
 	UsersSectionBodyProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
@@ -93,6 +97,30 @@ function UsersSectionBody({
 		return <TrendChartSkeleton testId="users-trend-skeleton" metricRows={3} hasLabel />;
 	}
 	return <MetricRows metrics={userMetrics} testId="user-metrics" />;
+}
+
+function SupplyDemandCard({ title, view }: Readonly<SupplyDemandCardProps>) {
+	return (
+		<PanelSection title={title} testId="panel-section-supply-demand">
+			<div className="space-y-2.5" data-testid="supply-demand" data-status={view.status}>
+				<span
+					className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${SUPPLY_DEMAND_PILL[view.status]}`}
+				>
+					{view.statusLabel}
+				</span>
+				<div className="flex items-end gap-2.5">
+					<p className="text-[36px] leading-[42px] font-semibold tracking-[-0.02em] text-[#1d1d1f] tabular-nums">
+						{view.ratio}
+					</p>
+					<div className="flex flex-col gap-[3px] pb-[5px] text-xs">
+						<p className="font-medium text-[#1d1d1f]">{view.ratioLabel}</p>
+						<p className="text-[#525866] tabular-nums">{view.benchmark}</p>
+					</div>
+				</div>
+				<p className="text-[13px] leading-[18px] text-[#525866]">{view.advice}</p>
+			</div>
+		</PanelSection>
+	);
 }
 
 function RankRows({ rows, emptyLabel }: Readonly<MarketRankRowsProps>) {
@@ -180,6 +208,7 @@ function MarketSummaryMetrics({
 	isUsersPending,
 	rankingsEmptyLabel,
 	playersTrend,
+	supplyDemand,
 	userMetrics,
 	view,
 }: Readonly<MarketSummaryMetricsProps>) {
@@ -238,6 +267,9 @@ function MarketSummaryMetrics({
 					/>
 				</PanelSection>
 			)}
+			{supplyDemand && (
+				<SupplyDemandCard title={messages.sectionSupplyDemand} view={supplyDemand} />
+			)}
 		</>
 	);
 }
@@ -263,6 +295,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 		gamesTitle,
 		isUsersPending,
 		playersTrend,
+		supplyDemand,
 		userMetrics,
 		status,
 		view,
@@ -332,6 +365,7 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 							gamesTitle={gamesTitle}
 							isUsersPending={isUsersPending}
 							playersTrend={playersTrend}
+							supplyDemand={supplyDemand}
 							userMetrics={userMetrics}
 							view={view}
 						/>

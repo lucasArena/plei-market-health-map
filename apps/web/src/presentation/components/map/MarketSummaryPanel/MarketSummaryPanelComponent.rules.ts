@@ -56,6 +56,8 @@ import type {
 	MarketSummaryMessages,
 	MarketSummaryPanelProps,
 	MarketSummaryViewModel,
+	SupplyDemandStatus,
+	SupplyDemandView,
 	TrendViewInput,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
@@ -471,6 +473,54 @@ export function buildUserMetrics(
 	];
 }
 
+export const SUPPLY_DEMAND_THRESHOLD = { underSupplied: 1.25, overSupplied: 0.8 };
+
+function usersPerPostedGame(
+	summary: MarketSummaryView,
+	audience: MarketAudienceView,
+	period: StatsPeriod,
+): number | null {
+	const posted = toReservationPeriodView(summary.stats, period).scheduled;
+	if (posted <= 0) return null;
+	return audience.periods[period].activeUsers / posted;
+}
+
+export function buildSupplyDemandView(
+	market: { summary: MarketSummaryView; audience: MarketAudienceView } | null,
+	allMarkets: { summary: MarketSummaryView; audience: MarketAudienceView } | null,
+	period: StatsPeriod,
+	messages: MarketSummaryMessages,
+	formatters: DetailFormatters,
+): SupplyDemandView | null {
+	if (!market || !allMarkets) return null;
+	const ratio = usersPerPostedGame(market.summary, market.audience, period);
+	const benchmark = usersPerPostedGame(allMarkets.summary, allMarkets.audience, period);
+	if (ratio === null || benchmark === null || benchmark <= 0) return null;
+	const index = ratio / benchmark;
+	const status: SupplyDemandStatus =
+		{
+			[`${index <= SUPPLY_DEMAND_THRESHOLD.overSupplied}`]: "overSupplied" as const,
+			[`${index >= SUPPLY_DEMAND_THRESHOLD.underSupplied}`]: "underSupplied" as const,
+		}.true ?? "balanced";
+	const decimals = (digits: number) => (value: number) =>
+		new Intl.NumberFormat(formatters.number.resolvedOptions().locale, {
+			maximumFractionDigits: digits,
+			minimumFractionDigits: digits,
+		}).format(value);
+	const oneDecimal = decimals(1);
+	return {
+		status,
+		statusLabel: messages.supplyDemandStatus[status],
+		ratio: oneDecimal(ratio),
+		ratioLabel: messages.supplyDemandRatio,
+		benchmark: formatMessage(messages.supplyDemandBenchmark, {
+			value: oneDecimal(benchmark),
+			index: decimals(2)(index),
+		}),
+		advice: messages.supplyDemandAdvice[status],
+	};
+}
+
 export function buildGamesMetrics(
 	games: ReservationPeriodView,
 	messages: MarketSummaryMessages,
@@ -740,6 +790,9 @@ export function useMarketSummaryPanelRules({
 	const isMarketScope = facilityId === null;
 	const { departments } = useMarketSummaryFilters();
 	const isRedesigned = useFeatureFlag("insights-panel-v3");
+	const isBalanceShown = isRedesigned && marketId !== null;
+	const allMarketsSummaryQuery = useMarketSummary(null, isBalanceShown, departments);
+	const allMarketsAudienceQuery = useMarketAudience(null, isBalanceShown);
 	const summaryQuery = useMarketSummary(marketId, isMarketScope, departments);
 	const insightsQuery = useMarketGameInsights(
 		marketId,
@@ -909,6 +962,28 @@ export function useMarketSummaryPanelRules({
 				: null,
 		[formatters, messages.marketSummary, period, periodMessages, playerStats, userMetrics],
 	);
+	const supplyDemand = useMemo(() => {
+		const pair = (summaryData?: MarketSummaryView, audienceData?: MarketAudienceView) =>
+			summaryData && audienceData ? { summary: summaryData, audience: audienceData } : null;
+		return isBalanceShown
+			? buildSupplyDemandView(
+					pair(summary, audienceQuery.data),
+					pair(allMarketsSummaryQuery.data, allMarketsAudienceQuery.data),
+					period,
+					messages.marketSummary,
+					formatters,
+				)
+			: null;
+	}, [
+		allMarketsAudienceQuery.data,
+		allMarketsSummaryQuery.data,
+		audienceQuery.data,
+		formatters,
+		isBalanceShown,
+		messages.marketSummary,
+		period,
+		summary,
+	]);
 	const dataAsOf = buildDataAsOf(reportQuery.dataUpdatedAt, locale, messages.marketSummary);
 	const reportWrongNumber = useCallback(() => requestFeedback("bug"), []);
 
@@ -949,6 +1024,7 @@ export function useMarketSummaryPanelRules({
 		onClose,
 		isUsersPending: !playerStats && playerQuery.isPending,
 		playersTrend,
+		supplyDemand,
 		userMetrics,
 		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,

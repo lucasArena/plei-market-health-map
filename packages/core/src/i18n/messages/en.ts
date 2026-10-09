@@ -355,6 +355,20 @@ export const en: Messages = {
 		gamesPointLabel: "{games} games, week ending {week}",
 		playersPointTooltip: "active players · {week}",
 		playersPointLabel: "{players} active players, week ending {week}",
+		sectionSupplyDemand: "Supply & demand",
+		supplyDemandRatio: "active users per game posted",
+		supplyDemandBenchmark: "vs {value} across all markets · {index}×",
+		supplyDemandStatus: {
+			underSupplied: "Under-supplied",
+			balanced: "Balanced",
+			overSupplied: "Over-supplied",
+		},
+		supplyDemandAdvice: {
+			underSupplied:
+				"More people use the app here than the games posted can serve. Add game slots or facilities.",
+			balanced: "Games posted keep pace with demand here.",
+			overSupplied: "More games are posted here than demand fills. Focus on growing players.",
+		},
 		dataAsOf: "Data as of {time}",
 		reportWrongNumber: "Report a wrong number",
 	},
