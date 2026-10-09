@@ -192,6 +192,14 @@ export const en: Messages = {
 		neverPlayed: "No games played yet",
 	},
 	drillDown: {
+		compare: "Compare",
+		compareWeek: "Week over week",
+		compareMonth: "Month over month",
+		compareYear: "Year over year",
+		compareHelp:
+			"Compare the selected date range with the same-length window ending one week, calendar month or calendar year earlier.",
+		changeComparison: "{change} · {comparison}",
+
 		change: "Change",
 		changeNew: "New",
 		changeStable: "stable",

@@ -1,5 +1,8 @@
 import type { GameDepartment } from "@core/domain";
 
+export const DRILL_DOWN_COMPARISONS = ["previous-period", "week", "month", "year"] as const;
+export type DrillDownComparison = (typeof DRILL_DOWN_COMPARISONS)[number];
+
 export const DRILL_DOWN_RANGES = ["7d", "28d", "90d", "6m", "12m"] as const;
 export type DrillDownRange = (typeof DRILL_DOWN_RANGES)[number];
 
@@ -53,6 +56,7 @@ export const DRILL_DOWN_GRAINS = ["range", "day", "week", "month"] as const;
 export type DrillDownGrain = (typeof DRILL_DOWN_GRAINS)[number];
 
 export interface GetMetricDrillDownInput {
+	comparison?: DrillDownComparison;
 	measure: DrillDownMeasure;
 	range: DrillDownRange;
 	slice: DrillDownSlice;

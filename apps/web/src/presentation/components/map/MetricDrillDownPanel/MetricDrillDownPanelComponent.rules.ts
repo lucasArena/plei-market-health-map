@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+	DrillDownComparison,
 	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownRange,
@@ -14,7 +15,6 @@ import {
 	canSliceDrillDownByDepartment,
 	crossesAppTrackingSourceSwitch,
 	DRILL_DOWN_DEPARTMENTS,
-	DRILL_DOWN_RANGE_DAYS,
 	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
@@ -76,6 +76,9 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const [comparison, setComparison] = useState<DrillDownComparison>(() =>
+		period === "week" ? "week" : "month",
+	);
 	const [grain, setGrainState] = useState<DrillDownGrain>("day");
 	const isTime = selection.slice === "time";
 	const isAppActivity = isAppActivityMeasure(selection.measure);
@@ -139,6 +142,7 @@ export function useMetricDrillDownPanelRules({
 		slice: selection.slice,
 		segment: selection.segment,
 		grain: isTime ? grain : "range",
+		comparison,
 		marketId: {
 			[`${isAppActivity}`]: activityMarketId,
 			[`${scope.kind === "market"}`]: scope.kind === "market" ? scope.id : undefined,
@@ -487,12 +491,19 @@ export function useMetricDrillDownPanelRules({
 			: view.previousTotal,
 	);
 	return {
+		comparison,
+		setComparison,
 		changeDisplay,
 		headlineChange: {
 			...headlineChange,
-			label: formatMessage(messages.drillDown.changePrior, {
+			label: formatMessage(messages.drillDown.changeComparison, {
 				change: headlineChange.label,
-				days: DRILL_DOWN_RANGE_DAYS[range],
+				comparison: {
+					week: messages.drillDown.compareWeek,
+					month: messages.drillDown.compareMonth,
+					year: messages.drillDown.compareYear,
+					"previous-period": messages.drillDown.changePrior,
+				}[comparison],
 			}),
 		},
 		messages: messages.drillDown,

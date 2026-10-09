@@ -175,6 +175,13 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		compare: string;
+		compareWeek: string;
+		compareMonth: string;
+		compareYear: string;
+		compareHelp: string;
+		changeComparison: string;
+
 		change: string;
 		changeNew: string;
 		changeStable: string;

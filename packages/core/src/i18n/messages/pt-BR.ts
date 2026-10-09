@@ -196,6 +196,14 @@ export const ptBR: Messages = {
 		neverPlayed: "Nenhum jogo realizado ainda",
 	},
 	drillDown: {
+		compare: "Comparar",
+		compareWeek: "Semana a semana",
+		compareMonth: "Mês a mês",
+		compareYear: "Ano a ano",
+		compareHelp:
+			"Compare o intervalo selecionado com uma janela de igual duração terminando uma semana, um mês ou um ano antes.",
+		changeComparison: "{change} · {comparison}",
+
 		change: "Variação",
 		changeNew: "Novo",
 		changeStable: "Estável",

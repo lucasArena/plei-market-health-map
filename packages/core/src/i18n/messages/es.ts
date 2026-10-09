@@ -197,6 +197,14 @@ export const es: Messages = {
 		neverPlayed: "Aún no se jugaron partidos",
 	},
 	drillDown: {
+		compare: "Comparar",
+		compareWeek: "Semana a semana",
+		compareMonth: "Mes a mes",
+		compareYear: "Año a año",
+		compareHelp:
+			"Compara el rango seleccionado con una ventana de igual duración que termina una semana, un mes o un año antes.",
+		changeComparison: "{change} · {comparison}",
+
 		change: "Cambio",
 		changeNew: "Nuevo",
 		changeStable: "Estable",

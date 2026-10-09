@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+	DrillDownComparison,
 	DrillDownMeasure,
 	DrillDownRange,
 	DrillDownSegment,
@@ -111,10 +112,26 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						</p>
 					)}
 					<p className="text-xs">{rules.measureLabel}</p>
+					{!rules.isTime && (
+						<div className="mt-2 inline-block max-w-full">
+							<MapMetricSelect
+								variant="pill"
+								label={m.compare}
+								help={m.compareHelp}
+								value={rules.comparison}
+								onChange={(value) => rules.setComparison(value as DrillDownComparison)}
+								options={[
+									{ value: "week", label: m.compareWeek },
+									{ value: "month", label: m.compareMonth },
+									{ value: "year", label: m.compareYear },
+								]}
+							/>
+						</div>
+					)}
 					{!rules.isTime && !rules.isLoading && !rules.isError && (
 						<p
 							style={{ color: rules.headlineChange.color }}
-							className={`mt-1 text-xs tabular-nums ${rules.headlineChange.className}`}
+							className={`mt-1 text-xs font-normal tabular-nums ${rules.headlineChange.className}`}
 						>
 							{rules.headlineChange.label}
 						</p>
@@ -460,7 +477,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 											</th>
 											{!rules.isTime && (
 												<th
-													className="px-2 text-right whitespace-nowrap"
+													className="px-2 text-right whitespace-nowrap font-normal"
 													aria-sort={
 														rules.sort === "change-asc"
 															? "ascending"
@@ -532,7 +549,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 														style={{
 															color: rules.changeDisplay(row.value, row.previousValue).color,
 														}}
-														className={`px-2 text-right whitespace-nowrap tabular-nums ${rules.changeDisplay(row.value, row.previousValue).className}`}
+														className={`px-2 text-right whitespace-nowrap font-normal tabular-nums ${rules.changeDisplay(row.value, row.previousValue).className}`}
 													>
 														{rules.changeDisplay(row.value, row.previousValue).label}
 													</td>

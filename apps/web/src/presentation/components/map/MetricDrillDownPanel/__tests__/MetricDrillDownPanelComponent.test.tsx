@@ -20,6 +20,7 @@ const navigate = vi.fn();
 const retry = vi.fn();
 const setMetricFocus = vi.fn();
 const demandInputs = vi.fn();
+const comparisonInputs = vi.fn();
 let scope: MapScope = { kind: "all" };
 let period = "month";
 const facility: FacilityPointView = {
@@ -54,6 +55,7 @@ vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
 }));
 vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 	useMetricDrillDown: (input: GetMetricDrillDownInput & { enabled?: boolean }) => {
+		comparisonInputs(input);
 		if (!input.enabled) {
 			return { data: undefined, isPending: false, isError: false, refetch: retry };
 		}
@@ -835,7 +837,7 @@ describe("drill-down changes", () => {
 	});
 	it("uses consistent rounding, colors and sorting with new and missing last", () => {
 		setup();
-		expect(screen.getByText("↑ 6.7% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 6.7% · Month over month")).toBeInTheDocument();
 		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
 		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
 		expect(screen.getByText("stable →")).toBeInTheDocument();
@@ -851,14 +853,35 @@ describe("drill-down changes", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
 		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
 		fireEvent.click(screen.getByText("Up", { selector: "td" }));
-		expect(screen.getByText("↑ 20% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 20% · Month over month")).toBeInTheDocument();
 	});
 	it("compares the selected department against its own prior value", () => {
 		setup();
 		select("Segment", "department");
 		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
-		expect(screen.getByText("↑ 50% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 50% · Month over month")).toBeInTheDocument();
 		expect(screen.getByText("↑ 50%")).toBeInTheDocument();
+	});
+	it("changes comparison independently from sorting and range", () => {
+		setup();
+		fireEvent.click(screen.getByRole("button", { name: "Change" }));
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		fireEvent.click(screen.getByRole("option", { name: "Year over year" }));
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "28d", comparison: "year" }),
+		);
+		expect(screen.getByText("↑ 6.7% · Year over year")).toHaveClass("font-normal");
+		expect(screen.getByRole("button", { name: "Change ↓" }).closest("th")).toHaveAttribute(
+			"aria-sort",
+			"descending",
+		);
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		fireEvent.click(screen.getByRole("option", { name: "Week over week" }));
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "28d", comparison: "week" }),
+		);
+		select("Slice", "time");
+		expect(screen.queryByRole("combobox", { name: "Compare" })).not.toBeInTheDocument();
 	});
 	it("uses points for rates and keeps unavailable comparisons unavailable", () => {
 		if (!comparisonView) throw new Error("Missing fixture");
@@ -879,7 +902,7 @@ describe("drill-down changes", () => {
 			],
 		};
 		setup();
-		expect(screen.getByText("↑ 2.1 pts vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 2.1 pts · Month over month")).toBeInTheDocument();
 		expect(screen.getByText("↑ 2.1 pts")).toBeInTheDocument();
 	});
 	it("shows the source-switch note when the previous app window crosses the transition", () => {

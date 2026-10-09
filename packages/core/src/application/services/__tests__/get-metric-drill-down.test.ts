@@ -821,3 +821,32 @@ describe("previous period drill-down", () => {
 		]);
 	});
 });
+
+it.each([
+	["week", "2026-10-01", "2026-09-03", "2026-09-30"],
+	["month", "2026-09-08", "2026-08-11", "2026-09-07"],
+	["year", "2025-10-08", "2025-09-10", "2025-10-07"],
+] as const)(
+	"queries the selected %s comparison with the same measure and filters",
+	async (comparison, today, start, end) => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const group = vi.spyOn(drillDown, "group");
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "facility",
+			comparison,
+			marketId: "miami",
+			departments: ["magic"],
+		});
+		expect(group.mock.calls[1]?.[0]).toMatchObject({
+			today,
+			range: "28d",
+			measure: "games",
+			slice: "facility",
+			marketId: "miami",
+			departments: ["magic"],
+		});
+		expect(view).toMatchObject({ previousStart: start, previousEnd: end });
+	},
+);

@@ -1,6 +1,7 @@
 import { statsTimeZoneSchema } from "@core/application/dtos/facility-detail-dto";
 import { gameDepartmentsSchema } from "@core/application/dtos/market-summary-dto";
 import {
+	DRILL_DOWN_COMPARISONS,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURES,
 	DRILL_DOWN_RANGES,
@@ -12,6 +13,7 @@ import { GAME_DEPARTMENTS } from "@core/domain";
 import { z } from "zod";
 
 export {
+	DRILL_DOWN_COMPARISONS,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_MEASURE_KINDS,
@@ -24,6 +26,7 @@ export {
 
 export const getMetricDrillDownSchema = z
 	.object({
+		comparison: z.enum(DRILL_DOWN_COMPARISONS).default("previous-period"),
 		measure: z.enum(DRILL_DOWN_MEASURES),
 		range: z.enum(DRILL_DOWN_RANGES),
 		slice: z.enum(DRILL_DOWN_SLICES),
