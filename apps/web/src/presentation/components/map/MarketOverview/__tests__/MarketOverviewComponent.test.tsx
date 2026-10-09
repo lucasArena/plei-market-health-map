@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MarketOverview } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent";
 
 const mockRules = vi.fn();
-const setPeriod = vi.fn();
 const showAllMarkets = vi.fn();
 
 vi.mock("@/presentation/components/map/FacilitiesTable/FacilitiesTableComponent", () => ({
@@ -23,13 +22,9 @@ const HEADER = {
 	breadcrumbLabel: "Location",
 	title: "Miami Metro",
 	level: "Market",
-	periodLabel: "Comparison period",
-	periodOptions: [
-		{ value: "week", label: "7D" },
-		{ value: "month", label: "28D" },
-	],
 	comparison: { current: "Sep 9 – Oct 6, 2026", previous: "vs Aug 12 – Sep 8" },
-	facilitiesActive: "11 of 14 facilities active",
+	subtitle: null,
+	footnote: "11 of 14 facilities active",
 };
 
 const CARD = { label: "Games played", info: "Played games.", value: "48", change: null };
@@ -65,10 +60,8 @@ describe("MarketOverview", () => {
 		mockRules.mockReturnValue({
 			facilities: [],
 			header: HEADER,
-			period: "month",
 			scorecardsTitle: "Scorecards",
 			sections: SECTIONS,
-			setPeriod,
 			trendAside: "Weekly, last 8 weeks",
 			trendTitle: "Games trend",
 		});
@@ -93,17 +86,14 @@ describe("MarketOverview", () => {
 		expect(screen.getByTestId("facilities-table")).toHaveTextContent("Miami Metro");
 		fireEvent.click(screen.getByRole("button", { name: "All markets" }));
 		expect(showAllMarkets).toHaveBeenCalledOnce();
-		fireEvent.click(screen.getByRole("button", { name: "7D" }));
-		expect(setPeriod).toHaveBeenCalledWith("week");
+		expect(screen.queryByRole("button", { name: "7D" })).not.toBeInTheDocument();
 	});
 
 	it("shows only the header until the summary loads", () => {
 		mockRules.mockReturnValue({
-			header: { ...HEADER, facilitiesActive: null },
-			period: "month",
+			header: { ...HEADER, footnote: null },
 			scorecardsTitle: "Scorecards",
 			sections: null,
-			setPeriod,
 		});
 
 		render(<MarketOverview marketId="miami" marketName="Miami Metro" />);
@@ -116,10 +106,8 @@ describe("MarketOverview", () => {
 		mockRules.mockReturnValue({
 			facilities: undefined,
 			header: HEADER,
-			period: "month",
 			scorecardsTitle: "Scorecards",
 			sections: SECTIONS,
-			setPeriod,
 			trendAside: "Weekly, last 8 weeks",
 			trendTitle: "Games trend",
 		});

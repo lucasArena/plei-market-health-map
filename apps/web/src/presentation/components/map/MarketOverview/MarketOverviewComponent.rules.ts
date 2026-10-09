@@ -247,13 +247,13 @@ export function buildFacilitiesActive(
 
 export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewProps) {
 	const { locale, messages } = useMessages();
-	const { period, setPeriod, setScope } = useMapScope();
+	const { period, setMapNavigation } = useMapScope();
 	const { departments } = useMarketSummaryFilters();
 	const summary = useMarketSummary(marketId, true, departments).data;
 	const insights = useMarketGameInsights(marketId, period, !!summary, departments).data;
 	const formatters = useMemo(() => createDetailFormatters(locale), [locale]);
 	const periodMessages = messages.statsPeriods[period];
-	const showAllMarkets = useCallback(() => setScope({ kind: "all" }), [setScope]);
+	const showAllMarkets = useCallback(() => setMapNavigation({ kind: "all" }), [setMapNavigation]);
 
 	const header = useMemo<MarketHeaderView>(
 		() => ({
@@ -264,18 +264,14 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 			breadcrumbLabel: messages.marketView.breadcrumb,
 			title: marketName,
 			level: messages.marketView.level,
-			periodLabel: messages.statsPeriods.switchLabel,
-			periodOptions: [
-				{ value: "week", label: messages.statsPeriods.week.short },
-				{ value: "month", label: messages.statsPeriods.month.short },
-			],
+			subtitle: null,
 			comparison: buildComparisonRange(
 				localDay(new Date(), browserTimeZone()),
 				period,
 				locale,
 				messages.marketSummary,
 			),
-			facilitiesActive: buildFacilitiesActive(
+			footnote: buildFacilitiesActive(
 				summary?.periods[period].scope,
 				messages.marketSummary,
 				formatters,
@@ -322,11 +318,9 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 	return {
 		facilities,
 		header,
-		period,
 		scorecardsTitle: messages.marketView.scorecards,
 		trendAside: messages.marketView.trendAside,
 		trendTitle: messages.marketView.trendTitle,
 		sections,
-		setPeriod,
 	};
 }

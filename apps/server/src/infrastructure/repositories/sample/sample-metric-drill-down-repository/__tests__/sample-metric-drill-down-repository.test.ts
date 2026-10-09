@@ -55,6 +55,15 @@ describe("SampleMetricDrillDownRepository", () => {
 		});
 		expect(rate.kind).toBe("rate");
 		expect(rate.rows.every((row) => row.value === null || row.value === 100)).toBe(true);
+		const organizers = await repository.group({
+			measure: "games",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(organizers.rows.every((row) => row.id.startsWith("org-"))).toBe(true);
 	});
 
 	it("returns sample almost-filled and incident measures", async () => {

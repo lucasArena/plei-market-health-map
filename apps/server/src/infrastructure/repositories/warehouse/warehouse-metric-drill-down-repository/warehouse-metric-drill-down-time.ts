@@ -1,8 +1,10 @@
 import {
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_RANGE_DAYS,
+	type MetricDrillDownOrganizer,
 	type MetricDrillDownQuery,
 	type MetricDrillDownView,
+	organizerDisplayName,
 } from "@market-health-map/core/application";
 import { GAME_DEPARTMENTS, statsWindow } from "@market-health-map/core/domain";
 import type { WarehouseTimeRow } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
@@ -54,14 +56,27 @@ export function timeDrillDownView(
 			: {};
 	const byBucket = new Map(
 		results
-			.filter((row) => row.department === null && row.is_total === 0)
+			.filter((row) => row.department === null && !row.organizer_id && row.is_total === 0)
 			.map((row) => [row.bucket, row]),
 	);
 	const departments = new Map(
 		results
-			.filter((row) => row.department !== null)
+			.filter((row) => row.department !== null && !row.organizer_id)
 			.map((row) => [`${row.bucket}:${row.department}`, row]),
 	);
+	const organizersByBucket = new Map<string, MetricDrillDownOrganizer[]>();
+	for (const row of results) {
+		if (!row.organizer_id || row.is_total === 1 || !row.bucket) continue;
+		const organizers = organizersByBucket.get(row.bucket) ?? [];
+		organizers.push({
+			id: row.organizer_id,
+			name: organizerDisplayName(row.organizer_id, row.organizer_name),
+			value: value(row),
+			facilityIds: row.facility_ids ?? [],
+			...parts(row),
+		});
+		organizersByBucket.set(row.bucket, organizers);
+	}
 	const rows: MetricDrillDownView["rows"] = [];
 	for (
 		let bucket = calendarStart(start, query.grain);
@@ -100,6 +115,10 @@ export function timeDrillDownView(
 					: (Object.fromEntries(
 							GAME_DEPARTMENTS.map((dept) => [dept, value(departments.get(`${bucket}:${dept}`))]),
 						) as MetricDrillDownView["rows"][number]["departments"]),
+			organizers: {
+				true: null,
+				[`${query.segment === "organizer"}`]: organizersByBucket.get(bucket) ?? [],
+			}.true,
 		});
 	}
 	return {

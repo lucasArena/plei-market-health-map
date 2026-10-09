@@ -1,5 +1,8 @@
 import { useKeyInsightsRules } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.rules";
-import { INSIGHT_TONE_STYLE } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.styles";
+import {
+	INSIGHT_TONE_STYLE,
+	KEY_INSIGHTS_FLAT_TITLE_CLASS,
+} from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.styles";
 import type { KeyInsightsProps } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent.types";
 
 export function KeyInsights(props: Readonly<KeyInsightsProps>) {
@@ -7,7 +10,13 @@ export function KeyInsights(props: Readonly<KeyInsightsProps>) {
 	const { accent, skeleton } = INSIGHT_TONE_STYLE[props.tone ?? "neutral"];
 	return (
 		<>
-			<h3 className={`mb-2 flex items-center gap-1.5 text-xs font-semibold ${accent}`}>
+			<h3
+				className={
+					props.isFlat
+						? KEY_INSIGHTS_FLAT_TITLE_CLASS
+						: `mb-2 flex items-center gap-1.5 text-xs font-semibold ${accent}`
+				}
+			>
 				<svg
 					aria-hidden="true"
 					data-testid="key-insights-ai-icon"

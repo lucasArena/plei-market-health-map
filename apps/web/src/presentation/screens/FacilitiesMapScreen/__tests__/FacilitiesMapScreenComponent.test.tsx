@@ -82,6 +82,7 @@ function rulesWith(status: string, overrides: object = {}) {
 		isPanelClosing: false,
 		legendMotionClass: "",
 		selectedFacilityId: null,
+		showsFacilityDrawer: true,
 		selectSearchFacility: vi.fn(),
 		selectSearchMarket: vi.fn(),
 		messages: EN_MESSAGES.map,

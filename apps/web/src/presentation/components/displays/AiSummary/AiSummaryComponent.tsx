@@ -3,6 +3,9 @@
 import { useAiSummaryRules } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.rules";
 import {
 	AI_SUMMARY_BOX_CLASS,
+	AI_SUMMARY_FLAT_CLASS,
+	AI_SUMMARY_FLAT_FADE_CLASS,
+	AI_SUMMARY_FLAT_TOGGLE_CLASS,
 	AI_SUMMARY_HEIGHT_CLASS,
 } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.styles";
 import type { AiSummaryProps } from "@/presentation/components/displays/AiSummary/AiSummaryComponent.types";
@@ -26,16 +29,18 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 	} = useAiSummaryRules(props);
 	const tone = props.tone ?? "neutral";
 	const toneStyle = INSIGHT_TONE_STYLE[tone];
+	const isFlat = props.isFlat === true;
+	const isFaded = isOverflowing && !isExpanded;
 
 	return (
 		<div
-			className={`${AI_SUMMARY_BOX_CLASS} ${toneStyle.box}`}
+			className={isFlat ? AI_SUMMARY_FLAT_CLASS : `${AI_SUMMARY_BOX_CLASS} ${toneStyle.box}`}
 			aria-busy={status === "loading" || status === "generating"}
 		>
 			<div
 				ref={contentRef}
 				data-testid="ai-summary-content"
-				className={`relative overflow-hidden ${AI_SUMMARY_HEIGHT_CLASS[isExpanded ? "expanded" : "collapsed"]}`}
+				className={`relative overflow-hidden ${AI_SUMMARY_HEIGHT_CLASS[isExpanded ? "expanded" : "collapsed"]} ${isFlat && isFaded ? AI_SUMMARY_FLAT_FADE_CLASS : ""}`}
 			>
 				<KeyInsights
 					title={props.title ?? messages.label}
@@ -43,8 +48,9 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 					text={text ?? ""}
 					introFirst={props.introFirst}
 					isLoading={!text}
+					isFlat={isFlat}
 				/>
-				{isOverflowing && !isExpanded && (
+				{isFaded && !isFlat && (
 					<div
 						aria-hidden="true"
 						className={`pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t ${toneStyle.fade}`}
@@ -60,7 +66,7 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 						type="button"
 						onClick={toggleExpanded}
 						aria-expanded={isExpanded}
-						className={`rounded-full border bg-white/90 px-3 py-1 text-xs font-medium shadow-sm transition-colors hover:bg-white ${toneStyle.button}`}
+						className={`rounded-full border bg-white/90 px-3 py-1 text-xs font-medium shadow-sm transition-colors hover:bg-white ${isFlat ? AI_SUMMARY_FLAT_TOGGLE_CLASS : toneStyle.button}`}
 					>
 						{isExpanded ? messages.showLess : messages.showMore}
 					</button>

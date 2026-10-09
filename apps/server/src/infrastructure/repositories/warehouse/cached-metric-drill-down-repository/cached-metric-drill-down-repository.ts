@@ -32,6 +32,7 @@ export class CachedMetricDrillDownRepository implements MetricDrillDownRepositor
 			query.range,
 			query.grain,
 			query.slice,
+			query.segment ?? "none",
 			query.marketId ?? null,
 			query.facilityId ?? null,
 			query.department ?? null,

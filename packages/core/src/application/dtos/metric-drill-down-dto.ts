@@ -63,6 +63,13 @@ export const getMetricDrillDownSchema = z
 				message: "This measure cannot be sliced by department.",
 			});
 		}
+		if (isAppActivityMeasure(value.measure) && value.slice === "organizer") {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["slice"],
+				message: "This measure cannot be sliced by organizer.",
+			});
+		}
 	});
 
 export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolean {
@@ -73,11 +80,22 @@ export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolea
 	);
 }
 
+export function canSliceDrillDownByOrganizer(measure: DrillDownMeasure): boolean {
+	return !isAppActivityMeasure(measure);
+}
+
 export function canSegmentDrillDown(
 	measure: DrillDownMeasure,
 	slice: (typeof DRILL_DOWN_SLICES)[number],
 ): boolean {
-	return canSliceDrillDownByDepartment(measure) && slice !== "department";
+	return canSliceDrillDownByDepartment(measure) && slice !== "department" && slice !== "organizer";
+}
+
+export function needsOrganizerDimension(
+	slice: (typeof DRILL_DOWN_SLICES)[number],
+	segment?: (typeof DRILL_DOWN_SEGMENTS)[number],
+): boolean {
+	return slice === "organizer" || segment === "organizer";
 }
 
 export function isAppActivityMeasure(measure: DrillDownMeasure): boolean {

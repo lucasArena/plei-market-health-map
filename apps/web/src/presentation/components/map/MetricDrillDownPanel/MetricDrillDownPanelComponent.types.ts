@@ -22,6 +22,7 @@ export interface MetricDrillDownSelection {
 export interface MetricDrillDownFocus {
 	rowId: string;
 	department?: GameDepartment;
+	organizerId?: string;
 }
 export type DrillDownSort =
 	| "count-desc"
@@ -32,12 +33,14 @@ export type DrillDownSort =
 	| "change-desc";
 
 export interface DrillDownChartBar {
-	id: GameDepartment | "total";
+	id: string;
 	label: string;
 	value: number;
 	height: number;
 	isTop: boolean;
+	color: string;
 	department?: GameDepartment;
+	organizerId?: string;
 }
 export interface DrillDownChartRow extends MetricDrillDownRow {
 	bars: DrillDownChartBar[];

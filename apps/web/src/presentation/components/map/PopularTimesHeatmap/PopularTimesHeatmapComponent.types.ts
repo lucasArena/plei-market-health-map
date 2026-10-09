@@ -16,6 +16,10 @@ export interface PopularTimesHeatmapProps {
 	cells: PopularTimeCellView[];
 	quietLabel: string;
 	busyLabel: string;
+	/** Lets a host panel match its own section title style. */
+	titleClassName?: string;
+	/** Insight panel: the drill-down glass tooltip surface instead of the dark green one. */
+	hasGlassTooltips?: boolean;
 }
 
 export interface PopularTimesHeatmapRowProps {
@@ -23,4 +27,5 @@ export interface PopularTimesHeatmapRowProps {
 	periodRange: string;
 	cells: PopularTimeCellView[];
 	periodIndex: number;
+	tooltipClass: string;
 }

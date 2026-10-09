@@ -10,6 +10,7 @@ export type ApiServices = Pick<
 	| "getFacilityDetail"
 	| "getFacilityReservationStats"
 	| "getFacilityPlayerStats"
+	| "getFacilityQuality"
 	| "getMarketSummary"
 	| "getMarketGameInsights"
 	| "getMarketPlayerStats"

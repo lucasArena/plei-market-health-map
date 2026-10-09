@@ -30,6 +30,11 @@ import { MessagesProvider } from "@/presentation/components/providers/MessagesPr
 const mockUseFacilityReservationStats = vi.fn();
 const mockUseFacilityPlayerStats = vi.fn();
 
+let mockRedesigned = false;
+vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
+	useFeatureFlag: () => mockRedesigned,
+}));
+
 vi.mock("@/presentation/hooks/use-facility/use-facility-reservation-stats", () => ({
 	useFacilityReservationStats: (id: string | null) => mockUseFacilityReservationStats(id),
 }));
@@ -432,8 +437,21 @@ describe("useFacilityDetailPanelRules", () => {
 		return { ...rendered, onClose, onClosed };
 	}
 
+	it("hands the facility to the redesigned view when insights-panel-v3 is on", () => {
+		mockRedesigned = true;
+		const { result } = renderRules();
+		mockRedesigned = false;
+
+		expect(result.current.overview).toEqual({
+			facilityId: "889",
+			facilityName: "Pegaso HTX",
+			marketName: "Houston",
+		});
+	});
+
 	it("builds the view for the selected facility", () => {
 		const { result } = renderRules();
+		expect(result.current.overview).toBeNull();
 		expect(mockUseFacilityReservationStats).toHaveBeenCalledWith("889");
 		expect(mockUseFacilityPlayerStats).toHaveBeenCalledWith("889");
 		expect(result.current.status).toBe("ready");

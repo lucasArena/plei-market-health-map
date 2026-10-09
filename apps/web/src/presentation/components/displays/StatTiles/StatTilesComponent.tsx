@@ -1,19 +1,27 @@
-import { HINT_CLASS } from "@/presentation/components/displays/StatTiles/StatTilesComponent.styles";
+import {
+	HINT_CLASS,
+	STAT_TILE_CLASS,
+	STAT_TILE_LABEL_CLASS,
+	STAT_TILE_SKELETON_CLASS,
+	STAT_TILE_VALUE_CLASS,
+	STAT_TILES_GRID_CLASS,
+} from "@/presentation/components/displays/StatTiles/StatTilesComponent.styles";
 import type { StatTilesProps } from "@/presentation/components/displays/StatTiles/StatTilesComponent.types";
 
-export function StatTiles({ tiles, testIdPrefix }: Readonly<StatTilesProps>) {
+export function StatTiles({ tiles, testIdPrefix, isFlat = false }: Readonly<StatTilesProps>) {
+	const variant = isFlat ? "flat" : "card";
 	return (
-		<dl className="grid grid-cols-2 gap-2.5">
+		<dl className={STAT_TILES_GRID_CLASS[variant]}>
 			{tiles.map((tile) => (
-				<div key={tile.key} className="rounded-xl border bg-card p-3.5">
-					<dt className="text-xs text-muted-foreground">{tile.label}</dt>
+				<div key={tile.key} className={STAT_TILE_CLASS[variant]}>
+					<dt className={STAT_TILE_LABEL_CLASS[variant]}>{tile.label}</dt>
 					{tile.isLoading ? (
 						<dd
 							data-testid={`${testIdPrefix}-${tile.key}-skeleton`}
-							className="mt-2 h-7 w-16 animate-pulse rounded bg-muted"
+							className={STAT_TILE_SKELETON_CLASS[variant]}
 						/>
 					) : (
-						<dd className="mt-1 text-2xl font-semibold tabular-nums">{tile.value}</dd>
+						<dd className={STAT_TILE_VALUE_CLASS[variant]}>{tile.value}</dd>
 					)}
 					{tile.hint && (
 						<dd

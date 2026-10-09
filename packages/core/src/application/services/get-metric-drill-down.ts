@@ -5,6 +5,7 @@ import {
 } from "@core/application/dtos/metric-drill-down-dto";
 import type {
 	GetMetricDrillDownInput,
+	MetricDrillDownOrganizer,
 	MetricDrillDownView,
 } from "@core/application/dtos/metric-drill-down-dto.types";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
@@ -26,6 +27,7 @@ export {
 	drillDownWindow,
 	factsFromFacilityPoints,
 	measureRateValue,
+	organizerDisplayName,
 	rateContributionsFromFacts,
 	rateFactParts,
 	rateValue,
@@ -43,6 +45,7 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 			measure,
 			range,
 			slice,
+			segment,
 			marketId,
 			facilityId,
 			department,
@@ -57,6 +60,7 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 			measure: isAverage ? "games" : measure,
 			range,
 			slice: isAppActivityMeasure(measure) && slice !== "time" ? "market" : slice,
+			segment: isAppActivityMeasure(measure) ? "none" : segment,
 			marketId,
 			facilityId: isAppActivityMeasure(measure) ? undefined : facilityId,
 			department: isAppActivityMeasure(measure) ? undefined : department,
@@ -87,6 +91,7 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 						current.total !== null && current.kind !== "rate" && row.departments
 							? { magic: 0, organizers: 0, partnerships: 0 }
 							: null,
+					organizers: row.organizers?.map((organizer) => ({ ...organizer, value: 0 })) ?? null,
 					numerator: current.kind === "rate" ? 0 : undefined,
 					denominator: current.kind === "rate" ? 0 : undefined,
 					dataErrors: undefined,
@@ -111,8 +116,29 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 						: previous.total !== null && current.kind !== "rate"
 							? { magic: 0, organizers: 0, partnerships: 0 }
 							: null,
+					organizers: withPreviousOrganizers(
+						row.organizers,
+						prior?.organizers,
+						previous.total,
+						current.kind,
+					),
 				};
 			}),
 		};
 	};
+}
+
+function withPreviousOrganizers(
+	current: MetricDrillDownOrganizer[] | null | undefined,
+	prior: MetricDrillDownOrganizer[] | null | undefined,
+	previousTotal: number | null | undefined,
+	kind: MetricDrillDownView["kind"],
+): MetricDrillDownOrganizer[] | null | undefined {
+	if (!current) return current;
+	const previousById = new Map((prior ?? []).map((organizer) => [organizer.id, organizer]));
+	const missing = previousTotal === null || kind === "rate" ? null : 0;
+	return current.map((organizer) => ({
+		...organizer,
+		previousValue: previousById.get(organizer.id)?.value ?? missing,
+	}));
 }

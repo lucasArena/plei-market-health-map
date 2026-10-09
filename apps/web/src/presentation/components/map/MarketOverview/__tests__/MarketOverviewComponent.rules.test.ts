@@ -15,13 +15,12 @@ import {
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
 const mockSetScope = vi.fn();
-const mockSetPeriod = vi.fn();
 let mockPeriod: StatsPeriod = "month";
 const mockUseMarketSummary = vi.fn();
 const mockUseMarketGameInsights = vi.fn();
 
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
-	useMapScope: () => ({ period: mockPeriod, setPeriod: mockSetPeriod, setScope: mockSetScope }),
+	useMapScope: () => ({ period: mockPeriod, setMapNavigation: mockSetScope }),
 }));
 vi.mock("@/presentation/hooks/use-market/use-market-summary", () => ({
 	useMarketSummary: (...args: unknown[]) => mockUseMarketSummary(...args),
@@ -278,7 +277,7 @@ describe("useMarketOverviewRules", () => {
 		expect(result.current.header).toMatchObject({
 			title: "Miami Metro",
 			level: "Market",
-			facilitiesActive: "84 of 142 facilities active",
+			footnote: "84 of 142 facilities active",
 		});
 		expect(result.current.sections?.scorecards.played.label).toBe("Games played");
 		expect(result.current.scorecardsTitle).toBe("Scorecards");
@@ -292,8 +291,6 @@ describe("useMarketOverviewRules", () => {
 
 		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
 		expect(mockSetScope).toHaveBeenCalledWith({ kind: "all" });
-		act(() => result.current.setPeriod("week"));
-		expect(mockSetPeriod).toHaveBeenCalledWith("week");
 	});
 
 	it("waits for the summary before building sections", () => {
@@ -307,6 +304,6 @@ describe("useMarketOverviewRules", () => {
 
 		expect(mockUseMarketGameInsights).toHaveBeenCalledWith("miami", "month", false, ["magic"]);
 		expect(result.current.sections).toBeNull();
-		expect(result.current.header.facilitiesActive).toBeNull();
+		expect(result.current.header.footnote).toBeNull();
 	});
 });

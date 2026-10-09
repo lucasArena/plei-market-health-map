@@ -11,6 +11,7 @@ function setup(access: AccessDecision = ALLOWED) {
 		getFacilityDetail: vi.fn().mockResolvedValue({ facility: { id: "889" } }),
 		getFacilityReservationStats: vi.fn().mockResolvedValue({ playedLastWeek: 55 }),
 		getFacilityPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 126 }),
+		getFacilityQuality: vi.fn().mockResolvedValue({ lowReviews: [{ id: "269678" }] }),
 		getMarketGameInsights: vi.fn().mockResolvedValue([]),
 		getMarketSummary: vi.fn().mockResolvedValue({ scope: { facilityCount: 42 } }),
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
@@ -76,6 +77,23 @@ describe("createApiApp", () => {
 		});
 		expect(services.getFacilityReservationStats).toHaveBeenCalledWith({ facilityId: "889" });
 		expect(services.getFacilityPlayerStats).toHaveBeenCalledWith({ facilityId: "889" });
+	});
+
+	it("returns a facility's game quality", async () => {
+		const { get, services } = setup();
+
+		expect(await get("/facilities/889/quality")).toEqual({
+			status: 200,
+			body: { data: { lowReviews: [{ id: "269678" }] } },
+		});
+		expect(services.getFacilityQuality).toHaveBeenCalledWith({ facilityId: "889" });
+	});
+
+	it("answers 404 for the quality of an unknown facility", async () => {
+		const { get, services } = setup();
+		services.getFacilityQuality.mockRejectedValueOnce(new NotFoundError("Facility"));
+
+		expect((await get("/facilities/404/quality")).status).toBe(404);
 	});
 
 	it("returns the market-wide summary and its player analytics separately", async () => {
@@ -343,6 +361,7 @@ describe("viewer time zone", () => {
 		expect((await get(`/facilities/889?${tz}`)).status).toBe(200);
 		expect((await get(`/facilities/889/reservations?${tz}`)).status).toBe(200);
 		expect((await get(`/facilities/889/players?${tz}`)).status).toBe(200);
+		expect((await get(`/facilities/889/quality?${tz}`)).status).toBe(200);
 		expect((await get(`/market-summary?market=houston&${tz}`)).status).toBe(200);
 		expect((await get(`/market-summary/insights?period=week&${tz}`)).status).toBe(200);
 		expect((await get(`/market-summary/players?${tz}`)).status).toBe(200);
@@ -359,6 +378,7 @@ describe("viewer time zone", () => {
 			timeZone,
 		});
 		expect(services.getFacilityPlayerStats).toHaveBeenCalledWith({ facilityId: "889", timeZone });
+		expect(services.getFacilityQuality).toHaveBeenCalledWith({ facilityId: "889", timeZone });
 		expect(services.getMarketSummary).toHaveBeenCalledWith({ market: "houston", timeZone });
 		expect(services.getMarketGameInsights).toHaveBeenCalledWith({
 			market: undefined,

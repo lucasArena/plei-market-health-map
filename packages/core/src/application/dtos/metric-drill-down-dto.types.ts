@@ -31,10 +31,10 @@ export const DRILL_DOWN_MEASURES = [
 ] as const;
 export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
 
-export const DRILL_DOWN_SLICES = ["market", "facility", "department", "time"] as const;
+export const DRILL_DOWN_SLICES = ["market", "facility", "department", "organizer", "time"] as const;
 export type DrillDownSlice = (typeof DRILL_DOWN_SLICES)[number];
 
-export const DRILL_DOWN_SEGMENTS = ["none", "department"] as const;
+export const DRILL_DOWN_SEGMENTS = ["none", "department", "organizer"] as const;
 export type DrillDownSegment = (typeof DRILL_DOWN_SEGMENTS)[number];
 
 export const DRILL_DOWN_MEASURE_KINDS = ["count", "distinct-count", "rate"] as const;
@@ -79,6 +79,17 @@ export interface MetricDrillDownRateParts {
 	dataErrors?: number;
 }
 
+export interface MetricDrillDownOrganizer {
+	id: string;
+	name: string;
+	value: number | null;
+	previousValue?: number | null;
+	numerator?: number | null;
+	denominator?: number | null;
+	dataErrors?: number;
+	facilityIds?: string[];
+}
+
 export interface MetricDrillDownRow {
 	previousValue?: number | null;
 	previousDepartments?: Record<GameDepartment, number | null> | null;
@@ -92,6 +103,7 @@ export interface MetricDrillDownRow {
 	departmentParts?: Partial<Record<GameDepartment, MetricDrillDownRateParts>>;
 	value: number | null;
 	departments: Record<GameDepartment, number | null> | null;
+	organizers?: MetricDrillDownOrganizer[] | null;
 	numerator?: number | null;
 	denominator?: number | null;
 	dataErrors?: number;

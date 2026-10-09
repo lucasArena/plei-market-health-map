@@ -351,7 +351,7 @@ export const TONE_WHEN_HIGHER: Record<
 	lowerIsBetter: { up: "bad", down: "good", flat: "neutral" },
 };
 
-function rateMetric(
+export function rateMetric(
 	key: string,
 	label: string,
 	rate: number | null,
@@ -391,7 +391,7 @@ function changeView(percent: number | null, played: number): GamesTrendChangeVie
 	};
 }
 
-function countMetric(
+export function countMetric(
 	key: string,
 	label: string,
 	value: number,
@@ -418,7 +418,7 @@ function countMetric(
 	};
 }
 
-function pendingMetric(key: string, label: string): GamesMetricView {
+export function pendingMetric(key: string, label: string): GamesMetricView {
 	return { key, label, value: "", previous: "", change: null, isPending: true };
 }
 
@@ -951,6 +951,10 @@ export function useMarketSummaryPanelRules({
 		playersTrend,
 		userMetrics,
 		marketView: isRedesigned && scope.kind === "market" ? { id: scope.id, name: scope.name } : null,
+		facilityView:
+			isRedesigned && scope.kind === "facility"
+				? { id: scope.id, name: scope.name, marketName: scope.marketName }
+				: null,
 		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,
 		view: insightsView,

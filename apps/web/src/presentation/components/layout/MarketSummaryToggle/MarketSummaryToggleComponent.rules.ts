@@ -24,11 +24,13 @@ export function useMarketSummaryToggleRules() {
 	const isOnMap = usePathname() === "/";
 	const [state, setState] = useState<MarketSummaryToggleState>("closed");
 	const { activePanel, closePanel } = useSidePanels();
-	const isFacilitySelected = activePanel === "facility-detail";
-	const queryClient = useQueryClient();
-	const { period, scope } = useMapScope();
-	const { departments } = useMarketSummaryFilters();
 	const opensOnLoad = useFeatureFlag("insights-panel-v3");
+	/** insights-panel-v3: facilities open inside the insight panel, never in the drawer. */
+	const isInsightIteration = opensOnLoad;
+	const isFacilitySelected = !isInsightIteration && activePanel === "facility-detail";
+	const queryClient = useQueryClient();
+	const { period, scope, selectedFacilityId } = useMapScope();
+	const { departments } = useMarketSummaryFilters();
 	const hasOpenedOnLoad = useRef(false);
 	useIdleMarketPrefetch(isOnMap);
 
@@ -59,6 +61,15 @@ export function useMarketSummaryToggleRules() {
 	useEffect(() => {
 		if (!isOnMap) setState("closed");
 	}, [isOnMap]);
+
+	useEffect(() => {
+		if (activePanel === "market-summary" && state === "closed") setState("open");
+	}, [activePanel, state]);
+
+	// Picking a facility on the map, in search or in a panel row opens its level in the panel.
+	useEffect(() => {
+		if (isInsightIteration && selectedFacilityId && isOnMap) setState("open");
+	}, [isInsightIteration, selectedFacilityId, isOnMap]);
 
 	useEffect(() => {
 		if (!opensOnLoad || !isOnMap || hasOpenedOnLoad.current) return;

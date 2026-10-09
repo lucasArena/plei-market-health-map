@@ -1,6 +1,7 @@
 import type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
+	GetFacilityQualityInput,
 	GetFacilityReservationStatsInput,
 	GetMarketAudienceInput,
 	GetMarketGameInsightsInput,
@@ -23,6 +24,7 @@ import {
 	makeGetAppMetrics,
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
+	makeGetFacilityQuality,
 	makeGetFacilityReservationStats,
 	makeGetMarketAudience,
 	makeGetMarketGameInsights,
@@ -68,16 +70,19 @@ import { PrismaLoginEventRepository } from "@server/infrastructure/repositories/
 import { FixtureAppSessionHeatmapRepository } from "@server/infrastructure/repositories/sample/fixture-app-session-heatmap-repository/fixture-app-session-heatmap-repository";
 import { MemoryDailyActivityRepository } from "@server/infrastructure/repositories/sample/memory-daily-activity-repository/memory-daily-activity-repository";
 import { MemoryFeatureFlagRepository } from "@server/infrastructure/repositories/sample/memory-feature-flag-repository/memory-feature-flag-repository";
+import { SampleFacilityQualityRepository } from "@server/infrastructure/repositories/sample/sample-facility-quality-repository/sample-facility-quality-repository";
 import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
 import { SampleFacilityStatsRepository } from "@server/infrastructure/repositories/sample/sample-facility-stats-repository/sample-facility-stats-repository";
 import { SampleMarketAudienceRepository } from "@server/infrastructure/repositories/sample/sample-market-audience-repository/sample-market-audience-repository";
 import { SampleMetricDrillDownRepository } from "@server/infrastructure/repositories/sample/sample-metric-drill-down-repository/sample-metric-drill-down-repository";
 import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
+import { CachedFacilityQualityRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-quality-repository/cached-facility-quality-repository";
 import { CachedFacilityRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-repository/cached-facility-repository";
 import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
 import { CachedMarketAudienceRepository } from "@server/infrastructure/repositories/warehouse/cached-market-audience-repository/cached-market-audience-repository";
 import { CachedMetricDrillDownRepository } from "@server/infrastructure/repositories/warehouse/cached-metric-drill-down-repository/cached-metric-drill-down-repository";
 import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository";
+import { WarehouseFacilityQualityRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-quality-repository/warehouse-facility-quality-repository";
 import { WarehouseFacilityRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
 import { WarehouseFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
 import { WarehouseMarketAudienceRepository } from "@server/infrastructure/repositories/warehouse/warehouse-market-audience-repository/warehouse-market-audience-repository";
@@ -151,6 +156,7 @@ function buildFacilityRepositories() {
 		return {
 			facilities,
 			stats: new CachedFacilityStatsRepository(new SampleFacilityStatsRepository(clock), clock),
+			quality: new CachedFacilityQualityRepository(new SampleFacilityQualityRepository(), clock),
 			audience: new SampleMarketAudienceRepository(),
 			drillDown: new CachedMetricDrillDownRepository(
 				new SampleMetricDrillDownRepository(facilities),
@@ -162,6 +168,10 @@ function buildFacilityRepositories() {
 	return {
 		facilities: new CachedFacilityRepository(new WarehouseFacilityRepository(pool), clock),
 		stats: new CachedFacilityStatsRepository(new WarehouseFacilityStatsRepository(pool), clock),
+		quality: new CachedFacilityQualityRepository(
+			new WarehouseFacilityQualityRepository(pool),
+			clock,
+		),
 		audience: new CachedMarketAudienceRepository(
 			new WarehouseMarketAudienceRepository(pool),
 			clock,
@@ -183,6 +193,7 @@ function buildFacilities() {
 		getFacilityDetail: makeGetFacilityDetail(repositories),
 		getFacilityReservationStats: makeGetFacilityReservationStats(repositories),
 		getFacilityPlayerStats: makeGetFacilityPlayerStats(repositories),
+		getFacilityQuality: makeGetFacilityQuality(repositories),
 		getMarketSummary: makeGetMarketSummary(repositories),
 		getMarketGameInsights: makeGetMarketGameInsights(repositories),
 		getMarketPlayerStats: makeGetMarketPlayerStats(repositories),
@@ -323,6 +334,8 @@ const container = {
 		facilityModule().getFacilityReservationStats(input),
 	getFacilityPlayerStats: (input: GetFacilityPlayerStatsInput) =>
 		facilityModule().getFacilityPlayerStats(input),
+	getFacilityQuality: (input: GetFacilityQualityInput) =>
+		facilityModule().getFacilityQuality(input),
 	getMarketGameInsights: (input?: GetMarketGameInsightsInput) =>
 		facilityModule().getMarketGameInsights(input),
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),

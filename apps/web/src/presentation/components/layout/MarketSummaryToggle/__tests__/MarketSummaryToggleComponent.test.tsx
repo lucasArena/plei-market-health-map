@@ -3,7 +3,10 @@ import { useState } from "react";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
 import { nextToggleState } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.rules";
-import { SidePanelProvider } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
+import {
+	SidePanelProvider,
+	useSidePanels,
+} from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
 const panelProps = vi.fn();
@@ -16,6 +19,7 @@ const mockPrefetchFacility = vi.fn().mockResolvedValue(undefined);
 const mockScope = vi.fn(() => ({ kind: "all" }));
 const mockDepartments = vi.fn((): string[] => []);
 const mockFlag = vi.fn(() => false);
+const mockSelectedFacilityId = vi.fn((): string | null => null);
 
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
 	useFeatureFlag: () => mockFlag(),
@@ -34,7 +38,11 @@ vi.mock("@/presentation/hooks/use-market/use-idle-market-prefetch", () => ({
 	useIdleMarketPrefetch: vi.fn(),
 }));
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
-	useMapScope: () => ({ scope: mockScope(), period: "month" }),
+	useMapScope: () => ({
+		scope: mockScope(),
+		period: "month",
+		selectedFacilityId: mockSelectedFacilityId(),
+	}),
 }));
 
 vi.mock("@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent", () => ({
@@ -153,6 +161,43 @@ describe("MarketSummaryToggle", () => {
 		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 
 		fireEvent.click(button);
+		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
+	});
+
+	it("with insights-panel-v3, opens the panel when a facility is picked", () => {
+		mockFlag.mockReturnValue(true);
+		mockSelectedFacilityId.mockReturnValue("f1");
+		renderWithMessages(
+			<SidePanelProvider>
+				<MarketSummaryToggle />
+			</SidePanelProvider>,
+		);
+		const button = screen.getByRole("button", { name: "Market summary" });
+
+		expect(button).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
+		mockSelectedFacilityId.mockReturnValue(null);
+	});
+
+	it("opens when another panel hands it the side slot", () => {
+		function OpenSummary() {
+			const { openPanel } = useSidePanels();
+			return (
+				<button type="button" onClick={() => openPanel("market-summary")}>
+					go to market
+				</button>
+			);
+		}
+		renderWithMessages(
+			<SidePanelProvider>
+				<OpenSummary />
+				<MarketSummaryToggle />
+			</SidePanelProvider>,
+		);
+		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "go to market" }));
+
 		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
 	});
 

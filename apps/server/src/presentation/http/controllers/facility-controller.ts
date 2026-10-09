@@ -22,6 +22,14 @@ export function facilityController(services: () => ApiServices) {
 				}),
 			),
 		)
+		.get("/:facilityId/quality", async (context) =>
+			ok(
+				await services().getFacilityQuality({
+					facilityId: context.req.param("facilityId"),
+					...statsTimeZoneFrom(context),
+				}),
+			),
+		)
 		.get("/:facilityId", async (context) =>
 			ok(
 				await services().getFacilityDetail({
