@@ -22,7 +22,14 @@ export interface ReservationPeriodView {
 	playedPrevious: number;
 	playedChangePercent: number | null;
 	confirmationRate: number | null;
+	confirmationRatePrevious: number | null;
 	confirmationRateChangePoints: number | null;
+	scheduled: number;
+	scheduledPrevious: number;
+	scheduledChangePercent: number | null;
+	cancellationRate: number | null;
+	cancellationRatePrevious: number | null;
+	cancellationRateChangePoints: number | null;
 }
 
 export interface PlayerPeriodView {

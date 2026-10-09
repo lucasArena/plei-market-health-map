@@ -38,6 +38,7 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 			uniquePlayersPrevious28Days: _uniquePlayersPrevious28Days,
 			activatedPlayersLast28Days: _activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days: _activatedPlayersPrevious28Days,
+			weeklyActivatedPlayers: _weeklyActivatedPlayers,
 			...reservationStats
 		} = this.counts;
 		return { ...reservationStats };
@@ -68,6 +69,7 @@ export class InMemoryFacilityStatsRepository implements FacilityStatsRepository 
 			uniquePlayersPrevious28Days: this.counts.uniquePlayersPrevious28Days,
 			activatedPlayersLast28Days: this.counts.activatedPlayersLast28Days,
 			activatedPlayersPrevious28Days: this.counts.activatedPlayersPrevious28Days,
+			weeklyActivatedPlayers: this.counts.weeklyActivatedPlayers.map((week) => ({ ...week })),
 		};
 	}
 }

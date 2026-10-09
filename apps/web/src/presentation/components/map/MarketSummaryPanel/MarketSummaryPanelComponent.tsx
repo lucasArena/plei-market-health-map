@@ -2,16 +2,32 @@
 
 import { AiSummary } from "@/presentation/components/displays/AiSummary/AiSummaryComponent";
 import { AiSummarySkeleton } from "@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent";
+import { GamesTrendChart } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent";
+import { HealthStrip } from "@/presentation/components/displays/HealthStrip/HealthStripComponent";
 import { KeyInsights } from "@/presentation/components/displays/KeyInsights/KeyInsightsComponent";
+import { MetricRows } from "@/presentation/components/displays/MetricRows/MetricRowsComponent";
+import { PanelSection } from "@/presentation/components/displays/PanelSection/PanelSectionComponent";
+import { PANEL_SECTION_CLASS } from "@/presentation/components/displays/PanelSection/PanelSectionComponent.styles";
 import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTilesComponent";
+import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
 import type {
+	InsightCardProps,
 	MarketRankListProps,
+	MarketRankRowsProps,
+	MarketSummaryHeaderProps,
+	MarketSummaryMetricsProps,
 	MarketSummaryPanelProps,
+	UsersSectionBodyProps,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
+
+const SKELETON_SECTIONS = [
+	{ key: "games", hasLabel: false },
+	{ key: "users", hasLabel: true },
+];
 
 const SKELETON_TILES = ["facilities", "markets", "played", "confirmation", "players", "activated"];
 
@@ -34,45 +50,220 @@ function MarketSummarySkeleton() {
 	);
 }
 
+function RedesignedSkeleton() {
+	return (
+		<div data-testid="market-summary-skeleton" aria-hidden className="space-y-4 p-5">
+			<div className="animate-pulse space-y-3 border-b pb-3">
+				<div className="space-y-2">
+					<div className="h-4 w-1/3 rounded bg-muted" />
+					<div className="h-3 w-2/3 rounded bg-muted" />
+				</div>
+				<div className="h-3 w-1/2 rounded bg-muted" />
+			</div>
+			<AiSummarySkeleton testId="market-summary-insight-skeleton" />
+			{SKELETON_SECTIONS.map((section) => (
+				<div key={section.key} className={PANEL_SECTION_CLASS}>
+					<div className="h-4 w-32 animate-pulse rounded bg-muted" />
+					<TrendChartSkeleton
+						testId={`${section.key}-trend-skeleton`}
+						metricRows={3}
+						hasLabel={section.hasLabel}
+					/>
+				</div>
+			))}
+		</div>
+	);
+}
+
+function UsersSectionBody({
+	isUsersPending,
+	playersTrend,
+	userMetrics,
+}: Readonly<UsersSectionBodyProps>) {
+	if (playersTrend) {
+		return (
+			<GamesTrendChart
+				view={playersTrend}
+				testId="players-trend-chart"
+				metricsTestId="user-metrics"
+			/>
+		);
+	}
+	if (isUsersPending) {
+		return <TrendChartSkeleton testId="users-trend-skeleton" metricRows={3} hasLabel />;
+	}
+	return <MetricRows metrics={userMetrics} testId="user-metrics" />;
+}
+
+function RankRows({ rows, emptyLabel }: Readonly<MarketRankRowsProps>) {
+	if (rows.length === 0) return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
+	return (
+		<ol className="space-y-1.5">
+			{rows.map((row) => (
+				<li key={row.key} className="flex items-center gap-2.5 text-sm">
+					<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-pleiful-pitch-green-5 text-[10px] font-semibold text-pleiful-pitch-green-80 tabular-nums">
+						{row.rank}
+					</span>
+					<span className="min-w-0 flex-1">
+						<span className="block truncate font-medium">{row.name}</span>
+						<span className="block truncate text-[11px] text-muted-foreground">{row.detail}</span>
+					</span>
+					<span className="shrink-0 text-xs font-medium tabular-nums">{row.value}</span>
+				</li>
+			))}
+		</ol>
+	);
+}
+
 function RankList({ title, rows, emptyLabel }: Readonly<MarketRankListProps>) {
 	return (
-		<section className="rounded-xl border bg-card p-3.5">
+		<section className="space-y-2 rounded-xl border bg-card p-3.5">
 			<h3 className="text-xs font-semibold text-foreground">{title}</h3>
-			{rows.length === 0 ? (
-				<p className="mt-2 text-xs text-muted-foreground">{emptyLabel}</p>
-			) : (
-				<ol className="mt-2 space-y-1.5">
-					{rows.map((row) => (
-						<li key={row.key} className="flex items-center gap-2.5 text-sm">
-							<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-pleiful-pitch-green-5 text-[10px] font-semibold text-pleiful-pitch-green-80 tabular-nums">
-								{row.rank}
-							</span>
-							<span className="min-w-0 flex-1">
-								<span className="block truncate font-medium">{row.name}</span>
-								<span className="block truncate text-[11px] text-muted-foreground">
-									{row.detail}
-								</span>
-							</span>
-							<span className="shrink-0 text-xs font-medium tabular-nums">{row.value}</span>
-						</li>
-					))}
-				</ol>
-			)}
+			<RankRows rows={rows} emptyLabel={emptyLabel} />
 		</section>
+	);
+}
+
+function InsightCard({ children, isRedesigned, tone }: Readonly<InsightCardProps>) {
+	if (isRedesigned && tone) return <HealthStrip tone={tone}>{children}</HealthStrip>;
+	if (isRedesigned) return children;
+	return <section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">{children}</section>;
+}
+
+function MarketSummaryHeader({
+	comparison,
+	heading,
+	isRedesigned,
+	scopeLine,
+}: Readonly<MarketSummaryHeaderProps>) {
+	if (!isRedesigned) {
+		return (
+			<header className="pr-8">
+				<h2 className="truncate text-base font-semibold">{heading.title}</h2>
+				<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
+			</header>
+		);
+	}
+	return (
+		<header className="space-y-3 border-b pb-3">
+			<div>
+				<h2 className="truncate text-base font-semibold">{heading.title}</h2>
+				<p className="text-xs text-muted-foreground">{scopeLine}</p>
+			</div>
+			<p data-testid="market-summary-dates" className="flex items-center gap-1.5 text-xs">
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					aria-hidden="true"
+					className="size-3.5 shrink-0"
+				>
+					<rect width="18" height="18" x="3" y="4" rx="2" />
+					<path d="M16 2v4M8 2v4M3 10h18" />
+				</svg>
+				<span className="font-semibold">{comparison.current}</span>
+				<span className="text-muted-foreground">{comparison.previous}</span>
+			</p>
+		</header>
+	);
+}
+
+function MarketSummaryMetrics({
+	detailMessages,
+	gamesTitle,
+	gamesTrend,
+	isRedesigned,
+	messages,
+	isUsersPending,
+	rankingsEmptyLabel,
+	playersTrend,
+	userMetrics,
+	view,
+}: Readonly<MarketSummaryMetricsProps>) {
+	const weeklyActivity = (
+		<WeeklyActivityChart
+			title={detailMessages.weeklyActivity}
+			legend={detailMessages.gamesLegend}
+			points={view.weeklyActivity}
+		/>
+	);
+	if (!isRedesigned) {
+		return (
+			<>
+				{view.scopeTiles.length > 0 && (
+					<StatTiles tiles={view.scopeTiles} testIdPrefix="market-scope" />
+				)}
+				<StatTiles tiles={view.tiles} testIdPrefix="market-stat" />
+				{weeklyActivity}
+				<PopularTimesHeatmap
+					title={detailMessages.popularTimes}
+					dayLabels={view.dayLabels}
+					periodLabels={view.timePeriodLabels}
+					periodRanges={detailMessages.timePeriodRanges}
+					cells={view.popularTimes}
+					quietLabel={detailMessages.quiet}
+					busyLabel={detailMessages.busy}
+				/>
+				{view.topMarkets && (
+					<RankList
+						title={messages.topMarkets}
+						rows={view.topMarkets}
+						emptyLabel={rankingsEmptyLabel}
+					/>
+				)}
+				{view.topFacilities && (
+					<RankList
+						title={messages.topFacilities}
+						rows={view.topFacilities}
+						emptyLabel={rankingsEmptyLabel}
+					/>
+				)}
+			</>
+		);
+	}
+	return (
+		<>
+			<PanelSection title={gamesTitle} testId="panel-section-games">
+				{gamesTrend ? <GamesTrendChart view={gamesTrend} /> : weeklyActivity}
+			</PanelSection>
+			{(playersTrend || isUsersPending || userMetrics.length > 0) && (
+				<PanelSection title={messages.sectionUsers} testId="panel-section-users">
+					<UsersSectionBody
+						isUsersPending={isUsersPending}
+						playersTrend={playersTrend}
+						userMetrics={userMetrics}
+					/>
+				</PanelSection>
+			)}
+		</>
 	);
 }
 
 export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 	const {
 		aiContext,
+		comparison,
+		dataAsOf,
 		detailMessages,
+		gamesTrend,
 		handleAnimationEnd,
 		heading,
+		insight,
 		rankingsEmptyLabel,
 		isClosing,
 		isSummaryPending,
 		isInsightsFailed,
+		isRedesigned,
 		messages,
+		reportWrongNumber,
+		scopeLine,
+		gamesTitle,
+		isUsersPending,
+		playersTrend,
+		userMetrics,
 		status,
 		view,
 	} = useMarketSummaryPanelRules(props);
@@ -86,7 +277,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 			className={`${isClosing ? "panel-slide-out" : "panel-slide-in"} ${MARKET_SUMMARY_PANEL_CLASS}`}
 		>
 			<div className="min-h-0 flex-1 overflow-y-auto">
-				{status === "loading" && <MarketSummarySkeleton />}
+				{status === "loading" && isRedesigned && <RedesignedSkeleton />}
+				{status === "loading" && !isRedesigned && <MarketSummarySkeleton />}
 				{status === "error" && (
 					<p role="alert" className="p-5 pr-12 text-sm text-destructive">
 						{messages.failed}
@@ -94,64 +286,69 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 				)}
 				{status === "ready" && view && (
 					<div className="space-y-4 p-5">
-						<header className="pr-8">
-							<h2 className="truncate text-base font-semibold">{heading.title}</h2>
-							<p className="text-xs text-muted-foreground">{heading.subtitle}</p>
-						</header>
+						<MarketSummaryHeader
+							comparison={comparison}
+							heading={heading}
+							isRedesigned={isRedesigned}
+							scopeLine={scopeLine}
+						/>
 						{aiContext && view.summary && (
-							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
-								<AiSummary context={aiContext} fallback={view.summary} introFirst />
-							</section>
+							<InsightCard isRedesigned={isRedesigned}>
+								<AiSummary
+									context={aiContext}
+									fallback={view.summary}
+									introFirst
+									title={insight.title}
+									tone={insight.tone}
+								/>
+							</InsightCard>
 						)}
 						{!(aiContext && view.summary) && isSummaryPending && (
-							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
+							<InsightCard isRedesigned={isRedesigned}>
 								<AiSummarySkeleton testId="market-summary-text-skeleton" />
-							</section>
+							</InsightCard>
 						)}
 						{!aiContext && !isSummaryPending && view.summary && (
-							<section className="rounded-xl bg-pleiful-moonlight-5 p-3.5">
-								<KeyInsights title={messages.keyInsights} text={view.summary} introFirst />
-							</section>
+							<InsightCard isRedesigned={isRedesigned} tone={insight.tone}>
+								<KeyInsights
+									title={insight.title}
+									text={view.summary}
+									introFirst
+									tone={insight.tone}
+								/>
+							</InsightCard>
 						)}
 						{isInsightsFailed && (
 							<p role="status" className="text-xs text-muted-foreground">
 								{messages.insightsFailed}
 							</p>
 						)}
-						{view.scopeTiles.length > 0 && (
-							<StatTiles tiles={view.scopeTiles} testIdPrefix="market-scope" />
-						)}
-						<StatTiles tiles={view.tiles} testIdPrefix="market-stat" />
-						<WeeklyActivityChart
-							title={detailMessages.weeklyActivity}
-							legend={detailMessages.gamesLegend}
-							points={view.weeklyActivity}
+						<MarketSummaryMetrics
+							detailMessages={detailMessages}
+							gamesTrend={gamesTrend}
+							isRedesigned={isRedesigned}
+							messages={messages}
+							rankingsEmptyLabel={rankingsEmptyLabel}
+							gamesTitle={gamesTitle}
+							isUsersPending={isUsersPending}
+							playersTrend={playersTrend}
+							userMetrics={userMetrics}
+							view={view}
 						/>
-						<PopularTimesHeatmap
-							title={detailMessages.popularTimes}
-							dayLabels={view.dayLabels}
-							periodLabels={view.timePeriodLabels}
-							periodRanges={detailMessages.timePeriodRanges}
-							cells={view.popularTimes}
-							quietLabel={detailMessages.quiet}
-							busyLabel={detailMessages.busy}
-						/>
-						{view.topMarkets && (
-							<RankList
-								title={messages.topMarkets}
-								rows={view.topMarkets}
-								emptyLabel={rankingsEmptyLabel}
-							/>
-						)}
-						{view.topFacilities && (
-							<RankList
-								title={messages.topFacilities}
-								rows={view.topFacilities}
-								emptyLabel={rankingsEmptyLabel}
-							/>
-						)}
-						<footer className="border-t pt-3 text-[11px] text-muted-foreground">
-							<p>{view.lastPlayedLabel}</p>
+						<footer className="flex items-start justify-between gap-3 border-t pt-3 text-[11px] text-muted-foreground">
+							<div>
+								<p>{view.lastPlayedLabel}</p>
+								{isRedesigned && dataAsOf && <p className="opacity-80">{dataAsOf}</p>}
+							</div>
+							{isRedesigned && (
+								<button
+									type="button"
+									onClick={reportWrongNumber}
+									className="shrink-0 rounded font-medium text-foreground/80 underline-offset-2 hover:underline focus-visible:outline-2"
+								>
+									{messages.reportWrongNumber}
+								</button>
+							)}
 						</footer>
 					</div>
 				)}

@@ -1,7 +1,8 @@
 "use client";
 
 import { DEFAULT_STATS_PERIOD, type StatsPeriod } from "@market-health-map/core/application";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { statsPeriodPreference } from "@/infrastructure/cache/local-storage/stats-period/stats-period-preference";
 import type {
 	MapNavigation,
 	MapScope,
@@ -16,7 +17,17 @@ export function useMapScopeProviderRules(): MapScopeContextValue {
 	const [mapNavigation, setMapNavigation] = useState<MapNavigation | null>(null);
 	const [scope, setScope] = useState<MapScope>(ALL_MARKETS_SCOPE);
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
-	const [period, setPeriod] = useState<StatsPeriod>(DEFAULT_STATS_PERIOD);
+	const [period, setStoredPeriod] = useState<StatsPeriod>(DEFAULT_STATS_PERIOD);
+	const setPeriod = useCallback((next: StatsPeriod) => {
+		statsPeriodPreference.remember(next);
+		setStoredPeriod(next);
+	}, []);
+
+	useEffect(() => {
+		const remembered = statsPeriodPreference.read();
+		if (remembered) setStoredPeriod(remembered);
+	}, []);
+
 	return useMemo(
 		() => ({
 			scope,
@@ -30,6 +41,6 @@ export function useMapScopeProviderRules(): MapScopeContextValue {
 			period,
 			setPeriod,
 		}),
-		[scope, selectedFacilityId, period, metricFocus, mapNavigation],
+		[scope, selectedFacilityId, period, setPeriod, metricFocus, mapNavigation],
 	);
 }

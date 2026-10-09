@@ -2,6 +2,7 @@ import type {
 	GetFacilityDetailInput,
 	GetFacilityPlayerStatsInput,
 	GetFacilityReservationStatsInput,
+	GetMarketAudienceInput,
 	GetMarketGameInsightsInput,
 	GetMarketPlayerStatsInput,
 	GetMarketSummaryInput,
@@ -23,6 +24,7 @@ import {
 	makeGetFacilityDetail,
 	makeGetFacilityPlayerStats,
 	makeGetFacilityReservationStats,
+	makeGetMarketAudience,
 	makeGetMarketGameInsights,
 	makeGetMarketPlayerStats,
 	makeGetMarketSummary,
@@ -68,14 +70,17 @@ import { MemoryDailyActivityRepository } from "@server/infrastructure/repositori
 import { MemoryFeatureFlagRepository } from "@server/infrastructure/repositories/sample/memory-feature-flag-repository/memory-feature-flag-repository";
 import { SampleFacilityRepository } from "@server/infrastructure/repositories/sample/sample-facility-repository/sample-facility-repository";
 import { SampleFacilityStatsRepository } from "@server/infrastructure/repositories/sample/sample-facility-stats-repository/sample-facility-stats-repository";
+import { SampleMarketAudienceRepository } from "@server/infrastructure/repositories/sample/sample-market-audience-repository/sample-market-audience-repository";
 import { SampleMetricDrillDownRepository } from "@server/infrastructure/repositories/sample/sample-metric-drill-down-repository/sample-metric-drill-down-repository";
 import { CachedAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/cached-app-session-heatmap-repository/cached-app-session-heatmap-repository";
 import { CachedFacilityRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-repository/cached-facility-repository";
 import { CachedFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/cached-facility-stats-repository/cached-facility-stats-repository";
+import { CachedMarketAudienceRepository } from "@server/infrastructure/repositories/warehouse/cached-market-audience-repository/cached-market-audience-repository";
 import { CachedMetricDrillDownRepository } from "@server/infrastructure/repositories/warehouse/cached-metric-drill-down-repository/cached-metric-drill-down-repository";
 import { WarehouseAppSessionHeatmapRepository } from "@server/infrastructure/repositories/warehouse/warehouse-app-session-heatmap-repository/warehouse-app-session-heatmap-repository";
 import { WarehouseFacilityRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
 import { WarehouseFacilityStatsRepository } from "@server/infrastructure/repositories/warehouse/warehouse-facility-stats-repository/warehouse-facility-stats-repository";
+import { WarehouseMarketAudienceRepository } from "@server/infrastructure/repositories/warehouse/warehouse-market-audience-repository/warehouse-market-audience-repository";
 import { WarehouseMetricDrillDownRepository } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository";
 import { getWarehousePool } from "@server/infrastructure/repositories/warehouse/warehouse-pool/warehouse-pool";
 
@@ -146,6 +151,7 @@ function buildFacilityRepositories() {
 		return {
 			facilities,
 			stats: new CachedFacilityStatsRepository(new SampleFacilityStatsRepository(clock), clock),
+			audience: new SampleMarketAudienceRepository(),
 			drillDown: new CachedMetricDrillDownRepository(
 				new SampleMetricDrillDownRepository(facilities),
 				clock,
@@ -156,6 +162,10 @@ function buildFacilityRepositories() {
 	return {
 		facilities: new CachedFacilityRepository(new WarehouseFacilityRepository(pool), clock),
 		stats: new CachedFacilityStatsRepository(new WarehouseFacilityStatsRepository(pool), clock),
+		audience: new CachedMarketAudienceRepository(
+			new WarehouseMarketAudienceRepository(pool),
+			clock,
+		),
 		drillDown: new CachedMetricDrillDownRepository(
 			new WarehouseMetricDrillDownRepository(pool),
 			clock,
@@ -184,6 +194,7 @@ function buildFacilities() {
 		getMarketSummary: makeGetMarketSummary(repositories),
 		getMarketGameInsights: makeGetMarketGameInsights(repositories),
 		getMarketPlayerStats: makeGetMarketPlayerStats(repositories),
+		getMarketAudience: makeGetMarketAudience(repositories),
 		getMetricDrillDown: makeGetMetricDrillDown({
 			drillDown: repositories.drillDown,
 			clock: repositories.clock,
@@ -328,6 +339,7 @@ const container = {
 	getMarketSummary: (input?: GetMarketSummaryInput) => facilityModule().getMarketSummary(input),
 	getMarketPlayerStats: (input?: GetMarketPlayerStatsInput) =>
 		facilityModule().getMarketPlayerStats(input),
+	getMarketAudience: (input?: GetMarketAudienceInput) => facilityModule().getMarketAudience(input),
 	getMetricDrillDown: (input: GetMetricDrillDownInput) =>
 		facilityModule().getMetricDrillDown(input),
 	submitFeedback: (input: SubmitFeedbackInput) => feedbackModule().submitFeedback(input),

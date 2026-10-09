@@ -101,7 +101,7 @@ last_played as (
   )::text as game_date
 ),
 week_series as (
-  select generate_series(b.today - ${MONTH_DAYS}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
+  select generate_series(b.today - ${MONTH_DAYS * 2}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
   from bounds b
 ),
 weekly_activity as (
@@ -174,6 +174,18 @@ select
       and ${inLastDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as cancelled_last_week,
   count(distinct g.reservation_id) filter (
+    where g.status = 'cancelled'
+      and ${inPreviousDaysSql("g.game_date", "b.today", WEEK_DAYS)}
+  ) as cancelled_previous_week,
+  count(distinct g.reservation_id) filter (
+    where g.status = 'cancelled'
+      and g.game_date >= b.today - 28 and g.game_date < b.today
+  ) as cancelled_last_28_days,
+  count(distinct g.reservation_id) filter (
+    where g.status = 'cancelled'
+      and g.game_date >= b.today - 56 and g.game_date < b.today - 28
+  ) as cancelled_previous_28_days,
+  count(distinct g.reservation_id) filter (
     where g.status <> 'cancelled' and g.game_date > b.today and g.game_date <= b.today + 7
   ) as upcoming_next_seven_days,
   (select game_date from last_played) as last_played_date,
@@ -226,6 +238,19 @@ ${departmentGames}facility_players as (
     and ${QUALIFYING_OPENED_GAME_SQL}
     and ${OPENED_GAME_PLAYER_TYPE_SQL}${departmentFilter}
     and ${CONFIRMED_PLEIAPP_PLAYER_SQL}
+),
+week_series as (
+  select generate_series(b.today - ${MONTH_DAYS * 2}, b.today - ${WEEK_DAYS}, interval '7 days')::date as week_start
+  from bounds b
+),
+weekly_activated_players as (
+  select w.week_start,
+    count(distinct f.player_id) filter (
+      where f.player_lifecycle = 'Activated'
+    ) as players
+  from week_series w
+  left join facility_players f on f.date_played >= w.week_start and f.date_played < w.week_start + 7
+  group by w.week_start
 )
 select
   count(distinct player_id) filter (
@@ -253,7 +278,11 @@ select
   ) as activated_players_last_28_days,
   count(distinct player_id) filter (
     where player_lifecycle = 'Activated' and date_played < b.today - 28
-  ) as activated_players_previous_28_days
+  ) as activated_players_previous_28_days,
+  (select json_agg(json_build_object(
+    'week_start', w.week_start::text,
+    'players', w.players
+  ) order by w.week_start) from weekly_activated_players w) as weekly_activated_players
 from bounds b
 left join facility_players f on true
 group by b.today`;
@@ -279,6 +308,9 @@ export function toReservationStats(
 		scheduledLastWeek: Number(row.scheduled_last_week),
 		scheduledPreviousWeek: Number(row.scheduled_previous_week),
 		cancelledLastWeek: Number(row.cancelled_last_week),
+		cancelledPreviousWeek: Number(row.cancelled_previous_week),
+		cancelledLast28Days: Number(row.cancelled_last_28_days),
+		cancelledPrevious28Days: Number(row.cancelled_previous_28_days),
 		upcomingNextSevenDays: Number(row.upcoming_next_seven_days),
 		lastPlayedDate: row.last_played_date,
 		weeklyActivity: row.weekly_activity.map((item) => ({
@@ -303,6 +335,10 @@ export function toPlayerStats(row: WarehouseFacilityPlayerStatsRow): FacilityPla
 		activatedPlayersPreviousWeek: Number(row.activated_players_previous_week),
 		activatedPlayersLast28Days: Number(row.activated_players_last_28_days),
 		activatedPlayersPrevious28Days: Number(row.activated_players_previous_28_days),
+		weeklyActivatedPlayers: row.weekly_activated_players.map((item) => ({
+			weekStart: item.week_start,
+			players: Number(item.players),
+		})),
 	};
 }
 

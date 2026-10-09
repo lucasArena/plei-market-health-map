@@ -1,4 +1,8 @@
-import type { MarketPlayerStatsView, MarketSummaryView } from "@market-health-map/core/application";
+import type {
+	MarketAudienceView,
+	MarketPlayerStatsView,
+	MarketSummaryView,
+} from "@market-health-map/core/application";
 import { FACILITY_DETAIL } from "@/application/test/facility-detail";
 
 const {
@@ -12,6 +16,7 @@ const {
 	activatedPlayersPrevious28Days,
 	uniquePlayersPeriodChangePercent,
 	activatedPlayersPeriodChangePercent,
+	weeklyActivatedPlayers,
 	...reservationStats
 } = FACILITY_DETAIL.stats;
 
@@ -54,4 +59,26 @@ export const MARKET_PLAYER_STATS: MarketPlayerStatsView = {
 	activatedPlayersPrevious28Days,
 	uniquePlayersPeriodChangePercent,
 	activatedPlayersPeriodChangePercent,
+	weeklyActivatedPlayers,
+};
+
+export const MARKET_AUDIENCE: MarketAudienceView = {
+	periods: {
+		week: {
+			activeUsers: 4000,
+			activeUsersPrevious: 4000,
+			activeUsersChangePercent: 0,
+			registrations: 120,
+			registrationsPrevious: 0,
+			registrationsChangePercent: null,
+		},
+		month: {
+			activeUsers: 12000,
+			activeUsersPrevious: 10000,
+			activeUsersChangePercent: 20,
+			registrations: 450,
+			registrationsPrevious: 500,
+			registrationsChangePercent: -10,
+		},
+	},
 };
