@@ -189,5 +189,6 @@ The redesigned insight panel's loading state is `InsightPanelSkeleton` (ENG-6134
 
 Clicking a facility marker on the map zooms to street level (`FACILITY_FOCUS_ZOOM`, 14, the same as picking a facility in search or the insight panel) unless the map is already closer, centered with the panel offset, and opens the facility.
 
+Selecting a facility (map, search, panel) keeps every other facility on the map; only a market scope and the drill-down's metric focus narrow the map's facilities. Map control buttons with the `map-icon-button` class show their pressed or open state (`aria-pressed` / `aria-expanded` true) as a solid pitch-green fill with a white icon, matching the selected 7D | 28D pill.
 
 In the redesigned insight panel, a single market's Active facilities list is built from every facility in that market's per-period comparison (`marketFacilities`, facilities with games in either period, by games), not the summary's top five, so its "See all N facilities" expands to the whole market. All markets keeps the summary's top five.
