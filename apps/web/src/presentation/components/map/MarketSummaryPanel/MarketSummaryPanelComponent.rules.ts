@@ -329,21 +329,21 @@ export function buildScopeHeading(
 	return { title: messages.allMarkets, subtitle: formatMessage(messages.subtitle, { span }) };
 }
 
-const CURRENT_WEEKS: Record<StatsPeriod, number> = { week: 1, month: 4 };
+export const CURRENT_WEEKS: Record<StatsPeriod, number> = { week: 1, month: 4 };
 
-function signed(value: number, magnitude: string): string {
+export function signed(value: number, magnitude: string): string {
 	if (value < 0) return `−${magnitude}`;
 	if (value > 0) return `+${magnitude}`;
 	return magnitude;
 }
 
-function directionOfChange(value: number): GamesTrendDirection {
+export function directionOfChange(value: number): GamesTrendDirection {
 	if (value < 0) return "down";
 	if (value > 0) return "up";
 	return "flat";
 }
 
-const TONE_WHEN_HIGHER: Record<
+export const TONE_WHEN_HIGHER: Record<
 	"higherIsBetter" | "lowerIsBetter",
 	Record<GamesTrendDirection, GamesMetricTone>
 > = {
@@ -632,7 +632,7 @@ export function buildInsightHeading(
 	};
 }
 
-function utcDate(isoDate: string): Date {
+export function utcDate(isoDate: string): Date {
 	return new Date(`${isoDate}T00:00:00Z`);
 }
 
@@ -950,6 +950,7 @@ export function useMarketSummaryPanelRules({
 		isUsersPending: !playerStats && playerQuery.isPending,
 		playersTrend,
 		userMetrics,
+		marketView: isRedesigned && scope.kind === "market" ? { id: scope.id, name: scope.name } : null,
 		gamesTitle: formatMessage(messages.marketSummary.gamesInPeriod, { span: periodMessages.span }),
 		status,
 		view: insightsView,

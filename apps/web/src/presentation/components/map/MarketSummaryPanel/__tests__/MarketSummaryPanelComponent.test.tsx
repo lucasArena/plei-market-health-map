@@ -4,6 +4,12 @@ import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryP
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/map/MarketOverview/MarketOverviewComponent", () => ({
+	MarketOverview: ({ marketName }: { marketName: string }) => (
+		<div data-testid="market-overview">{marketName}</div>
+	),
+}));
+
 vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonComponent", () => ({
 	AiSummarySkeleton: ({ testId }: { testId: string }) => (
 		<div data-testid={testId} aria-busy="true" />
@@ -83,6 +89,7 @@ function rulesWith(overrides: object = {}) {
 		gamesTrend: null,
 		playersTrend: null,
 		isUsersPending: false,
+		marketView: null,
 		gamesTitle: "Games the last 7 days",
 		userMetrics: [
 			{
@@ -230,6 +237,34 @@ describe("MarketSummaryPanel", () => {
 		expect(
 			screen.getByRole("button", { name: "700 active players, week ending Oct 1" }),
 		).toBeInTheDocument();
+	});
+
+	it("loads a selected market with the market-shaped skeleton", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				status: "loading",
+				view: null,
+				isRedesigned: true,
+				marketView: { id: "miami", name: "Miami Metro" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-overview-skeleton")).toBeInTheDocument();
+		expect(screen.queryByTestId("games-trend-skeleton")).not.toBeInTheDocument();
+	});
+
+	it("hands a selected market to the market view and keeps the footer", () => {
+		mockRules.mockReturnValue(
+			rulesWith({ isRedesigned: true, marketView: { id: "miami", name: "Miami Metro" } }),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-overview")).toHaveTextContent("Miami Metro");
+		expect(screen.queryByTestId("market-summary-dates")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Report a wrong number" })).toBeInTheDocument();
 	});
 
 	it("tints the written insight with the overall trend", () => {
