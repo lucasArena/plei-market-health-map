@@ -3,7 +3,10 @@ import { useState } from "react";
 import { renderWithMessages } from "@/application/test/render-with-messages";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
 import { nextToggleState } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.rules";
-import { SidePanelProvider } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
+import {
+	SidePanelProvider,
+	useSidePanels,
+} from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
 const panelProps = vi.fn();
@@ -153,6 +156,28 @@ describe("MarketSummaryToggle", () => {
 		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 
 		fireEvent.click(button);
+		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
+	});
+
+	it("opens when another panel hands it the side slot", () => {
+		function OpenSummary() {
+			const { openPanel } = useSidePanels();
+			return (
+				<button type="button" onClick={() => openPanel("market-summary")}>
+					go to market
+				</button>
+			);
+		}
+		renderWithMessages(
+			<SidePanelProvider>
+				<OpenSummary />
+				<MarketSummaryToggle />
+			</SidePanelProvider>,
+		);
+		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "go to market" }));
+
 		expect(screen.getByRole("complementary", { name: "Market summary" })).toBeInTheDocument();
 	});
 

@@ -546,17 +546,26 @@ export function useFacilitiesMapScreenRules() {
 		if (mapNavigation.kind === "all") {
 			setScope(ALL_MARKETS_SCOPE);
 			setSelectedFacilityId(null);
+			requestAnimationFrame(() =>
+				mapRef.current?.easeTo({
+					center: MAP_CENTER,
+					zoom: MAP_ZOOM,
+					padding: { top: 0, bottom: 0, left: 0, right: 0 },
+					duration: 700,
+				}),
+			);
 		}
 		if (mapNavigation.kind === "facility") {
 			const facility = facilities.find((item) => item.id === mapNavigation.id);
 			if (facility) selectSearchFacility(facility);
 		}
 		if (mapNavigation.kind === "market") {
-			selectSearchMarket({
+			const market = {
 				id: mapNavigation.id,
 				name: mapNavigation.name,
 				facilities: facilities.filter((item) => item.marketId === mapNavigation.id),
-			});
+			};
+			requestAnimationFrame(() => selectSearchMarket(market));
 		}
 		setMapNavigation(null);
 	}, [

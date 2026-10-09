@@ -1,13 +1,7 @@
 import { Breadcrumb } from "@/presentation/components/displays/Breadcrumb/BreadcrumbComponent";
 import type { ScopeHeaderProps } from "@/presentation/components/displays/ScopeHeader/ScopeHeaderComponent.types";
-import { SegmentedControl } from "@/presentation/components/displays/SegmentedControl/SegmentedControlComponent";
 
-export function ScopeHeader({
-	header,
-	onPeriodChange,
-	period,
-	testId,
-}: Readonly<ScopeHeaderProps>) {
+export function ScopeHeader({ header, testId }: Readonly<ScopeHeaderProps>) {
 	return (
 		<header className="space-y-1.5">
 			<Breadcrumb items={header.breadcrumb} label={header.breadcrumbLabel} />
@@ -21,14 +15,6 @@ export function ScopeHeader({
 						{header.subtitle && ` · ${header.subtitle}`}
 					</p>
 				</div>
-				{period && onPeriodChange && (
-					<SegmentedControl
-						label={header.periodLabel}
-						options={header.periodOptions}
-						value={period}
-						onChange={onPeriodChange}
-					/>
-				)}
 			</div>
 			<p className="flex items-center gap-1.5 text-xs" data-testid={`${testId}-dates`}>
 				<svg

@@ -6,7 +6,6 @@ import { EN_MESSAGES } from "@/application/test/messages";
 import { useFacilityOverviewRules } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent.rules";
 import { MessagesProvider } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 
-const mockSetScope = vi.fn();
 const mockSetMapNavigation = vi.fn();
 let mockPeriod: StatsPeriod = "month";
 const mockReservations = vi.fn();
@@ -14,10 +13,14 @@ const mockReservations = vi.fn();
 vi.mock("@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent", () => ({
 	useMapScope: () => ({
 		period: mockPeriod,
-		setScope: mockSetScope,
 		setMapNavigation: mockSetMapNavigation,
 	}),
 }));
+const mockOpenPanel = vi.fn();
+vi.mock("@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent", () => ({
+	useSidePanels: () => ({ openPanel: mockOpenPanel }),
+}));
+
 vi.mock("@/presentation/hooks/use-facility/use-facility-reservation-stats", () => ({
 	useFacilityReservationStats: (...args: unknown[]) => mockReservations(...args),
 }));
@@ -63,8 +66,10 @@ describe("useFacilityOverviewRules", () => {
 		expect(result.current.popularTimes?.cells).toHaveLength(28);
 
 		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
-		expect(mockSetScope).toHaveBeenCalledWith({ kind: "all" });
+		expect(mockOpenPanel).toHaveBeenCalledWith("market-summary");
+		expect(mockSetMapNavigation).toHaveBeenCalledWith({ kind: "all" });
 		act(() => result.current.header.breadcrumb[1]?.onSelect?.());
+		expect(mockOpenPanel).toHaveBeenCalledTimes(2);
 		expect(mockSetMapNavigation).toHaveBeenCalledWith({
 			kind: "market",
 			id: FACILITY_DETAIL.facility.marketId,
@@ -82,6 +87,7 @@ describe("useFacilityOverviewRules", () => {
 		expect(result.current.header.breadcrumb[1]?.onSelect).toBeUndefined();
 		expect(result.current.header.subtitle).toBeNull();
 		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
-		expect(mockSetMapNavigation).not.toHaveBeenCalled();
+		expect(mockSetMapNavigation).toHaveBeenCalledWith({ kind: "all" });
+		expect(mockSetMapNavigation).toHaveBeenCalledTimes(1);
 	});
 });

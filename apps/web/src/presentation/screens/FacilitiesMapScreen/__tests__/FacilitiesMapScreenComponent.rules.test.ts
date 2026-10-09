@@ -37,7 +37,9 @@ import {
 	CLUSTER_MAX_ZOOM,
 	FACILITIES_LAYER_ID,
 	FACILITY_DOT_ZOOM,
+	MAP_CENTER,
 	MAP_CURSOR,
+	MAP_ZOOM,
 	REGISTRATION_HEATMAP_PAINT,
 	selectedRingWidth,
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.styles";
@@ -222,6 +224,10 @@ describe("resolveMapStatus", () => {
 
 describe("useFacilitiesMapScreenRules", () => {
 	beforeEach(() => {
+		vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+			callback(0);
+			return 0;
+		});
 		vi.clearAllMocks();
 		layersState.showActiveFacilities = true;
 		layersState.showInactiveFacilities = true;
@@ -301,6 +307,9 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["f1"]);
 		act(() => result.current.context.setMapNavigation({ kind: "all" }));
 		expect(result.current.rules.shownFacilities).toHaveLength(2);
+		expect(mapState.instances[0]?.easeTo).toHaveBeenLastCalledWith(
+			expect.objectContaining({ center: MAP_CENTER, zoom: MAP_ZOOM }),
+		);
 		act(() =>
 			result.current.context.setMetricFocus({ facilityIds: ["other"], department: "magic" }),
 		);

@@ -11,25 +11,12 @@ import { useMarketOverviewRules } from "@/presentation/components/map/MarketOver
 import type { MarketOverviewProps } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.types";
 
 export function MarketOverview(props: Readonly<MarketOverviewProps>) {
-	const {
-		facilities,
-		header,
-		period,
-		scorecardsTitle,
-		sections,
-		setPeriod,
-		trendAside,
-		trendTitle,
-	} = useMarketOverviewRules(props);
+	const { facilities, header, scorecardsTitle, sections, trendAside, trendTitle } =
+		useMarketOverviewRules(props);
 
 	return (
 		<div className="space-y-4" data-testid="market-overview">
-			<ScopeHeader
-				header={header}
-				period={period}
-				onPeriodChange={setPeriod}
-				testId="market-overview"
-			/>
+			<ScopeHeader header={header} testId="market-overview" />
 			{sections && (
 				<>
 					<StatusSummary {...sections.status} />
