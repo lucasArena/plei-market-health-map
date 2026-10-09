@@ -8,6 +8,7 @@ export interface MapMetricSelectProps {
 	label: string;
 	help: string;
 	value: string;
+	selectedLabel?: string;
 	options: readonly MapMetricSelectOption[];
 	disabled?: boolean;
 	descriptionId?: string;

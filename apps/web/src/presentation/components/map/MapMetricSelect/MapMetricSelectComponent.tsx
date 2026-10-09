@@ -33,7 +33,7 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 						props.variant === "pill" ? "truncate" : "min-w-0 whitespace-normal break-words"
 					}
 				>
-					{rules.selected}
+					{props.selectedLabel ?? rules.selected}
 				</span>
 				<MapFilterChevron open={rules.open} />
 			</button>

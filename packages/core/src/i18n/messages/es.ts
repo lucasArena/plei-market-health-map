@@ -203,7 +203,6 @@ export const es: Messages = {
 		compareYear: "Año a año",
 		compareHelp:
 			"Compara el rango seleccionado con una ventana de igual duración que termina una semana, un mes o un año antes.",
-		changeComparison: "{change} · {comparison}",
 
 		change: "Cambio",
 		changeNew: "Nuevo",

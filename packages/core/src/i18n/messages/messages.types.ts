@@ -180,7 +180,6 @@ export interface Messages {
 		compareMonth: string;
 		compareYear: string;
 		compareHelp: string;
-		changeComparison: string;
 
 		change: string;
 		changeNew: string;

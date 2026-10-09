@@ -837,7 +837,7 @@ describe("drill-down changes", () => {
 	});
 	it("uses consistent rounding, colors and sorting with new and missing last", () => {
 		setup();
-		expect(screen.getByText("↑ 6.7% · Month over month")).toBeInTheDocument();
+		expect(screen.getByText("↑ 6.7%")).toBeInTheDocument();
 		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
 		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
 		expect(screen.getByText("stable →")).toBeInTheDocument();
@@ -853,24 +853,31 @@ describe("drill-down changes", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
 		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
 		fireEvent.click(screen.getByText("Up", { selector: "td" }));
-		expect(screen.getByText("↑ 20% · Month over month")).toBeInTheDocument();
+		expect(screen.getAllByText("↑ 20%")).toHaveLength(2);
 	});
 	it("compares the selected department against its own prior value", () => {
 		setup();
 		select("Segment", "department");
 		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
-		expect(screen.getByText("↑ 50% · Month over month")).toBeInTheDocument();
-		expect(screen.getByText("↑ 50%")).toBeInTheDocument();
+		expect(screen.getAllByText("↑ 50%")).toHaveLength(2);
 	});
 	it("changes comparison independently from sorting and range", () => {
 		setup();
+		const compare = screen.getByRole("combobox", { name: "Compare" });
+		expect(compare).toHaveTextContent("MOM");
+		expect(compare).toHaveAttribute("title", expect.stringContaining("Month over month"));
+		expect(compare.closest("fieldset")?.parentElement).toBe(
+			screen.getByRole("combobox", { name: "Date range" }).closest("fieldset")?.parentElement,
+		);
 		fireEvent.click(screen.getByRole("button", { name: "Change" }));
 		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
 		fireEvent.click(screen.getByRole("option", { name: "Year over year" }));
 		expect(comparisonInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ range: "28d", comparison: "year" }),
 		);
-		expect(screen.getByText("↑ 6.7% · Year over year")).toHaveClass("font-normal");
+		expect(screen.getByText("↑ 6.7%")).toHaveClass("font-normal");
+		expect(compare).toHaveTextContent("YOY");
+		expect(compare).toHaveAttribute("title", expect.stringContaining("Year over year"));
 		expect(screen.getByRole("button", { name: "Change ↓" }).closest("th")).toHaveAttribute(
 			"aria-sort",
 			"descending",
@@ -880,6 +887,7 @@ describe("drill-down changes", () => {
 		expect(comparisonInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ range: "28d", comparison: "week" }),
 		);
+		expect(compare).toHaveTextContent("WOW");
 		select("Slice", "time");
 		expect(screen.queryByRole("combobox", { name: "Compare" })).not.toBeInTheDocument();
 	});
@@ -902,8 +910,7 @@ describe("drill-down changes", () => {
 			],
 		};
 		setup();
-		expect(screen.getByText("↑ 2.1 pts · Month over month")).toBeInTheDocument();
-		expect(screen.getByText("↑ 2.1 pts")).toBeInTheDocument();
+		expect(screen.getAllByText("↑ 2.1 pts")).toHaveLength(2);
 	});
 	it("shows the source-switch note when the previous app window crosses the transition", () => {
 		if (!comparisonView) throw new Error("Missing fixture");

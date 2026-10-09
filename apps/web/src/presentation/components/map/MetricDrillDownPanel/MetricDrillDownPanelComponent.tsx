@@ -44,12 +44,12 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 			onAnimationEnd={rules.handleAnimationEnd}
 			className={`${props.isClosing ? "panel-slide-out pointer-events-none" : "panel-slide-in"} ${rules.isExpanded ? DRILL_DOWN_EXPANDED_PANEL_CLASS : DRILL_DOWN_PANEL_CLASS}`}
 		>
-			<div className="flex items-start justify-between gap-2 px-5 pt-5">
-				<div>
+			<div className="flex flex-wrap items-start justify-between gap-2 px-5 pt-5">
+				<div className="min-w-0 flex-1 basis-36">
 					<h2 className="text-base font-semibold">{m.title}</h2>
 					<p className="text-xs text-muted-foreground">{rules.heading}</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex shrink-0 items-center gap-2">
 					<MapMetricSelect
 						label={m.range}
 						help={m.rangeHelp}
@@ -65,6 +65,22 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							{ value: "12m", label: m.range12m },
 						]}
 					/>
+					{!rules.isTime && (
+						<MapMetricSelect
+							variant="pill"
+							alignRight
+							label={m.compare}
+							help={rules.comparisonHelp}
+							value={rules.comparison}
+							selectedLabel={rules.comparisonLabel}
+							onChange={(value) => rules.setComparison(value as DrillDownComparison)}
+							options={[
+								{ value: "week", label: m.compareWeek },
+								{ value: "month", label: m.compareMonth },
+								{ value: "year", label: m.compareYear },
+							]}
+						/>
+					)}
 					<button
 						ref={rules.expandButtonRef}
 						type="button"
@@ -112,22 +128,6 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						</p>
 					)}
 					<p className="text-xs">{rules.measureLabel}</p>
-					{!rules.isTime && (
-						<div className="mt-2 inline-block max-w-full">
-							<MapMetricSelect
-								variant="pill"
-								label={m.compare}
-								help={m.compareHelp}
-								value={rules.comparison}
-								onChange={(value) => rules.setComparison(value as DrillDownComparison)}
-								options={[
-									{ value: "week", label: m.compareWeek },
-									{ value: "month", label: m.compareMonth },
-									{ value: "year", label: m.compareYear },
-								]}
-							/>
-						</div>
-					)}
 					{!rules.isTime && !rules.isLoading && !rules.isError && (
 						<p
 							style={{ color: rules.headlineChange.color }}

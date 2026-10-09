@@ -202,7 +202,6 @@ export const ptBR: Messages = {
 		compareYear: "Ano a ano",
 		compareHelp:
 			"Compare o intervalo selecionado com uma janela de igual duração terminando uma semana, um mês ou um ano antes.",
-		changeComparison: "{change} · {comparison}",
 
 		change: "Variação",
 		changeNew: "Novo",

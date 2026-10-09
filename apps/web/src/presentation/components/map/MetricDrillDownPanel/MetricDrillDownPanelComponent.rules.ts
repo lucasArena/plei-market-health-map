@@ -494,18 +494,14 @@ export function useMetricDrillDownPanelRules({
 		comparison,
 		setComparison,
 		changeDisplay,
-		headlineChange: {
-			...headlineChange,
-			label: formatMessage(messages.drillDown.changeComparison, {
-				change: headlineChange.label,
-				comparison: {
-					week: messages.drillDown.compareWeek,
-					month: messages.drillDown.compareMonth,
-					year: messages.drillDown.compareYear,
-					"previous-period": messages.drillDown.changePrior,
-				}[comparison],
-			}),
-		},
+		headlineChange,
+		comparisonLabel: {
+			week: "WOW",
+			month: "MOM",
+			year: "YOY",
+			"previous-period": messages.drillDown.compare,
+		}[comparison],
+		comparisonHelp: `${{ week: messages.drillDown.compareWeek, month: messages.drillDown.compareMonth, year: messages.drillDown.compareYear, "previous-period": messages.drillDown.compare }[comparison]}. ${messages.drillDown.compareHelp}`,
 		messages: messages.drillDown,
 		measureLabel: measureLabels[selection.measure],
 		valueLabel: view.kind === "rate" ? messages.drillDown.rate : messages.drillDown.value,
