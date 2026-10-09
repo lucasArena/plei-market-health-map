@@ -7,6 +7,7 @@ import { ScoreCard } from "@/presentation/components/displays/ScoreCard/ScoreCar
 import { SegmentedControl } from "@/presentation/components/displays/SegmentedControl/SegmentedControlComponent";
 import { StatusSummary } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent";
 import { FacilitiesTable } from "@/presentation/components/map/FacilitiesTable/FacilitiesTableComponent";
+import { FacilitiesTableSkeleton } from "@/presentation/components/map/FacilitiesTableSkeleton/FacilitiesTableSkeletonComponent";
 import { useMarketOverviewRules } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.rules";
 import type { MarketOverviewProps } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.types";
 
@@ -73,7 +74,11 @@ export function MarketOverview(props: Readonly<MarketOverviewProps>) {
 					<PanelSection title={trendTitle} aside={trendAside} testId="market-games-trend-section">
 						<GamesTrendChart view={sections.trend} testId="market-games-trend" />
 					</PanelSection>
-					{facilities && <FacilitiesTable facilities={facilities} marketName={header.title} />}
+					{facilities ? (
+						<FacilitiesTable facilities={facilities} marketName={header.title} />
+					) : (
+						<FacilitiesTableSkeleton />
+					)}
 				</>
 			)}
 		</div>

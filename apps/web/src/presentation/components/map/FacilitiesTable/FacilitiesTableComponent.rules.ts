@@ -20,7 +20,7 @@ export const WATCH_CHANGE_PERCENT = -10;
 
 export const TOP_ROWS = 3;
 
-export const BOTTOM_ROWS = 2;
+export const BOTTOM_ROWS = 3;
 
 export function facilityStatus(played: number, playedPrevious: number): FacilityHealthStatus {
 	if (playedPrevious <= 0) return "onTrack";
@@ -87,6 +87,7 @@ export function sortFacilityRows(rows: FacilitiesTableRowView[]): FacilitiesTabl
 export function visibleEntries(
 	rows: FacilitiesTableRowView[],
 	isExpanded: boolean,
+	messages: FacilitiesTableMessages,
 ): FacilitiesTableEntry[] {
 	const asEntry = (row: FacilitiesTableRowView): FacilitiesTableEntry => ({
 		kind: "row",
@@ -95,8 +96,16 @@ export function visibleEntries(
 	});
 	if (isExpanded || rows.length <= TOP_ROWS + BOTTOM_ROWS) return rows.map(asEntry);
 	return [
+		{ kind: "label", key: "top", label: messages.topGroup },
 		...rows.slice(0, TOP_ROWS).map(asEntry),
-		{ kind: "gap", key: "gap" },
+		{
+			kind: "gap",
+			key: "gap",
+			label: formatMessage(messages.hiddenCount, {
+				count: String(rows.length - TOP_ROWS - BOTTOM_ROWS),
+			}),
+		},
+		{ kind: "label", key: "bottom", label: messages.bottomGroup },
 		...rows.slice(-BOTTOM_ROWS).map(asEntry),
 	];
 }
@@ -125,7 +134,7 @@ export function useFacilitiesTableRules({ facilities, marketName }: FacilitiesTa
 	return {
 		canExpand,
 		count: String(rows.length),
-		entries: visibleEntries(rows, isExpanded),
+		entries: visibleEntries(rows, isExpanded, tableMessages),
 		expandLabel,
 		isExpanded,
 		messages: tableMessages,

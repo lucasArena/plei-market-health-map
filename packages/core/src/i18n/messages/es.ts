@@ -166,6 +166,9 @@ export const es: Messages = {
 		},
 	},
 	facilitiesTable: {
+		topGroup: "Mayores alzas",
+		bottomGroup: "Mayores caídas",
+		hiddenCount: "{count} más en el medio",
 		title: "Instalaciones",
 		columnFacility: "Instalación",
 		columnGames: "Partidos",

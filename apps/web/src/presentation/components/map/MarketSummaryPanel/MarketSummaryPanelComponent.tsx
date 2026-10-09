@@ -12,6 +12,7 @@ import { StatTiles } from "@/presentation/components/displays/StatTiles/StatTile
 import { TrendChartSkeleton } from "@/presentation/components/displays/TrendChartSkeleton/TrendChartSkeletonComponent";
 import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyActivityChart/WeeklyActivityChartComponent";
 import { MarketOverview } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent";
+import { MarketOverviewSkeleton } from "@/presentation/components/map/MarketOverviewSkeleton/MarketOverviewSkeletonComponent";
 import { useMarketSummaryPanelRules } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import { MARKET_SUMMARY_PANEL_CLASS } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.styles";
 import type {
@@ -279,7 +280,8 @@ export function MarketSummaryPanel(props: Readonly<MarketSummaryPanelProps>) {
 			className={`${isClosing ? "panel-slide-out" : "panel-slide-in"} ${MARKET_SUMMARY_PANEL_CLASS}`}
 		>
 			<div className="min-h-0 flex-1 overflow-y-auto">
-				{status === "loading" && isRedesigned && <RedesignedSkeleton />}
+				{status === "loading" && marketView && <MarketOverviewSkeleton />}
+				{status === "loading" && isRedesigned && !marketView && <RedesignedSkeleton />}
 				{status === "loading" && !isRedesigned && <MarketSummarySkeleton />}
 				{status === "error" && (
 					<p role="alert" className="p-5 pr-12 text-sm text-destructive">

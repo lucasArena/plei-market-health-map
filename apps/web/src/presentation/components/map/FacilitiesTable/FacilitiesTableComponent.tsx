@@ -33,15 +33,35 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 				</div>
 				<ul className="flex flex-col gap-0.5">
 					{entries.map((entry, index) => {
-						if (entry.kind === "gap") {
+						if (entry.kind === "label") {
 							return (
 								<li
 									key={entry.key}
-									aria-hidden="true"
-									data-testid="facilities-table-gap"
-									className="py-0.5 text-center text-xs leading-3 tracking-[0.3em] text-[#9ca3af]"
+									className="pt-1 pl-2.5 text-[11px] font-semibold tracking-[0.02em] text-[#525866] uppercase"
 								>
-									···
+									{entry.label}
+								</li>
+							);
+						}
+						if (entry.kind === "gap") {
+							return (
+								<li key={entry.key} className="py-1">
+									<button
+										type="button"
+										onClick={toggleExpanded}
+										data-testid="facilities-table-gap"
+										className="flex w-full items-center gap-2 text-[11px] text-[#525866] hover:text-[#1d1d1f] focus-visible:outline-2"
+									>
+										<span
+											aria-hidden="true"
+											className="h-px flex-1 border-t border-dashed border-black/15"
+										/>
+										{entry.label}
+										<span
+											aria-hidden="true"
+											className="h-px flex-1 border-t border-dashed border-black/15"
+										/>
+									</button>
 								</li>
 							);
 						}

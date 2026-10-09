@@ -31,7 +31,8 @@ export interface FacilitiesTableRowView {
 
 export type FacilitiesTableEntry =
 	| { kind: "row"; key: string; row: FacilitiesTableRowView }
-	| { kind: "gap"; key: string };
+	| { kind: "label"; key: string; label: string }
+	| { kind: "gap"; key: string; label: string };
 
 export interface FacilityStatusStyle {
 	dot: string;

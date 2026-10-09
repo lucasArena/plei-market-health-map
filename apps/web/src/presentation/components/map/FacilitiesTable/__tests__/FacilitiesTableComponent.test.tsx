@@ -39,6 +39,8 @@ const FACILITIES = [
 	facility("e", 10, 8),
 	facility("f", 276, 222),
 	facility("g", 0, 0),
+	facility("h", 30, 2),
+	facility("i", 10, 9),
 ];
 
 describe("FacilitiesTable rules", () => {
@@ -73,8 +75,8 @@ describe("FacilitiesTable rules", () => {
 	it("drops facilities with no games and orders the rest from biggest gain to biggest drop", () => {
 		const rows = sortFacilityRows(buildFacilityRows(FACILITIES, messages, "en"));
 
-		expect(rows.map((row) => row.id)).toEqual(["a", "b", "c", "d", "e", "f"]);
-		expect(rows[5]).toMatchObject({
+		expect(rows.map((row) => row.id)).toEqual(["a", "b", "c", "d", "i", "e", "h", "f"]);
+		expect(rows[7]).toMatchObject({
 			statusLabel: "Needs attention",
 			previousLabel: "vs 276",
 			gamesLabel: "222",
@@ -82,19 +84,25 @@ describe("FacilitiesTable rules", () => {
 		});
 	});
 
-	it("shows the top three and the bottom two until expanded", () => {
+	it("shows the three best and three worst, labelled, until expanded", () => {
 		const rows = sortFacilityRows(buildFacilityRows(FACILITIES, messages, "en"));
+		const collapsed = visibleEntries(rows, false, messages);
 
-		expect(visibleEntries(rows, false).map((entry) => entry.key)).toEqual([
+		expect(collapsed.map((entry) => entry.key)).toEqual([
+			"top",
 			"a",
 			"b",
 			"c",
 			"gap",
+			"bottom",
 			"e",
+			"h",
 			"f",
 		]);
-		expect(visibleEntries(rows, true)).toHaveLength(6);
-		expect(visibleEntries(rows.slice(0, 5), false)).toHaveLength(5);
+		expect(collapsed[4]).toEqual({ kind: "gap", key: "gap", label: "2 more in between" });
+		expect(collapsed[0]).toEqual({ kind: "label", key: "top", label: "Biggest gains" });
+		expect(visibleEntries(rows, true, messages)).toHaveLength(8);
+		expect(visibleEntries(rows.slice(0, 6), false, messages)).toHaveLength(6);
 	});
 });
 
@@ -107,15 +115,19 @@ describe("FacilitiesTable", () => {
 		);
 
 		const table = screen.getByRole("region", { name: "Facilities" });
-		expect(table).toHaveTextContent("6");
-		expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(5);
-		expect(screen.getByTestId("facilities-table-gap")).toBeInTheDocument();
-
-		fireEvent.click(screen.getByRole("button", { name: "Show all 6 facilities" }));
+		expect(table).toHaveTextContent("8");
+		expect(table).toHaveTextContent("Biggest gains");
+		expect(table).toHaveTextContent("Biggest drops");
 		expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(6);
+
+		fireEvent.click(screen.getByRole("button", { name: "2 more in between" }));
+		expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(8);
 		expect(screen.queryByTestId("facilities-table-gap")).not.toBeInTheDocument();
+		expect(table).not.toHaveTextContent("Biggest gains");
 		fireEvent.click(screen.getByRole("button", { name: "Show fewer" }));
-		expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(5);
+		expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(6);
+		fireEvent.click(screen.getByRole("button", { name: "Show all 8 facilities" }));
+		expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(8);
 
 		fireEvent.click(screen.getByRole("button", { name: "Open Facility f" }));
 		expect(setMapNavigation).toHaveBeenCalledWith({

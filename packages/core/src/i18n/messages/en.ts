@@ -161,6 +161,9 @@ export const en: Messages = {
 		},
 	},
 	facilitiesTable: {
+		topGroup: "Biggest gains",
+		bottomGroup: "Biggest drops",
+		hiddenCount: "{count} more in between",
 		title: "Facilities",
 		columnFacility: "Facility",
 		columnGames: "Games",

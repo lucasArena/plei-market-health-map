@@ -111,4 +111,22 @@ describe("MarketOverview", () => {
 		expect(screen.queryByTestId("status-summary")).not.toBeInTheDocument();
 		expect(screen.queryByText("11 of 14 facilities active")).not.toBeInTheDocument();
 	});
+
+	it("holds the facilities card as a skeleton until the facilities load", () => {
+		mockRules.mockReturnValue({
+			facilities: undefined,
+			header: HEADER,
+			period: "month",
+			scorecardsTitle: "Scorecards",
+			sections: SECTIONS,
+			setPeriod,
+			trendAside: "Weekly, last 8 weeks",
+			trendTitle: "Games trend",
+		});
+
+		render(<MarketOverview marketId="miami" marketName="Miami Metro" />);
+
+		expect(screen.getByTestId("facilities-table-skeleton")).toBeInTheDocument();
+		expect(screen.queryByTestId("facilities-table")).not.toBeInTheDocument();
+	});
 });

@@ -165,6 +165,9 @@ export const ptBR: Messages = {
 		},
 	},
 	facilitiesTable: {
+		topGroup: "Maiores altas",
+		bottomGroup: "Maiores quedas",
+		hiddenCount: "Mais {count} no meio",
 		title: "Locais",
 		columnFacility: "Local",
 		columnGames: "Jogos",

@@ -239,6 +239,22 @@ describe("MarketSummaryPanel", () => {
 		).toBeInTheDocument();
 	});
 
+	it("loads a selected market with the market-shaped skeleton", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				status: "loading",
+				view: null,
+				isRedesigned: true,
+				marketView: { id: "miami", name: "Miami Metro" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("market-overview-skeleton")).toBeInTheDocument();
+		expect(screen.queryByTestId("games-trend-skeleton")).not.toBeInTheDocument();
+	});
+
 	it("hands a selected market to the market view and keeps the footer", () => {
 		mockRules.mockReturnValue(
 			rulesWith({ isRedesigned: true, marketView: { id: "miami", name: "Miami Metro" } }),

@@ -145,6 +145,9 @@ export interface Messages {
 		month: StatsPeriodMessages;
 	};
 	facilitiesTable: {
+		topGroup: string;
+		bottomGroup: string;
+		hiddenCount: string;
 		title: string;
 		columnFacility: string;
 		columnGames: string;
