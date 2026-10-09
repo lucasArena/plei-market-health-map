@@ -51,6 +51,27 @@ export interface WarehouseDrillDownPlayerRow {
 export interface WarehouseDrillDownOrganizerRow {
 	location_id: number | string;
 	partner_id: number | string;
+	partner_name?: string | null;
+}
+
+export interface WarehouseDrillDownOrganizerBreakdownRow {
+	location_id: number | string;
+	partner_id: number | string;
+	partner_name?: string | null;
+	scheduled?: number | string;
+	played?: number | string;
+	almost_filled?: number | string;
+	rostered_canceled?: number | string;
+	missing_roster?: number | string;
+	happened?: number | string;
+	incident_games?: number | string;
+}
+
+export interface WarehouseDrillDownOrganizerPlayerRow {
+	location_id: number | string;
+	player_id: number | string;
+	partner_id: number | string;
+	partner_name?: string | null;
 }
 
 export interface WarehouseQueryable {
@@ -67,6 +88,8 @@ export interface WarehouseAppActivityRow {
 export interface WarehouseTimeRow {
 	bucket: string | null;
 	department: GameDepartment | null;
+	organizer_id?: string | null;
+	organizer_name?: string | null;
 	is_total: number;
 	value: number | string | null;
 	numerator: number | string;

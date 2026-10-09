@@ -2,6 +2,7 @@ import type {
 	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownRange,
+	DrillDownSegment,
 	DrillDownSlice,
 	MetricDrillDownView,
 } from "@core/application/dtos/metric-drill-down-dto.types";
@@ -12,6 +13,7 @@ export interface MetricDrillDownQuery {
 	measure: DrillDownMeasure;
 	range: DrillDownRange;
 	slice: DrillDownSlice;
+	segment?: DrillDownSegment;
 	marketId?: string;
 	facilityId?: string;
 	department?: GameDepartment;

@@ -3,6 +3,7 @@
 import type {
 	DrillDownMeasure,
 	DrillDownRange,
+	DrillDownSegment,
 	DrillDownSlice,
 	GetMetricDrillDownInput,
 	MetricDrillDownView,
@@ -18,6 +19,7 @@ export function metricDrillDownQueryKey(input: {
 	measure: DrillDownMeasure;
 	range: DrillDownRange;
 	slice: DrillDownSlice;
+	segment?: DrillDownSegment;
 	marketId?: string;
 	facilityId?: string;
 	grain?: GetMetricDrillDownInput["grain"];
@@ -31,6 +33,7 @@ export function metricDrillDownQueryKey(input: {
 		input.measure,
 		input.range,
 		input.slice,
+		input.segment ?? "none",
 		input.grain ?? "range",
 		input.comparison ?? "previous-period",
 		input.marketId ?? "all",

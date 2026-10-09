@@ -28,6 +28,7 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 	const app = isAppActivityMeasure(measure);
 	const quality = measure === "almost-filled-rate" || measure === "incident-games-rate";
 	const player = measure === "unique-players" || measure === "activated-players";
+	const byOrganizer = query.segment === "organizer";
 	let ctes = "";
 	let population: string;
 	let value = "count(distinct a.entity_id)";
@@ -38,12 +39,12 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 		if (measure === "registrations") {
 			ctes = `${REGISTRATION_REGIONS_CTE},`;
 			population = `select p.confirmed_at::date as event_date, p.player_id::text as entity_id,
-    null::text as department, null::text as facility_id, 1 as sessions
+    null::text as department, null::text as facility_id, null::int as partner_id, 1 as sessions
     from plei_gold.dim_player p join region_coordinates c on c.region_id = p.region_id
     where ${REGISTRATION_PERIOD_PREDICATE} and ($5::text is null or p.region_id::text = $5)`;
 		} else {
 			population = `select s.date::date as event_date, s.player_id::text as entity_id,
-    null::text as department, null::text as facility_id, s.q_sessions as sessions
+    null::text as department, null::text as facility_id, null::int as partner_id, s.q_sessions as sessions
     from plei_gold.players_behaviour s left join plei_gold.dim_player p on p.player_id = s.player_id
     where s.date >= $1::date and s.date < $2::date
     ${measure === "unique-users" ? "and s.q_sessions > 0" : ""}
@@ -69,7 +70,7 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 		} else if (player) {
 			ctes = `${ORGANIZER_PARTNERS_CTE},`;
 			population = `select f.date_played::date as event_date, f.player_id::text as entity_id,
-    ${gameDepartmentCase("r")} as department, m.value as facility_id
+    ${gameDepartmentCase("r")} as department, m.value as facility_id, r.partner_id
     from plei_gold.fct_games_opened f
     left join plei_gold.dim_reservation r on r.reservation_id = f.reservation_id
     ${organizerPartnersJoin("r")}
@@ -81,18 +82,18 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 		} else if (measure === "active-organizers") {
 			ctes = `${ORGANIZER_PARTNERS_CTE},`;
 			population = `select r.date_with_time::date as event_date, r.partner_id::text as entity_id,
-    ${gameDepartmentCase("r")} as department, m.value as facility_id
+    ${gameDepartmentCase("r")} as department, m.value as facility_id, r.partner_id
     from plei_gold.dim_reservation r ${organizerPartnersJoin("r")}
     join ${mapping} on m.key = r.location_id::text
     where r.date_with_time::date >= $1::date and r.date_with_time::date < $2::date
-    and op.partner_id is not null
+    and ${gameDepartmentCase("r")} = 'organizers'
     and r.reservation_type = 'OpenReservation' and not (${isOperationalCancellationSql("r")})
     and ${isPlayedGameSql("r")}
     and (cardinality($3::text[]) = 0 or ${gameDepartmentCase("r")} = any($3::text[]))`;
 		} else {
 			ctes = `${ORGANIZER_PARTNERS_CTE},`;
 			population = `select r.date_with_time::date as event_date, r.reservation_id::text as entity_id,
-    ${gameDepartmentCase("r")} as department, m.value as facility_id, ${isPlayedGameSql("r")} as played
+    ${gameDepartmentCase("r")} as department, m.value as facility_id, r.partner_id, ${isPlayedGameSql("r")} as played
     from plei_gold.dim_reservation r ${organizerPartnersJoin("r")}
     join ${mapping} on m.key = r.location_id::text
     where r.date_with_time::date >= $1::date and r.date_with_time::date < $2::date
@@ -116,13 +117,31 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 				: measure === "almost-filled-rate"
 					? " and (a.rostered_canceled or a.missing_roster)"
 					: "";
+	const grouping = {
+		true: `group by grouping sets ((a.bucket), (a.bucket, a.department), (), (a.department))
+ having grouping(a.department) = 1 or a.department is not null`,
+		[`${byOrganizer}`]: `group by grouping sets ((a.bucket), (a.bucket, a.department), (a.bucket, a.organizer_id), (), (a.department), (a.organizer_id))
+ having (grouping(a.department) = 1 or a.department is not null)
+    and (grouping(a.organizer_id) = 1 or a.organizer_id is not null)`,
+	}.true;
+	const organizerColumns = {
+		true: "",
+		[`${byOrganizer}`]:
+			", case when grouping(a.organizer_id) = 0 then a.organizer_id end as organizer_id, max(pn.partner_name) as organizer_name",
+	}.true;
+	const organizerJoin = {
+		true: "",
+		[`${byOrganizer}`]:
+			" left join plei_gold.dim_partner pn on pn.partner_id::text = a.organizer_id",
+	}.true;
 	return `with parameters as (select $1::date, $2::date, $3::text[], $4::jsonb, $5::text), ${ctes} population as (${population}), activity as (
- select p.*, date_trunc('${grain}', p.event_date)::date as bucket from population p
+ select p.*, date_trunc('${grain}', p.event_date)::date as bucket,
+  case when p.department = 'organizers' then p.partner_id::text end as organizer_id
+ from population p
  )
  select a.bucket::text, a.department, grouping(a.bucket) as is_total,
  ${value} as value, ${numerator} as numerator, ${denominator} as denominator, ${errors} as data_errors,
- array_agg(distinct a.facility_id) filter (where a.facility_id is not null${membership}) as facility_ids
- from activity a
- group by grouping sets ((a.bucket), (a.bucket, a.department), (), (a.department))
- having grouping(a.department) = 1 or a.department is not null`;
+ array_agg(distinct a.facility_id) filter (where a.facility_id is not null${membership}) as facility_ids${organizerColumns}
+ from activity a${organizerJoin}
+ ${grouping}`;
 }

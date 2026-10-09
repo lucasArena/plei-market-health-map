@@ -58,6 +58,20 @@ export class SampleMetricDrillDownRepository implements MetricDrillDownRepositor
 				missingRosterByDepartment: shareByDepartment(facility.gamesByDepartment, 0),
 				incidentGames: share(facility.games, 0.05),
 				incidentGamesByDepartment: shareByDepartment(facility.gamesByDepartment, 0.05),
+				organizers: facility.gamesByDepartment
+					? [
+							{
+								id: `org-${facility.id}`,
+								name: `${facility.name} organizer`,
+								games: facility.gamesByDepartment.organizers,
+								scheduled: share(facility.gamesByDepartment.organizers, 1) ?? 0,
+								almostFilled: share(facility.gamesByDepartment.organizers, 0.08),
+								rosteredCanceled: share(facility.gamesByDepartment.organizers, 0.2),
+								missingRoster: 0,
+								incidentGames: share(facility.gamesByDepartment.organizers, 0.05),
+							},
+						]
+					: [],
 			}),
 		);
 		return aggregateDrillDownFromFacts({

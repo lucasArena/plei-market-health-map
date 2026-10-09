@@ -34,6 +34,12 @@ function rowPerDay(row: MetricDrillDownRow, fallbackDays: number): MetricDrillDo
 		...row,
 		value: perDay(row.value, days),
 		departments: departmentsPerDay(row.departments, days),
+		organizers: row.organizers?.map((organizer) => ({
+			...organizer,
+			value: perDay(organizer.value, days),
+			previousValue:
+				organizer.previousValue === undefined ? undefined : perDay(organizer.previousValue, days),
+		})),
 	};
 }
 

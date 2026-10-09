@@ -100,6 +100,15 @@ describe("metricDrillDownQueryKey", () => {
 				enabled: false,
 			}),
 		).toEqual(expect.arrayContaining(["miami", "a", "magic", "magic", false]));
+		expect(
+			metricDrillDownQueryKey({
+				measure: "games",
+				range: "28d",
+				slice: "market",
+				segment: "organizer",
+				enabled: true,
+			}),
+		).toEqual(expect.arrayContaining(["metric-drill-down", "games", "market", "organizer", true]));
 	});
 });
 

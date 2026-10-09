@@ -233,6 +233,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							},
 							...(!rules.isAppActivity ? [{ value: "facility", label: m.facility }] : []),
 							...(rules.canSliceByDepartment ? [{ value: "department", label: m.department }] : []),
+							...(rules.canSliceByOrganizer ? [{ value: "organizer", label: m.organizer }] : []),
 						]}
 					/>
 					{!rules.isAppActivity && (
@@ -246,6 +247,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							options={[
 								{ value: "none", label: m.none },
 								{ value: "department", label: m.department },
+								{ value: "organizer", label: m.organizer },
 							]}
 						/>
 					)}
@@ -351,6 +353,20 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 										))}
 									</div>
 								)}
+								{segment === "organizer" && (
+									<div className="flex flex-wrap gap-3 text-[11px]">
+										{rules.organizers.map((organizer) => (
+											<span key={organizer.id} className="flex items-center gap-1">
+												<span
+													aria-hidden="true"
+													className="size-2 rounded-full"
+													style={{ backgroundColor: rules.organizerColor(organizer.id) }}
+												/>
+												{organizer.name}
+											</span>
+										))}
+									</div>
+								)}
 								<div className="overflow-x-auto pt-2 pb-3">
 									<div
 										className="relative pr-14"
@@ -407,17 +423,23 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 																<button
 																	key={bar.id}
 																	type="button"
-																	onClick={() => rules.toggleFocus(row, bar.department)}
-																	aria-pressed={rules.isSelected(row, bar.department)}
+																	onClick={() =>
+																		rules.toggleFocus(row, {
+																			department: bar.department,
+																			organizerId: bar.organizerId,
+																		})
+																	}
+																	aria-pressed={rules.isSelected(row, {
+																		department: bar.department,
+																		organizerId: bar.organizerId,
+																	})}
 																	aria-label={bar.label}
 																	style={{
 																		height: `${bar.height}%`,
 																		backgroundColor:
 																			bar.value === 0
 																				? "transparent"
-																				: drillDownGlassColor(
-																						DRILL_DOWN_COLORS[bar.department ?? "organizers"],
-																					),
+																				: drillDownGlassColor(bar.color),
 																	}}
 																	className={`${DRILL_DOWN_BAR_CLASS} ${bar.isTop ? DRILL_DOWN_BAR_TOP_CLASS : ""}`}
 																>
@@ -557,6 +579,12 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 														{departmentNames[department]}
 													</th>
 												))}
+											{segment === "organizer" &&
+												rules.organizers.map((organizer) => (
+													<th key={organizer.id} className="px-2 text-right">
+														{organizer.name}
+													</th>
+												))}
 											{selection.slice !== "department" && !rules.isTime && (
 												<th>
 													<span className="sr-only">{m.viewOnMap}</span>
@@ -622,6 +650,20 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 															)}
 														</td>
 													))}
+												{segment === "organizer" &&
+													rules.organizers.map((organizer) => {
+														const cell = row.organizers?.find((item) => item.id === organizer.id);
+														return (
+															<td key={organizer.id} className="px-2 text-right tabular-nums">
+																{formatValue(cell?.value ?? null)}
+																{cell && rules.rateParts(cell) && (
+																	<span className="block text-[10px] text-muted-foreground">
+																		{rules.rateParts(cell)}
+																	</span>
+																)}
+															</td>
+														);
+													})}
 												{selection.slice !== "department" && !rules.isTime && (
 													<td className="py-2 pl-3 text-right">
 														<button

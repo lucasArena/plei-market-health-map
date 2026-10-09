@@ -6,6 +6,19 @@ import type {
 } from "@core/application/dtos/metric-drill-down-dto.types";
 import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
 
+export interface DrillDownOrganizerFact {
+	id: string;
+	name: string;
+	games?: number | null;
+	scheduled?: number | null;
+	uniquePlayerIds?: readonly string[];
+	activatedPlayerIds?: readonly string[];
+	almostFilled?: number | null;
+	rosteredCanceled?: number | null;
+	missingRoster?: number;
+	incidentGames?: number | null;
+}
+
 export interface DrillDownFacilityFact {
 	id: string;
 	name: string;
@@ -13,6 +26,7 @@ export interface DrillDownFacilityFact {
 	marketName: string;
 	games: number | null;
 	gamesByDepartment: GameDepartmentCounts | null;
+	organizers?: readonly DrillDownOrganizerFact[] | null;
 	scheduled?: number | null;
 	scheduledByDepartment?: GameDepartmentCounts | null;
 	uniquePlayerIds?: readonly string[];
@@ -61,7 +75,16 @@ export interface DistinctCountContribution {
 	id: string;
 	name: string;
 	memberKeys: readonly string[];
+	facilityIds?: readonly string[];
 	departments?: Partial<Record<GameDepartment, readonly string[]>> | null;
+	organizers?:
+		| readonly {
+				id: string;
+				name: string;
+				memberKeys: readonly string[];
+				facilityIds?: readonly string[];
+		  }[]
+		| null;
 }
 
 export interface RateContribution {
@@ -70,9 +93,20 @@ export interface RateContribution {
 	numerator: number | null;
 	denominator: number | null;
 	dataErrors?: number;
+	facilityIds?: readonly string[];
 	departments?: Partial<
 		Record<GameDepartment, { numerator: number | null; denominator: number | null }>
 	> | null;
+	organizers?:
+		| readonly {
+				id: string;
+				name: string;
+				numerator: number | null;
+				denominator: number | null;
+				dataErrors?: number;
+				facilityIds?: readonly string[];
+		  }[]
+		| null;
 }
 
 export type { MetricDrillDownRow };

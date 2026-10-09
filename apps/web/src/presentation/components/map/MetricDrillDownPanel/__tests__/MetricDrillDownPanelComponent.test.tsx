@@ -125,6 +125,22 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 					},
 					incidentGames: 1,
 					incidentGamesByDepartment: { magic: 0, organizers: 1, partnerships: 0 },
+					organizers: facility.gamesByDepartment
+						? [
+								{
+									id: "club",
+									name: "Club",
+									games: facility.gamesByDepartment.organizers,
+									scheduled: facility.gamesByDepartment.organizers,
+									uniquePlayerIds: facility.id === "a" ? ["p2"] : ["p3"],
+									activatedPlayerIds: facility.id === "a" ? ["p2"] : ["p3"],
+									almostFilled: 0,
+									rosteredCanceled: 2,
+									missingRoster: facility.id === "a" ? 1 : 0,
+									incidentGames: 1,
+								},
+							]
+						: [],
 				}),
 			),
 			measure: input.measure,
@@ -195,6 +211,7 @@ function select(name: string, value: string) {
 		market: "Market",
 		facility: "Facility",
 		department: "Department",
+		organizer: "Organizer",
 		none: "None",
 		"7d": "7D",
 		"28d": "28D",
@@ -292,6 +309,27 @@ describe("MetricDrillDownPanel", () => {
 			facilityIds: ["a", "b", "c"],
 			department: "magic",
 		});
+	});
+	it("selects an organizer slice and segments markets by organizer, excluding Magic", () => {
+		setup();
+		select("Slice", "organizer");
+		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Club: 5" })).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Club: 5" }));
+		expect(setMetricFocus).toHaveBeenLastCalledWith({
+			facilityIds: ["a", "b", "c"],
+			department: "organizers",
+		});
+		select("Slice", "market");
+		select("Segment", "organizer");
+		const bar = screen.getByRole("button", { name: "Miami · Club: 4" });
+		fireEvent.click(bar);
+		expect(setMetricFocus).toHaveBeenLastCalledWith({
+			facilityIds: ["a", "b"],
+			department: "organizers",
+		});
+		expect(screen.getByText("4", { selector: "p" })).toBeInTheDocument();
+		expect(screen.getAllByText("Club").length).toBeGreaterThan(0);
 	});
 	it("can clear shared market scope after View on map", () => {
 		scope = { kind: "market", id: "miami", name: "Miami" };
@@ -436,6 +474,7 @@ describe("MetricDrillDownPanel", () => {
 		select("Measure", "active-organizers");
 		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
 		expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
+		expect(screen.getByRole("option", { name: "Organizer" })).toBeInTheDocument();
 		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
 	});
 	it("offers department slices for game and player measures and hides them for active facilities", () => {

@@ -51,6 +51,8 @@ describe("CachedMetricDrillDownRepository", () => {
 			await repository.group({ ...query, slice: "time", grain });
 		}
 		expect(inner.group).toHaveBeenCalledTimes(5);
+		await repository.group({ ...query, segment: "organizer" });
+		expect(inner.group).toHaveBeenCalledTimes(6);
 		expect(METRIC_DRILL_DOWN_LONG_RANGE_CACHE_TTL_MS).toBeGreaterThan(
 			METRIC_DRILL_DOWN_CACHE_TTL_MS,
 		);

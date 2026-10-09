@@ -324,6 +324,8 @@ export const en: Messages = {
 		market: "Market",
 		facility: "Facility",
 		department: "Department",
+		organizer: "Organizer",
+		unknownOrganizer: "Unknown organizer",
 		none: "None",
 		range7d: "7D",
 		range28d: "28D",
@@ -332,8 +334,9 @@ export const en: Messages = {
 		range12m: "12M",
 		selectedDepartmentHelp:
 			"Showing the selected department. Go back to compare departments again.",
+		selectedOrganizerHelp: "Showing the selected organizer. Go back to compare organizers again.",
 		segmentUnavailable:
-			"Department segments are available when grouping by market or facility. Facilities can serve multiple departments.",
+			"Department and organizer segments are available when grouping by market, facility or date. Organizer groups count Organizer Program partners only, not Magic.",
 		topTen: "Top 10",
 		chart: "Metric by group",
 		value: "Count",
@@ -508,7 +511,7 @@ export const en: Messages = {
 			"insights-panel-v3":
 				"Open the redesigned insights panel on load, with a health strip, comparison dates and data freshness.",
 			"metric-drill-down":
-				"Explore games and active facilities by market, facility and department.",
+				"Explore games and active facilities by market, facility, department and organizer.",
 			"facility-games-layer":
 				"Show a Games supply selector with game counts in clusters and at each facility.",
 			"facility-games-trend":
