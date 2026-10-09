@@ -223,6 +223,8 @@ function select(name: string, value: string) {
 	fireEvent.click(screen.getByRole("option", { name: labels[value as keyof typeof labels] }));
 	if (value === "time") fireEvent.click(screen.getByRole("option", { name: "Day" }));
 }
+beforeEach(() => localStorage.clear());
+
 describe("MetricDrillDownPanel", () => {
 	beforeEach(() => {
 		timeView = undefined;
@@ -984,6 +986,24 @@ describe("drill-down changes", () => {
 		select("Measure", "unique-players");
 		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 100% (+1)");
 	});
+	it("remembers the date range and comparison for the next visit", () => {
+		localStorage.setItem(
+			"market-health-map:drill-down-dates",
+			JSON.stringify({ range: "90d", comparison: "year" }),
+		);
+		setup();
+
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "90d", comparison: "year" }),
+		);
+		fireEvent.click(screen.getByRole("combobox", { name: "Compare" }));
+		fireEvent.click(screen.getByRole("option", { name: "WoW" }));
+		expect(JSON.parse(localStorage.getItem("market-health-map:drill-down-dates") ?? "{}")).toEqual({
+			range: "90d",
+			comparison: "week",
+		});
+	});
+
 	it("changes comparison independently from sorting and range", () => {
 		setup();
 		const compare = screen.getByRole("combobox", { name: "Compare" });
