@@ -130,10 +130,16 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					<p className="text-xs">{rules.measureLabel}</p>
 					{!rules.isTime && !rules.isLoading && !rules.isError && (
 						<p
-							style={{ color: rules.headlineChange.color }}
-							className={`mt-1 text-xs font-normal tabular-nums ${rules.headlineChange.className}`}
+							data-testid="drill-down-headline-change"
+							className="mt-1 text-xs font-normal tabular-nums text-foreground"
 						>
-							{rules.headlineChange.label}
+							<span
+								style={{ color: rules.headlineChange.color }}
+								className={rules.headlineChange.className}
+							>
+								{rules.headlineChange.label}
+							</span>
+							{rules.headlineChange.countLabel && <span> {rules.headlineChange.countLabel}</span>}
 						</p>
 					)}
 					{!rules.isLoading && !rules.isError && rules.headlineParts && (
@@ -545,13 +551,23 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													)}
 												</td>
 												{!rules.isTime && (
-													<td
-														style={{
-															color: rules.changeDisplay(row.value, row.previousValue).color,
-														}}
-														className={`px-2 text-right whitespace-nowrap font-normal tabular-nums ${rules.changeDisplay(row.value, row.previousValue).className}`}
-													>
-														{rules.changeDisplay(row.value, row.previousValue).label}
+													<td className="px-2 text-right whitespace-nowrap font-normal tabular-nums text-foreground">
+														<span
+															style={{
+																color: rules.changeDisplay(row.value, row.previousValue).color,
+															}}
+															className={
+																rules.changeDisplay(row.value, row.previousValue).className
+															}
+														>
+															{rules.changeDisplay(row.value, row.previousValue).label}
+														</span>
+														{rules.changeDisplay(row.value, row.previousValue).countLabel && (
+															<span>
+																{" "}
+																{rules.changeDisplay(row.value, row.previousValue).countLabel}
+															</span>
+														)}
 													</td>
 												)}
 												{segment === "department" &&

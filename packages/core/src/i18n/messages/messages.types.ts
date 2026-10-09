@@ -175,19 +175,6 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
-		changeGamesOne: string;
-		changeGamesOther: string;
-		changePlayersOne: string;
-		changePlayersOther: string;
-		changeFacilitiesOne: string;
-		changeFacilitiesOther: string;
-		changeSessionsOne: string;
-		changeSessionsOther: string;
-		changeRegistrationsOne: string;
-		changeRegistrationsOther: string;
-		changeUsersOne: string;
-		changeUsersOther: string;
-
 		compare: string;
 		compareWeek: string;
 		compareMonth: string;
