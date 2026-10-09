@@ -213,7 +213,11 @@ export function useMetricDrillDownPanelRules({
 		if (view.kind === "rate") return current - previous;
 		return previous === 0 ? null : ((current - previous) / previous) * 100;
 	}
-	function changeDisplay(current: number | null, previous: number | null | undefined) {
+	function changeDisplay(
+		current: number | null,
+		previous: number | null | undefined,
+		includeUnit = false,
+	) {
 		if (current === null || previous == null)
 			return { label: messages.drillDown.unavailable, className: "text-muted-foreground" };
 		const level =
@@ -231,12 +235,50 @@ export function useMetricDrillDownPanelRules({
 		}[level];
 		const value = changeValue(current, previous);
 		const arrow = { up: "↑", down: "↓", stable: "→" }[level];
+		const formattedChange =
+			value === null
+				? messages.drillDown.changeNew
+				: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`;
+		const difference = Math.abs(current - previous);
+		const unitLabels = {
+			games: [messages.drillDown.changeGamesOne, messages.drillDown.changeGamesOther],
+			"scheduled-games": [messages.drillDown.changeGamesOne, messages.drillDown.changeGamesOther],
+			"unique-players": [
+				messages.drillDown.changePlayersOne,
+				messages.drillDown.changePlayersOther,
+			],
+			"activated-players": [
+				messages.drillDown.changePlayersOne,
+				messages.drillDown.changePlayersOther,
+			],
+			"active-facilities": [
+				messages.drillDown.changeFacilitiesOne,
+				messages.drillDown.changeFacilitiesOther,
+			],
+			"app-sessions": [
+				messages.drillDown.changeSessionsOne,
+				messages.drillDown.changeSessionsOther,
+			],
+			registrations: [
+				messages.drillDown.changeRegistrationsOne,
+				messages.drillDown.changeRegistrationsOther,
+			],
+			"unique-users": [messages.drillDown.changeUsersOne, messages.drillDown.changeUsersOther],
+			"confirmation-rate": [],
+			"almost-filled-rate": [],
+			"incident-games-rate": [],
+		};
+		const unit =
+			unitLabels[selection.measure][
+				new Intl.PluralRules(locale).select(difference) === "one" ? 0 : 1
+			];
+		const absoluteChange = `${number.format(difference)}${includeUnit && unit ? ` ${unit}` : ""}`;
 		const label =
 			level === "stable"
 				? `${messages.drillDown.changeStable} ${arrow}`
-				: value === null
-					? `${arrow} ${messages.drillDown.changeNew}`
-					: `${arrow} ${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`;
+				: view.kind === "rate"
+					? `${arrow} ${formattedChange}`
+					: `${arrow} ${absoluteChange} · ${formattedChange}`;
 		return { label, className, color: level === "down" ? PLEIFUL_COLORS.negative[50] : undefined };
 	}
 	const date = new Intl.DateTimeFormat(locale, {
@@ -489,6 +531,7 @@ export function useMetricDrillDownPanelRules({
 				? focusedRow.previousDepartments?.[focus.department]
 				: focusedRow.previousValue
 			: view.previousTotal,
+		true,
 	);
 	return {
 		comparison,

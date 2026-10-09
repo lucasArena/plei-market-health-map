@@ -837,11 +837,11 @@ describe("drill-down changes", () => {
 	});
 	it("uses consistent rounding, colors and sorting with new and missing last", () => {
 		setup();
-		expect(screen.getByText("↑ 6.7%")).toBeInTheDocument();
-		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
-		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
+		expect(screen.getByText("↑ 2 games · 6.7%")).toBeInTheDocument();
+		expect(screen.getByText("↑ 2 · 20%")).toHaveClass("text-pleiful-pitch-green-50");
+		expect(screen.getByText("↓ 10 · 100%")).toHaveStyle({ color: "#EF4444" });
 		expect(screen.getByText("stable →")).toBeInTheDocument();
-		expect(screen.getByText("↑ New")).toBeInTheDocument();
+		expect(screen.getByText("↑ 10 · New")).toBeInTheDocument();
 		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Change" }));
 		const names = () =>
@@ -853,13 +853,32 @@ describe("drill-down changes", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
 		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
 		fireEvent.click(screen.getByText("Up", { selector: "td" }));
-		expect(screen.getAllByText("↑ 20%")).toHaveLength(2);
+		expect(screen.getByText("↑ 2 games · 20%")).toBeInTheDocument();
+		expect(screen.getByText("↑ 2 · 20%")).toBeInTheDocument();
 	});
 	it("compares the selected department against its own prior value", () => {
 		setup();
 		select("Segment", "department");
 		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
-		expect(screen.getAllByText("↑ 50%")).toHaveLength(2);
+		expect(screen.getByText("↑ 4 games · 50%")).toBeInTheDocument();
+		expect(screen.getByText("↑ 4 · 50%")).toBeInTheDocument();
+	});
+	it("shows the absolute decrease in the selected headline", () => {
+		setup();
+		fireEvent.click(screen.getByText("Down", { selector: "td" }));
+		expect(screen.getByText("↓ 10 games · 100%")).toHaveStyle({ color: "#EF4444" });
+	});
+	it("shows new activity with its raw difference", () => {
+		setup();
+		fireEvent.click(screen.getByText("New market", { selector: "td" }));
+		expect(screen.getByText("↑ 10 games · New")).toBeInTheDocument();
+	});
+	it("uses singular player units for distinct counts", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = { ...comparisonView, kind: "distinct-count", total: 2, previousTotal: 1 };
+		setup();
+		select("Measure", "unique-players");
+		expect(screen.getByText("↑ 1 player · 100%")).toBeInTheDocument();
 	});
 	it("changes comparison independently from sorting and range", () => {
 		setup();
@@ -875,7 +894,7 @@ describe("drill-down changes", () => {
 		expect(comparisonInputs).toHaveBeenLastCalledWith(
 			expect.objectContaining({ range: "28d", comparison: "year" }),
 		);
-		expect(screen.getByText("↑ 6.7%")).toHaveClass("font-normal");
+		expect(screen.getByText("↑ 2 games · 6.7%")).toHaveClass("font-normal");
 		expect(compare).toHaveTextContent("YOY");
 		expect(compare).toHaveAttribute("title", expect.stringContaining("Year over year"));
 		expect(screen.getByRole("button", { name: "Change ↓" }).closest("th")).toHaveAttribute(
