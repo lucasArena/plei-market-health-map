@@ -179,11 +179,6 @@ export const en: Messages = {
 	},
 	facilityView: {
 		level: "Facility",
-		rankTitle: "Rank in {market}",
-		rankByGames: "By games",
-		rankByChange: "By change",
-		rankValue: "#{rank}",
-		rankOf: "of {total}",
 		demandTitle: "Demand",
 		averagePlayers: "Avg players per game",
 		waitlistGames: "Games with a waitlist",

@@ -61,11 +61,19 @@ const SECTIONS = {
 };
 
 describe("FacilityOverview", () => {
-	it("shows the facility header, status, scorecards, trend, rank, demand and satisfaction", () => {
+	it("shows the facility header, status, scorecards, trend, popular times, demand and satisfaction", () => {
 		mockRules.mockReturnValue({
 			...BASE,
 			sections: SECTIONS,
-			rank: { title: "Rank in Houston", rows: [{ ...ROW, label: "By games", value: "#2" }] },
+			popularTimes: {
+				title: "Popular times · last 28 days",
+				dayLabels: ["Mon"],
+				periodLabels: ["Morning"],
+				periodRanges: ["6–12"],
+				cells: [],
+				quietLabel: "Quiet",
+				busyLabel: "Busy",
+			},
 			satisfaction: {
 				title: "Player satisfaction",
 				rows: [ROW],
@@ -83,7 +91,9 @@ describe("FacilityOverview", () => {
 		expect(screen.getByTestId("status-summary")).toHaveTextContent("Needs attention");
 		expect(screen.getByTestId("score-played")).toBeInTheDocument();
 		expect(screen.getByTestId("facility-games-trend")).toBeInTheDocument();
-		expect(screen.getByRole("region", { name: "Rank in Houston" })).toHaveTextContent("By games#2");
+		expect(
+			screen.getByRole("heading", { name: "Popular times · last 28 days" }),
+		).toBeInTheDocument();
 		expect(screen.getByRole("region", { name: "Demand" })).toHaveTextContent(
 			"Avg players per game11.4",
 		);
@@ -94,20 +104,20 @@ describe("FacilityOverview", () => {
 	});
 
 	it("holds placeholders while loading and says when there are no low reviews", () => {
-		mockRules.mockReturnValue({ ...BASE, sections: null, rank: null, satisfaction: null });
+		mockRules.mockReturnValue({ ...BASE, sections: null, popularTimes: null, satisfaction: null });
 		const { unmount } = render(
 			<FacilityOverview facilityId="889" facilityName="Pegaso HTX" marketName="Houston" />,
 		);
 
 		expect(screen.queryByTestId("status-summary")).not.toBeInTheDocument();
-		expect(screen.queryByTestId("facility-rank")).not.toBeInTheDocument();
+		expect(screen.queryByRole("heading", { name: /Popular times/ })).not.toBeInTheDocument();
 		expect(screen.getByRole("region", { name: "Player satisfaction" })).toBeInTheDocument();
 		unmount();
 
 		mockRules.mockReturnValue({
 			...BASE,
 			sections: null,
-			rank: null,
+			popularTimes: null,
 			satisfaction: {
 				title: "Player satisfaction",
 				rows: [ROW],

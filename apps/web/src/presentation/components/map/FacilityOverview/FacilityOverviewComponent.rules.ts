@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	type FacilityGameChangeView,
 	type FacilityLowReviewView,
 	type FacilityQualityPeriodView,
 	toReservationPeriodView,
@@ -12,7 +11,10 @@ import { useCallback, useMemo } from "react";
 import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import type { GamesMetricView } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
 import type { ScopeHeaderView } from "@/presentation/components/displays/ScopeHeader/ScopeHeaderComponent.types";
-import { createDetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
+import {
+	buildPopularTimes,
+	createDetailFormatters,
+} from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import type {
 	FacilityMetricsSectionView,
 	FacilityOverviewProps,
@@ -38,46 +40,6 @@ import { useMapScope } from "@/presentation/components/providers/MapScopeProvide
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityQuality } from "@/presentation/hooks/use-facility/use-facility-quality";
 import { useFacilityReservationStats } from "@/presentation/hooks/use-facility/use-facility-reservation-stats";
-import { useMarketGameInsights } from "@/presentation/hooks/use-market/use-market-game-insights";
-
-const NO_DEPARTMENTS: [] = [];
-
-export function buildFacilityRank(
-	facilityId: string,
-	facilities: FacilityGameChangeView[] | undefined,
-	marketName: string,
-	messages: FacilityViewMessages,
-	number: Intl.NumberFormat,
-): FacilityMetricsSectionView | null {
-	const listed = (facilities ?? []).filter(
-		(facility) => facility.played > 0 || facility.playedPrevious > 0,
-	);
-	const self = listed.find((facility) => facility.id === facilityId);
-	if (!self) return null;
-	const total = formatMessage(messages.rankOf, { total: number.format(listed.length) });
-	const rankRow = (key: string, label: string, above: number): GamesMetricView => ({
-		key,
-		label,
-		value: formatMessage(messages.rankValue, { rank: number.format(above + 1) }),
-		previous: total,
-		change: null,
-	});
-	return {
-		title: formatMessage(messages.rankTitle, { market: marketName }),
-		rows: [
-			rankRow(
-				"games",
-				messages.rankByGames,
-				listed.filter((facility) => facility.played > self.played).length,
-			),
-			rankRow(
-				"change",
-				messages.rankByChange,
-				listed.filter((facility) => facility.change > self.change).length,
-			),
-		],
-	};
-}
 
 export function averageMetric(
 	key: string,
@@ -226,7 +188,6 @@ export function useFacilityOverviewRules({
 	const { period, setMapNavigation, setScope } = useMapScope();
 	const report = useFacilityReservationStats(facilityId).data;
 	const marketId = report?.facility.marketId ?? null;
-	const insights = useMarketGameInsights(marketId, period, marketId !== null, NO_DEPARTMENTS).data;
 	const quality = useFacilityQuality(facilityId).data;
 	const formatters = useMemo(() => createDetailFormatters(locale), [locale]);
 	const periodMessages = messages.statsPeriods[period];
@@ -310,16 +271,20 @@ export function useFacilityOverviewRules({
 		};
 	}, [facilityName, formatters, locale, messages, period, periodMessages, report]);
 
-	const rank = useMemo(
+	const popularTimes = useMemo(
 		() =>
-			buildFacilityRank(
-				facilityId,
-				insights?.[0]?.facilities,
-				marketName,
-				facilityMessages,
-				formatters.number,
-			),
-		[facilityId, facilityMessages, formatters.number, insights, marketName],
+			report
+				? {
+						title: messages.facilityDetail.popularTimes,
+						dayLabels: [...messages.facilityDetail.dayLabels],
+						periodLabels: [...messages.facilityDetail.timePeriodLabels],
+						periodRanges: messages.facilityDetail.timePeriodRanges,
+						cells: buildPopularTimes(report.stats, messages.facilityDetail, formatters),
+						quietLabel: messages.facilityDetail.quiet,
+						busyLabel: messages.facilityDetail.busy,
+					}
+				: null,
+		[formatters, messages.facilityDetail, report],
 	);
 
 	const demand = useMemo(
@@ -356,7 +321,7 @@ export function useFacilityOverviewRules({
 	return {
 		demand,
 		header,
-		rank,
+		popularTimes,
 		satisfaction,
 		satisfactionPending: pendingSection(facilityMessages.satisfactionTitle, [
 			facilityMessages.averageRating,

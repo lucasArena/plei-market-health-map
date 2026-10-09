@@ -184,11 +184,6 @@ export const es: Messages = {
 	},
 	facilityView: {
 		level: "Instalación",
-		rankTitle: "Posición en {market}",
-		rankByGames: "Por partidos",
-		rankByChange: "Por cambio",
-		rankValue: "#{rank}",
-		rankOf: "de {total}",
 		demandTitle: "Demanda",
 		averagePlayers: "Promedio de jugadores por partido",
 		waitlistGames: "Partidos con lista de espera",
