@@ -111,6 +111,11 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						</p>
 					)}
 					<p className="text-xs">{rules.measureLabel}</p>
+					{!rules.isTime && !rules.isLoading && !rules.isError && (
+						<p className={`mt-1 text-xs tabular-nums ${rules.headlineChange.className}`}>
+							{rules.headlineChange.label}
+						</p>
+					)}
 					{!rules.isLoading && !rules.isError && rules.headlineParts && (
 						<p className="mt-1 text-xs tabular-nums text-muted-foreground">{rules.headlineParts}</p>
 					)}
@@ -450,6 +455,35 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 													</svg>
 												</button>
 											</th>
+											{!rules.isTime && (
+												<th
+													className="px-2 text-right whitespace-nowrap"
+													aria-sort={
+														rules.sort === "change-asc"
+															? "ascending"
+															: rules.sort === "change-desc"
+																? "descending"
+																: "none"
+													}
+												>
+													<button
+														type="button"
+														className="cursor-pointer"
+														onClick={() =>
+															rules.setSort(
+																rules.sort === "change-desc" ? "change-asc" : "change-desc",
+															)
+														}
+													>
+														{m.change}{" "}
+														{rules.sort.startsWith("change")
+															? rules.sort === "change-asc"
+																? "↑"
+																: "↓"
+															: ""}
+													</button>
+												</th>
+											)}
 											{segment === "department" &&
 												rules.departments.map((department) => (
 													<th key={department} className="px-2 text-right">
@@ -490,6 +524,13 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 														</span>
 													)}
 												</td>
+												{!rules.isTime && (
+													<td
+														className={`px-2 text-right whitespace-nowrap tabular-nums ${rules.changeDisplay(row.value, row.previousValue).className}`}
+													>
+														{rules.changeDisplay(row.value, row.previousValue).label}
+													</td>
+												)}
 												{segment === "department" &&
 													rules.departments.map((department) => (
 														<td key={department} className="px-2 text-right tabular-nums">

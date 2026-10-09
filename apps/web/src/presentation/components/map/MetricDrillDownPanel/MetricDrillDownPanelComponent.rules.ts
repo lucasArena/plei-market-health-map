@@ -14,9 +14,11 @@ import {
 	canSliceDrillDownByDepartment,
 	crossesAppTrackingSourceSwitch,
 	DRILL_DOWN_DEPARTMENTS,
+	DRILL_DOWN_RANGE_DAYS,
 	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
+import { classifyGamesTrend } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
@@ -201,6 +203,41 @@ export function useMetricDrillDownPanelRules({
 		minimumFractionDigits: 1,
 		maximumFractionDigits: 1,
 	});
+	function changeValue(current: number | null, previous: number | null | undefined) {
+		if (current === null || previous == null) return null;
+		if (view.kind === "rate") return current - previous;
+		return previous === 0 ? null : ((current - previous) / previous) * 100;
+	}
+	function changeDisplay(current: number | null, previous: number | null | undefined) {
+		if (current === null || previous == null)
+			return { label: messages.drillDown.unavailable, className: "text-muted-foreground" };
+		const level =
+			view.kind === "rate"
+				? current === previous
+					? "stable"
+					: current > previous
+						? "up"
+						: "down"
+				: classifyGamesTrend(current, previous);
+		const className = {
+			up: "text-pleiful-pitch-green-50",
+			down: "text-pleiful-sangria-50",
+			stable: "text-muted-foreground",
+		}[level];
+		const value = changeValue(current, previous);
+		const label =
+			value === null
+				? messages.drillDown.changeNew
+				: level === "stable"
+					? messages.drillDown.changeStable
+					: formatMessage(
+							level === "up" ? messages.drillDown.changeUp : messages.drillDown.changeDown,
+							{
+								value: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`,
+							},
+						);
+		return { label: `${{ up: "↑", down: "↓", stable: "→" }[level]} ${label}`, className };
+	}
 	const date = new Intl.DateTimeFormat(locale, {
 		year: "numeric",
 		month: "short",
@@ -276,12 +313,26 @@ export function useMetricDrillDownPanelRules({
 					...focusedRow,
 					...(focus?.department ? focusedRow.departmentParts?.[focus.department] : {}),
 					value: focusedValue,
+					previousValue: focus?.department
+						? (focusedRow.previousDepartments?.[focus.department] ?? null)
+						: focusedRow.previousValue,
 				},
 			]
 		: view.rows;
 	const rows = [...visibleRows].sort((a, b) => {
 		if (sort === "name-asc") return rowName(a).localeCompare(rowName(b), locale);
 		if (sort === "name-desc") return rowName(b).localeCompare(rowName(a), locale);
+		if (!isTime && sort.startsWith("change")) {
+			const left = changeValue(a.value, a.previousValue);
+			const right = changeValue(b.value, b.previousValue);
+			if (left === null && right === null) return rowName(a).localeCompare(rowName(b), locale);
+			if (left === null) return 1;
+			if (right === null) return -1;
+			return (
+				(sort === "change-asc" ? left - right : right - left) ||
+				rowName(a).localeCompare(rowName(b), locale)
+			);
+		}
 		if (a.value === null && b.value === null) return 0;
 		if (a.value === null) return 1;
 		if (b.value === null) return -1;
@@ -427,7 +478,23 @@ export function useMetricDrillDownPanelRules({
 				})
 			: undefined;
 	const dataErrors = headlineSource.dataErrors ?? 0;
+	const headlineChange = changeDisplay(
+		hasFocus ? focusedValue : view.total,
+		hasFocus
+			? focus?.department
+				? focusedRow.previousDepartments?.[focus.department]
+				: focusedRow.previousValue
+			: view.previousTotal,
+	);
 	return {
+		changeDisplay,
+		headlineChange: {
+			...headlineChange,
+			label: formatMessage(messages.drillDown.changePrior, {
+				change: headlineChange.label,
+				days: DRILL_DOWN_RANGE_DAYS[range],
+			}),
+		},
 		messages: messages.drillDown,
 		measureLabel: measureLabels[selection.measure],
 		valueLabel: view.kind === "rate" ? messages.drillDown.rate : messages.drillDown.value,
@@ -482,7 +549,10 @@ export function useMetricDrillDownPanelRules({
 		showSourceSwitch:
 			isAppActivity &&
 			selection.measure !== "registrations" &&
-			crossesAppTrackingSourceSwitch(view.start, view.end),
+			(crossesAppTrackingSourceSwitch(view.start, view.end) ||
+				(!!view.previousStart &&
+					!!view.previousEnd &&
+					crossesAppTrackingSourceSwitch(view.previousStart, view.previousEnd))),
 		showSupply: effectiveSupply,
 		viewOnMap,
 		heading,

@@ -175,6 +175,13 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		change: string;
+		changeNew: string;
+		changeStable: string;
+		changeUp: string;
+		changeDown: string;
+		changePrior: string;
+
 		noCompletedBuckets: string;
 		bucketHelp: string;
 		time: string;

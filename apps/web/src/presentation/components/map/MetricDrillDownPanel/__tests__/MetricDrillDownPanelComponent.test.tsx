@@ -38,6 +38,7 @@ const facility: FacilityPointView = {
 };
 let data: FacilityPointView[] = [];
 let timeView: MetricDrillDownView | undefined;
+let comparisonView: MetricDrillDownView | undefined;
 let pending = false;
 let failed = false;
 let gameDepartments: ("magic" | "organizers" | "partnerships")[] = [];
@@ -56,6 +57,8 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 		if (!input.enabled) {
 			return { data: undefined, isPending: false, isError: false, refetch: retry };
 		}
+		if (comparisonView && input.slice !== "time")
+			return { data: comparisonView, isPending: false, isError: false, refetch: retry };
 		if (pending) return { data: undefined, isPending: true, isError: false, refetch: retry };
 		if (failed) return { data: undefined, isPending: false, isError: true, refetch: retry };
 		const { start, end } = drillDownWindow(
@@ -788,5 +791,100 @@ describe("time slices", () => {
 		timeView = { ...timeView, start: "2026-10-01", end: "2026-09-30", rows: [] };
 		result.rerender(<MetricDrillDownPanel {...result.props} />);
 		expect(screen.getByText("No completed buckets in this date range.")).toBeInTheDocument();
+	});
+});
+
+describe("drill-down changes", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		period = "month";
+		showSupply = true;
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		data = [facility];
+		comparisonView = {
+			measure: "games",
+			range: "28d",
+			kind: "count",
+			start: "2026-09-10",
+			end: "2026-10-07",
+			previousStart: "2026-08-13",
+			previousEnd: "2026-09-09",
+			total: 32,
+			previousTotal: 30,
+			rows: [
+				{
+					id: "up",
+					name: "Up",
+					value: 12,
+					previousValue: 10,
+					departments: { magic: 12, organizers: 0, partnerships: 0 },
+					previousDepartments: { magic: 8, organizers: 0, partnerships: 0 },
+				},
+				{ id: "down", name: "Down", value: 0, previousValue: 10, departments: null },
+				{ id: "stable", name: "Equal", value: 10, previousValue: 10, departments: null },
+				{ id: "new", name: "New market", value: 10, previousValue: 0, departments: null },
+				{ id: "missing", name: "Missing", value: null, previousValue: null, departments: null },
+			],
+		};
+	});
+	afterEach(() => {
+		comparisonView = undefined;
+	});
+	it("uses consistent rounding, colors and sorting with new and missing last", () => {
+		setup();
+		expect(screen.getByText("↑ up 6.7% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ up 20%")).toHaveClass("text-pleiful-pitch-green-50");
+		expect(screen.getByText("↓ down 100%")).toHaveClass("text-pleiful-sangria-50");
+		expect(screen.getByText("→ Stable")).toBeInTheDocument();
+		expect(screen.getByText("↑ New")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Change" }));
+		const names = () =>
+			within(screen.getByRole("table"))
+				.getAllByRole("row")
+				.slice(1)
+				.map((row) => row.querySelector("td")?.textContent);
+		expect(names()).toEqual(["Up", "Equal", "Down", "Missing", "New market"]);
+		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
+		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
+		fireEvent.click(screen.getByText("Up", { selector: "td" }));
+		expect(screen.getByText("↑ up 20% vs prior 28 days")).toBeInTheDocument();
+	});
+	it("compares the selected department against its own prior value", () => {
+		setup();
+		select("Segment", "department");
+		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
+		expect(screen.getByText("↑ up 50% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ up 50%")).toBeInTheDocument();
+	});
+	it("uses points for rates and keeps unavailable comparisons unavailable", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = {
+			...comparisonView,
+			kind: "rate",
+			total: 82.1,
+			previousTotal: 80,
+			rows: [
+				{ id: "a", name: "Arena", value: 82.1, previousValue: 80, departments: null },
+				{
+					id: "b",
+					name: "No prior denominator",
+					value: 20,
+					previousValue: null,
+					departments: null,
+				},
+			],
+		};
+		setup();
+		expect(screen.getByText("↑ up 2.1 pts vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ up 2.1 pts")).toBeInTheDocument();
+	});
+	it("shows the source-switch note when the previous app window crosses the transition", () => {
+		if (!comparisonView) throw new Error("Missing fixture");
+		comparisonView = { ...comparisonView, previousStart: "2026-06-28", previousEnd: "2026-07-25" };
+		setup();
+		select("Measure", "app-sessions");
+		expect(screen.getByRole("note")).toHaveTextContent("Tracking source changed");
 	});
 });

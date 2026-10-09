@@ -72,6 +72,8 @@ export interface MetricDrillDownRateParts {
 }
 
 export interface MetricDrillDownRow {
+	previousValue?: number | null;
+	previousDepartments?: Record<GameDepartment, number | null> | null;
 	id: string;
 	name: string;
 	bucketStart?: string;
@@ -88,6 +90,9 @@ export interface MetricDrillDownRow {
 }
 
 export interface MetricDrillDownView {
+	previousTotal?: number | null;
+	previousStart?: string;
+	previousEnd?: string;
 	total: number | null;
 	rows: MetricDrillDownRow[];
 	numerator?: number | null;

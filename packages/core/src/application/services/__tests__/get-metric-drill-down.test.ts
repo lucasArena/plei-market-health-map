@@ -60,7 +60,7 @@ describe("getMetricDrillDown", () => {
 		const { getMetricDrillDown } = setup();
 		await expect(
 			getMetricDrillDown({ measure: "games", range: "28d", slice: "market" }),
-		).resolves.toEqual({
+		).resolves.toMatchObject({
 			total: 10,
 			start: "2026-09-10",
 			end: "2026-10-07",
@@ -680,7 +680,7 @@ describe("drill-down window helpers", () => {
 it.each(["app-sessions", "registrations", "unique-users"] as const)(
 	"normalizes %s to market and ignores supply filters",
 	async (measure) => {
-		const group = vi.fn().mockResolvedValue({});
+		const group = vi.fn().mockResolvedValue({ total: null, rows: [] });
 		const get = makeGetMetricDrillDown({
 			drillDown: { group },
 			clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
@@ -751,5 +751,73 @@ describe("time slice validation", () => {
 		await expect(
 			getMetricDrillDown({ measure: "games", range: "28d", slice: "market", grain: "week" }),
 		).rejects.toBeInstanceOf(InvalidRequestError);
+	});
+});
+
+describe("previous period drill-down", () => {
+	it.each(["7d", "28d", "90d", "6m", "12m"] as const)(
+		"uses adjacent equal-length %s windows and matches group IDs",
+		async (range) => {
+			const { getMetricDrillDown, drillDown } = setup();
+			const group = vi.spyOn(drillDown, "group");
+			const view = await getMetricDrillDown({
+				measure: "games",
+				range,
+				slice: "market",
+				departments: ["magic"],
+				timeZone: "Pacific/Honolulu",
+			});
+			expect(group).toHaveBeenCalledTimes(2);
+			expect(group.mock.calls[1]?.[0]).toMatchObject({
+				today: view.start,
+				previousPeriod: true,
+				departments: ["magic"],
+				measure: "games",
+				range,
+				slice: "market",
+			});
+			expect(view.previousTotal).toBe(view.total);
+			expect(view.rows[0]?.previousValue).toBe(view.rows[0]?.value);
+			expect(view.rows[0]?.previousDepartments).toEqual(view.rows[0]?.departments);
+			expect(Date.parse(view.end) - Date.parse(view.start)).toBe(
+				Date.parse(view.previousEnd as string) - Date.parse(view.previousStart as string),
+			);
+			expect(Date.parse(view.start) - Date.parse(view.previousEnd as string)).toBe(86400000);
+		},
+	);
+	it("does not request comparisons for time grouping", async () => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const group = vi.spyOn(drillDown, "group");
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "time",
+			grain: "day",
+		});
+		expect(group).toHaveBeenCalledTimes(1);
+		expect(view.previousTotal).toBeUndefined();
+	});
+	it("retains prior-only markets and distinguishes missing rates from zero counts", async () => {
+		const { getMetricDrillDown, drillDown } = setup();
+		const current = await drillDown.group({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		vi.spyOn(drillDown, "group")
+			.mockResolvedValueOnce(current)
+			.mockResolvedValueOnce({
+				...current,
+				total: 20,
+				rows: [{ id: "old", name: "Old", value: 20, departments: null }],
+			});
+		const view = await getMetricDrillDown({ measure: "games", range: "28d", slice: "market" });
+		expect(view.rows).toEqual([
+			expect.objectContaining({ id: "miami", value: 10, previousValue: 0 }),
+			expect.objectContaining({ id: "old", value: 0, previousValue: 20 }),
+		]);
 	});
 });

@@ -192,6 +192,13 @@ export const en: Messages = {
 		neverPlayed: "No games played yet",
 	},
 	drillDown: {
+		change: "Change",
+		changeNew: "New",
+		changeStable: "Stable",
+		changeUp: "up {value}",
+		changeDown: "down {value}",
+		changePrior: "{change} vs prior {days} days",
+
 		noCompletedBuckets: "No completed buckets in this date range.",
 		bucketHelp:
 			"Completed calendar buckets only. Weeks start Monday. The first bucket can be partial.",

@@ -197,6 +197,13 @@ export const es: Messages = {
 		neverPlayed: "Aún no se jugaron partidos",
 	},
 	drillDown: {
+		change: "Cambio",
+		changeNew: "Nuevo",
+		changeStable: "Estable",
+		changeUp: "sube {value}",
+		changeDown: "baja {value}",
+		changePrior: "{change} vs los {days} días anteriores",
+
 		noCompletedBuckets: "No hay intervalos completos en este período.",
 		bucketHelp:
 			"Solo intervalos completos. Las semanas empiezan el lunes. El primero puede ser parcial.",
