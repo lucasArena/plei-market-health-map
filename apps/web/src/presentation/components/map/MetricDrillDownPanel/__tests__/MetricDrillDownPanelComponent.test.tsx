@@ -550,9 +550,16 @@ describe("MetricDrillDownPanel", () => {
 		pending = true;
 		const { rerender, props } = setup();
 		expect(screen.getByRole("status")).toHaveTextContent("Loading metrics");
+		expect(screen.getByTestId("drill-down-skeleton")).toBeInTheDocument();
+		for (const name of ["Measure", "Slice", "Segment"]) {
+			expect(screen.getByRole("combobox", { name })).toBeVisible();
+			expect(screen.getByRole("combobox", { name }).querySelector(".truncate")).toBeNull();
+		}
+		expect(screen.queryByText(/1970/)).not.toBeInTheDocument();
 		pending = false;
 		failed = true;
 		rerender(<MetricDrillDownPanel {...props} />);
+		expect(screen.queryByTestId("drill-down-skeleton")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 		expect(retry).toHaveBeenCalled();
 		failed = false;

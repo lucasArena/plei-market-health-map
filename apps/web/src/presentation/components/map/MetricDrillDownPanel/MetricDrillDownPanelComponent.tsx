@@ -14,6 +14,7 @@ import {
 	DRILL_DOWN_EXPAND_BUTTON_CLASS,
 	DRILL_DOWN_EXPANDED_PANEL_CLASS,
 	DRILL_DOWN_PANEL_CLASS,
+	DRILL_DOWN_SKELETON_CLASS,
 	drillDownGlassColor,
 } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
 import type { MetricDrillDownPanelProps } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
@@ -91,7 +92,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					</button>
 				</div>
 			</div>
-			<div className="min-h-0 space-y-4 overflow-y-auto p-5 pt-3">
+			<div className="min-h-0 shrink space-y-4 overflow-y-auto p-5 pt-3">
 				{rules.showScopeBack && (
 					<button
 						type="button"
@@ -102,14 +103,22 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					</button>
 				)}
 				<div>
-					<p className="text-3xl font-semibold tabular-nums">
-						{rules.isLoading || rules.isError ? "—" : formatValue(rules.headlineValue)}
-					</p>
+					{rules.isLoading ? (
+						<div aria-hidden="true" className={`${DRILL_DOWN_SKELETON_CLASS} mb-1 h-8 w-24`} />
+					) : (
+						<p className="text-3xl font-semibold tabular-nums">
+							{rules.isError ? "—" : formatValue(rules.headlineValue)}
+						</p>
+					)}
 					<p className="text-xs">{rules.measureLabel}</p>
 					{!rules.isLoading && !rules.isError && rules.headlineParts && (
 						<p className="mt-1 text-xs tabular-nums text-muted-foreground">{rules.headlineParts}</p>
 					)}
-					<p className="mt-1 text-xs text-muted-foreground">{rules.dateRange}</p>
+					{rules.isLoading ? (
+						<div aria-hidden="true" className={`${DRILL_DOWN_SKELETON_CLASS} mt-1 h-4 w-48`} />
+					) : (
+						<p className="mt-1 text-xs text-muted-foreground">{rules.dateRange}</p>
+					)}
 					{rules.focusLabel && <p className="mt-1 text-xs font-medium">{rules.focusLabel}</p>}
 					<p className="mt-1 text-xs text-muted-foreground">{m.selectionHelp}</p>
 				</div>
@@ -199,9 +208,30 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					</p>
 				)}
 				{rules.isLoading && (
-					<p role="status" className="animate-pulse text-sm">
-						{m.loading}
-					</p>
+					<div role="status">
+						<span className="sr-only">{m.loading}</span>
+						<div aria-hidden="true" data-testid="drill-down-skeleton" className="space-y-4">
+							<div
+								className={`flex items-end gap-4 border-b border-border px-4 pb-1 ${rules.isExpanded ? "h-80" : "h-52"}`}
+							>
+								{[45, 70, 55, 85, 60].map((height) => (
+									<div
+										key={height}
+										className={`${DRILL_DOWN_SKELETON_CLASS} flex-1 rounded-b-none`}
+										style={{ height: `${height}%` }}
+									/>
+								))}
+							</div>
+							<div className="space-y-3">
+								{[0, 1, 2, 3].map((row) => (
+									<div key={row} className="flex justify-between gap-4 border-b border-border pb-3">
+										<div className={`${DRILL_DOWN_SKELETON_CLASS} h-4 w-1/2`} />
+										<div className={`${DRILL_DOWN_SKELETON_CLASS} h-4 w-12`} />
+									</div>
+								))}
+							</div>
+						</div>
+					</div>
 				)}
 				{rules.isError && (
 					<div role="alert" className="text-sm">

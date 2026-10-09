@@ -28,7 +28,13 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 				onClick={rules.toggle}
 				className={rules.classes.trigger}
 			>
-				<span className="truncate">{rules.selected}</span>
+				<span
+					className={
+						props.variant === "pill" ? "truncate" : "min-w-0 whitespace-normal break-words"
+					}
+				>
+					{rules.selected}
+				</span>
 				<MapFilterChevron open={rules.open} />
 			</button>
 			{rules.open && (

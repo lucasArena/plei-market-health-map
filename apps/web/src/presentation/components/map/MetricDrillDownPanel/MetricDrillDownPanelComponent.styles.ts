@@ -19,3 +19,6 @@ export const DRILL_DOWN_EXPANDED_PANEL_CLASS = `${MARKET_SUMMARY_PANEL_CLASS.rep
 	"w-[min(28rem,calc(100vw-2*var(--map-frame)))]",
 	"w-[min(72rem,calc(100vw-2*var(--map-frame)))]",
 )} h-[calc(100dvh-2*var(--map-frame)-40px)] max-sm:h-[calc(100dvh-2*var(--map-frame)-80px)]`;
+
+export const DRILL_DOWN_SKELETON_CLASS =
+	"animate-pulse rounded bg-foreground/[0.07] motion-reduce:animate-none";
