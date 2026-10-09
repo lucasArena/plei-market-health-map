@@ -18,7 +18,6 @@ export {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
-	incidentFactsFrom,
 	measureRateValue,
 	rateContributionsFromFacts,
 	rateFactParts,

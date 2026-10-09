@@ -403,16 +403,6 @@ export function rateContributionsFromFacts(
 	);
 }
 
-export function incidentFactsFrom(
-	facilities: readonly DrillDownFacilityFact[],
-): DrillDownFacilityFact[] {
-	return facilities.map((facility) => ({
-		...facility,
-		games: facility.incidentGames ?? null,
-		gamesByDepartment: facility.incidentGamesByDepartment ?? null,
-	}));
-}
-
 export function distinctContributionsFromFacts(
 	facilities: readonly DrillDownFacilityFact[],
 	slice: DrillDownSlice,
@@ -489,7 +479,6 @@ export function aggregateDrillDownFromFacts(
 		});
 	const countFacts: Partial<Record<DrillDownMeasure, () => DrillDownFacilityFact[]>> = {
 		"scheduled-games": () => scheduledFactsFrom(input.facilities),
-		"incident-games": () => incidentFactsFrom(input.facilities),
 	};
 	return aggregateCountDrillDown({
 		...input,

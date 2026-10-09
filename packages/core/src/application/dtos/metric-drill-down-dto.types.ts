@@ -19,7 +19,6 @@ export const DRILL_DOWN_MEASURES = [
 	"unique-players",
 	"activated-players",
 	"almost-filled-rate",
-	"incident-games",
 	"incident-games-rate",
 ] as const;
 export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
@@ -41,7 +40,6 @@ export const DRILL_DOWN_MEASURE_KIND = {
 	"unique-players": "distinct-count",
 	"activated-players": "distinct-count",
 	"almost-filled-rate": "rate",
-	"incident-games": "count",
 	"incident-games-rate": "rate",
 } as const satisfies Record<DrillDownMeasure, DrillDownMeasureKind>;
 

@@ -2,6 +2,7 @@ export interface MapMetricSelectOption {
 	value: string;
 	label: string;
 }
+export type MapMetricSelectVariant = "field" | "pill";
 export interface MapMetricSelectProps {
 	label: string;
 	help: string;
@@ -10,5 +11,6 @@ export interface MapMetricSelectProps {
 	disabled?: boolean;
 	descriptionId?: string;
 	alignRight?: boolean;
+	variant?: MapMetricSelectVariant;
 	onChange(value: string): void;
 }

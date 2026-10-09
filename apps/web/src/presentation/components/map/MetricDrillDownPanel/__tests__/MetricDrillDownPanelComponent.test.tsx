@@ -145,7 +145,6 @@ function select(name: string, value: string) {
 		"unique-players": "Unique players",
 		"activated-players": "Activated players",
 		"almost-filled-rate": "Almost-filled rate",
-		"incident-games": "Incident games",
 		"incident-games-rate": "Incident games %",
 		market: "Market",
 		facility: "Facility",
@@ -415,12 +414,13 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Arena · Magic: 50.0%" }));
 		expect(screen.queryByText(/almost-filled canceled games of/)).not.toBeInTheDocument();
 	});
-	it("shows incident games with the reviews-lag note and incident rate parts", () => {
+	it("offers only the incident rate, with the reviews-lag note and its parts", () => {
 		setup();
-		select("Measure", "incident-games");
-		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /Count ↕/ })).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("combobox", { name: "Measure" }));
+		expect(screen.queryByRole("option", { name: "Incident games" })).not.toBeInTheDocument();
+		fireEvent.keyDown(screen.getByRole("combobox", { name: "Measure" }), { key: "Escape" });
 		select("Measure", "incident-games-rate");
+		expect(screen.getByRole("button", { name: /Rate ↕/ })).toBeInTheDocument();
 		expect(screen.getByText(/Reviews arrive after games/)).toBeInTheDocument();
 		expect(screen.getByText("3 incident games of 16 happened games")).toBeInTheDocument();
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument();

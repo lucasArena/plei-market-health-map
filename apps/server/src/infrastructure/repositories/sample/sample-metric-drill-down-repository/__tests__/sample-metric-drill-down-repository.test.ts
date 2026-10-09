@@ -67,17 +67,12 @@ describe("SampleMetricDrillDownRepository", () => {
 		});
 		expect(almostFilled.kind).toBe("rate");
 		expect(almostFilled.dataErrors).toBe(0);
-		const incidents = await repository.group({
-			...base,
-			measure: "incident-games",
-			slice: "market",
-		});
-		expect(incidents.kind).toBe("count");
 		const incidentRate = await repository.group({
 			...base,
 			measure: "incident-games-rate",
 			slice: "market",
 		});
-		expect(incidentRate.numerator).toBe(incidents.total);
+		expect(incidentRate.kind).toBe("rate");
+		expect(incidentRate.numerator).not.toBeNull();
 	});
 });

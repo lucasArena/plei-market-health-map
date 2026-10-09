@@ -177,7 +177,6 @@ export function useMetricDrillDownPanelRules({
 		"unique-players": messages.drillDown.uniquePlayers,
 		"activated-players": messages.drillDown.activatedPlayers,
 		"almost-filled-rate": messages.drillDown.almostFilledRate,
-		"incident-games": messages.drillDown.incidentGames,
 		"incident-games-rate": messages.drillDown.incidentGamesRate,
 	};
 	const formatValue = (value: number | null) =>
@@ -243,19 +242,24 @@ export function useMetricDrillDownPanelRules({
 			if (!counts) return { ...row, bars: [] };
 			return {
 				...row,
-				bars: selectedDepartments.flatMap((department) => {
-					const value = counts[department];
-					if (value === null) return [];
-					return [
-						{
-							id: department,
-							department,
-							label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(value)}`,
-							value,
-							height: (value / max) * 100,
-						},
-					];
-				}),
+				bars: selectedDepartments
+					.flatMap((department) => {
+						const value = counts[department];
+						if (value === null) return [];
+						return [
+							{
+								id: department,
+								department,
+								label: `${rowName(row)} · ${departmentNames[department]}: ${formatValue(value)}`,
+								value,
+								height: (value / max) * 100,
+							},
+						];
+					})
+					.map((bar, index, bars) => ({
+						...bar,
+						isTop: bars.slice(index + 1).every((above) => above.value === 0),
+					})),
 			};
 		}
 		return {
@@ -268,6 +272,7 @@ export function useMetricDrillDownPanelRules({
 						.join(" · "),
 					value: row.value,
 					height: (row.value / max) * 100,
+					isTop: true,
 				},
 			],
 		};
@@ -361,8 +366,7 @@ export function useMetricDrillDownPanelRules({
 			dataErrors > 0
 				? formatMessage(messages.drillDown.rosterDataErrors, { count: number.format(dataErrors) })
 				: undefined,
-		showReviewsLag:
-			selection.measure === "incident-games" || selection.measure === "incident-games-rate",
+		showReviewsLag: selection.measure === "incident-games-rate",
 		rateParts,
 		focusLabel: hasFocus
 			? `${rowName(focusedRow)}${focus?.department ? ` · ${departmentNames[focus.department]}` : ""}`

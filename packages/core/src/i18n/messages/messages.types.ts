@@ -197,7 +197,6 @@ export interface Messages {
 		uniquePlayers: string;
 		activatedPlayers: string;
 		almostFilledRate: string;
-		incidentGames: string;
 		incidentGamesRate: string;
 		ratio: string;
 		ratioWithErrors: string;

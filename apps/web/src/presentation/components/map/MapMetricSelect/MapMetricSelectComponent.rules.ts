@@ -1,10 +1,17 @@
 "use client";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+	METRIC_SELECT_LABEL_CLASS,
+	METRIC_SELECT_MENU_CLASS,
+	METRIC_SELECT_ROOT_CLASS,
+	METRIC_SELECT_TRIGGER_CLASS,
+} from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent.styles";
 import type { MapMetricSelectProps } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent.types";
 export function useMapMetricSelectRules({
 	value,
 	options,
 	disabled,
+	variant = "field",
 	onChange,
 }: MapMetricSelectProps) {
 	const [open, setOpen] = useState(false);
@@ -66,5 +73,11 @@ export function useMapMetricSelectRules({
 		choose,
 		toggle: () => setOpen((current) => !current),
 		selected: options.find((option) => option.value === value)?.label,
+		classes: {
+			root: METRIC_SELECT_ROOT_CLASS[variant],
+			label: METRIC_SELECT_LABEL_CLASS[variant],
+			trigger: METRIC_SELECT_TRIGGER_CLASS[variant],
+			menu: METRIC_SELECT_MENU_CLASS[variant],
+		},
 	};
 }

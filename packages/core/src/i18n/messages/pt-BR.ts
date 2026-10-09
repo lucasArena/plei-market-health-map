@@ -218,7 +218,6 @@ export const ptBR: Messages = {
 		uniquePlayers: "Jogadores únicos",
 		activatedPlayers: "Jogadores ativados",
 		almostFilledRate: "Taxa de quase completos",
-		incidentGames: "Jogos com incidente",
 		incidentGamesRate: "% de jogos com incidente",
 		ratio: "{numerator} de {denominator}",
 		ratioWithErrors: "{numerator} de {denominator} · {errors} erros de dados",

@@ -30,6 +30,7 @@ export interface DrillDownChartBar {
 	label: string;
 	value: number;
 	height: number;
+	isTop: boolean;
 	department?: GameDepartment;
 }
 export interface DrillDownChartRow extends MetricDrillDownRow {

@@ -214,7 +214,6 @@ export const en: Messages = {
 		uniquePlayers: "Unique players",
 		activatedPlayers: "Activated players",
 		almostFilledRate: "Almost-filled rate",
-		incidentGames: "Incident games",
 		incidentGamesRate: "Incident games %",
 		ratio: "{numerator} of {denominator}",
 		ratioWithErrors: "{numerator} of {denominator} · {errors} data errors",

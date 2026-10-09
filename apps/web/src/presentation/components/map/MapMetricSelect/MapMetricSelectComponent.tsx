@@ -2,10 +2,7 @@
 import { MapFilterChevron } from "@/presentation/components/map/MapFilterAdd/MapFilterAddComponent";
 import { useMapMetricSelectRules } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent.rules";
 import type { MapMetricSelectProps } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent.types";
-import {
-	MAP_MENU_SURFACE_CLASS,
-	MAP_SEARCH_OPTION_HOVER_CLASS,
-} from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
+import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 	const rules = useMapMetricSelectRules(props);
 	return (
@@ -13,9 +10,9 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 			ref={rules.rootRef}
 			aria-label={props.label}
 			onKeyDown={rules.keys}
-			className="relative min-w-0 space-y-1 border-0 p-0"
+			className={rules.classes.root}
 		>
-			<span className="block text-muted-foreground">{props.label}</span>
+			<span className={rules.classes.label}>{props.label}</span>
 			<button
 				ref={rules.triggerRef}
 				type="button"
@@ -28,7 +25,7 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 				title={props.help}
 				disabled={props.disabled}
 				onClick={rules.toggle}
-				className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-foreground/[0.03] px-2 py-2 text-left text-xs hover:bg-foreground/[0.07] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default disabled:opacity-60"
+				className={rules.classes.trigger}
 			>
 				<span className="truncate">{rules.selected}</span>
 				<MapFilterChevron open={rules.open} />
@@ -39,7 +36,7 @@ export function MapMetricSelect(props: Readonly<MapMetricSelectProps>) {
 					id={rules.id}
 					role="listbox"
 					aria-label={props.label}
-					className={`${MAP_MENU_SURFACE_CLASS} ${props.alignRight ? "right-0" : "left-0"} z-50 min-w-48`}
+					className={`${rules.classes.menu} ${props.alignRight ? "right-0" : "left-0"}`}
 				>
 					{props.options.map((option) => (
 						<button

@@ -230,7 +230,6 @@ export {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
-	incidentFactsFrom,
 	makeGetMetricDrillDown,
 	measureRateValue,
 	rateContributionsFromFacts,

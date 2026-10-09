@@ -220,7 +220,6 @@ export const es: Messages = {
 		uniquePlayers: "Jugadores únicos",
 		activatedPlayers: "Jugadores activados",
 		almostFilledRate: "Tasa de casi completos",
-		incidentGames: "Partidos con incidente",
 		incidentGamesRate: "% de partidos con incidente",
 		ratio: "{numerator} de {denominator}",
 		ratioWithErrors: "{numerator} de {denominator} · {errors} errores de datos",

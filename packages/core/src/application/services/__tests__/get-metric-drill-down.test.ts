@@ -2,6 +2,7 @@ import {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
 } from "@core/application/dtos/metric-drill-down-dto";
+import type { DrillDownMeasure } from "@core/application/dtos/metric-drill-down-dto.types";
 import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { DrillDownFacilityFact } from "@core/application/services/aggregate-metric-drill-down.types";
@@ -13,7 +14,6 @@ import {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
-	incidentFactsFrom,
 	makeGetMetricDrillDown,
 	rateContributionsFromFacts,
 	rateFactParts,
@@ -444,11 +444,15 @@ describe("almost-filled and incident measures", () => {
 		});
 	});
 
-	it("counts incident games and rates them over happened games", async () => {
+	it("rates incident games over happened games and rejects the removed count", async () => {
 		const { getMetricDrillDown } = setup([quality]);
 		await expect(
-			getMetricDrillDown({ measure: "incident-games", range: "28d", slice: "market" }),
-		).resolves.toMatchObject({ kind: "count", total: 1 });
+			getMetricDrillDown({
+				measure: "incident-games" as DrillDownMeasure,
+				range: "28d",
+				slice: "market",
+			}),
+		).rejects.toBeInstanceOf(InvalidRequestError);
 		const rate = await getMetricDrillDown({
 			measure: "incident-games-rate",
 			range: "28d",
@@ -487,7 +491,6 @@ describe("almost-filled and incident measures", () => {
 			numerator: null,
 			numeratorByDepartment: null,
 		});
-		expect(incidentFactsFrom([bare])[0]).toMatchObject({ games: null, gamesByDepartment: null });
 		expect(scheduledFactsFrom([bare])[0]).toMatchObject({ games: null, gamesByDepartment: null });
 		expect(
 			rateContributionsFromFacts([bare], "department", {

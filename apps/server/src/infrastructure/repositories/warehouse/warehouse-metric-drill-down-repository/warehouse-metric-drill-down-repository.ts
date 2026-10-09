@@ -49,11 +49,7 @@ import {
 
 const GAME_DATE = "g.date_with_time::date";
 const UNASSIGNED_MARKET = "unassigned";
-const QUALITY_MEASURES: readonly DrillDownMeasure[] = [
-	"almost-filled-rate",
-	"incident-games",
-	"incident-games-rate",
-];
+const QUALITY_MEASURES: readonly DrillDownMeasure[] = ["almost-filled-rate", "incident-games-rate"];
 
 export function metricDrillDownLocationsSql(days: number): string {
 	return `

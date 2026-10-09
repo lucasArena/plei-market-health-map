@@ -9,9 +9,13 @@ import type {
 import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 import { useMetricDrillDownPanelRules } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.rules";
 import {
+	DRILL_DOWN_BAR_CLASS,
+	DRILL_DOWN_BAR_TOP_CLASS,
 	DRILL_DOWN_COLORS,
+	DRILL_DOWN_EXPAND_BUTTON_CLASS,
 	DRILL_DOWN_EXPANDED_PANEL_CLASS,
 	DRILL_DOWN_PANEL_CLASS,
+	drillDownGlassColor,
 } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
 import type { MetricDrillDownPanelProps } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
 
@@ -44,7 +48,22 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					<h2 className="text-base font-semibold">{m.title}</h2>
 					<p className="text-xs text-muted-foreground">{rules.heading}</p>
 				</div>
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-2">
+					<MapMetricSelect
+						label={m.range}
+						help={m.rangeHelp}
+						value={rules.range}
+						variant="pill"
+						alignRight
+						onChange={(value) => rules.setRange(value as DrillDownRange)}
+						options={[
+							{ value: "7d", label: m.range7d },
+							{ value: "28d", label: m.range28d },
+							{ value: "90d", label: m.range90d },
+							{ value: "6m", label: m.range6m },
+							{ value: "12m", label: m.range12m },
+						]}
+					/>
 					<button
 						ref={rules.expandButtonRef}
 						type="button"
@@ -52,7 +71,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						aria-label={rules.isExpanded ? m.collapse : m.expand}
 						title={rules.isExpanded ? m.collapse : m.expand}
 						aria-pressed={rules.isExpanded}
-						className="flex size-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+						className={DRILL_DOWN_EXPAND_BUTTON_CLASS}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -96,7 +115,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					<p className="mt-1 text-xs text-muted-foreground">{m.selectionHelp}</p>
 				</div>
 
-				<div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-2">
+				<div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-3">
 					<MapMetricSelect
 						label={m.measure}
 						help={m.measureHelp}
@@ -110,22 +129,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							{ value: "unique-players", label: m.uniquePlayers },
 							{ value: "activated-players", label: m.activatedPlayers },
 							{ value: "almost-filled-rate", label: m.almostFilledRate },
-							{ value: "incident-games", label: m.incidentGames },
 							{ value: "incident-games-rate", label: m.incidentGamesRate },
-						]}
-					/>
-					<MapMetricSelect
-						label={m.range}
-						help={m.rangeHelp}
-						value={rules.range}
-						alignRight
-						onChange={(value) => rules.setRange(value as DrillDownRange)}
-						options={[
-							{ value: "7d", label: m.range7d },
-							{ value: "28d", label: m.range28d },
-							{ value: "90d", label: m.range90d },
-							{ value: "6m", label: m.range6m },
-							{ value: "12m", label: m.range12m },
 						]}
 					/>
 					<MapMetricSelect
@@ -267,9 +271,11 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 																	backgroundColor:
 																		bar.value === 0
 																			? "transparent"
-																			: DRILL_DOWN_COLORS[bar.department ?? "organizers"],
+																			: drillDownGlassColor(
+																					DRILL_DOWN_COLORS[bar.department ?? "organizers"],
+																				),
 																}}
-																className="group relative aria-pressed:brightness-110 min-h-[2px] w-full shrink-0 cursor-pointer transition-opacity hover:z-10 hover:opacity-90 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+																className={`${DRILL_DOWN_BAR_CLASS} ${bar.isTop ? DRILL_DOWN_BAR_TOP_CLASS : ""}`}
 															>
 																<span
 																	aria-hidden="true"

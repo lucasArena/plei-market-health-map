@@ -475,16 +475,14 @@ describe("almost-filled and incident drill-down", () => {
 		);
 	});
 
-	it("counts incident games and keeps unreviewed happened games in the rate", async () => {
+	it("keeps unreviewed happened games in the incident rate", async () => {
 		const query = vi
 			.fn()
 			.mockResolvedValueOnce({ rows: [baseRow] })
-			.mockResolvedValueOnce({ rows: [qualityRow(1, { happened: 40, incident_games: 2 })] })
-			.mockResolvedValueOnce({ rows: [baseRow] })
 			.mockResolvedValueOnce({ rows: [qualityRow(1, { happened: 40, incident_games: 2 })] });
 		const repository = new WarehouseMetricDrillDownRepository({ query });
-		const count = await repository.group({
-			measure: "incident-games",
+		const rate = await repository.group({
+			measure: "incident-games-rate",
 			range: "7d",
 			slice: "market",
 			departments: ["magic"],
@@ -492,15 +490,6 @@ describe("almost-filled and incident drill-down", () => {
 			grain: "range",
 		});
 		expect(query.mock.calls[1]?.[1]).toEqual([[1], "2026-10-08", ["magic"]]);
-		expect(count).toMatchObject({ kind: "count", total: 2, rows: [{ id: "10", value: 2 }] });
-		const rate = await repository.group({
-			measure: "incident-games-rate",
-			range: "7d",
-			slice: "market",
-			departments: [],
-			today: "2026-10-08",
-			grain: "range",
-		});
 		expect(rate).toMatchObject({ total: 5, numerator: 2, denominator: 40 });
 		expect(rate.dataErrors).toBeUndefined();
 	});
