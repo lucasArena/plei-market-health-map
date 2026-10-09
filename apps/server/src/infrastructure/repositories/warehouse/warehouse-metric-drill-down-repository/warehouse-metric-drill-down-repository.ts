@@ -38,6 +38,7 @@ import {
 import type {
 	WarehouseAppActivityRow,
 	WarehouseDrillDownLocationRow,
+	WarehouseDrillDownOrganizerRow,
 	WarehouseDrillDownPlayerRow,
 	WarehouseDrillDownQualityRow,
 	WarehouseDrillDownReservationRow,
@@ -47,6 +48,7 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
 import {
 	metricDrillDownFacilitiesSql,
+	metricDrillDownOrganizerSql,
 	metricDrillDownPlayerSql,
 	metricDrillDownQualitySql,
 	metricDrillDownReservationSql,
@@ -246,6 +248,31 @@ export function qualityFactsFrom(
 	});
 }
 
+export function organizerFactsFrom(
+	facilities: readonly Facility[],
+	rows: readonly WarehouseDrillDownOrganizerRow[],
+): DrillDownFacilityFact[] {
+	const byLocation = new Map<string, string[]>();
+	for (const row of rows) {
+		const id = String(row.location_id);
+		byLocation.set(id, [...(byLocation.get(id) ?? []), String(row.partner_id)]);
+	}
+	return facilities.map((facility) => {
+		const props = facility.toJSON();
+		return {
+			id: props.id,
+			name: props.name,
+			marketId: props.marketId,
+			marketName: facility.marketName,
+			games: null,
+			gamesByDepartment: null,
+			activeOrganizerIds: [
+				...new Set(facility.memberIds.flatMap((id) => byLocation.get(String(id)) ?? [])),
+			],
+		};
+	});
+}
+
 export function playerFactsFrom(
 	facilities: readonly Facility[],
 	rows: readonly WarehouseDrillDownPlayerRow[],
@@ -347,6 +374,26 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 				: { rows: [] };
 			return aggregateDrillDownFromFacts({
 				facilities: playerFactsFrom(scoped, rows, query.measure),
+				measure: query.measure,
+				slice: query.slice,
+				marketId: query.marketId,
+				facilityId: query.facilityId,
+				department: query.department,
+				gameDepartments: query.departments,
+				start,
+				end,
+				range: query.range,
+			});
+		}
+		if (query.measure === "active-organizers") {
+			const { rows } = locationIds.length
+				? await this.warehouse.query<WarehouseDrillDownOrganizerRow>(
+						metricDrillDownOrganizerSql(days, byDepartment),
+						params,
+					)
+				: { rows: [] };
+			return aggregateDrillDownFromFacts({
+				facilities: organizerFactsFrom(scoped, rows),
 				measure: query.measure,
 				slice: query.slice,
 				marketId: query.marketId,

@@ -94,7 +94,7 @@ export function timeDrillDownView(
 					}
 				: {}),
 			departments:
-				query.measure === "active-facilities" ||
+				["active-facilities", "active-organizers"].includes(query.measure) ||
 				["app-sessions", "registrations", "unique-users"].includes(query.measure)
 					? null
 					: (Object.fromEntries(

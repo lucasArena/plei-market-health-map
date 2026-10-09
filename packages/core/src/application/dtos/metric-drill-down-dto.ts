@@ -53,17 +53,24 @@ export const getMetricDrillDownSchema = z
 				message: "Calendar grains require Time.",
 			});
 		}
-		if (value.measure === "active-facilities" && value.slice === "department") {
+		if (
+			(value.measure === "active-facilities" || value.measure === "active-organizers") &&
+			value.slice === "department"
+		) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["slice"],
-				message: "Active facilities cannot be sliced by department.",
+				message: "This measure cannot be sliced by department.",
 			});
 		}
 	});
 
 export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolean {
-	return measure !== "active-facilities" && !isAppActivityMeasure(measure);
+	return (
+		measure !== "active-facilities" &&
+		measure !== "active-organizers" &&
+		!isAppActivityMeasure(measure)
+	);
 }
 
 export function canSegmentDrillDown(

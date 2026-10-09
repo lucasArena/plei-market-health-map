@@ -82,6 +82,28 @@ from games g
 group by g.location_id`;
 }
 
+export function metricDrillDownOrganizerSql(days: number, byDepartment: boolean): string {
+	const departmentFilter = byDepartment
+		? `
+  and ${gameDepartmentCase("r")} = any($3::text[])`
+		: "";
+	return `
+with bounds as (
+  select ${todayParameterSql(2)} as today
+),
+${ORGANIZER_PARTNERS_CTE}
+select distinct r.location_id, r.partner_id
+from plei_gold.dim_reservation r
+${organizerPartnersJoin("r")}
+cross join bounds b
+where r.location_id = any($1::int[])
+  and op.partner_id is not null
+  and r.reservation_type = 'OpenReservation'
+  and ${inLastDaysSql(GAME_DATE, "b.today", days)}
+  and not (${isOperationalCancellationSql("r")})
+  and ${isPlayedGameSql("r")}${departmentFilter}`;
+}
+
 export const QUALITY_COUNTS = [
 	"almost_filled",
 	"rostered_canceled",

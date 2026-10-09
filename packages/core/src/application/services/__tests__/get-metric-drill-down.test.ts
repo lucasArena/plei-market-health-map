@@ -8,8 +8,13 @@ import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { DrillDownFacilityFact } from "@core/application/services/aggregate-metric-drill-down.types";
 import {
+	inclusiveDays,
+	toAverageDailyGamesView,
+} from "@core/application/services/average-daily-games-view";
+import {
 	aggregateCountDrillDown,
 	aggregateDistinctCountDrillDown,
+	aggregateDrillDownFromFacts,
 	aggregateRateDrillDown,
 	distinctContributionsFromFacts,
 	drillDownRangeDays,
@@ -850,3 +855,88 @@ it.each([
 		expect(view).toMatchObject({ previousStart: start, previousEnd: end });
 	},
 );
+
+describe("average daily games", () => {
+	it("divides games played by the days in the window, for the total, rows and previous period", async () => {
+		const { getMetricDrillDown } = setup();
+		const view = await getMetricDrillDown({
+			measure: "avg-daily-games",
+			range: "28d",
+			slice: "market",
+			departments: [],
+			timeZone: "America/New_York",
+		});
+		expect(view.measure).toBe("avg-daily-games");
+		expect(view.kind).toBe("count");
+		expect(view.total).toBe(0.4);
+		expect(view.rows[0]?.value).toBe(0.4);
+		expect(view.rows[0]?.departments).toEqual({ magic: 0.1, organizers: 0.1, partnerships: 0.2 });
+	});
+
+	it("uses each bucket's own length on the time slice", () => {
+		const view = toAverageDailyGamesView({
+			measure: "games",
+			range: "28d",
+			kind: "count",
+			start: "2026-09-01",
+			end: "2026-09-14",
+			total: 28,
+			rows: [
+				{
+					id: "2026-09-07",
+					name: "2026-09-07",
+					bucketStart: "2026-09-07",
+					bucketEnd: "2026-09-13",
+					value: 14,
+					departments: null,
+				},
+				{
+					id: "2026-09-01",
+					name: "2026-09-01",
+					bucketStart: "2026-09-01",
+					bucketEnd: "2026-09-06",
+					value: null,
+					departments: null,
+				},
+			],
+		});
+		expect(view.total).toBe(2);
+		expect(view.rows.map((row) => row.value)).toEqual([2, null]);
+		expect(inclusiveDays("2026-09-01", "2026-09-01")).toBe(1);
+	});
+});
+
+describe("active organizers", () => {
+	it("counts distinct organizers per group and in the total", () => {
+		const facts: DrillDownFacilityFact[] = [
+			{ ...facility, activeOrganizerIds: ["o1", "o2"] },
+			{ ...facility, id: "b", name: "Harbor", activeOrganizerIds: ["o2"] },
+			{ ...facility, id: "c", name: "Quiet" },
+		];
+		const view = aggregateDrillDownFromFacts({
+			facilities: facts,
+			measure: "active-organizers",
+			slice: "market",
+			start: "2026-09-10",
+			end: "2026-10-07",
+			range: "28d",
+		});
+		expect(view.kind).toBe("distinct-count");
+		expect(view.total).toBe(2);
+		expect(view.rows.map((row) => row.value)).toEqual([2]);
+	});
+
+	it("cannot be sliced by department", async () => {
+		const { getMetricDrillDown } = setup();
+		await expect(
+			getMetricDrillDown({
+				measure: "active-organizers",
+				range: "7d",
+				slice: "department",
+				departments: [],
+				timeZone: "America/New_York",
+			}),
+		).rejects.toBeInstanceOf(InvalidRequestError);
+		expect(canSliceDrillDownByDepartment("active-organizers")).toBe(false);
+	});
+});

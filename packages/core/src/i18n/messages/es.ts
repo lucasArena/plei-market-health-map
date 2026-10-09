@@ -220,8 +220,8 @@ export const es: Messages = {
 		partial: "parcial",
 
 		appSessions: "Sesiones de la app",
-		registrations: "Registros",
-		uniqueUsers: "Usuarios únicos",
+		registrations: "Usuarios nuevos",
+		uniqueUsers: "Usuarios activos",
 		appActivityNote:
 			"La actividad de la app no está vinculada a una instalación ni a un departamento. Los filtros de departamento no se aplican.",
 		sourceSwitch:
@@ -247,10 +247,28 @@ export const es: Messages = {
 		activeFacilities: "Instalaciones activas",
 		scheduledGames: "Partidos programados",
 		confirmationRate: "Tasa de confirmación",
-		uniquePlayers: "Jugadores únicos",
+		uniquePlayers: "Jugadores activos",
 		activatedPlayers: "Jugadores activados",
 		almostFilledRate: "Tasa de casi completos",
-		incidentGamesRate: "% de partidos con incidente",
+		incidentGamesRate: "Partidos con incidente",
+		avgDailyGames: "Promedio diario de partidos",
+		activeOrganizers: "Organizadores activos",
+		measureTips: {
+			games: "Partidos que realmente se jugaron.",
+			avgDailyGames: "Partidos jugados divididos entre el número de días.",
+			scheduledGames: "Partidos puestos en el calendario, incluidos los cancelados después.",
+			incidentGamesRate:
+				"Parte de los partidos jugados que recibió una reseña baja (menos de 3 estrellas).",
+			confirmationRate: "Parte de los partidos programados que se jugó.",
+			almostFilledRate:
+				"Parte de los partidos cancelados que quedó a solo 1 a 3 jugadores del mínimo.",
+			registrations: "Personas que confirmaron una cuenta nueva en la app.",
+			uniqueUsers: "Personas que abrieron la app al menos una vez.",
+			activatedPlayers: "Jugadores que jugaron su primer partido.",
+			uniquePlayers: "Personas distintas que jugaron al menos un partido.",
+			activeOrganizers: "Organizadores que recibieron al menos un partido.",
+			activeFacilities: "Instalaciones que recibieron al menos un partido.",
+		},
 		ratio: "{numerator} de {denominator}",
 		ratioWithErrors: "{numerator} de {denominator} · {errors} errores de datos",
 		almostFilledParts:

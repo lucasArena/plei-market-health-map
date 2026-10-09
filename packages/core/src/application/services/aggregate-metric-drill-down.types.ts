@@ -19,6 +19,7 @@ export interface DrillDownFacilityFact {
 	uniquePlayerIdsByDepartment?: Partial<Record<GameDepartment, readonly string[]>> | null;
 	activatedPlayerIds?: readonly string[];
 	activatedPlayerIdsByDepartment?: Partial<Record<GameDepartment, readonly string[]>> | null;
+	activeOrganizerIds?: readonly string[];
 	almostFilled?: number | null;
 	almostFilledByDepartment?: GameDepartmentCounts | null;
 	rosteredCanceled?: number | null;
