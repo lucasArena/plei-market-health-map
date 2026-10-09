@@ -134,8 +134,9 @@ describe("calendar drill-down", () => {
 				expect(sql).toContain("count(distinct a.facility_id) filter (where a.played)");
 			if (measure === "active-organizers") {
 				expect(sql).toContain("r.partner_id::text as entity_id");
-				expect(sql).toContain("op.partner_id is not null");
+				expect(sql).toContain("= 'organizers'");
 			}
+			expect(sql).not.toContain("a.bucket, a.organizer_id");
 		},
 	);
 	it("returns no completed month without querying when the range is entirely current-month", async () => {
@@ -210,5 +211,25 @@ describe("calendar drill-down", () => {
 			measure: "active-facilities",
 		});
 		expect(empty.query.mock.calls[1]?.[1]).toEqual(["2026-09-10", "2026-10-05", [], "{}", null]);
+	});
+	it("groups time buckets by organizer when segmented", () => {
+		const sql = metricDrillDownTimeSql({ ...query, segment: "organizer" });
+		expect(sql).toContain("(a.bucket, a.organizer_id)");
+		expect(sql).toContain("plei_gold.dim_partner");
+		expect(sql).toContain("grouping(a.organizer_id) = 0");
+		const view = timeDrillDownView({ ...query, segment: "organizer" }, [
+			result,
+			{
+				...result,
+				organizer_id: "9",
+				organizer_name: "Club",
+				value: "2",
+				facility_ids: ["a"],
+			},
+			{ ...result, bucket: null, is_total: 1, value: "5" },
+		]);
+		expect(view.rows[0]?.organizers).toEqual([
+			expect.objectContaining({ id: "9", name: "Club", value: 2, facilityIds: ["a"] }),
+		]);
 	});
 });

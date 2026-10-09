@@ -5,6 +5,7 @@ import {
 import type {
 	DrillDownMeasure,
 	DrillDownSlice,
+	MetricDrillDownOrganizer,
 	MetricDrillDownRow,
 	MetricDrillDownView,
 } from "@core/application/dtos/metric-drill-down-dto.types";
@@ -13,6 +14,7 @@ import type {
 	AggregateCountDrillDownInput,
 	DistinctCountContribution,
 	DrillDownFacilityFact,
+	DrillDownOrganizerFact,
 	DrillDownRateMeasure,
 	RateContribution,
 	RateFactParts,
@@ -24,6 +26,7 @@ export type {
 	AggregateCountDrillDownInput,
 	DistinctCountContribution,
 	DrillDownFacilityFact,
+	DrillDownOrganizerFact,
 	RateContribution,
 } from "@core/application/services/aggregate-metric-drill-down.types";
 
@@ -49,6 +52,47 @@ function sumKnown(left: number | null, right: number | null): number | null {
 
 function emptyDepartments(): Record<GameDepartment, number | null> {
 	return { magic: 0, organizers: 0, partnerships: 0 };
+}
+
+export function organizerDisplayName(id: string, name?: string | null): string {
+	const trimmed = name?.trim();
+	return trimmed || `Organizer ${id}`;
+}
+
+function includesOrganizers(selectedDepartments: readonly GameDepartment[]): boolean {
+	return selectedDepartments.includes("organizers");
+}
+
+function organizerCountValue(
+	organizer: DrillDownOrganizerFact,
+	measure: DrillDownMeasure,
+): number | null {
+	if (measure === "scheduled-games") return organizer.scheduled ?? organizer.games ?? null;
+	if (measure === "active-facilities") return Number((organizer.games ?? 0) > 0);
+	return organizer.games ?? null;
+}
+
+function mergeOrganizerCounts(
+	current: MetricDrillDownOrganizer[] | null | undefined,
+	incoming: readonly DrillDownOrganizerFact[] | null | undefined,
+	facilityId: string,
+	countOf: (organizer: DrillDownOrganizerFact) => number | null,
+): MetricDrillDownOrganizer[] | null {
+	if (incoming == null) return null;
+	const byId = new Map((current ?? []).map((organizer) => [organizer.id, { ...organizer }]));
+	for (const organizer of incoming) {
+		const id = String(organizer.id);
+		const row = byId.get(id) ?? {
+			id,
+			name: organizerDisplayName(id, organizer.name),
+			value: 0,
+			facilityIds: [],
+		};
+		row.value = sumKnown(row.value, countOf(organizer));
+		row.facilityIds = [...new Set([...(row.facilityIds ?? []), facilityId])];
+		byId.set(id, row);
+	}
+	return [...byId.values()];
 }
 
 function scopedFacilities(
@@ -85,28 +129,60 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 				input.gameDepartments?.length && filteredGames === null
 					? null
 					: Number((filteredGames ?? facility.games ?? 0) > 0);
+		if (input.slice === "organizer" && !includesOrganizers(selectedDepartments)) continue;
+		if (input.slice === "organizer" && facility.organizers == null) {
+			total = sumKnown(total, null);
+			continue;
+		}
+		const organizerGroups = (facility.organizers ?? []).map((organizer) => ({
+			id: String(organizer.id),
+			name: organizerDisplayName(String(organizer.id), organizer.name),
+			groupValue: organizerCountValue(organizer, input.measure),
+		}));
+		if (input.slice === "organizer")
+			value = organizerGroups.reduce<number | null>(
+				(sum, group) => sumKnown(sum, group.groupValue),
+				0,
+			);
 		total = sumKnown(total, value);
-		const groups =
-			input.slice === "department"
-				? selectedDepartments
-				: [input.slice === "market" ? facility.marketId : facility.id];
-		for (const id of groups) {
-			const isDepartment = input.slice === "department";
-			const name = {
-				market: facility.marketName,
-				time: facility.name,
-				facility: facility.name,
-				department: id,
-			}[input.slice];
-			const row = rows.get(id) ?? { id, name, value: 0, departments: emptyDepartments() };
-			const groupValue = isDepartment ? (departments?.[id as GameDepartment] ?? null) : value;
-			row.value = sumKnown(row.value, groupValue);
-			if (!departments || !row.departments) row.departments = null;
+		const groups = {
+			true: [
+				{
+					id: input.slice === "market" ? facility.marketId : facility.id,
+					name: input.slice === "market" ? facility.marketName : facility.name,
+					groupValue: value,
+				},
+			],
+			[`${input.slice === "department"}`]: selectedDepartments.map((id) => ({
+				id,
+				name: id,
+				groupValue: departments?.[id] ?? null,
+			})),
+			[`${input.slice === "organizer"}`]: organizerGroups,
+		}.true;
+		for (const group of groups) {
+			const row = rows.get(group.id) ?? {
+				id: group.id,
+				name: group.name,
+				value: 0,
+				departments: emptyDepartments(),
+				facilityIds: [],
+			};
+			row.value = sumKnown(row.value, group.groupValue);
+			row.facilityIds = [...new Set([...(row.facilityIds ?? []), facility.id])];
+			if (input.slice === "organizer" || !departments || !row.departments) row.departments = null;
 			else
 				for (const department of DRILL_DOWN_DEPARTMENTS)
 					row.departments[department] =
 						(row.departments[department] ?? 0) + departments[department];
-			rows.set(id, row);
+			if (input.slice !== "organizer")
+				row.organizers = mergeOrganizerCounts(
+					row.organizers,
+					facility.organizers,
+					facility.id,
+					(organizer) => organizerCountValue(organizer, input.measure),
+				);
+			rows.set(group.id, row);
 		}
 	}
 	return {
@@ -122,6 +198,21 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 
 function emptyDepartmentKeys(): Record<GameDepartment, Set<string>> {
 	return { magic: new Set(), organizers: new Set(), partnerships: new Set() };
+}
+
+function contributionOrganizers(
+	organizerKeys: Map<string, { name: string; keys: Set<string>; facilityIds: Set<string> }>,
+): MetricDrillDownOrganizer[] {
+	return [...organizerKeys.entries()].map(([id, organizer]) => ({
+		id,
+		name: organizer.name,
+		value: organizer.keys.size,
+		facilityIds: [...organizer.facilityIds],
+	}));
+}
+
+function addFacilityIds(target: Set<string>, incoming?: readonly string[]): void {
+	for (const id of incoming ?? []) target.add(id);
 }
 
 export function aggregateDistinctCountDrillDown(input: {
@@ -143,7 +234,10 @@ export function aggregateDistinctCountDrillDown(input: {
 			id: string;
 			name: string;
 			keys: Set<string>;
+			facilityIds: Set<string>;
+			hasOrganizers: boolean;
 			departmentKeys: Record<GameDepartment, Set<string>>;
+			organizerKeys: Map<string, { name: string; keys: Set<string>; facilityIds: Set<string> }>;
 		}
 	>();
 	const totalKeys = new Set<string>();
@@ -157,12 +251,30 @@ export function aggregateDistinctCountDrillDown(input: {
 				id: group.id,
 				name: group.name,
 				keys: new Set<string>(),
+				facilityIds: new Set<string>(),
+				hasOrganizers: false,
 				departmentKeys: emptyDepartmentKeys(),
+				organizerKeys: new Map<
+					string,
+					{ name: string; keys: Set<string>; facilityIds: Set<string> }
+				>(),
 			};
 			for (const key of keys) row.keys.add(key);
+			addFacilityIds(row.facilityIds, contribution.facilityIds);
 			for (const department of selectedDepartments) {
 				for (const key of contribution.departments?.[department] ?? [])
 					row.departmentKeys[department].add(key);
+			}
+			if (contribution.organizers != null) row.hasOrganizers = true;
+			for (const organizer of contribution.organizers ?? []) {
+				const current = row.organizerKeys.get(organizer.id) ?? {
+					name: organizerDisplayName(organizer.id, organizer.name),
+					keys: new Set<string>(),
+					facilityIds: new Set<string>(),
+				};
+				for (const key of organizer.memberKeys) current.keys.add(key);
+				addFacilityIds(current.facilityIds, organizer.facilityIds ?? contribution.facilityIds);
+				row.organizerKeys.set(organizer.id, current);
 			}
 			rows.set(group.id, row);
 		}
@@ -173,11 +285,13 @@ export function aggregateDistinctCountDrillDown(input: {
 			id: row.id,
 			name: row.name,
 			value: row.keys.size,
+			facilityIds: [...row.facilityIds],
 			departments: {
 				magic: row.departmentKeys.magic.size,
 				organizers: row.departmentKeys.organizers.size,
 				partnerships: row.departmentKeys.partnerships.size,
 			},
+			organizers: row.hasOrganizers ? contributionOrganizers(row.organizerKeys) : null,
 		})),
 		start: input.start,
 		end: input.end,
@@ -222,7 +336,19 @@ export function aggregateRateDrillDown(input: {
 			numerator: number | null;
 			denominator: number | null;
 			dataErrors: number;
+			facilityIds: Set<string>;
+			hasOrganizers: boolean;
 			departments: Record<GameDepartment, { numerator: number | null; denominator: number | null }>;
+			organizers: Map<
+				string,
+				{
+					name: string;
+					numerator: number | null;
+					denominator: number | null;
+					dataErrors: number;
+					facilityIds: Set<string>;
+				}
+			>;
 		}
 	>();
 	let totalNumerator: number | null = 0;
@@ -246,16 +372,20 @@ export function aggregateRateDrillDown(input: {
 			numerator: 0,
 			denominator: 0,
 			dataErrors: 0,
+			facilityIds: new Set<string>(),
+			hasOrganizers: false,
 			departments: {
 				magic: { numerator: 0, denominator: 0 },
 				organizers: { numerator: 0, denominator: 0 },
 				partnerships: { numerator: 0, denominator: 0 },
 			},
+			organizers: new Map(),
 		};
 		row.numerator = sumKnown(row.numerator, parts.numerator);
 		row.denominator = sumKnown(row.denominator, parts.denominator);
 		row.dataErrors += contribution.dataErrors ?? 0;
 		totalDataErrors += contribution.dataErrors ?? 0;
+		addFacilityIds(row.facilityIds, contribution.facilityIds);
 		for (const department of selectedDepartments) {
 			const departmentParts = contribution.departments?.[department] ?? {
 				numerator: null,
@@ -265,6 +395,21 @@ export function aggregateRateDrillDown(input: {
 				numerator: sumKnown(row.departments[department].numerator, departmentParts.numerator),
 				denominator: sumKnown(row.departments[department].denominator, departmentParts.denominator),
 			};
+		}
+		if (contribution.organizers != null) row.hasOrganizers = true;
+		for (const organizer of contribution.organizers ?? []) {
+			const current = row.organizers.get(organizer.id) ?? {
+				name: organizerDisplayName(organizer.id, organizer.name),
+				numerator: 0,
+				denominator: 0,
+				dataErrors: 0,
+				facilityIds: new Set<string>(),
+			};
+			current.numerator = sumKnown(current.numerator, organizer.numerator);
+			current.denominator = sumKnown(current.denominator, organizer.denominator);
+			current.dataErrors += organizer.dataErrors ?? 0;
+			addFacilityIds(current.facilityIds, organizer.facilityIds ?? contribution.facilityIds);
+			row.organizers.set(organizer.id, current);
 		}
 		rows.set(contribution.id, row);
 	}
@@ -279,6 +424,7 @@ export function aggregateRateDrillDown(input: {
 			value: measureRateValue(input.measure, row.numerator, row.denominator),
 			numerator: row.numerator,
 			denominator: row.denominator,
+			facilityIds: [...row.facilityIds],
 			...(reportsDataErrors ? { dataErrors: row.dataErrors } : {}),
 			departments: {
 				magic: measureRateValue(
@@ -297,6 +443,17 @@ export function aggregateRateDrillDown(input: {
 					row.departments.partnerships.denominator,
 				),
 			},
+			organizers: row.hasOrganizers
+				? [...row.organizers.entries()].map(([id, organizer]) => ({
+						id,
+						name: organizer.name,
+						value: measureRateValue(input.measure, organizer.numerator, organizer.denominator),
+						numerator: organizer.numerator,
+						denominator: organizer.denominator,
+						facilityIds: [...organizer.facilityIds],
+						...(reportsDataErrors ? { dataErrors: organizer.dataErrors } : {}),
+					}))
+				: null,
 		})),
 		start: input.start,
 		end: input.end,
@@ -313,6 +470,10 @@ export function scheduledFactsFrom(
 		...facility,
 		games: facility.scheduled ?? facility.games,
 		gamesByDepartment: facility.scheduledByDepartment ?? facility.gamesByDepartment,
+		organizers: facility.organizers?.map((organizer) => ({
+			...organizer,
+			games: organizer.scheduled ?? organizer.games,
+		})),
 	}));
 }
 
@@ -347,6 +508,76 @@ export function rateFactParts(
 
 function isRateMeasure(measure: DrillDownMeasure): measure is DrillDownRateMeasure {
 	return DRILL_DOWN_MEASURE_KIND[measure] === "rate";
+}
+
+function organizerRateParts(
+	organizer: DrillDownOrganizerFact,
+	measure: DrillDownRateMeasure,
+): { numerator: number | null; denominator: number | null; dataErrors?: number } {
+	const parts = {
+		"confirmation-rate": () => ({
+			numerator: organizer.games ?? null,
+			denominator: organizer.scheduled ?? null,
+		}),
+		"almost-filled-rate": () => ({
+			numerator: organizer.almostFilled ?? null,
+			denominator: organizer.rosteredCanceled ?? null,
+			dataErrors: organizer.missingRoster ?? 0,
+		}),
+		"incident-games-rate": () => ({
+			numerator: organizer.incidentGames ?? null,
+			denominator: organizer.games ?? null,
+		}),
+	};
+	return parts[measure]();
+}
+
+function rateOrganizersFrom(
+	facility: DrillDownFacilityFact,
+	measure: DrillDownRateMeasure,
+	reportsErrors: boolean,
+): RateContribution[] | null {
+	if (facility.organizers == null) return null;
+	return facility.organizers.map((organizer) => {
+		const parts = organizerRateParts(organizer, measure);
+		return {
+			id: String(organizer.id),
+			name: organizerDisplayName(String(organizer.id), organizer.name),
+			numerator: parts.numerator,
+			denominator: parts.denominator,
+			facilityIds: [facility.id],
+			...(reportsErrors ? { dataErrors: parts.dataErrors ?? 0 } : {}),
+		};
+	});
+}
+
+function distinctOrganizersFrom(
+	facility: DrillDownFacilityFact,
+	measure: Extract<DrillDownMeasure, "unique-players" | "activated-players" | "active-organizers">,
+):
+	| { id: string; name: string; memberKeys: readonly string[]; facilityIds: readonly string[] }[]
+	| null {
+	if (measure === "active-organizers") {
+		const names = new Map(
+			(facility.organizers ?? []).map((organizer) => [String(organizer.id), organizer.name]),
+		);
+		return (facility.activeOrganizerIds ?? []).map((id) => ({
+			id: String(id),
+			name: organizerDisplayName(String(id), names.get(String(id))),
+			memberKeys: [String(id)],
+			facilityIds: [facility.id],
+		}));
+	}
+	if (facility.organizers == null) return null;
+	return facility.organizers.map((organizer) => ({
+		id: String(organizer.id),
+		name: organizerDisplayName(String(organizer.id), organizer.name),
+		memberKeys:
+			measure === "unique-players"
+				? (organizer.uniquePlayerIds ?? [])
+				: (organizer.activatedPlayerIds ?? []),
+		facilityIds: [facility.id],
+	}));
 }
 
 export function rateContributionsFromFacts(
@@ -384,22 +615,30 @@ export function rateContributionsFromFacts(
 						}
 					: null;
 			const reportsErrors = parts.dataErrors !== undefined;
+			const organizers = rateOrganizersFrom(facility, measure, reportsErrors);
 			if (slice === "department")
 				return selectedDepartments.map((department) => ({
 					id: department,
 					name: department,
 					numerator: departments?.[department].numerator ?? null,
 					denominator: departments?.[department].denominator ?? null,
+					facilityIds: [facility.id],
 					...(reportsErrors ? { dataErrors: parts.dataErrorsByDepartment?.[department] ?? 0 } : {}),
 				}));
+			if (slice === "organizer") {
+				if (!includesOrganizers(selectedDepartments)) return [];
+				return organizers ?? [];
+			}
 			return [
 				{
 					id: slice === "market" ? facility.marketId : facility.id,
 					name: slice === "market" ? facility.marketName : facility.name,
 					numerator: parts.numerator,
 					denominator: parts.denominator,
+					facilityIds: [facility.id],
 					...(reportsErrors ? { dataErrors: parts.dataErrors } : {}),
 					departments,
+					...(organizers != null ? { organizers } : {}),
 				},
 			];
 		},
@@ -437,18 +676,31 @@ export function distinctContributionsFromFacts(
 				organizers: source?.organizers ?? [],
 				partnerships: source?.partnerships ?? [],
 			};
+			const organizers = distinctOrganizersFrom(facility, measure);
 			if (slice === "department")
 				return selectedDepartments.map((department) => ({
 					id: department,
 					name: department,
 					memberKeys: departments[department],
+					facilityIds: [facility.id],
 				}));
+			if (slice === "organizer") {
+				if (!includesOrganizers(selectedDepartments)) return [];
+				return (organizers ?? []).map((organizer) => ({
+					id: organizer.id,
+					name: organizer.name,
+					memberKeys: organizer.memberKeys,
+					facilityIds: organizer.facilityIds,
+				}));
+			}
 			return [
 				{
 					id: slice === "market" ? facility.marketId : facility.id,
 					name: slice === "market" ? facility.marketName : facility.name,
 					memberKeys,
+					facilityIds: [facility.id],
 					departments,
+					...(organizers != null ? { organizers } : {}),
 				},
 			];
 		},

@@ -1,6 +1,7 @@
 import type {
 	DrillDownFacilityFact,
 	DrillDownMeasure,
+	DrillDownOrganizerFact,
 	MetricDrillDownQuery,
 	MetricDrillDownRepository,
 	MetricDrillDownView,
@@ -11,6 +12,8 @@ import {
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_RANGE_DAYS,
 	isAppActivityMeasure,
+	needsOrganizerDimension,
+	organizerDisplayName,
 } from "@market-health-map/core/application";
 import {
 	asEntityId,
@@ -38,6 +41,8 @@ import {
 import type {
 	WarehouseAppActivityRow,
 	WarehouseDrillDownLocationRow,
+	WarehouseDrillDownOrganizerBreakdownRow,
+	WarehouseDrillDownOrganizerPlayerRow,
 	WarehouseDrillDownOrganizerRow,
 	WarehouseDrillDownPlayerRow,
 	WarehouseDrillDownQualityRow,
@@ -48,6 +53,9 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
 import {
 	metricDrillDownFacilitiesSql,
+	metricDrillDownOrganizerBreakdownSql,
+	metricDrillDownOrganizerPlayerSql,
+	metricDrillDownOrganizerQualitySql,
 	metricDrillDownOrganizerSql,
 	metricDrillDownPlayerSql,
 	metricDrillDownQualitySql,
@@ -252,13 +260,20 @@ export function organizerFactsFrom(
 	facilities: readonly Facility[],
 	rows: readonly WarehouseDrillDownOrganizerRow[],
 ): DrillDownFacilityFact[] {
-	const byLocation = new Map<string, string[]>();
+	const byLocation = new Map<string, WarehouseDrillDownOrganizerRow[]>();
 	for (const row of rows) {
 		const id = String(row.location_id);
-		byLocation.set(id, [...(byLocation.get(id) ?? []), String(row.partner_id)]);
+		byLocation.set(id, [...(byLocation.get(id) ?? []), row]);
 	}
 	return facilities.map((facility) => {
 		const props = facility.toJSON();
+		const partners = new Map<string, string>();
+		for (const id of facility.memberIds.map(String)) {
+			for (const row of byLocation.get(id) ?? []) {
+				const partnerId = String(row.partner_id);
+				partners.set(partnerId, organizerDisplayName(partnerId, row.partner_name));
+			}
+		}
 		return {
 			id: props.id,
 			name: props.name,
@@ -266,11 +281,113 @@ export function organizerFactsFrom(
 			marketName: facility.marketName,
 			games: null,
 			gamesByDepartment: null,
-			activeOrganizerIds: [
-				...new Set(facility.memberIds.flatMap((id) => byLocation.get(String(id)) ?? [])),
-			],
+			activeOrganizerIds: [...partners.keys()],
+			organizers: [...partners.entries()].map(([id, name]) => ({ id, name })),
 		};
 	});
+}
+
+function mergeOrganizerFact(
+	current: DrillDownOrganizerFact,
+	incoming: DrillDownOrganizerFact,
+): DrillDownOrganizerFact {
+	const unique = (left?: readonly string[], right?: readonly string[]) =>
+		left || right ? [...new Set([...(left ?? []), ...(right ?? [])])] : undefined;
+	const sum = (left?: number | null, right?: number | null) => (left ?? 0) + (right ?? 0);
+	return {
+		id: current.id,
+		name: current.name || incoming.name,
+		games: sum(current.games, incoming.games),
+		scheduled: sum(current.scheduled, incoming.scheduled),
+		almostFilled: sum(current.almostFilled, incoming.almostFilled),
+		rosteredCanceled: sum(current.rosteredCanceled, incoming.rosteredCanceled),
+		missingRoster: sum(current.missingRoster, incoming.missingRoster),
+		incidentGames: sum(current.incidentGames, incoming.incidentGames),
+		uniquePlayerIds: unique(current.uniquePlayerIds, incoming.uniquePlayerIds),
+		activatedPlayerIds: unique(current.activatedPlayerIds, incoming.activatedPlayerIds),
+	};
+}
+
+export function attachOrganizerFacts(
+	facilities: readonly Facility[],
+	facts: readonly DrillDownFacilityFact[],
+	byMemberId: Map<string, DrillDownOrganizerFact[]>,
+): DrillDownFacilityFact[] {
+	const byFacilityId = new Map(facilities.map((facility) => [String(facility.id), facility]));
+	return facts.map((fact) => {
+		const members = (byFacilityId.get(fact.id)?.memberIds ?? [fact.id]).map(String);
+		const organizers = new Map<string, DrillDownOrganizerFact>();
+		for (const memberId of members) {
+			for (const organizer of byMemberId.get(memberId) ?? []) {
+				const current = organizers.get(organizer.id);
+				organizers.set(
+					organizer.id,
+					current ? mergeOrganizerFact(current, organizer) : { ...organizer },
+				);
+			}
+		}
+		return { ...fact, organizers: [...organizers.values()] };
+	});
+}
+
+export function organizerBreakdownByLocation(
+	rows: readonly WarehouseDrillDownOrganizerBreakdownRow[],
+): Map<string, DrillDownOrganizerFact[]> {
+	const byLocation = new Map<string, DrillDownOrganizerFact[]>();
+	for (const row of rows) {
+		const locationId = String(row.location_id);
+		const id = String(row.partner_id);
+		byLocation.set(locationId, [
+			...(byLocation.get(locationId) ?? []),
+			{
+				id,
+				name: organizerDisplayName(id, row.partner_name),
+				games:
+					row.played == null && row.happened == null
+						? undefined
+						: Number(row.played ?? row.happened ?? 0),
+				scheduled: row.scheduled == null ? undefined : Number(row.scheduled),
+				almostFilled: row.almost_filled == null ? undefined : Number(row.almost_filled),
+				rosteredCanceled: row.rostered_canceled == null ? undefined : Number(row.rostered_canceled),
+				missingRoster: row.missing_roster == null ? undefined : Number(row.missing_roster),
+				incidentGames: row.incident_games == null ? undefined : Number(row.incident_games),
+			},
+		]);
+	}
+	return byLocation;
+}
+
+export function organizerPlayersByLocation(
+	rows: readonly WarehouseDrillDownOrganizerPlayerRow[],
+	measure: "unique-players" | "activated-players",
+): Map<string, DrillDownOrganizerFact[]> {
+	const byLocation = new Map<string, Map<string, { name: string; players: Set<string> }>>();
+	for (const row of rows) {
+		const locationId = String(row.location_id);
+		const id = String(row.partner_id);
+		const organizers = byLocation.get(locationId) ?? new Map();
+		const current = organizers.get(id) ?? {
+			name: organizerDisplayName(id, row.partner_name),
+			players: new Set<string>(),
+		};
+		current.players.add(String(row.player_id));
+		organizers.set(id, current);
+		byLocation.set(locationId, organizers);
+	}
+	const result = new Map<string, DrillDownOrganizerFact[]>();
+	for (const [locationId, organizers] of byLocation) {
+		result.set(
+			locationId,
+			[...organizers.entries()].map(([id, organizer]) => ({
+				id,
+				name: organizer.name,
+				...(measure === "unique-players"
+					? { uniquePlayerIds: [...organizer.players] }
+					: { activatedPlayerIds: [...organizer.players] }),
+			})),
+		);
+	}
+	return result;
 }
 
 export function playerFactsFrom(
@@ -373,7 +490,13 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 					)
 				: { rows: [] };
 			return aggregateDrillDownFromFacts({
-				facilities: playerFactsFrom(scoped, rows, query.measure),
+				facilities: await this.withOrganizerDimension(
+					query,
+					scoped,
+					playerFactsFrom(scoped, rows, query.measure),
+					days,
+					params,
+				),
 				measure: query.measure,
 				slice: query.slice,
 				marketId: query.marketId,
@@ -413,7 +536,13 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 					)
 				: { rows: [] };
 			return aggregateDrillDownFromFacts({
-				facilities: qualityFactsFrom(scoped, rows),
+				facilities: await this.withOrganizerDimension(
+					query,
+					scoped,
+					qualityFactsFrom(scoped, rows),
+					days,
+					params,
+				),
 				measure: query.measure,
 				slice: query.slice,
 				marketId: query.marketId,
@@ -432,7 +561,13 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 				)
 			: { rows: [] };
 		return aggregateDrillDownFromFacts({
-			facilities: reservationFactsFrom(scoped, rows),
+			facilities: await this.withOrganizerDimension(
+				query,
+				scoped,
+				reservationFactsFrom(scoped, rows),
+				days,
+				params,
+			),
 			measure: query.measure,
 			slice: query.slice,
 			marketId: query.marketId,
@@ -481,14 +616,30 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 			metricDrillDownLocationsSql(days),
 			[query.today],
 		);
-		const facilities = mergeColocatedFacilities(
+		const merged = mergeColocatedFacilities(
 			rows.flatMap((row) => {
 				const facility = toDrillDownFacility(row);
 				return facility ? [facility] : [];
 			}),
-		).map(toDrillDownFacilityFact);
+		);
+		const scoped = merged.filter(
+			(facility) =>
+				(!query.marketId || facility.marketId === query.marketId) &&
+				(!query.facilityId || facility.id === query.facilityId),
+		);
+		const locationIds = scoped.flatMap((facility) => facility.memberIds.map(Number));
+		const byDepartment = query.departments.length > 0;
+		const params = byDepartment
+			? [locationIds, query.today, query.departments]
+			: [locationIds, query.today];
 		return aggregateCountDrillDown({
-			facilities,
+			facilities: await this.withOrganizerDimension(
+				query,
+				scoped,
+				scoped.map(toDrillDownFacilityFact),
+				days,
+				params,
+			),
 			measure: query.measure,
 			slice: query.slice,
 			marketId: query.marketId,
@@ -499,6 +650,49 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 			end,
 			range: query.range,
 		});
+	}
+
+	private async withOrganizerDimension(
+		query: MetricDrillDownQuery,
+		facilities: readonly Facility[],
+		facts: readonly DrillDownFacilityFact[],
+		days: number,
+		params: unknown[],
+	): Promise<DrillDownFacilityFact[]> {
+		if (!needsOrganizerDimension(query.slice, query.segment)) return [...facts];
+		if (query.departments.length > 0 && !query.departments.includes("organizers"))
+			return facts.map((fact) => ({ ...fact, organizers: [] }));
+		if (query.measure === "active-organizers") return [...facts];
+		const locationIds = params[0] as number[];
+		if (!locationIds?.length) return facts.map((fact) => ({ ...fact, organizers: [] }));
+		const byDepartment = query.departments.length > 0;
+		if (query.measure === "unique-players" || query.measure === "activated-players") {
+			const { rows } = await this.warehouse.query<WarehouseDrillDownOrganizerPlayerRow>(
+				metricDrillDownOrganizerPlayerSql(
+					days,
+					query.measure === "activated-players",
+					byDepartment,
+				),
+				params,
+			);
+			return attachOrganizerFacts(
+				facilities,
+				facts,
+				organizerPlayersByLocation(rows, query.measure),
+			);
+		}
+		if (QUALITY_MEASURES.includes(query.measure)) {
+			const { rows } = await this.warehouse.query<WarehouseDrillDownOrganizerBreakdownRow>(
+				metricDrillDownOrganizerQualitySql(days, byDepartment),
+				params,
+			);
+			return attachOrganizerFacts(facilities, facts, organizerBreakdownByLocation(rows));
+		}
+		const { rows } = await this.warehouse.query<WarehouseDrillDownOrganizerBreakdownRow>(
+			metricDrillDownOrganizerBreakdownSql(days, byDepartment),
+			params,
+		);
+		return attachOrganizerFacts(facilities, facts, organizerBreakdownByLocation(rows));
 	}
 
 	private async listMergedFacilities(): Promise<Facility[]> {

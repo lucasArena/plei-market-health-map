@@ -280,6 +280,8 @@ export const ptBR: Messages = {
 		market: "Mercado",
 		facility: "Instalação",
 		department: "Departamento",
+		organizer: "Organizador",
+		unknownOrganizer: "Organizador desconhecido",
 		none: "Nenhum",
 		range7d: "7D",
 		range28d: "28D",
@@ -288,8 +290,10 @@ export const ptBR: Messages = {
 		range12m: "12M",
 		selectedDepartmentHelp:
 			"Exibindo o departamento selecionado. Volte para comparar departamentos novamente.",
+		selectedOrganizerHelp:
+			"Exibindo o organizador selecionado. Volte para comparar organizadores novamente.",
 		segmentUnavailable:
-			"Segmentos por departamento estão disponíveis ao agrupar por mercado ou instalação. Instalações podem atender vários departamentos.",
+			"Segmentos por departamento e organizador estão disponíveis ao agrupar por mercado, instalação ou data. Grupos de organizadores contam apenas parceiros do Programa de Organizadores, não Magic.",
 		topTen: "10 maiores",
 		chart: "Métrica por grupo",
 		value: "Quantidade",
@@ -465,7 +469,7 @@ export const ptBR: Messages = {
 			"insights-panel-v3":
 				"Abrir o novo painel de insights ao carregar, com faixa de saúde, datas de comparação e atualização dos dados.",
 			"metric-drill-down":
-				"Explorar jogos e instalações ativas por mercado, instalação e departamento.",
+				"Explorar jogos e instalações ativas por mercado, instalação, departamento e organizador.",
 			"facility-games-layer": "Mostrar o seletor de jogos com contagens por grupo e instalação.",
 			"facility-games-trend":
 				"Mostrar a tendência de jogos em relação aos {days} dias anteriores, com a opção Mostrar tendência em Jogos.",

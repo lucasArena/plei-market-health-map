@@ -251,6 +251,8 @@ export interface Messages {
 		market: string;
 		facility: string;
 		department: string;
+		organizer: string;
+		unknownOrganizer: string;
 		none: string;
 		range7d: string;
 		range28d: string;
@@ -258,6 +260,7 @@ export interface Messages {
 		range6m: string;
 		range12m: string;
 		selectedDepartmentHelp: string;
+		selectedOrganizerHelp: string;
 		segmentUnavailable: string;
 		topTen: string;
 		chart: string;

@@ -282,6 +282,8 @@ export const es: Messages = {
 		market: "Mercado",
 		facility: "Instalación",
 		department: "Departamento",
+		organizer: "Organizador",
+		unknownOrganizer: "Organizador desconocido",
 		none: "Ninguno",
 		range7d: "7D",
 		range28d: "28D",
@@ -290,8 +292,10 @@ export const es: Messages = {
 		range12m: "12M",
 		selectedDepartmentHelp:
 			"Se muestra el departamento seleccionado. Vuelve para comparar departamentos otra vez.",
+		selectedOrganizerHelp:
+			"Se muestra el organizador seleccionado. Vuelve para comparar organizadores otra vez.",
 		segmentUnavailable:
-			"Los segmentos por departamento están disponibles al agrupar por mercado o instalación. Las instalaciones pueden atender a varios departamentos.",
+			"Los segmentos por departamento y organizador están disponibles al agrupar por mercado, instalación o fecha. Los grupos de organizadores cuentan solo socios del Programa de Organizadores, no Magic.",
 		topTen: "Los 10 mayores",
 		chart: "Métrica por grupo",
 		value: "Cantidad",
@@ -467,7 +471,7 @@ export const es: Messages = {
 			"insights-panel-v3":
 				"Abrir el nuevo panel de insights al cargar, con franja de salud, fechas de comparación y actualización de los datos.",
 			"metric-drill-down":
-				"Explorar partidos e instalaciones activas por mercado, instalación y departamento.",
+				"Explorar partidos e instalaciones activas por mercado, instalación, departamento y organizador.",
 			"facility-games-layer":
 				"Mostrar el selector de partidos con conteos por grupo e instalación.",
 			"facility-games-trend":

@@ -1,7 +1,9 @@
 import {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
+	canSliceDrillDownByOrganizer,
 	crossesAppTrackingSourceSwitch,
+	needsOrganizerDimension,
 } from "@core/application/dtos/metric-drill-down-dto";
 import type { DrillDownMeasure } from "@core/application/dtos/metric-drill-down-dto.types";
 import { ForbiddenError } from "@core/application/errors/forbidden-error";
@@ -579,15 +581,61 @@ describe("drill-down measure helpers", () => {
 		expect(canSegmentDrillDown("active-facilities", "facility")).toBe(false);
 	});
 
+	it("allows organizer slices and keeps them distinct from Magic", async () => {
+		const { getMetricDrillDown } = setup([
+			{
+				...facility,
+				organizers: [
+					{
+						id: "club",
+						name: "Club",
+						games: 3,
+						scheduled: 4,
+						uniquePlayerIds: ["p2"],
+						activatedPlayerIds: ["p2"],
+					},
+				],
+			},
+		]);
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "organizer",
+		});
+		expect(view.total).toBe(3);
+		expect(view.rows).toEqual([
+			expect.objectContaining({ id: "club", name: "Club", value: 3, departments: null }),
+		]);
+		expect(canSliceDrillDownByOrganizer("games")).toBe(true);
+		expect(canSliceDrillDownByOrganizer("app-sessions")).toBe(false);
+		expect(canSegmentDrillDown("games", "organizer")).toBe(false);
+		expect(canSegmentDrillDown("games", "time")).toBe(true);
+		expect(needsOrganizerDimension("market", "organizer")).toBe(true);
+		expect(needsOrganizerDimension("organizer")).toBe(true);
+		expect(needsOrganizerDimension("market", "department")).toBe(false);
+		await expect(
+			getMetricDrillDown({ measure: "app-sessions", range: "7d", slice: "organizer" }),
+		).rejects.toBeInstanceOf(InvalidRequestError);
+		const segmented = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "organizer",
+		});
+		expect(segmented.rows[0]?.organizers).toEqual([
+			expect.objectContaining({ id: "club", name: "Club", value: 3 }),
+		]);
+	});
+
 	it("builds department contributions from facility facts", () => {
 		expect(
 			rateContributionsFromFacts([facility], "department", { gameDepartments: ["magic"] }),
-		).toEqual([{ id: "magic", name: "magic", numerator: 2, denominator: 3 }]);
+		).toEqual([{ id: "magic", name: "magic", numerator: 2, denominator: 3, facilityIds: ["a"] }]);
 		expect(
 			distinctContributionsFromFacts([facility], "department", "unique-players", {
 				gameDepartments: ["organizers"],
 			}),
-		).toEqual([{ id: "organizers", name: "organizers", memberKeys: ["p2"] }]);
+		).toEqual([{ id: "organizers", name: "organizers", memberKeys: ["p2"], facilityIds: ["a"] }]);
 		expect(
 			distinctContributionsFromFacts(
 				[{ ...facility, activatedPlayerIds: undefined, activatedPlayerIdsByDepartment: null }],
@@ -599,6 +647,7 @@ describe("drill-down measure helpers", () => {
 				id: "a",
 				name: "Arena",
 				memberKeys: [],
+				facilityIds: ["a"],
 				departments: { magic: [], organizers: [], partnerships: [] },
 			},
 		]);
@@ -613,6 +662,7 @@ describe("drill-down measure helpers", () => {
 				name: department,
 				numerator: null,
 				denominator: null,
+				facilityIds: ["a"],
 			})),
 		);
 	});

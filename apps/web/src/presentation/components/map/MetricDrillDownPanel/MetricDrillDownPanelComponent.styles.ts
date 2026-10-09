@@ -7,6 +7,20 @@ export const DRILL_DOWN_COLORS = {
 	organizers: PLEIFUL_COLORS.sky[50],
 	partnerships: PLEIFUL_COLORS.pitchGreen[40],
 };
+export const DRILL_DOWN_ORGANIZER_COLORS = [
+	PLEIFUL_COLORS.sky[50],
+	PLEIFUL_COLORS.moonlight[50],
+	PLEIFUL_COLORS.pitchGreen[40],
+	PLEIFUL_COLORS.orchid[50],
+	PLEIFUL_COLORS.sangria[50],
+	PLEIFUL_COLORS.informative[50],
+];
+export function drillDownOrganizerColor(index: number): string {
+	return (
+		DRILL_DOWN_ORGANIZER_COLORS[index % DRILL_DOWN_ORGANIZER_COLORS.length] ??
+		PLEIFUL_COLORS.sky[50]
+	);
+}
 export const DRILL_DOWN_PANEL_CLASS = MARKET_SUMMARY_PANEL_CLASS;
 export const DRILL_DOWN_EXPAND_BUTTON_CLASS = `${SOFT_GLASS_CLASS} flex size-7 shrink-0 cursor-pointer items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
 export const DRILL_DOWN_BAR_CLASS =

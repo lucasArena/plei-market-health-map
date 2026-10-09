@@ -92,16 +92,94 @@ with bounds as (
   select ${todayParameterSql(2)} as today
 ),
 ${ORGANIZER_PARTNERS_CTE}
-select distinct r.location_id, r.partner_id
+select distinct r.location_id, r.partner_id, p.partner_name
 from plei_gold.dim_reservation r
 ${organizerPartnersJoin("r")}
+left join plei_gold.dim_partner p on p.partner_id = r.partner_id
 cross join bounds b
 where r.location_id = any($1::int[])
-  and op.partner_id is not null
+  and ${gameDepartmentCase("r")} = 'organizers'
   and r.reservation_type = 'OpenReservation'
   and ${inLastDaysSql(GAME_DATE, "b.today", days)}
   and not (${isOperationalCancellationSql("r")})
   and ${isPlayedGameSql("r")}${departmentFilter}`;
+}
+
+export function metricDrillDownOrganizerBreakdownSql(days: number, byDepartment: boolean): string {
+	const departmentFilter = byDepartment
+		? `
+    and ${gameDepartmentCase("r")} = any($3::text[])`
+		: "";
+	return `
+with bounds as (
+  select ${todayParameterSql(2)} as today
+),
+${ORGANIZER_PARTNERS_CTE},
+games as (
+  select r.reservation_id, r.location_id, r.partner_id, r.status, r.confirmed,
+    ${gameDepartmentCase("r")} as department
+  from plei_gold.dim_reservation r
+  ${organizerPartnersJoin("r")}
+  cross join bounds b
+  where r.location_id = any($1::int[])
+    and r.reservation_type = 'OpenReservation'
+    and ${inLastDaysSql(GAME_DATE, "b.today", days)}
+    and not (
+      ${isOperationalCancellationSql("r")}
+    )
+    and ${gameDepartmentCase("r")} = 'organizers'${departmentFilter}
+)
+select g.location_id, g.partner_id, max(p.partner_name) as partner_name,
+  count(distinct g.reservation_id) as scheduled,
+  count(distinct g.reservation_id) filter (where ${isPlayedGameSql("g")}) as played
+from games g
+left join plei_gold.dim_partner p on p.partner_id = g.partner_id
+group by g.location_id, g.partner_id`;
+}
+
+function organizerQualityCountColumns(): string {
+	return QUALITY_COUNTS.map(
+		(name) => `count(distinct c.reservation_id) filter (where c.${name}) as ${name}`,
+	).join(",\n  ");
+}
+
+export function metricDrillDownOrganizerQualitySql(days: number, byDepartment: boolean): string {
+	return `${metricDrillDownQualityPopulationSql(days, byDepartment)}
+select c.location_id, c.partner_id, max(p.partner_name) as partner_name,
+  ${organizerQualityCountColumns()}
+from classified c
+left join plei_gold.dim_partner p on p.partner_id = c.partner_id
+where c.department = 'organizers' and c.partner_id is not null
+group by c.location_id, c.partner_id`;
+}
+
+export function metricDrillDownOrganizerPlayerSql(
+	days: number,
+	activated: boolean,
+	byDepartment: boolean,
+): string {
+	const departmentFilter = byDepartment
+		? `
+    and ${gameDepartmentCase("r")} = any($3::text[])`
+		: "";
+	return `
+with bounds as (
+  select ${todayParameterSql(2)} as today
+),
+${ORGANIZER_PARTNERS_CTE}
+select distinct f.location_id, f.player_id, r.partner_id, p.partner_name
+from plei_gold.fct_games_opened f
+cross join bounds b
+join plei_gold.dim_reservation r on r.reservation_id = f.reservation_id
+${organizerPartnersJoin("r")}
+left join plei_gold.dim_partner p on p.partner_id = r.partner_id
+where f.location_id = any($1::int[])
+  and ${inLastDaysSql("f.date_played", "b.today", days)}
+  and ${QUALIFYING_OPENED_GAME_SQL}
+  and ${OPENED_GAME_PLAYER_TYPE_SQL}
+  and ${CONFIRMED_PLEIAPP_PLAYER_SQL}
+  and ${gameDepartmentCase("r")} = 'organizers'
+  ${activated ? "and f.player_lifecycle = 'Activated'" : ""}${departmentFilter}`;
 }
 
 export const QUALITY_COUNTS = [
@@ -138,7 +216,7 @@ ${temporal ? "" : "with "}bounds as (
 ),
 ${ORGANIZER_PARTNERS_CTE},
 games as (
-  select r.reservation_id, r.location_id, r.date_with_time::date as game_date, r.status, r.confirmed, r.cancellation_reason,
+  select r.reservation_id, r.location_id, r.partner_id, r.date_with_time::date as game_date, r.status, r.confirmed, r.cancellation_reason,
     r.min_player_count, ${gameDepartmentCase("r")} as department
   from plei_gold.dim_reservation r
   ${organizerPartnersJoin("r")}
@@ -162,7 +240,7 @@ low_rating_games as (
     and v.reservation_id in (select g.reservation_id from games g where ${isPlayedGameSql("g")})
 ),
 classified as (
-  select g.reservation_id, g.location_id, g.game_date, g.department,
+  select g.reservation_id, g.location_id, g.partner_id, g.game_date, g.department,
     ${isPlayedGameSql("g")} as happened,
     ${isPlayedGameSql("g")} and lrg.reservation_id is not null as incident_games,
     ${isEligibleCancellationSql("g")} and ${hasRoster} as rostered_canceled,

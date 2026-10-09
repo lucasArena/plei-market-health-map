@@ -5,7 +5,9 @@ import {
 	type GameDepartment,
 } from "@market-health-map/core/domain";
 import {
+	attachOrganizerFacts,
 	metricDrillDownLocationsSql,
+	organizerBreakdownByLocation,
 	organizerFactsFrom,
 	playerFactsFrom,
 	qualityFactsFrom,
@@ -22,6 +24,9 @@ import type {
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
 import {
 	metricDrillDownFacilitiesSql,
+	metricDrillDownOrganizerBreakdownSql,
+	metricDrillDownOrganizerPlayerSql,
+	metricDrillDownOrganizerQualitySql,
 	metricDrillDownOrganizerSql,
 	metricDrillDownPlayerSql,
 	metricDrillDownQualitySql,
@@ -50,8 +55,9 @@ const baseRow: WarehouseDrillDownLocationRow = {
 describe("active organizers", () => {
 	it("limits the query to organizer program partners with played games", () => {
 		const sql = metricDrillDownOrganizerSql(28, false);
-		expect(sql).toContain("select distinct r.location_id, r.partner_id");
-		expect(sql).toContain("op.partner_id is not null");
+		expect(sql).toContain("select distinct r.location_id, r.partner_id, p.partner_name");
+		expect(sql).toContain("plei_gold.dim_partner");
+		expect(sql).toContain("= 'organizers'");
 		expect(sql).toContain("r.date_with_time::date >= b.today - 28");
 		expect(sql).not.toContain("any($3::text[])");
 		expect(metricDrillDownOrganizerSql(28, true)).toContain("any($3::text[])");
@@ -107,8 +113,70 @@ describe("active organizers", () => {
 	it("builds organizer facts for merged facilities", () => {
 		const facility = toDrillDownFacility(baseRow);
 		if (!facility) throw new Error("Missing fixture");
-		const [fact] = organizerFactsFrom([facility], [{ location_id: 1, partner_id: 7 }]);
+		const [fact] = organizerFactsFrom(
+			[facility],
+			[{ location_id: 1, partner_id: 7, partner_name: "Club" }],
+		);
 		expect(fact?.activeOrganizerIds).toEqual(["7"]);
+		expect(fact?.organizers).toEqual([{ id: "7", name: "Club" }]);
+	});
+
+	it("keeps Magic out of organizer breakdowns and attaches names", () => {
+		const sql = metricDrillDownOrganizerBreakdownSql(28, false);
+		expect(sql).toContain("= 'organizers'");
+		expect(sql).toContain("plei_gold.dim_partner");
+		expect(sql).toContain("when r.partner_id in (6, 52, 62) then 'magic'");
+		expect(metricDrillDownOrganizerQualitySql(7, true)).toContain("c.department = 'organizers'");
+		expect(metricDrillDownOrganizerPlayerSql(28, false, false)).toContain("= 'organizers'");
+		const facility = toDrillDownFacility(baseRow);
+		if (!facility) throw new Error("Missing fixture");
+		const [fact] = attachOrganizerFacts(
+			[facility],
+			[toDrillDownFacilityFact(facility)],
+			organizerBreakdownByLocation([
+				{
+					location_id: 1,
+					partner_id: 9,
+					partner_name: "Harbor FC",
+					played: 4,
+					scheduled: 5,
+				},
+			]),
+		);
+		expect(fact?.organizers).toEqual([
+			expect.objectContaining({ id: "9", name: "Harbor FC", games: 4, scheduled: 5 }),
+		]);
+	});
+
+	it("groups games by organizer without a second query unless requested", async () => {
+		const query = vi.fn().mockResolvedValue({ rows: [baseRow] });
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		await repository.group({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledTimes(1);
+		query.mockResolvedValueOnce({ rows: [baseRow] }).mockResolvedValueOnce({
+			rows: [{ location_id: 1, partner_id: 11, partner_name: "Club", played: 4, scheduled: 4 }],
+		});
+		const view = await repository.group({
+			measure: "games",
+			range: "28d",
+			slice: "organizer",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledTimes(3);
+		expect(query.mock.calls[2]?.[0]).toContain("= 'organizers'");
+		expect(view.rows).toEqual([
+			expect.objectContaining({ id: "11", name: "Club", value: 4, departments: null }),
+		]);
+		expect(view.total).toBe(4);
 	});
 });
 

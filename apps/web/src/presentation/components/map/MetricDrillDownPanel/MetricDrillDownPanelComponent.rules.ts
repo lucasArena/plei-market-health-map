@@ -13,6 +13,7 @@ import type {
 import {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
+	canSliceDrillDownByOrganizer,
 	crossesAppTrackingSourceSwitch,
 	DRILL_DOWN_DEPARTMENTS,
 	isAppActivityMeasure,
@@ -23,6 +24,10 @@ import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
+import {
+	DRILL_DOWN_COLORS,
+	drillDownOrganizerColor,
+} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
 import type {
 	DrillDownChartRow,
 	DrillDownSort,
@@ -156,51 +161,81 @@ export function useMetricDrillDownPanelRules({
 	});
 	const view = effectiveSupply ? (query.data ?? EMPTY_VIEW) : EMPTY_VIEW;
 	const focusedRow = view.rows.find((row) => row.id === focus?.rowId);
-	const focusedValue = focus?.department
-		? (focusedRow?.departments?.[focus.department] ?? null)
-		: (focusedRow?.value ?? null);
+	const focusedOrganizer = focusedRow?.organizers?.find(
+		(organizer) => organizer.id === focus?.organizerId,
+	);
+	const focusedValue = {
+		true: focusedRow?.value ?? null,
+		[`${!!focus?.organizerId}`]: focusedOrganizer?.value ?? null,
+		[`${!!focus?.department}`]: focusedRow?.departments?.[focus?.department ?? "magic"] ?? null,
+	}.true;
 	const hasFocus = !!focusedRow;
 	useEffect(() => {
 		if (!focusedRow || isAppActivity) {
 			setMetricFocus(null);
 			return;
 		}
-		const facilityIds = isTime
-			? focus?.department
-				? (focusedRow.departmentFacilityIds?.[focus.department] ?? focusedRow.facilityIds ?? [])
-				: (focusedRow.facilityIds ?? [])
-			: (facilitiesQuery.data ?? [])
-					.filter(
-						(facility) =>
-							(scope.kind !== "market" || facility.marketId === scope.id) &&
-							(isAppActivity || scope.kind !== "facility" || facility.id === scope.id) &&
-							(selection.slice !== "market" || facility.marketId === focusedRow.id) &&
-							(selection.slice !== "facility" || facility.id === focusedRow.id),
-					)
-					.map((facility) => facility.id);
-		const department =
-			selection.slice === "department" ? (focusedRow.id as GameDepartment) : focus?.department;
+		const organizerFacilities = focusedOrganizer?.facilityIds ?? focusedRow.facilityIds ?? [];
+		const timeFacilities = {
+			true: focusedRow.facilityIds ?? [],
+			[`${!!focus?.department}`]:
+				focusedRow.departmentFacilityIds?.[focus?.department ?? "magic"] ??
+				focusedRow.facilityIds ??
+				[],
+			[`${!!focus?.organizerId}`]: organizerFacilities,
+		}.true;
+		const listedFacilities = (facilitiesQuery.data ?? [])
+			.filter(
+				(facility) =>
+					(scope.kind !== "market" || facility.marketId === scope.id) &&
+					(isAppActivity || scope.kind !== "facility" || facility.id === scope.id) &&
+					(selection.slice !== "market" || facility.marketId === focusedRow.id) &&
+					(selection.slice !== "facility" || facility.id === focusedRow.id),
+			)
+			.map((facility) => facility.id);
+		const facilityIds = {
+			true: listedFacilities,
+			[`${isTime}`]: timeFacilities,
+			[`${selection.slice === "organizer" || !!focus?.organizerId}`]: organizerFacilities,
+		}.true;
+		const department = {
+			true: focus?.department,
+			[`${selection.slice === "department"}`]: focusedRow.id as GameDepartment,
+			[`${selection.slice === "organizer" || !!focus?.organizerId}`]: "organizers" as const,
+		}.true;
 		setMetricFocus({ facilityIds, department });
 	}, [
 		focusedRow,
+		focusedOrganizer,
 		facilitiesQuery.data,
 		scope,
 		selection.slice,
 		focus?.department,
+		focus?.organizerId,
 		setMetricFocus,
 		isAppActivity,
 		isTime,
 	]);
 	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
-	function toggleFocus(row: MetricDrillDownRow, department?: GameDepartment) {
+	function toggleFocus(
+		row: MetricDrillDownRow,
+		part?: { department?: GameDepartment; organizerId?: string },
+	) {
 		setFocus((current) =>
-			current?.rowId === row.id && current.department === department
+			current?.rowId === row.id &&
+			current.department === part?.department &&
+			current.organizerId === part?.organizerId
 				? null
-				: { rowId: row.id, department },
+				: { rowId: row.id, department: part?.department, organizerId: part?.organizerId },
 		);
 	}
-	const isSelected = (row: MetricDrillDownRow, department?: GameDepartment) =>
-		focus?.rowId === row.id && (department === undefined || focus.department === department);
+	const isSelected = (
+		row: MetricDrillDownRow,
+		part?: { department?: GameDepartment; organizerId?: string },
+	) =>
+		focus?.rowId === row.id &&
+		(part === undefined ||
+			(focus.department === part.department && focus.organizerId === part.organizerId));
 	const canSegment = canSegmentDrillDown(selection.measure, selection.slice);
 	const segment = canSegment ? selection.segment : "none";
 	const number = new Intl.NumberFormat(locale);
@@ -334,10 +369,20 @@ export function useMetricDrillDownPanelRules({
 				{
 					...focusedRow,
 					...(focus?.department ? focusedRow.departmentParts?.[focus.department] : {}),
+					...(focusedOrganizer
+						? {
+								numerator: focusedOrganizer.numerator,
+								denominator: focusedOrganizer.denominator,
+								dataErrors: focusedOrganizer.dataErrors,
+							}
+						: {}),
 					value: focusedValue,
-					previousValue: focus?.department
-						? (focusedRow.previousDepartments?.[focus.department] ?? null)
-						: focusedRow.previousValue,
+					previousValue: {
+						true: focusedRow.previousValue,
+						[`${!!focus?.department}`]:
+							focusedRow.previousDepartments?.[focus?.department ?? "magic"] ?? null,
+						[`${!!focusedOrganizer}`]: focusedOrganizer?.previousValue ?? null,
+					}.true,
 				},
 			]
 		: availableRows;
@@ -365,6 +410,8 @@ export function useMetricDrillDownPanelRules({
 		? [...visibleRows].sort((a, b) => a.id.localeCompare(b.id))
 		: [...visibleRows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
 	function selectedBarTotal(row: MetricDrillDownRow) {
+		if (segment === "organizer")
+			return (row.organizers ?? []).reduce((sum, organizer) => sum + (organizer.value ?? 0), 0);
 		return Object.values(row.departments ?? {}).reduce<number>(
 			(sum, value) => sum + (value ?? 0),
 			0,
@@ -373,7 +420,7 @@ export function useMetricDrillDownPanelRules({
 	const smallestStep = selection.measure === "avg-daily-games" ? 0.1 : 1;
 	const largest = Math.max(
 		smallestStep,
-		...topRows.map((row) => (segment === "department" ? selectedBarTotal(row) : (row.value ?? 0))),
+		...topRows.map((row) => (segment === "none" ? (row.value ?? 0) : selectedBarTotal(row))),
 	);
 	const magnitude = 10 ** Math.floor(Math.log10(largest / 5));
 	const step = Math.max(smallestStep, Math.ceil(largest / magnitude / 5) * magnitude);
@@ -383,6 +430,27 @@ export function useMetricDrillDownPanelRules({
 	const appliedDepartments = gameDepartments?.length ? gameDepartments : DRILL_DOWN_DEPARTMENTS;
 	const selectedDepartments =
 		hasFocus && focus?.department ? [focus.department] : appliedDepartments;
+	const organizerLegend = (() => {
+		const byId = new Map<string, { id: string; name: string; value: number }>();
+		for (const row of availableRows) {
+			for (const organizer of row.organizers ?? []) {
+				const current = byId.get(organizer.id) ?? {
+					id: organizer.id,
+					name: organizer.name,
+					value: 0,
+				};
+				current.value += organizer.value ?? 0;
+				byId.set(organizer.id, current);
+			}
+		}
+		return [...byId.values()].sort(
+			(left, right) => right.value - left.value || left.name.localeCompare(right.name, locale),
+		);
+	})();
+	const selectedOrganizers =
+		hasFocus && focus?.organizerId
+			? organizerLegend.filter((organizer) => organizer.id === focus.organizerId)
+			: organizerLegend;
 	const chartRows: DrillDownChartRow[] = topRows.map((row) => {
 		if (row.value === null) return { ...row, bars: [] };
 		if (segment === "department") {
@@ -398,9 +466,43 @@ export function useMetricDrillDownPanelRules({
 							{
 								id: department,
 								department,
+								color: DRILL_DOWN_COLORS[department],
 								label: [
 									`${rowName(row)} · ${departmentNames[department]}: ${formatValue(value)}`,
 									rateParts(row.departmentParts?.[department] ?? {}),
+								]
+									.filter(Boolean)
+									.join(" · "),
+								value,
+								height: (value / max) * 100,
+							},
+						];
+					})
+					.map((bar, index, bars) => ({
+						...bar,
+						isTop: bars.slice(index + 1).every((above) => above.value === 0),
+					})),
+			};
+		}
+		if (segment === "organizer") {
+			if (row.organizers == null) return { ...row, bars: [] };
+			return {
+				...row,
+				bars: selectedOrganizers
+					.flatMap((legend) => {
+						const organizer = row.organizers?.find((item) => item.id === legend.id);
+						const value = organizer?.value;
+						if (value == null) return [];
+						return [
+							{
+								id: legend.id,
+								organizerId: legend.id,
+								color: drillDownOrganizerColor(
+									organizerLegend.findIndex((item) => item.id === legend.id),
+								),
+								label: [
+									`${rowName(row)} · ${legend.name}: ${formatValue(value)}`,
+									rateParts(organizer ?? {}),
 								]
 									.filter(Boolean)
 									.join(" · "),
@@ -420,6 +522,7 @@ export function useMetricDrillDownPanelRules({
 			bars: [
 				{
 					id: "total",
+					color: DRILL_DOWN_COLORS.organizers,
 					label: [`${rowName(row)}: ${formatValue(row.value)}`, rateParts(row)]
 						.filter(Boolean)
 						.join(" · "),
@@ -454,7 +557,7 @@ export function useMetricDrillDownPanelRules({
 		setSelection((current) => ({
 			...current,
 			slice,
-			segment: slice === "department" ? "none" : current.segment,
+			segment: slice === "department" || slice === "organizer" ? "none" : current.segment,
 		}));
 	}
 	function setSegment(next: DrillDownSegment) {
@@ -472,7 +575,7 @@ export function useMetricDrillDownPanelRules({
 		setRangeState(next);
 	}
 	function viewOnMap(row: MetricDrillDownRow) {
-		const facilityIds = (facilitiesQuery.data ?? [])
+		const listed = (facilitiesQuery.data ?? [])
 			.filter(
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
@@ -480,18 +583,24 @@ export function useMetricDrillDownPanelRules({
 					(selection.slice === "market" ? facility.marketId === row.id : facility.id === row.id),
 			)
 			.map((facility) => facility.id);
+		const facilityIds = {
+			true: listed,
+			[`${selection.slice === "organizer"}`]: row.facilityIds ?? [],
+		}.true;
 		setMapNavigation({ kind: "metric-focus", facilityIds });
 	}
 
 	let heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
 	if (isAppActivity && scope.kind === "facility") heading = scope.marketName;
-	const headlineSource = focus?.department
-		? (focusedRow?.departmentParts?.[focus.department] ?? {
-				numerator: undefined,
-				denominator: undefined,
-				dataErrors: undefined,
-			})
-		: (focusedRow ?? view);
+	const headlineSource = {
+		true: focusedRow ?? view,
+		[`${!!focus?.department}`]: focusedRow?.departmentParts?.[focus?.department ?? "magic"] ?? {
+			numerator: undefined,
+			denominator: undefined,
+			dataErrors: undefined,
+		},
+		[`${!!focusedOrganizer}`]: focusedOrganizer ?? view,
+	}.true;
 	const headlineTemplate = headlinePartsTemplates[selection.measure];
 	const headlineParts =
 		headlineTemplate && headlineSource.numerator != null && headlineSource.denominator != null
@@ -503,11 +612,13 @@ export function useMetricDrillDownPanelRules({
 	const dataErrors = headlineSource.dataErrors ?? 0;
 	const headlineChange = changeDisplay(
 		hasFocus ? focusedValue : view.total,
-		hasFocus
-			? focus?.department
-				? focusedRow.previousDepartments?.[focus.department]
-				: focusedRow.previousValue
-			: view.previousTotal,
+		{
+			true: view.previousTotal,
+			[`${hasFocus}`]: focusedRow?.previousValue,
+			[`${hasFocus && !!focus?.department}`]:
+				focusedRow?.previousDepartments?.[focus?.department ?? "magic"],
+			[`${hasFocus && !!focusedOrganizer}`]: focusedOrganizer?.previousValue,
+		}.true,
 	);
 	return {
 		comparison,
@@ -533,6 +644,7 @@ export function useMetricDrillDownPanelRules({
 		segment,
 		canSegment,
 		canSliceByDepartment: canSliceDrillDownByDepartment(selection.measure),
+		canSliceByOrganizer: canSliceDrillDownByOrganizer(selection.measure),
 		setMeasure,
 		setSlice,
 		setSegment,
@@ -556,7 +668,13 @@ export function useMetricDrillDownPanelRules({
 		showReviewsLag: selection.measure === "incident-games-rate",
 		rateParts,
 		focusLabel: hasFocus
-			? `${rowName(focusedRow)}${focus?.department ? ` · ${departmentNames[focus.department]}` : ""}`
+			? `${rowName(focusedRow)}${
+					{
+						true: "",
+						[`${!!focus?.department}`]: ` · ${departmentNames[focus?.department ?? "magic"]}`,
+						[`${!!focusedOrganizer}`]: ` · ${focusedOrganizer?.name ?? ""}`,
+					}.true
+				}`
 			: undefined,
 		toggleFocus,
 		isSelected,
@@ -569,6 +687,9 @@ export function useMetricDrillDownPanelRules({
 		rowName,
 		departmentNames,
 		departments: selectedDepartments,
+		organizers: selectedOrganizers,
+		organizerColor: (id: string) =>
+			drillDownOrganizerColor(organizerLegend.findIndex((organizer) => organizer.id === id)),
 		filteredDepartments: isAppActivity ? [] : (gameDepartments ?? []),
 		isAppActivity,
 		sourceSwitchPosition: sourceSwitchPosition(chartRows),
@@ -597,7 +718,10 @@ export function useMetricDrillDownPanelRules({
 		incomplete:
 			view.total === null ||
 			view.rows.some(
-				(row) => row.value === null || (segment === "department" && row.departments === null),
+				(row) =>
+					row.value === null ||
+					(segment === "department" && row.departments === null) ||
+					(segment === "organizer" && row.organizers == null),
 			),
 	};
 }
