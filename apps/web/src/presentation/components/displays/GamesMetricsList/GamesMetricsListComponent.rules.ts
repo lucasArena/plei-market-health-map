@@ -244,7 +244,7 @@ export function buildGamesCardView(
 	const series = buildGamesSeries(stats, messages, formatters);
 	const { max, ticks } = buildGamesAxis(Math.max(0, ...series.map((point) => point.value)));
 	return {
-		title: formatMessage(messages.gamesLastPeriod, { span: periodMessages.span }),
+		title: messages.gamesLastPeriod,
 		hero: {
 			value: formatters.number.format(reservations.played),
 			comparison: formatMessage(messages.gamesVersusPreviousIn, {

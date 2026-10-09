@@ -449,7 +449,7 @@ export const en: Messages = {
 		doingBest: "Doing best",
 		seeAllMarkets: "See all {count} markets",
 		seeAllFacilities: "See all {count} facilities",
-		gamesLastPeriod: "Games in the {span}",
+		gamesLastPeriod: "Games played",
 		usersActivePlayers: "Active players",
 		usersNewRegistrations: "New registrations",
 		usersActiveUsers: "Active users",

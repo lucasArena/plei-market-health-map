@@ -355,7 +355,7 @@ describe("market summary builders", () => {
 		// Last four of the eight weeks the API returns.
 		expect(view.users?.series.map((point) => point.value)).toEqual([7, 6, 5, 6]);
 		expect(view.isUsersPending).toBe(false);
-		expect(view.games.title).toBe("Games in the last 28 days");
+		expect(view.games.title).toBe("Games played");
 		expect(view.games.hero).toMatchObject({
 			value: "212",
 			comparison: "vs 200 in the previous 28 days",
@@ -711,7 +711,7 @@ describe("useInsightPanelRules", () => {
 
 		expect(mockUseMarketGameInsights).toHaveBeenLastCalledWith(null, "week", true, []);
 		expect(result.current.heading.subtitle).toBe("All facilities and markets, last 7 days");
-		expect(result.current.view?.games.title).toBe("Games in the last 7 days");
+		expect(result.current.view?.games.title).toBe("Games played");
 		expect(result.current.view?.games.hero.value).toBe("55");
 		expect(result.current.view?.games.hero.change?.label).toBe("+8%");
 		// 7D charts the same last four weeks as 28D.
