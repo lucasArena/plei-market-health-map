@@ -22,6 +22,8 @@ import {
 	buildScopeCrumbs,
 	buildScopeHeading,
 	contributorFactsFrom,
+	formatChangePercent,
+	marketTrendStatusOf,
 	useInsightPanelRules,
 } from "@/presentation/components/map/InsightPanel/InsightPanelComponent.rules";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
@@ -1067,5 +1069,55 @@ describe("AI subject readiness", () => {
 				"month",
 			)?.kind,
 		).toBe("facility");
+	});
+});
+
+describe("market rows with the per-market comparison", () => {
+	const change = (
+		id: string,
+		played: number,
+		playedPrevious: number,
+		changePercent: number | null,
+	) => ({
+		id,
+		name: id,
+		played,
+		playedPrevious,
+		change: played - playedPrevious,
+		changePercent,
+		facilities: [
+			{ id: `${id}-a`, name: "A", played, playedPrevious, change: 0, changePercent },
+			{ id: `${id}-b`, name: "B", played: 0, playedPrevious: 0, change: 0, changePercent: null },
+		],
+	});
+
+	it("labels each market's trend and change, and drops markets without games in either period", () => {
+		const rows = buildMarketRows(
+			[],
+			[
+				change("down", 40, 50, -20),
+				change("up", 60, 50, 20),
+				change("flat", 50, 50, 0.2),
+				change("new", 10, 0, null),
+				change("empty", 0, 0, null),
+			],
+			messages,
+			detailMessages,
+			MONTH,
+			formatters,
+		);
+		expect(rows.map((row) => [row.id, row.status, row.changeLabel, row.detail])).toEqual([
+			["down", "declining", "\u221220%", "1 of 2 active"],
+			["up", "growing", "+20%", "1 of 2 active"],
+			["flat", "steady", "0%", "1 of 2 active"],
+			["new", "new", "\u2014", "1 of 2 active"],
+		]);
+		expect(rows[0]?.ariaLabel).toContain("versus the previous 28 days");
+		expect(rows[3]?.ariaLabel).toContain("No previous games to compare");
+	});
+
+	it("treats a market with no previous games as new even when a percent is present", () => {
+		expect(marketTrendStatusOf(change("x", 5, 0, 10))).toBe("new");
+		expect(formatChangePercent(-0.4, formatters)).toBe("0%");
 	});
 });

@@ -12,4 +12,12 @@ describe("AiSummarySkeleton", () => {
 		expect(screen.getByRole("heading", { name: "Key insights" })).toBeInTheDocument();
 		expect(screen.getByTestId("key-insights-skeleton").parentElement).toHaveClass("h-44");
 	});
+
+	it("drops the box when flat in the insight panel", () => {
+		renderWithMessages(<AiSummarySkeleton testId="panel-ai-skeleton" isFlat />);
+
+		const box = screen.getByTestId("panel-ai-skeleton");
+		expect(box).toHaveClass("space-y-2");
+		expect(box).not.toHaveClass("rounded-xl");
+	});
 });
