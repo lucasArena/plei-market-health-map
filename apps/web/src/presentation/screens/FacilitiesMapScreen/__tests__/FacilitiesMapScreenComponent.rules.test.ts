@@ -158,21 +158,9 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 			: null,
 }));
 
-const mockDemandFlag = vi.fn(() => false);
-const mockSupplyFlag = vi.fn(() => false);
-const mockMetricFocusFlag = vi.fn(() => false);
-const mockTrendFlag = vi.fn(() => true);
 const mockInsightFlag = vi.fn(() => false);
 vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
-	useFeatureFlag: (key: string) =>
-		(
-			({
-				"metric-drill-down": mockMetricFocusFlag,
-				"facility-games-trend": mockTrendFlag,
-				"facility-games-layer": mockSupplyFlag,
-				"insights-panel-v3": mockInsightFlag,
-			})[key] ?? mockDemandFlag
-		)(),
+	useFeatureFlag: () => mockInsightFlag(),
 }));
 const mockUseAppSessionHeatmap = vi.fn();
 vi.mock("@/presentation/hooks/use-app/use-app-session-heatmap", () => ({
@@ -237,12 +225,9 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.hasProvider = true;
 		layersState.sessionFilters = {};
 		layersState.demandMetric = "sessions";
-		mockDemandFlag.mockReturnValue(false);
 		layersState.supplyMetric = "facilities";
 		layersState.gameDepartments = [];
 		layersState.showGamesTrend = false;
-		mockSupplyFlag.mockReturnValue(false);
-		mockMetricFocusFlag.mockReturnValue(false);
 		layersState.setSessionFilters = vi.fn();
 		mapState.instances.length = 0;
 		mapState.handlers.clear();
@@ -255,9 +240,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUsePleiLogoImages.mockImplementation((map: unknown) => map !== null);
 	});
 
-	it("isolates selected supply groups and restores them when cleared, behind the flag", async () => {
-		mockMetricFocusFlag.mockReturnValue(true);
-		mockSupplyFlag.mockReturnValue(true);
+	it("isolates selected supply groups and restores them when cleared", async () => {
 		layersState.supplyMetric = "games";
 		const played = sameInBothPeriods({
 			...FACILITY,
@@ -316,9 +299,9 @@ describe("useFacilitiesMapScreenRules", () => {
 			result.current.context.setMetricFocus({ facilityIds: ["other"], department: "magic" }),
 		);
 		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["other"]);
-		mockMetricFocusFlag.mockReturnValue(false);
+		act(() => result.current.context.setMetricFocus(null));
 		act(() => result.current.context.setScope({ kind: "market", id: "missing", name: "Missing" }));
-		expect(result.current.rules.shownFacilities).toHaveLength(2);
+		expect(result.current.rules.shownFacilities).toHaveLength(0);
 	});
 
 	it("zooms from facility map icons without changing scope or opening detail", async () => {
@@ -440,7 +423,6 @@ describe("useFacilitiesMapScreenRules", () => {
 	});
 
 	it("excludes zero-game facilities from Games even when inactive visibility is enabled", async () => {
-		mockSupplyFlag.mockReturnValue(true);
 		layersState.supplyMetric = "games";
 		layersState.showInactiveFacilities = true;
 		const played = sameInBothPeriods({ ...FACILITY, gamesLast28Days: 12 });
@@ -470,7 +452,6 @@ describe("useFacilitiesMapScreenRules", () => {
 	});
 
 	it("uses selected departments for both Games and Facilities and restores all departments when cleared", async () => {
-		mockSupplyFlag.mockReturnValue(true);
 		layersState.supplyMetric = "games";
 		layersState.gameDepartments = ["magic", "organizers"];
 		const included = sameInBothPeriods({
@@ -677,7 +658,6 @@ describe("useFacilitiesMapScreenRules", () => {
 	});
 
 	it("preserves facility hover and detail click while Games is selected", async () => {
-		mockSupplyFlag.mockReturnValue(true);
 		layersState.supplyMetric = "games";
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
@@ -1390,7 +1370,6 @@ describe("useFacilitiesMapScreenRules", () => {
 	] satisfies [AppSessionFilters, string][])(
 		"names the applied demographic cohort %j",
 		(filters, summary) => {
-			mockDemandFlag.mockReturnValue(true);
 			layersState.sessionFilters = filters;
 			const { result } = renderRules();
 			expect(result.current.sessionFilterSummary).toBe(summary);
@@ -1398,16 +1377,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		},
 	);
 
-	it("ignores stored session filters when demographics are disabled", () => {
-		layersState.sessionFilters = { gender: "Female", skill: "Advanced" };
-		mockDemandFlag.mockReturnValue(false);
-		const { result } = renderRules();
-		expect(result.current.sessionFilterChips).toEqual([]);
-		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith({}, "week", true);
-	});
-
 	it("removes a demographic chip from the applied cohort", () => {
-		mockDemandFlag.mockReturnValue(true);
 		const setSessionFilters = vi.fn();
 		layersState.setSessionFilters = setSessionFilters;
 		layersState.sessionFilters = { gender: ["Female", "Male"], ageMin: 18, ageMax: 34 };
@@ -1420,7 +1390,6 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(setSessionFilters).toHaveBeenLastCalledWith({ gender: ["Female", "Male"] });
 	});
 	it("deletes a demographic field when its last chip is removed", () => {
-		mockDemandFlag.mockReturnValue(true);
 		const setSessionFilters = vi.fn();
 		layersState.setSessionFilters = setSessionFilters;
 		layersState.sessionFilters = { gender: ["Female"], skill: ["Advanced"] };
@@ -1475,7 +1444,6 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.isLegendShown).toBe(false);
 	});
 	it("loads registrations with the applied cohort and changes all legend labels", async () => {
-		mockDemandFlag.mockReturnValue(true);
 		layersState.demandMetric = "registrations";
 		layersState.sessionFilters = { gender: "Female", ageMin: 18 };
 		const { result, rerender } = renderRules();
@@ -1501,7 +1469,8 @@ describe("useFacilitiesMapScreenRules", () => {
 		rerender();
 		expect(result.current.sessionLegendState).toBe("empty");
 		expect(result.current.isLegendShown).toBe(true);
-		mockDemandFlag.mockReturnValue(false);
+		layersState.demandMetric = "sessions";
+		layersState.sessionFilters = {};
 		rerender();
 		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith({}, "week", true);
 		expect(result.current.messages.sessionHeatmapLegend).toBe(EN_MESSAGES.map.sessionHeatmapLegend);
@@ -1702,8 +1671,6 @@ describe("games trend", () => {
 				showGamesTrend: false,
 				sessionFilters: {},
 			});
-			mockSupplyFlag.mockReturnValue(true);
-			mockDemandFlag.mockReturnValue(false);
 			mapState.instances.length = 0;
 			mapState.handlers.clear();
 			mockUseFacilities.mockReturnValue({
@@ -1771,59 +1738,6 @@ describe("games trend", () => {
 			);
 
 			layersState.supplyMetric = "games";
-			mockSupplyFlag.mockReturnValue(false);
-			mockMetricFocusFlag.mockReturnValue(false);
-			rerender();
-			expect(result.current.showTrend).toBe(false);
-		});
-
-		it("keeps the trend off while its flag or the games flag is off", async () => {
-			onTestFinished(() => {
-				mockTrendFlag.mockReturnValue(true);
-			});
-			layersState.showGamesTrend = true;
-			mockTrendFlag.mockReturnValue(false);
-			const { rerender, result } = await loadMap();
-
-			expect(result.current.showTrend).toBe(false);
-			expect(result.current.selectedTrend).toBeNull();
-
-			mockTrendFlag.mockReturnValue(true);
-			mockSupplyFlag.mockReturnValue(false);
-			mockMetricFocusFlag.mockReturnValue(false);
-			rerender();
-			expect(result.current.showTrend).toBe(false);
-
-			mockSupplyFlag.mockReturnValue(true);
-			rerender();
-			expect(result.current.showTrend).toBe(true);
-		});
-
-		it("keeps trend hovers off with the trend flag off, even with Show trend saved on", async () => {
-			onTestFinished(() => {
-				mockTrendFlag.mockReturnValue(true);
-			});
-			layersState.showGamesTrend = true;
-			mockTrendFlag.mockReturnValue(false);
-			const { rerender, result } = await loadMap();
-			mapState.getClusterLeaves.mockResolvedValue([]);
-
-			expect(result.current.showTrend).toBe(false);
-			await act(async () => {
-				mapState.handlers.get(`mousemove:${CLUSTER_LAYER_ID}`)?.({
-					features: [
-						{
-							properties: { cluster_id: 11, point_count: 2, gameCount: 9, gamePreviousCount: 2 },
-							geometry: { type: "Point", coordinates: [-97.7, 30.3] },
-						},
-					],
-					point: { x: 10, y: 40 },
-				});
-			});
-			expect(result.current.hovered).toMatchObject({ kind: "cluster" });
-			expect(result.current.hovered).not.toHaveProperty("trend");
-
-			mockTrendFlag.mockReturnValue(true);
 			rerender();
 			expect(result.current.showTrend).toBe(true);
 		});
@@ -1967,7 +1881,6 @@ describe("period-aware map data", () => {
 	});
 
 	it("keeps the legend visible when filters are applied and the heatmap fails", () => {
-		mockDemandFlag.mockReturnValue(true);
 		layersState.sessionFilters = { gender: ["Female"] };
 		mockUseAppSessionHeatmap.mockReturnValue({
 			data: [],
@@ -2008,7 +1921,6 @@ describe("period-aware map data", () => {
 	});
 
 	it("names an empty filtered result for the session reference panel", () => {
-		mockDemandFlag.mockReturnValue(true);
 		layersState.sessionFilters = { gender: ["Female"] };
 		mockUseAppSessionHeatmap.mockReturnValue({
 			data: [],

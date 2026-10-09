@@ -6,7 +6,6 @@ import {
 	needsOrganizerDimension,
 } from "@core/application/dtos/metric-drill-down-dto";
 import type { DrillDownMeasure } from "@core/application/dtos/metric-drill-down-dto.types";
-import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { DrillDownFacilityFact } from "@core/application/services/aggregate-metric-drill-down.types";
 import {
@@ -58,7 +57,6 @@ function setup(facilities: DrillDownFacilityFact[] = [facility]) {
 	const getMetricDrillDown = makeGetMetricDrillDown({
 		drillDown,
 		clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
-		enabledFeatureFlags: async () => ({ enabled: ["metric-drill-down"] }),
 	});
 	return { getMetricDrillDown, drillDown };
 }
@@ -274,14 +272,6 @@ describe("getMetricDrillDown", () => {
 				slice: "department",
 			}),
 		).rejects.toBeInstanceOf(InvalidRequestError);
-		const denied = makeGetMetricDrillDown({
-			drillDown: new InMemoryMetricDrillDownRepository([facility]),
-			clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
-			enabledFeatureFlags: async () => ({ enabled: [] }),
-		});
-		await expect(
-			denied({ measure: "games", range: "28d", slice: "market" }),
-		).rejects.toBeInstanceOf(ForbiddenError);
 	});
 });
 
@@ -677,7 +667,6 @@ describe("drill-down measure helpers", () => {
 				{ ...facility, organizers: [{ id: "9", name: "", games: 2 }] },
 			]),
 			clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
-			enabledFeatureFlags: async () => ({ enabled: ["metric-drill-down"] }),
 		})({ measure: "games", range: "28d", slice: "organizer" });
 		expect(unnamed.rows[0]).toMatchObject({ id: "9", name: "Organizer 9", value: 2 });
 		expect(
@@ -685,7 +674,6 @@ describe("drill-down measure helpers", () => {
 				await makeGetMetricDrillDown({
 					drillDown: new InMemoryMetricDrillDownRepository([{ ...facility, organizers: null }]),
 					clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
-					enabledFeatureFlags: async () => ({ enabled: ["metric-drill-down"] }),
 				})({ measure: "games", range: "28d", slice: "organizer" })
 			).total,
 		).toBeNull();
@@ -982,7 +970,6 @@ it.each(["app-sessions", "registrations", "unique-users"] as const)(
 		const get = makeGetMetricDrillDown({
 			drillDown: { group },
 			clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
-			enabledFeatureFlags: async () => ({ enabled: ["metric-drill-down"] }),
 		});
 		await get({
 			measure,

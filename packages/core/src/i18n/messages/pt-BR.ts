@@ -582,13 +582,6 @@ export const ptBR: Messages = {
 		descriptions: {
 			"insights-panel-v3":
 				"Abrir o novo painel de insights ao carregar, com faixa de saúde, datas de comparação e atualização dos dados.",
-			"metric-drill-down":
-				"Explorar jogos e instalações ativas por mercado, instalação, departamento e organizador.",
-			"facility-games-layer": "Mostrar o seletor de jogos com contagens por grupo e instalação.",
-			"facility-games-trend":
-				"Mostrar a tendência de jogos em relação aos {days} dias anteriores, com a opção Mostrar tendência em Jogos.",
-			"player-demographic-filters":
-				"Selecionar sessões ou cadastros e filtrar a demanda por gênero, nível e idade.",
 		},
 	},
 	offline: {

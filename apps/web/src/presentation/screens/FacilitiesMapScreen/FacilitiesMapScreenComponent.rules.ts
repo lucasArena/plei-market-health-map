@@ -135,21 +135,17 @@ export function useFacilitiesMapScreenRules() {
 		[query.data, period],
 	);
 	const mapLayers = useMapLayers();
-	const showDemographics = useFeatureFlag("player-demographic-filters");
-	const isRegistrations = showDemographics && mapLayers?.demandMetric === "registrations";
-	const showSupplyFilters = useFeatureFlag("facility-games-layer");
-	const showTrendFlag = useFeatureFlag("facility-games-trend");
-	const showGames = showSupplyFilters && mapLayers?.supplyMetric === "games";
+	const isRegistrations = mapLayers?.demandMetric === "registrations";
+	const showGames = mapLayers?.supplyMetric === "games";
 	const showGamesRef = useRef(showGames);
 	showGamesRef.current = showGames;
-	const showTrend = showTrendFlag && showGames && (mapLayers?.showGamesTrend ?? false);
+	const showTrend = showGames && (mapLayers?.showGamesTrend ?? false);
 	const showTrendRef = useRef(showTrend);
 	showTrendRef.current = showTrend;
-	const sessionFiltersForHeatmap = showDemographics ? mapLayers?.sessionFilters : {};
 	const heatmapQuery = useAppSessionHeatmap(
 		isRegistrations
-			? { ...sessionFiltersForHeatmap, metric: "registrations" }
-			: sessionFiltersForHeatmap,
+			? { ...mapLayers?.sessionFilters, metric: "registrations" }
+			: mapLayers?.sessionFilters,
 		period,
 		mapLayers?.showSessions ?? true,
 	);
@@ -171,7 +167,7 @@ export function useFacilitiesMapScreenRules() {
 		!showGames && (mapLayers?.showInactiveFacilities ?? MAP_LAYERS_DEFAULTS.showInactiveFacilities);
 	const showFacilities = showActiveFacilities || showInactiveFacilities;
 	const showSessions = mapLayers?.showSessions ?? MAP_LAYERS_DEFAULTS.showSessions;
-	const filters = showDemographics ? mapLayers?.sessionFilters : undefined;
+	const filters = mapLayers?.sessionFilters;
 	const sessionFilterChips = buildSessionFilterChips(filters);
 	const sessionFilterSummary = sessionFilterChips.map((chip) => chip.label).join(" · ");
 
@@ -205,21 +201,21 @@ export function useFacilitiesMapScreenRules() {
 	const suppressClickRef = useRef(false);
 	const refreshClusterMarkersRef = useRef<() => void>(() => undefined);
 	const hoverDismissTimerRef = useRef<number | null>(null);
-	const gameDepartments = showSupplyFilters ? mapLayers?.gameDepartments : undefined;
-	const showMetricFocus = useFeatureFlag("metric-drill-down");
+	const gameDepartments = mapLayers?.gameDepartments;
 	/** insights-panel-v3: facilities open as the Facility level of the insight panel, not a drawer. */
 	const isInsightIteration = useFeatureFlag("insights-panel-v3");
-	const scopedFacilities = useMemo(() => {
-		if (!showMetricFocus) return facilities;
-		return facilities.filter(
-			(facility) =>
-				(scope.kind !== "market" || facility.marketId === scope.id) &&
-				(!metricFocus || metricFocus.facilityIds.includes(facility.id)),
-		);
-	}, [facilities, scope, metricFocus, showMetricFocus]);
+	const scopedFacilities = useMemo(
+		() =>
+			facilities.filter(
+				(facility) =>
+					(scope.kind !== "market" || facility.marketId === scope.id) &&
+					(!metricFocus || metricFocus.facilityIds.includes(facility.id)),
+			),
+		[facilities, scope, metricFocus],
+	);
 	const focusedDepartments = useMemo(
-		() => (showMetricFocus && metricFocus?.department ? [metricFocus.department] : gameDepartments),
-		[showMetricFocus, metricFocus?.department, gameDepartments],
+		() => (metricFocus?.department ? [metricFocus.department] : gameDepartments),
+		[metricFocus?.department, gameDepartments],
 	);
 	const shownFacilities = useMemo(
 		() =>

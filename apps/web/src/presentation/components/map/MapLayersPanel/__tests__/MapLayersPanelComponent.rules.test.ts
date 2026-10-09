@@ -7,16 +7,9 @@ const setSupplyMetric = vi.fn();
 const setSessionFilters = vi.fn();
 const setDemandFiltersPresent = vi.fn();
 const setShowGamesTrend = vi.fn();
-const mockFeatureFlag = vi.hoisted(() =>
-	vi.fn((key: string) => key === "player-demographic-filters" || key === "facility-games-layer"),
-);
 
 vi.mock("next/navigation", () => ({
 	usePathname: () => "/",
-}));
-
-vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
-	useFeatureFlag: (key: string) => mockFeatureFlag(key),
 }));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
@@ -54,9 +47,6 @@ vi.mock("@/presentation/hooks/use-map/use-reveal-motion", () => ({
 }));
 
 beforeEach(() => {
-	mockFeatureFlag.mockImplementation(
-		(key: string) => key === "player-demographic-filters" || key === "facility-games-layer",
-	);
 	setDemandMetric.mockClear();
 	setSupplyMetric.mockClear();
 	setSessionFilters.mockClear();
@@ -75,17 +65,11 @@ it("selects games on supply", () => {
 	expect(setSupplyMetric).toHaveBeenCalledWith("games");
 });
 
-it("clears session filters when demographic filters are disabled", () => {
-	mockFeatureFlag.mockImplementation((key: string) => key === "facility-games-layer");
+it("leaves the applied layers alone when it mounts", () => {
 	renderHook(() => useMapLayersPanelRules());
-	expect(setSessionFilters).toHaveBeenCalledWith({});
-	expect(setDemandMetric).toHaveBeenCalledWith("sessions");
-});
-
-it("turns games trend off when the trend flag is disabled", () => {
-	mockFeatureFlag.mockImplementation((key: string) => key === "facility-games-layer");
-	renderHook(() => useMapLayersPanelRules());
-	expect(setShowGamesTrend).toHaveBeenCalledWith(false);
+	expect(setSessionFilters).not.toHaveBeenCalled();
+	expect(setDemandMetric).not.toHaveBeenCalled();
+	expect(setShowGamesTrend).not.toHaveBeenCalled();
 });
 
 it("maps unknown demand metrics back to sessions", () => {

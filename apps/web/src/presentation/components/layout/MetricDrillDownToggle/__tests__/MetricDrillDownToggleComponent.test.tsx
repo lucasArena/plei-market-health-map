@@ -6,12 +6,8 @@ import type { MetricDrillDownPanelProps } from "@/presentation/components/map/Me
 import { SidePanelProvider } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
-let flag = true;
 let path = "/";
 vi.mock("next/navigation", () => ({ usePathname: () => path }));
-vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
-	useFeatureFlag: () => flag,
-}));
 vi.mock("@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent", () => ({
 	MetricDrillDownPanel: ({
 		isOpen,
@@ -41,7 +37,6 @@ function OtherPanel() {
 }
 describe("MetricDrillDownToggle", () => {
 	beforeEach(() => {
-		flag = true;
 		path = "/";
 	});
 	it("opens and closes with accessible glass control", () => {
@@ -62,13 +57,9 @@ describe("MetricDrillDownToggle", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Close" }));
 		expect(button).toHaveAttribute("aria-expanded", "false");
 	});
-	it("hides off-map and when the flag turns off", () => {
+	it("hides itself and closes the drawer off the map", () => {
 		const { rerender } = renderWithMessages(<MetricDrillDownToggle />);
 		fireEvent.click(screen.getByRole("button", { name: "Metric drill-down" }));
-		flag = false;
-		rerender(<MetricDrillDownToggle />);
-		expect(screen.queryByRole("button")).not.toBeInTheDocument();
-		flag = true;
 		path = "/admin";
 		rerender(<MetricDrillDownToggle />);
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();

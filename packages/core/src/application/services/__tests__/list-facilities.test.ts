@@ -1,12 +1,9 @@
-import { FEATURE_FLAG_KEYS } from "@core/application/dtos/feature-flags-dto";
 import { makeListFacilities } from "@core/application/services/list-facilities";
 import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryFacilityRepository } from "@core/application/testing/in-memory-facility-repository";
 import { asEntityId, Facility } from "@core/domain";
 
 const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
-
-const allFlagsOn = async () => ({ enabled: [...FEATURE_FLAG_KEYS] });
 
 function facility(id: string, gamesLast28Days = 40) {
 	return Facility.create({
@@ -25,7 +22,6 @@ describe("listFacilities", () => {
 		const listFacilities = makeListFacilities({
 			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository([facility("a"), facility("b", 0)]),
-			enabledFeatureFlags: allFlagsOn,
 		});
 
 		expect(await listFacilities()).toEqual([
@@ -77,7 +73,6 @@ describe("listFacilities", () => {
 		const listFacilities = makeListFacilities({
 			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository([trending]),
-			enabledFeatureFlags: allFlagsOn,
 		});
 
 		expect((await listFacilities())[0]).toMatchObject({
@@ -132,12 +127,11 @@ describe("listFacilities", () => {
 		const listFacilities = makeListFacilities({
 			clock: TEST_CLOCK,
 			facilities: new InMemoryFacilityRepository(),
-			enabledFeatureFlags: allFlagsOn,
 		});
 		await expect(listFacilities()).resolves.toEqual([]);
 	});
 
-	describe("feature flags", () => {
+	describe("games fields", () => {
 		const trending = Facility.create({
 			id: asEntityId("e"),
 			marketId: asEntityId("austin"),
@@ -158,50 +152,23 @@ describe("listFacilities", () => {
 				utilization: 0,
 			},
 		});
-		const base = {
-			id: "e",
-			marketId: "austin",
-			marketName: "austin",
-			name: "Location e",
-			avatarUrl: null,
-			isActive: true,
-			isActiveLastWeek: false,
-			location: { latitude: 30.27, longitude: -97.74 },
-		};
 
-		function listWith(enabled: string[]) {
-			return makeListFacilities({
+		it("always sends games, department totals and the previous windows", async () => {
+			const listFacilities = makeListFacilities({
 				clock: TEST_CLOCK,
 				facilities: new InMemoryFacilityRepository([trending]),
-				enabledFeatureFlags: async () => ({ enabled }),
-			})();
-		}
+			});
 
-		it("leaves every games field out while the games layer is off", async () => {
-			await expect(listWith([])).resolves.toEqual([base]);
-			await expect(listWith(["player-demographic-filters"])).resolves.toEqual([base]);
-		});
-
-		it("leaves the previous window out while the trend is off", async () => {
-			await expect(listWith(["facility-games-layer"])).resolves.toEqual([
+			await expect(listFacilities()).resolves.toEqual([
 				{
-					...base,
-					gamesLast28Days: 6,
-					gamesByDepartment: { magic: 1, organizers: 2, partnerships: 3 },
-					gamesLastWeek: 0,
-					gamesLastWeekByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
-				},
-			]);
-		});
-
-		it("never sends the trend without the games layer", async () => {
-			await expect(listWith(["facility-games-trend"])).resolves.toEqual([base]);
-		});
-
-		it("sends games and the previous window while both are on", async () => {
-			await expect(listWith(["facility-games-layer", "facility-games-trend"])).resolves.toEqual([
-				{
-					...base,
+					id: "e",
+					marketId: "austin",
+					marketName: "austin",
+					name: "Location e",
+					avatarUrl: null,
+					isActive: true,
+					isActiveLastWeek: false,
+					location: { latitude: 30.27, longitude: -97.74 },
 					gamesLast28Days: 6,
 					gamesByDepartment: { magic: 1, organizers: 2, partnerships: 3 },
 					gamesPrevious28Days: 12,
@@ -214,12 +181,12 @@ describe("listFacilities", () => {
 			]);
 		});
 
-		it("keeps games without a department split while the trend is off", async () => {
+		it("keeps games without a department split when the facility has none", async () => {
 			const plain = makeListFacilities({
 				clock: TEST_CLOCK,
 				facilities: new InMemoryFacilityRepository([facility("a")]),
-				enabledFeatureFlags: async () => ({ enabled: ["facility-games-layer"] }),
 			});
+
 			await expect(plain()).resolves.toEqual([
 				expect.objectContaining({ id: "a", gamesLast28Days: 40 }),
 			]);

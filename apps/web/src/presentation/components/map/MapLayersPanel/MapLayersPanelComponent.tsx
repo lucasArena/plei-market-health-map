@@ -83,15 +83,12 @@ function MetricRadio({ label, name, value, selected, onSelect }: Readonly<LayerM
 
 export function MapLayersPanel() {
 	const {
-		showDemographics,
 		demandGroupRef,
 		demandKeys,
 		demandMetric,
 		selectDemandMetric,
 		supplyGroupRef,
 		supplyKeys,
-		showGamesSelector,
-		showGamesTrendToggle,
 		supplyMetric,
 		selectSupplyMetric,
 		cardMotion,
@@ -144,7 +141,7 @@ export function MapLayersPanel() {
 					<p className={MAP_MENU_ROW_LABEL_CLASS}>{messages.layersDemand}</p>
 					<LayerSwitch checked={showSessions} label={demandSwitchLabel} onToggle={toggleSessions} />
 				</div>
-				{showDemographics && showSessions && (
+				{showSessions && (
 					<div className="mt-0.5 ml-3 border-l border-border pl-1">
 						<div
 							ref={demandGroupRef}
@@ -184,7 +181,7 @@ export function MapLayersPanel() {
 						onToggle={toggleActiveFacilities}
 					/>
 				</div>
-				{showGamesSelector && showActiveFacilities && (
+				{showActiveFacilities && (
 					<div className="mt-0.5 ml-3 border-l border-border pl-1">
 						<div
 							ref={supplyGroupRef}
@@ -211,7 +208,7 @@ export function MapLayersPanel() {
 						</div>
 						<GameDepartmentFilterChips />
 						<GameDepartmentFilterAdd />
-						{showGamesTrendToggle && supplyMetric === "games" && (
+						{supplyMetric === "games" && (
 							<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
 								<p className="text-xs">{messages.trend.toggle}</p>
 								<LayerSwitch
@@ -233,21 +230,9 @@ export function MapLayersPanel() {
 						)}
 					</div>
 				)}
-				{!showGamesSelector && showActiveFacilities && (
-					<div className="mt-0.5 ml-3 border-l border-border pl-1">
-						<div className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5">
-							<p className="text-xs">{messages.layersInactiveFacilities}</p>
-							<LayerSwitch
-								checked={showInactiveFacilities}
-								label={messages.layersInactiveFacilities}
-								onToggle={toggleInactiveFacilities}
-							/>
-						</div>
-					</div>
-				)}
 			</section>
-			{showDemographics && <SessionFilterApply />}
-			{showGamesSelector && <GameDepartmentFilterApply />}
+			<SessionFilterApply />
+			<GameDepartmentFilterApply />
 			{isCustomized && (
 				<div className="-mx-1 mt-1 flex justify-end border-t border-border px-1 pt-1">
 					<button
@@ -303,31 +288,16 @@ export function MapLayersPanel() {
 			{isCardShown && (
 				<div
 					onAnimationEnd={finishCardMotion}
-					className={`${MAP_MENU_SURFACE_CLASS} right-0 ${showDemographics || showGamesSelector ? "w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+76px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto" : "w-max"} max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
+					className={`${MAP_MENU_SURFACE_CLASS} right-0 w-[280px] max-w-[calc(100vw-32px)] max-sm:fixed max-sm:top-[calc(var(--map-frame)+76px)] max-sm:left-[var(--map-frame)] max-sm:right-[var(--map-frame)] max-sm:mt-0 max-sm:w-auto max-h-[calc(100dvh-100px)] overflow-y-auto ${cardMotionClass}`}
 				>
-					{showDemographics ? (
-						<AppSessionFilters showSessions={showSessions} onApplied={closePanel}>
-							{showGamesSelector ? (
-								<GameDepartmentFilters
-									key={`game-departments-${resetCount}`}
-									enabled={showActiveFacilities}
-								>
-									{menu}
-								</GameDepartmentFilters>
-							) : (
-								menu
-							)}
-						</AppSessionFilters>
-					) : showGamesSelector ? (
+					<AppSessionFilters showSessions={showSessions} onApplied={closePanel}>
 						<GameDepartmentFilters
 							key={`game-departments-${resetCount}`}
 							enabled={showActiveFacilities}
 						>
 							{menu}
 						</GameDepartmentFilters>
-					) : (
-						menu
-					)}
+					</AppSessionFilters>
 				</div>
 			)}
 		</aside>

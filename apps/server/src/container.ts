@@ -183,19 +183,11 @@ function buildFacilityRepositories() {
 	};
 }
 
-function enabledFeatureFlags() {
-	if (process.env.NODE_ENV === "development") {
-		return Promise.resolve({ enabled: [...FEATURE_FLAG_KEYS] });
-	}
-	return featureFlagModule().listEnabledFeatureFlags();
-}
-
 function buildFacilities() {
 	const repositories = { ...buildFacilityRepositories(), clock: new SystemClock() };
 	return {
 		listFacilities: makeListFacilities({
 			facilities: repositories.facilities,
-			enabledFeatureFlags,
 			clock: repositories.clock,
 		}),
 		getFacilityDetail: makeGetFacilityDetail(repositories),
@@ -209,7 +201,6 @@ function buildFacilities() {
 		getMetricDrillDown: makeGetMetricDrillDown({
 			drillDown: repositories.drillDown,
 			clock: repositories.clock,
-			enabledFeatureFlags,
 		}),
 	};
 }
@@ -227,12 +218,10 @@ function buildAppSessionHeatmap() {
 	const appSessionHeatmap = buildAppSessionHeatmapRepository();
 	const listAppSessionHeatmap = makeListAppSessionHeatmap({
 		appSessionHeatmap,
-		enabledFeatureFlags,
 		clock: new SystemClock(),
 	});
 	const listAppSessionFilterOptions = makeListAppSessionFilterOptions({
 		appSessionHeatmap,
-		enabledFeatureFlags,
 	});
 	return {
 		listAppSessionFilterOptions,
