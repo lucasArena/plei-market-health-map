@@ -16,7 +16,9 @@ export const FEEDBACK_TYPE_OPTIONS: readonly FeedbackTypeOption[] = [
 ];
 
 export const FEEDBACK_STACK_CLASS =
-	"pointer-events-none fixed bottom-[var(--map-profile-bottom)] left-[var(--map-frame)] z-40 flex w-max flex-col items-start gap-[var(--map-profile-legend-gap)]";
+	"pointer-events-none fixed bottom-[var(--map-profile-bottom)] left-[var(--map-frame)] flex w-max flex-col items-start gap-[var(--map-profile-legend-gap)]";
+
+export const FEEDBACK_STACK_LAYER_CLASS = { open: "z-40", closed: "z-20" };
 
 export const FEEDBACK_LEGEND_SLOT_CLASS = "relative z-0 empty:hidden";
 

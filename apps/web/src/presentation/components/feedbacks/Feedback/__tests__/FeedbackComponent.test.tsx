@@ -112,6 +112,19 @@ describe("Feedback", () => {
 		expect(dialog).toHaveTextContent("Sign out");
 		expect(screen.queryByRole("button", { name: "Send feedback" })).not.toBeInTheDocument();
 	});
+	it("sits below the summary and drill-down panels until the menu opens", () => {
+		renderWidget(
+			<Feedback
+				user={{ name: "Lucas Arena", email: "lucas@plei.com", image: null, isAdmin: false }}
+			/>,
+		);
+		const widget = screen.getByTestId("feedback-widget");
+		expect(widget).toHaveClass("z-20");
+		expect(widget).not.toHaveClass("z-40");
+		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+		expect(widget).toHaveClass("z-40");
+		expect(widget).not.toHaveClass("z-20");
+	});
 	beforeEach(() => {
 		Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
 		Object.defineProperty(URL, "revokeObjectURL", { value: revokeObjectURL, configurable: true });
