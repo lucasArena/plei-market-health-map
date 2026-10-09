@@ -13,18 +13,22 @@ export function ScopeHeader({
 			<Breadcrumb items={header.breadcrumb} label={header.breadcrumbLabel} />
 			<div className="flex items-center gap-2.5">
 				<div className="min-w-0 flex-1">
-					<h2 className="truncate text-base font-semibold text-[#111827]">{header.title}</h2>
+					<h2 title={header.title} className="truncate text-base font-semibold text-[#111827]">
+						{header.title}
+					</h2>
 					<p className="truncate text-xs text-[#6b7280]">
 						{header.level}
 						{header.subtitle && ` · ${header.subtitle}`}
 					</p>
 				</div>
-				<SegmentedControl
-					label={header.periodLabel}
-					options={header.periodOptions}
-					value={period}
-					onChange={onPeriodChange}
-				/>
+				{period && onPeriodChange && (
+					<SegmentedControl
+						label={header.periodLabel}
+						options={header.periodOptions}
+						value={period}
+						onChange={onPeriodChange}
+					/>
+				)}
 			</div>
 			<p className="flex items-center gap-1.5 text-xs" data-testid={`${testId}-dates`}>
 				<svg

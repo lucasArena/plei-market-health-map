@@ -36,14 +36,13 @@ describe("ScopeHeader", () => {
 		expect(onPeriodChange).toHaveBeenCalledWith("week");
 	});
 
-	it("leaves out an empty subtitle and footnote", () => {
-		render(
-			<ScopeHeader
-				header={{ ...HEADER, subtitle: null, footnote: null }}
-				period="week"
-				onPeriodChange={vi.fn()}
-				testId="scope"
-			/>,
+	it("leaves out an empty subtitle, footnote and the period switch when not given", () => {
+		render(<ScopeHeader header={{ ...HEADER, subtitle: null, footnote: null }} testId="scope" />);
+
+		expect(screen.queryByRole("button", { name: "7D" })).not.toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Pegaso HTX" })).toHaveAttribute(
+			"title",
+			"Pegaso HTX",
 		);
 
 		expect(screen.getByText("Facility")).toBeInTheDocument();

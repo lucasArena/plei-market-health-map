@@ -223,7 +223,7 @@ export function useFacilityOverviewRules({
 	marketName,
 }: FacilityOverviewProps) {
 	const { locale, messages } = useMessages();
-	const { period, setMapNavigation, setPeriod, setScope } = useMapScope();
+	const { period, setMapNavigation, setScope } = useMapScope();
 	const report = useFacilityReservationStats(facilityId).data;
 	const marketId = report?.facility.marketId ?? null;
 	const insights = useMarketGameInsights(marketId, period, marketId !== null, NO_DEPARTMENTS).data;
@@ -356,7 +356,6 @@ export function useFacilityOverviewRules({
 	return {
 		demand,
 		header,
-		period,
 		rank,
 		satisfaction,
 		satisfactionPending: pendingSection(facilityMessages.satisfactionTitle, [
@@ -366,7 +365,6 @@ export function useFacilityOverviewRules({
 		]),
 		scorecardsTitle: messages.marketView.scorecards,
 		sections,
-		setPeriod,
 		trendAside: messages.marketView.trendAside,
 		trendTitle: messages.marketView.trendTitle,
 	};
