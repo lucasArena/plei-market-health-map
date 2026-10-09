@@ -172,14 +172,6 @@ export interface Messages {
 		pointsVsPrevious: string;
 		trendTitle: string;
 		trendAside: string;
-		trendDownWeeks: string;
-		trendUpWeeks: string;
-		trendDownLastWeek: string;
-		trendUpLastWeek: string;
-		trendFlatLastWeek: string;
-		trendPrevious28: string;
-		trendThisPeriod: string;
-		weekBar: string;
 	};
 	facilityDetail: {
 		label: string;

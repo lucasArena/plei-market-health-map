@@ -41,11 +41,14 @@ const SECTIONS = {
 		cancellation: { ...CARD, label: "Cancellation rate", value: "11%" },
 	},
 	trend: {
-		title: "Games trend",
-		aside: "Weekly, last 8 weeks",
-		caption: null,
+		total: "48",
+		change: null,
+		comparison: "vs 60 in the previous 28 days",
+		direction: "down",
+		axisMax: null,
+		axisLabel: null,
 		points: [],
-		groups: [],
+		metrics: [],
 	},
 };
 
@@ -59,6 +62,8 @@ describe("MarketOverview", () => {
 			scorecardsTitle: "Scorecards",
 			sections: SECTIONS,
 			setPeriod,
+			trendAside: "Weekly, last 8 weeks",
+			trendTitle: "Games trend",
 		});
 
 		render(<MarketOverview marketId="miami" marketName="Miami Metro" />);
@@ -74,7 +79,9 @@ describe("MarketOverview", () => {
 		);
 		expect(screen.getByTestId("score-confirmation")).toHaveTextContent("75%");
 		expect(screen.getByTestId("score-cancellation")).toHaveTextContent("11%");
-		expect(screen.getByTestId("market-games-trend")).toBeInTheDocument();
+		expect(screen.getByRole("region", { name: "Games trend" })).toContainElement(
+			screen.getByTestId("market-games-trend"),
+		);
 
 		fireEvent.click(screen.getByRole("button", { name: "All markets" }));
 		expect(showAllMarkets).toHaveBeenCalledOnce();

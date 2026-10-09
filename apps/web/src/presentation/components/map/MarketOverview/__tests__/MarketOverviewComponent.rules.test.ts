@@ -8,7 +8,6 @@ import {
 	buildFacilitiesActive,
 	buildMarketScorecards,
 	buildMarketStatus,
-	buildMarketTrend,
 	marketDrivers,
 	useMarketOverviewRules,
 	weekStreak,
@@ -241,94 +240,6 @@ describe("market overview rules", () => {
 		expect(empty.confirmation).toMatchObject({ value: "—", change: null });
 	});
 
-	it("colors this period's bars by their weekly run and labels both periods", () => {
-		const stats = {
-			...MARKET_SUMMARY.stats,
-			weeklyActivity: WEEKS.map((gamesPlayed, index) => ({
-				weekStart: `2026-08-${String(10 + index * 7 > 31 ? 9 : 10 + index).padStart(2, "0")}`,
-				gamesPlayed,
-			})),
-		};
-
-		const trend = buildMarketTrend(stats, games(), "month", messages, formatters);
-
-		expect(trend.caption).toEqual({
-			direction: "down",
-			label: "Down 3 weeks in a row",
-			sequence: "14 → 13 → 11 → 10",
-		});
-		expect(trend.points.map((point) => point.tone)).toEqual([
-			"previous",
-			"previous",
-			"previous",
-			"previous",
-			"flat",
-			"down1",
-			"down2",
-			"down3",
-		]);
-		expect(trend.points[7]?.isLatest).toBe(true);
-		expect(trend.groups.map((group) => [group.label, group.weeks])).toEqual([
-			["Previous 28 days · 60", 4],
-			["This period · 48", 4],
-		]);
-
-		const week = buildMarketTrend(
-			{
-				...stats,
-				weeklyActivity: stats.weeklyActivity.map((item, i) => ({ ...item, gamesPlayed: i })),
-			},
-			games(),
-			"week",
-			messages,
-			formatters,
-		);
-		expect(week.groups).toEqual([]);
-		expect(week.caption?.label).toBe("Up 7 weeks in a row");
-		expect(week.points.slice(-2).map((point) => point.tone)).toEqual(["previous", "up3"]);
-
-		const flat = buildMarketTrend(
-			{
-				...stats,
-				weeklyActivity: stats.weeklyActivity
-					.slice(0, 2)
-					.map((item) => ({ ...item, gamesPlayed: 4 })),
-			},
-			games(),
-			"month",
-			messages,
-			formatters,
-		);
-		expect(flat.caption).toMatchObject({ label: "Flat vs last week", sequence: "4 → 4" });
-		expect(
-			buildMarketTrend(
-				{ ...stats, weeklyActivity: [{ weekStart: "2026-10-01", gamesPlayed: 1 }] },
-				games(),
-				"month",
-				messages,
-				formatters,
-			).caption,
-		).toBeNull();
-		const lastWeek = buildMarketTrend(
-			{
-				...stats,
-				weeklyActivity: [3, 5, 4].map((value, index) => ({
-					weekStart: `2026-09-0${index + 1}`,
-					gamesPlayed: value,
-				})),
-			},
-			games(),
-			"month",
-			messages,
-			formatters,
-		);
-		expect(lastWeek.caption).toMatchObject({
-			direction: "down",
-			label: "Down vs last week",
-			sequence: "5 → 4",
-		});
-	});
-
 	it("counts active facilities in the market", () => {
 		expect(
 			buildFacilitiesActive(
@@ -371,6 +282,12 @@ describe("useMarketOverviewRules", () => {
 		});
 		expect(result.current.sections?.scorecards.played.label).toBe("Games played");
 		expect(result.current.scorecardsTitle).toBe("Scorecards");
+		expect(result.current.trendTitle).toBe("Games trend");
+		expect(result.current.trendAside).toBe("Weekly, last 8 weeks");
+		expect(result.current.sections?.trend).toMatchObject({
+			comparison: expect.stringMatching(/the previous 28 days$/),
+			metrics: [],
+		});
 
 		act(() => result.current.header.breadcrumb[0]?.onSelect?.());
 		expect(mockSetScope).toHaveBeenCalledWith({ kind: "all" });

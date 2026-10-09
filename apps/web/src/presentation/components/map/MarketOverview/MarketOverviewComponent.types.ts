@@ -1,10 +1,10 @@
 import type { FacilityGameChangeView, StatsPeriod } from "@market-health-map/core/application";
 import type { Messages } from "@market-health-map/core/i18n";
 import type { BreadcrumbItem } from "@/presentation/components/displays/Breadcrumb/BreadcrumbComponent.types";
+import type { GamesTrendView } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent.types";
 import type { ScoreCardProps } from "@/presentation/components/displays/ScoreCard/ScoreCardComponent.types";
 import type { SegmentedOption } from "@/presentation/components/displays/SegmentedControl/SegmentedControlComponent.types";
 import type { StatusSummaryProps } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent.types";
-import type { WeeklyBarsProps } from "@/presentation/components/displays/WeeklyBars/WeeklyBarsComponent.types";
 import type { MarketSummaryComparison } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 
 export type MarketViewMessages = Messages["marketView"];
@@ -46,4 +46,4 @@ export interface MarketHeaderView {
 
 export type MarketStatusView = StatusSummaryProps;
 
-export type MarketTrendView = Omit<WeeklyBarsProps, "testId">;
+export type MarketTrendView = GamesTrendView;

@@ -1,15 +1,17 @@
 "use client";
 
 import { Breadcrumb } from "@/presentation/components/displays/Breadcrumb/BreadcrumbComponent";
+import { GamesTrendChart } from "@/presentation/components/displays/GamesTrendChart/GamesTrendChartComponent";
+import { PanelSection } from "@/presentation/components/displays/PanelSection/PanelSectionComponent";
 import { ScoreCard } from "@/presentation/components/displays/ScoreCard/ScoreCardComponent";
 import { SegmentedControl } from "@/presentation/components/displays/SegmentedControl/SegmentedControlComponent";
 import { StatusSummary } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent";
-import { WeeklyBars } from "@/presentation/components/displays/WeeklyBars/WeeklyBarsComponent";
 import { useMarketOverviewRules } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.rules";
 import type { MarketOverviewProps } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.types";
 
 export function MarketOverview(props: Readonly<MarketOverviewProps>) {
-	const { header, period, scorecardsTitle, sections, setPeriod } = useMarketOverviewRules(props);
+	const { header, period, scorecardsTitle, sections, setPeriod, trendAside, trendTitle } =
+		useMarketOverviewRules(props);
 
 	return (
 		<div className="space-y-4" data-testid="market-overview">
@@ -59,7 +61,9 @@ export function MarketOverview(props: Readonly<MarketOverviewProps>) {
 							<ScoreCard {...sections.scorecards.cancellation} testId="score-cancellation" />
 						</div>
 					</section>
-					<WeeklyBars {...sections.trend} testId="market-games-trend" />
+					<PanelSection title={trendTitle} aside={trendAside} testId="market-games-trend-section">
+						<GamesTrendChart view={sections.trend} testId="market-games-trend" />
+					</PanelSection>
 				</>
 			)}
 		</div>

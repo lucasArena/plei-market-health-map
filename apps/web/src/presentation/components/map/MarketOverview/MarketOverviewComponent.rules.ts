@@ -2,7 +2,6 @@
 
 import {
 	type FacilityGameChangeView,
-	type FacilityReservationStatsView,
 	type MarketSummaryScopeView,
 	type ReservationPeriodView,
 	type StatsPeriod,
@@ -15,10 +14,6 @@ import { useCallback, useMemo } from "react";
 import { browserTimeZone } from "@/infrastructure/time/stats-day";
 import type { MetricTone } from "@/presentation/components/displays/MetricRows/MetricRowsComponent.types";
 import type { StatusTone } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent.types";
-import type {
-	WeeklyBarPoint,
-	WeeklyBarTone,
-} from "@/presentation/components/displays/WeeklyBars/WeeklyBarsComponent.types";
 import { createDetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import type { DetailFormatters } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
 import type {
@@ -27,18 +22,16 @@ import type {
 	MarketOverviewProps,
 	MarketScorecardsView,
 	MarketStatusView,
-	MarketTrendView,
 	MarketViewMessages,
 	ScoreCardView,
 	WeekStreak,
 } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.types";
 import {
 	buildComparisonRange,
-	CURRENT_WEEKS,
+	buildGamesTrendView,
 	directionOfChange,
 	signed,
 	TONE_WHEN_HIGHER,
-	utcDate,
 } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.rules";
 import type { MarketSummaryMessages } from "@/presentation/components/map/MarketSummaryPanel/MarketSummaryPanelComponent.types";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
@@ -241,83 +234,6 @@ export function buildMarketScorecards(
 	};
 }
 
-function barTone(values: number[], index: number, firstCurrent: number): WeeklyBarTone {
-	if (index < firstCurrent) return "previous";
-	const streak = weekStreak(values.slice(0, index + 1));
-	if (streak.weeks === 0) return "flat";
-	return `${streak.direction === "down" ? "down" : "up"}${Math.min(streak.weeks, 3) as 1 | 2 | 3}`;
-}
-
-export function buildMarketTrend(
-	stats: FacilityReservationStatsView,
-	games: ReservationPeriodView,
-	period: StatsPeriod,
-	messages: MarketViewMessages,
-	formatters: DetailFormatters,
-): MarketTrendView {
-	const weeks = stats.weeklyActivity;
-	const values = weeks.map((week) => week.gamesPlayed);
-	const firstCurrent = weeks.length - CURRENT_WEEKS[period];
-	const streak = weekStreak(values);
-	const label = {
-		[`${streak.direction === "flat"}`]: messages.trendFlatLastWeek,
-		[`${streak.direction === "up"}`]: messages.trendUpLastWeek,
-		[`${streak.direction === "down"}`]: messages.trendDownLastWeek,
-		[`${streak.weeks >= 2 && streak.direction === "up"}`]: messages.trendUpWeeks,
-		[`${streak.weeks >= 2 && streak.direction === "down"}`]: messages.trendDownWeeks,
-	}.true;
-	const points: WeeklyBarPoint[] = weeks.map((week, index) => {
-		const weekLabel = formatters.week.format(utcDate(week.weekStart));
-		const valueLabel = formatters.number.format(week.gamesPlayed);
-		return {
-			key: week.weekStart,
-			value: week.gamesPlayed,
-			valueLabel,
-			weekLabel,
-			ariaLabel: formatMessage(messages.weekBar, { games: valueLabel, week: weekLabel }),
-			tone: barTone(values, index, firstCurrent),
-			isLatest: index === weeks.length - 1,
-		};
-	});
-	return {
-		title: messages.trendTitle,
-		aside: messages.trendAside,
-		caption:
-			weeks.length >= 2
-				? {
-						direction: streak.direction,
-						label: formatMessage(label ?? messages.trendFlatLastWeek, { weeks: streak.weeks }),
-						sequence: values
-							.slice(-(Math.max(streak.weeks, 1) + 1))
-							.map((value) => formatters.number.format(value))
-							.join(" → "),
-					}
-				: null,
-		points,
-		groups:
-			period === "month" && weeks.length >= 8
-				? [
-						{
-							key: "previous",
-							label: formatMessage(messages.trendPrevious28, {
-								total: formatters.number.format(games.playedPrevious),
-							}),
-							weeks: firstCurrent,
-							isCurrent: false,
-						},
-						{
-							key: "current",
-							label: formatMessage(messages.trendThisPeriod, {
-								total: formatters.number.format(games.played),
-							}),
-							weeks: CURRENT_WEEKS.month,
-							isCurrent: true,
-						},
-					]
-				: [],
-	};
-}
-
 export function buildFacilitiesActive(
 	scope: MarketSummaryScopeView | undefined,
 	messages: MarketSummaryMessages,
@@ -390,7 +306,16 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 				periodMessages,
 				formatters,
 			),
-			trend: buildMarketTrend(summary.stats, games, period, messages.marketView, formatters),
+			trend: {
+				...buildGamesTrendView(
+					summary.stats,
+					period,
+					messages.marketSummary,
+					periodMessages,
+					formatters,
+				),
+				metrics: [],
+			},
 		};
 	}, [
 		formatters,
@@ -408,6 +333,8 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 		header,
 		period,
 		scorecardsTitle: messages.marketView.scorecards,
+		trendAside: messages.marketView.trendAside,
+		trendTitle: messages.marketView.trendTitle,
 		sections,
 		setPeriod,
 	};
