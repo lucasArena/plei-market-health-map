@@ -5,6 +5,12 @@ import { renderWithMessages } from "@/application/test/render-with-messages";
 import { statsDayKey } from "@/infrastructure/time/stats-day";
 import { MapSearch } from "@/presentation/components/map/MapSearch/MapSearchComponent";
 import { buildMarketSearchResults } from "@/presentation/components/map/MapSearch/MapSearchComponent.rules";
+import {
+	ALL_MARKETS_SCOPE,
+	MapScopeProvider,
+	useMapScope,
+} from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
+import type { MapScopeContextValue } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 
 const mockPrefetchQuery = vi.fn().mockResolvedValue(undefined);
 const mockOnPlaceSelect = vi.fn();
@@ -222,6 +228,57 @@ describe("MapSearch", () => {
 		});
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 		vi.useRealTimers();
+	});
+
+	it("mirrors market and facility scope set outside the search and clears back to all markets", () => {
+		let scopeControls: MapScopeContextValue | undefined;
+		function ScopeProbe() {
+			scopeControls = useMapScope();
+			return null;
+		}
+		const onClear = vi.fn(() => scopeControls?.setScope(ALL_MARKETS_SCOPE));
+		renderWithMessages(
+			<MapScopeProvider>
+				<ScopeProbe />
+				<MapSearch
+					facilities={FACILITIES}
+					shownFacilities={FACILITIES}
+					messages={EN_MESSAGES.map}
+					onFacilitySelect={vi.fn()}
+					onMarketSelect={vi.fn()}
+					onPlaceSelect={mockOnPlaceSelect}
+					onClear={onClear}
+				/>
+			</MapScopeProvider>,
+		);
+		const input = screen.getByRole("combobox", { name: "Search markets, facilities or cities" });
+
+		act(() => scopeControls?.setScope({ kind: "market", id: "miami", name: "Miami" }));
+		expect(input).toHaveValue("Miami");
+		act(() => scopeControls?.setScope({ kind: "market", id: "austin", name: "Austin" }));
+		expect(input).toHaveValue("Austin");
+		act(() =>
+			scopeControls?.setScope({
+				kind: "facility",
+				id: "m1",
+				name: "Beach Field House",
+				marketName: "Miami",
+			}),
+		);
+		expect(input).toHaveValue("Beach Field House");
+		act(() => scopeControls?.setScope(ALL_MARKETS_SCOPE));
+		expect(input).toHaveValue("");
+
+		act(() => scopeControls?.setScope({ kind: "market", id: "miami", name: "Miami" }));
+		fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+		expect(onClear).toHaveBeenCalledOnce();
+		expect(scopeControls?.scope).toEqual(ALL_MARKETS_SCOPE);
+		expect(input).toHaveValue("");
+
+		act(() => scopeControls?.setScope({ kind: "market", id: "miami", name: "Miami" }));
+		fireEvent.change(input, { target: { value: "Wichita" } });
+		act(() => scopeControls?.setScope(ALL_MARKETS_SCOPE));
+		expect(input).toHaveValue("Wichita");
 	});
 
 	it("stays open for other keys and for pointer events inside the search", () => {

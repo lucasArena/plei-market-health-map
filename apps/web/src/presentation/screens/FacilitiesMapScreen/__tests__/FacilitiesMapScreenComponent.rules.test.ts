@@ -310,7 +310,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.rules.shownFacilities).toHaveLength(2);
 	});
 
-	it("zooms from metric map icons without changing scope or opening detail", async () => {
+	it("zooms from facility map icons without changing scope or opening detail", async () => {
 		const other = { ...FACILITY, id: "other", location: { latitude: 31, longitude: -97 } };
 		mockUseFacilities.mockReturnValue({
 			data: [FACILITY, other],
@@ -395,6 +395,12 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.context.scope).toEqual({ kind: "market", id: "austin", name: "Austin" });
 		expect(result.current.rules.selectedFacilityId).toBeNull();
 		expect(result.current.context.mapNavigation).toBeNull();
+		expect(mapState.instances[0]?.easeTo).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				center: [FACILITY.location.longitude, FACILITY.location.latitude],
+				zoom: 11,
+			}),
+		);
 		act(() =>
 			result.current.context.setMapNavigation({
 				kind: "facility",
