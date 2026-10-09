@@ -6,6 +6,7 @@ import type {
 	DrillDownRange,
 	DrillDownSegment,
 } from "@market-health-map/core/application";
+import Image from "next/image";
 import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 import { useMetricDrillDownPanelRules } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.rules";
 import {
@@ -137,6 +138,19 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 								style={{ color: rules.headlineChange.color }}
 								className={rules.headlineChange.className}
 							>
+								{rules.headlineChange.isStable && (
+									<>
+										<Image
+											src="/icons/games-trend-stable.svg"
+											alt=""
+											aria-hidden="true"
+											width={12}
+											height={12}
+											className="mr-1 inline-block align-[-1px]"
+										/>
+										<span className="sr-only">→ </span>
+									</>
+								)}
 								{rules.headlineChange.label}
 							</span>
 							{rules.headlineChange.countLabel && <span> {rules.headlineChange.countLabel}</span>}
@@ -560,6 +574,19 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 																rules.changeDisplay(row.value, row.previousValue).className
 															}
 														>
+															{rules.changeDisplay(row.value, row.previousValue).isStable && (
+																<>
+																	<Image
+																		src="/icons/games-trend-stable.svg"
+																		alt=""
+																		aria-hidden="true"
+																		width={12}
+																		height={12}
+																		className="mr-1 inline-block align-[-1px]"
+																	/>
+																	<span className="sr-only">→ </span>
+																</>
+															)}
 															{rules.changeDisplay(row.value, row.previousValue).label}
 														</span>
 														{rules.changeDisplay(row.value, row.previousValue).countLabel && (

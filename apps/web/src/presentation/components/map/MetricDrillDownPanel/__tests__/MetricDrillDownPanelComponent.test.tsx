@@ -846,7 +846,7 @@ describe("drill-down changes", () => {
 		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
 		expect(screen.getByText("↓ 100%").parentElement).toHaveClass("text-foreground");
 		expect(screen.getByText("(-10)")).not.toHaveAttribute("style");
-		expect(screen.getByText("→ Stable").parentElement).toHaveTextContent("→ Stable (0)");
+		expect(screen.getByText("Stable").parentElement).toHaveTextContent("→ Stable (0)");
 		expect(screen.getByText("↑ New")).toBeInTheDocument();
 		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Change" }));
@@ -877,7 +877,14 @@ describe("drill-down changes", () => {
 		setup();
 		fireEvent.click(screen.getByText("Equal", { selector: "td" }));
 		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("→ Stable (0)");
-		expect(within(screen.getByRole("table")).getByText("→ Stable").parentElement).toHaveTextContent(
+		expect(screen.getByTestId("drill-down-headline-change").querySelector("img")).toHaveAttribute(
+			"src",
+			"/icons/games-trend-stable.svg",
+		);
+		expect(
+			within(screen.getByRole("table")).getByText("Stable").parentElement?.querySelector("img"),
+		).toHaveAttribute("src", "/icons/games-trend-stable.svg");
+		expect(within(screen.getByRole("table")).getByText("Stable").parentElement).toHaveTextContent(
 			"→ Stable (0)",
 		);
 	});

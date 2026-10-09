@@ -217,6 +217,7 @@ export function useMetricDrillDownPanelRules({
 		if (current === null || previous == null)
 			return {
 				label: messages.drillDown.unavailable,
+				isStable: false,
 				countLabel: undefined,
 				className: "text-muted-foreground",
 				color: undefined,
@@ -241,9 +242,7 @@ export function useMetricDrillDownPanelRules({
 				? messages.drillDown.changeNew
 				: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`;
 		const label =
-			level === "stable"
-				? `${arrow} ${messages.drillDown.changeStable}`
-				: `${arrow} ${formattedChange}`;
+			level === "stable" ? messages.drillDown.changeStable : `${arrow} ${formattedChange}`;
 		const countLabel =
 			level === "stable"
 				? `(${number.format(0)})`
@@ -252,6 +251,7 @@ export function useMetricDrillDownPanelRules({
 					: `(${current > previous ? "+" : "-"}${number.format(Math.abs(current - previous))})`;
 		return {
 			label,
+			isStable: level === "stable",
 			countLabel,
 			className,
 			color: level === "down" ? PLEIFUL_COLORS.negative[50] : undefined,
