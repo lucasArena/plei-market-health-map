@@ -16,6 +16,8 @@ export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 export const MAP_CENTER: [number, number] = [-96.5, 38.5];
 export const MAP_ZOOM = 3.4;
+
+export const FACILITY_FOCUS_ZOOM = 14;
 export const MAP_CURSOR = {
 	navigate: "default",
 	dragging: "grabbing",

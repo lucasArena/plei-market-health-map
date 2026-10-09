@@ -713,6 +713,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.hovered).toBeNull();
 		expect(map?.easeTo).toHaveBeenCalledWith({
 			center: [-97.74, 30.27],
+			zoom: 14,
 			padding: { top: 0, bottom: 0, left: 0, right: 384 },
 			duration: 600,
 		});

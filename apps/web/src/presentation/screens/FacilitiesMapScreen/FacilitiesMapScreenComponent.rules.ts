@@ -86,6 +86,7 @@ import {
 	FACILITY_DOT_LAYOUT,
 	FACILITY_DOT_PAINT,
 	FACILITY_DOT_ZOOM,
+	FACILITY_FOCUS_ZOOM,
 	FACILITY_GLASS_DIAMETER,
 	FACILITY_LOGO_LAYOUT,
 	FACILITY_LOGO_PAINT,
@@ -481,7 +482,8 @@ export function useFacilitiesMapScreenRules() {
 				return;
 			}
 			activityTracker.count("facilitiesOpened");
-			openFacilityPanel(facility);
+			const currentZoom = mapRef.current?.getZoom() ?? FACILITY_FOCUS_ZOOM;
+			openFacilityPanel(facility, Math.max(currentZoom, FACILITY_FOCUS_ZOOM));
 		},
 		[closePanel, facilityFromEvent, openFacilityPanel],
 	);
@@ -517,7 +519,7 @@ export function useFacilitiesMapScreenRules() {
 			setSelectedFacilityId(facility.id);
 			mapRef.current?.easeTo({
 				center: [facility.location.longitude, facility.location.latitude],
-				zoom: 14,
+				zoom: FACILITY_FOCUS_ZOOM,
 				padding: { top: 0, bottom: 0, left: 0, right: DETAIL_PANEL_OFFSET },
 				duration: 700,
 			});

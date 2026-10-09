@@ -775,9 +775,11 @@ export function useInsightPanelRules({ isClosing, onClose, onClosed }: InsightPa
 	// (breadcrumb, rows, map or search), but not when the panel first opens.
 	const levelKey = scope.kind === "all" ? "all" : `${scope.kind}:${scope.id}`;
 	const previousLevelRef = useRef(levelKey);
+	const bodyRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
 		if (previousLevelRef.current === levelKey) return;
 		previousLevelRef.current = levelKey;
+		if (bodyRef.current) bodyRef.current.scrollTop = 0;
 		document.getElementById(SCOPE_HEADING_ID)?.focus({ preventScroll: true });
 	}, [levelKey]);
 
@@ -832,7 +834,9 @@ export function useInsightPanelRules({ isClosing, onClose, onClosed }: InsightPa
 		detailMessages: messages.facilityDetail,
 		facilityView,
 		handleAnimationEnd,
+		bodyRef,
 		heading,
+		level: scope.kind,
 		isClosing,
 		isSummaryPending:
 			status === "ready" && ((isMarketScope && insightsQuery.isPending) || playerQuery.isPending),

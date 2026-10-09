@@ -27,50 +27,20 @@ import {
 	SCOPE_HEADING_ID,
 } from "@/presentation/components/map/InsightPanel/InsightPanelComponent.styles";
 import type { InsightPanelProps } from "@/presentation/components/map/InsightPanel/InsightPanelComponent.types";
+import { InsightPanelSkeleton } from "@/presentation/components/map/InsightPanelSkeleton/InsightPanelSkeletonComponent";
 import { MarketList } from "@/presentation/components/map/MarketList/MarketListComponent";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
-
-const SKELETON_TILES = ["facilities", "markets", "played", "confirmation", "players", "activated"];
-
-function MarketSummarySkeleton() {
-	return (
-		<div
-			data-testid="market-summary-skeleton"
-			aria-hidden
-			className={`animate-pulse ${PANEL_CONTENT_CLASS}`}
-		>
-			<div className={PANEL_SECTIONS_CLASS}>
-				<div className={`${PANEL_SECTION_CLASS} space-y-2`}>
-					<div className="h-3 w-full rounded bg-muted" />
-					<div className="h-3 w-4/5 rounded bg-muted" />
-				</div>
-				<div className={`${PANEL_SECTION_CLASS} grid grid-cols-2 gap-x-2 gap-y-4`}>
-					{SKELETON_TILES.map((key) => (
-						<div key={key} className="space-y-1.5">
-							<div className="h-3 w-1/2 rounded bg-muted" />
-							<div className="h-6 w-16 rounded bg-muted" />
-						</div>
-					))}
-				</div>
-				<div className={PANEL_SECTION_CLASS}>
-					<div className="h-28 rounded bg-muted" />
-				</div>
-				<div className={PANEL_SECTION_CLASS}>
-					<div className="h-32 rounded bg-muted" />
-				</div>
-			</div>
-		</div>
-	);
-}
 
 export function InsightPanel(props: Readonly<InsightPanelProps>) {
 	const {
 		aiContext,
+		bodyRef,
 		detailMessages,
 		facilityView,
 		locale,
 		handleAnimationEnd,
 		heading,
+		level,
 		rankingsEmptyLabel,
 		isClosing,
 		isSummaryPending,
@@ -121,8 +91,8 @@ export function InsightPanel(props: Readonly<InsightPanelProps>) {
 					</div>
 				</div>
 			</header>
-			<div data-testid="market-summary-body" className={PANEL_BODY_CLASS}>
-				{status === "loading" && <MarketSummarySkeleton />}
+			<div ref={bodyRef} data-testid="market-summary-body" className={PANEL_BODY_CLASS}>
+				{status === "loading" && <InsightPanelSkeleton level={level} />}
 				{status === "error" && (
 					<p role="alert" className={`${PANEL_CONTENT_CLASS} text-sm text-destructive`}>
 						{messages.failed}
