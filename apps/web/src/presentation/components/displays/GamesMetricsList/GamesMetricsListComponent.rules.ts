@@ -226,24 +226,10 @@ export function buildWeeklySeries(
 	return points.slice(-CHART_WEEKS);
 }
 
-/** Fixed games scale: the same 0–2,000 axis at every level and period, as 3 evenly spaced lines. */
-export const GAMES_AXIS_TOP = 2000;
 export const GAMES_AXIS_ROWS = 3;
-/** When a week exceeds 2,000 the top grows to the next multiple of this. */
-export const GAMES_AXIS_GROWTH_STEP = 1000;
 
-/**
- * 0, 1,000, 2,000. A week above 2,000 grows the top to the next 1,000 (e.g.
- * 3,000 → 0, 1,500, 3,000), still 3 even lines, so the line is never clipped.
- */
 export function buildGamesAxis(largestValue: number): { max: number; ticks: number[] } {
-	const max =
-		largestValue > GAMES_AXIS_TOP
-			? Math.ceil(largestValue / GAMES_AXIS_GROWTH_STEP) * GAMES_AXIS_GROWTH_STEP
-			: GAMES_AXIS_TOP;
-	const intervals = GAMES_AXIS_ROWS - 1;
-	const ticks = Array.from({ length: GAMES_AXIS_ROWS }, (_, index) => (max * index) / intervals);
-	return { max, ticks };
+	return buildRoundAxis(largestValue);
 }
 
 export function buildGamesCardView(
@@ -347,22 +333,21 @@ export function useGamesMetricsListRules(view: GamesCardView) {
 	return { chart, gradientId };
 }
 
-/** The Users chart's own scale: activated players are far fewer than games, so the 0–2,000 games axis would flatten the line. */
-const PLAYERS_AXIS_MIN_TOP = 10;
-const PLAYERS_AXIS_STEPS = [1, 2, 4, 6, 8, 10] as const;
+const ROUND_AXIS_MIN_TOP = 10;
+const ROUND_AXIS_STEPS = [1, 2, 4, 6, 8, 10] as const;
 
-/**
- * The smallest "round" top (1, 2, 4, 6 or 8 × a power of ten, at least 10) that
- * fits the largest week, as 3 even lines (0, top / 2, top) like the Games chart.
- */
-export function buildPlayersAxis(largestValue: number): { max: number; ticks: number[] } {
-	const target = Math.max(largestValue, PLAYERS_AXIS_MIN_TOP);
+function buildRoundAxis(largestValue: number): { max: number; ticks: number[] } {
+	const target = Math.max(largestValue, ROUND_AXIS_MIN_TOP);
 	const magnitude = 10 ** Math.floor(Math.log10(target));
-	const step = PLAYERS_AXIS_STEPS.find((candidate) => candidate * magnitude >= target) ?? 10;
+	const step = ROUND_AXIS_STEPS.find((candidate) => candidate * magnitude >= target) ?? 10;
 	const max = step * magnitude;
 	const intervals = GAMES_AXIS_ROWS - 1;
 	const ticks = Array.from({ length: GAMES_AXIS_ROWS }, (_, index) => (max * index) / intervals);
 	return { max, ticks };
+}
+
+export function buildPlayersAxis(largestValue: number): { max: number; ticks: number[] } {
+	return buildRoundAxis(largestValue);
 }
 
 export type UsersCardMessages = GamesMetricsMessages &
