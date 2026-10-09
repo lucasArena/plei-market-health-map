@@ -100,6 +100,62 @@ describe("BrowserLlm", () => {
 		expect(await llm.isReady()).toBe(true);
 	});
 
+	it("reports download progress to a request queued behind the one that started it", async () => {
+		const llm = createLlm();
+		const engine = fakeEngine(["Done."]);
+		let report: (progress: number) => void = () => undefined;
+		let finishLoading: () => void = () => undefined;
+		webLlm.CreateWebWorkerMLCEngine.mockImplementation(
+			(_worker, _id, config) =>
+				new Promise((resolve) => {
+					report = (progress) =>
+						config.initProgressCallback({ progress, timeElapsed: 1, text: "" });
+					finishLoading = () => resolve(engine);
+				}),
+		);
+		const marketPanel = callbacks();
+		const facilityPanel = callbacks();
+
+		const first = llm.generate(MESSAGES, marketPanel);
+		await vi.waitFor(() => expect(webLlm.CreateWebWorkerMLCEngine).toHaveBeenCalled());
+		report(0.25);
+		const second = llm.generate(MESSAGES, facilityPanel);
+
+		expect(facilityPanel.onProgress).toHaveBeenLastCalledWith(0.25);
+		report(0.6);
+		expect(facilityPanel.onProgress).toHaveBeenLastCalledWith(0.6);
+		expect(marketPanel.onProgress).toHaveBeenLastCalledWith(0.6);
+
+		finishLoading();
+		await first;
+		engine.chat.completions.create.mockResolvedValue(chunkStream(["Second."]));
+		expect(await second).toBe("Second.");
+		report(0.9);
+		expect(facilityPanel.onProgress).toHaveBeenLastCalledWith(0.6);
+	});
+
+	it("stops reporting progress to a request once it is aborted", async () => {
+		const llm = createLlm();
+		let report: (progress: number) => void = () => undefined;
+		webLlm.CreateWebWorkerMLCEngine.mockImplementation(
+			(_worker, _id, config) =>
+				new Promise(() => {
+					report = (progress) =>
+						config.initProgressCallback({ progress, timeElapsed: 1, text: "" });
+				}),
+		);
+		const controller = new AbortController();
+		const closed = callbacks(controller.signal);
+
+		void llm.generate(MESSAGES, closed);
+		await vi.waitFor(() => expect(webLlm.CreateWebWorkerMLCEngine).toHaveBeenCalled());
+		report(0.3);
+		controller.abort();
+		report(0.7);
+
+		expect(closed.onProgress).toHaveBeenLastCalledWith(0.3);
+	});
+
 	it("stops streaming when aborted", async () => {
 		const llm = createLlm();
 		const engine = fakeEngine(["One ", "two"]);

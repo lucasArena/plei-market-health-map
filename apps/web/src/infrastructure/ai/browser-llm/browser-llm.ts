@@ -19,6 +19,7 @@ export class BrowserLlm {
 	private readonly createWorker: () => Worker;
 	private readonly progressListeners = new Set<ProgressListener>();
 	private enginePromise: Promise<WebWorkerMLCEngine> | null = null;
+	private latestProgress = 0;
 	private queue: Promise<unknown> = Promise.resolve();
 
 	constructor({
@@ -46,25 +47,28 @@ export class BrowserLlm {
 	}
 
 	generate(messages: LlmMessage[], callbacks: BrowserLlmCallbacks): Promise<string> {
+		const stopListening = this.listenForProgress(callbacks);
 		const run = async () => {
 			if (callbacks.signal.aborted) return "";
-			const engine = await this.loadEngine(callbacks.onProgress);
+			this.enginePromise ??= this.createEngine();
+			const engine = await this.enginePromise;
 			if (callbacks.signal.aborted) return "";
 			return this.stream(engine, messages, callbacks);
 		};
-		const result = this.queue.then(run, run);
+		const result = this.queue.then(run, run).finally(stopListening);
 		this.queue = result.catch(() => undefined);
 		return result;
 	}
 
-	private async loadEngine(onProgress: ProgressListener): Promise<WebWorkerMLCEngine> {
-		this.progressListeners.add(onProgress);
-		try {
-			this.enginePromise ??= this.createEngine();
-			return await this.enginePromise;
-		} finally {
+	private listenForProgress({ onProgress, signal }: BrowserLlmCallbacks): () => void {
+		const stopListening = () => {
 			this.progressListeners.delete(onProgress);
-		}
+			signal.removeEventListener("abort", stopListening);
+		};
+		this.progressListeners.add(onProgress);
+		signal.addEventListener("abort", stopListening);
+		if (this.enginePromise) onProgress(this.latestProgress);
+		return stopListening;
 	}
 
 	private createEngine(): Promise<WebWorkerMLCEngine> {
@@ -78,11 +82,13 @@ export class BrowserLlm {
 			.catch((error: unknown) => {
 				worker.terminate();
 				this.enginePromise = null;
+				this.latestProgress = 0;
 				throw error;
 			});
 	}
 
 	private reportProgress(progress: number): void {
+		this.latestProgress = progress;
 		for (const listener of this.progressListeners) listener(progress);
 	}
 
