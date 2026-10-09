@@ -6,12 +6,21 @@ import { PanelSection } from "@/presentation/components/displays/PanelSection/Pa
 import { ScoreCard } from "@/presentation/components/displays/ScoreCard/ScoreCardComponent";
 import { SegmentedControl } from "@/presentation/components/displays/SegmentedControl/SegmentedControlComponent";
 import { StatusSummary } from "@/presentation/components/displays/StatusSummary/StatusSummaryComponent";
+import { FacilitiesTable } from "@/presentation/components/map/FacilitiesTable/FacilitiesTableComponent";
 import { useMarketOverviewRules } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.rules";
 import type { MarketOverviewProps } from "@/presentation/components/map/MarketOverview/MarketOverviewComponent.types";
 
 export function MarketOverview(props: Readonly<MarketOverviewProps>) {
-	const { header, period, scorecardsTitle, sections, setPeriod, trendAside, trendTitle } =
-		useMarketOverviewRules(props);
+	const {
+		facilities,
+		header,
+		period,
+		scorecardsTitle,
+		sections,
+		setPeriod,
+		trendAside,
+		trendTitle,
+	} = useMarketOverviewRules(props);
 
 	return (
 		<div className="space-y-4" data-testid="market-overview">
@@ -64,6 +73,7 @@ export function MarketOverview(props: Readonly<MarketOverviewProps>) {
 					<PanelSection title={trendTitle} aside={trendAside} testId="market-games-trend-section">
 						<GamesTrendChart view={sections.trend} testId="market-games-trend" />
 					</PanelSection>
+					{facilities && <FacilitiesTable facilities={facilities} marketName={header.title} />}
 				</>
 			)}
 		</div>

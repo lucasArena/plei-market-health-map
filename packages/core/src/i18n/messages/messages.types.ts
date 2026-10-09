@@ -144,6 +144,20 @@ export interface Messages {
 		week: StatsPeriodMessages;
 		month: StatsPeriodMessages;
 	};
+	facilitiesTable: {
+		title: string;
+		columnFacility: string;
+		columnGames: string;
+		columnChange: string;
+		attention: string;
+		watch: string;
+		onTrack: string;
+		previous: string;
+		noBaseline: string;
+		openFacility: string;
+		showAll: string;
+		showFewer: string;
+	};
 	marketView: {
 		level: string;
 		breadcrumb: string;

@@ -282,6 +282,7 @@ describe("useMarketOverviewRules", () => {
 		});
 		expect(result.current.sections?.scorecards.played.label).toBe("Games played");
 		expect(result.current.scorecardsTitle).toBe("Scorecards");
+		expect(result.current.facilities).toEqual([facility("a", 10, 1)]);
 		expect(result.current.trendTitle).toBe("Games trend");
 		expect(result.current.trendAside).toBe("Weekly, last 8 weeks");
 		expect(result.current.sections?.trend).toMatchObject({

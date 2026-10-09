@@ -5,6 +5,12 @@ const mockRules = vi.fn();
 const setPeriod = vi.fn();
 const showAllMarkets = vi.fn();
 
+vi.mock("@/presentation/components/map/FacilitiesTable/FacilitiesTableComponent", () => ({
+	FacilitiesTable: ({ marketName }: { marketName: string }) => (
+		<div data-testid="facilities-table">{marketName}</div>
+	),
+}));
+
 vi.mock("@/presentation/components/map/MarketOverview/MarketOverviewComponent.rules", () => ({
 	useMarketOverviewRules: () => mockRules(),
 }));
@@ -57,6 +63,7 @@ describe("MarketOverview", () => {
 
 	it("shows the market header, its status, the scorecards and the weekly trend", () => {
 		mockRules.mockReturnValue({
+			facilities: [],
 			header: HEADER,
 			period: "month",
 			scorecardsTitle: "Scorecards",
@@ -83,6 +90,7 @@ describe("MarketOverview", () => {
 			screen.getByTestId("market-games-trend"),
 		);
 
+		expect(screen.getByTestId("facilities-table")).toHaveTextContent("Miami Metro");
 		fireEvent.click(screen.getByRole("button", { name: "All markets" }));
 		expect(showAllMarkets).toHaveBeenCalledOnce();
 		fireEvent.click(screen.getByRole("button", { name: "7D" }));

@@ -4,7 +4,6 @@ import {
 	type FacilityGameChangeView,
 	type MarketSummaryScopeView,
 	type ReservationPeriodView,
-	type StatsPeriod,
 	toGamesTrend,
 	toReservationPeriodView,
 } from "@market-health-map/core/application";
@@ -285,6 +284,7 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 		[formatters, locale, marketId, marketName, messages, period, showAllMarkets, summary],
 	);
 
+	const facilities = insights?.find((market) => market.id === marketId)?.facilities;
 	const sections = useMemo(() => {
 		if (!summary) return null;
 		const games = toReservationPeriodView(summary.stats, period);
@@ -293,7 +293,7 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 				marketName,
 				games,
 				summary.stats.weeklyActivity.map((week) => week.gamesPlayed),
-				insights?.find((market) => market.id === marketId)?.facilities,
+				facilities,
 				messages.marketView,
 				periodMessages,
 				locale,
@@ -317,19 +317,10 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 				metrics: [],
 			},
 		};
-	}, [
-		formatters,
-		insights,
-		locale,
-		marketId,
-		marketName,
-		messages,
-		period,
-		periodMessages,
-		summary,
-	]);
+	}, [facilities, formatters, locale, marketName, messages, period, periodMessages, summary]);
 
 	return {
+		facilities,
 		header,
 		period,
 		scorecardsTitle: messages.marketView.scorecards,
