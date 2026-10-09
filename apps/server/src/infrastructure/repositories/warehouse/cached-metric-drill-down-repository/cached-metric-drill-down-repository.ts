@@ -27,6 +27,7 @@ export class CachedMetricDrillDownRepository implements MetricDrillDownRepositor
 		const now = this.clock.now().getTime();
 		const key = JSON.stringify([
 			query.today,
+			query.previousPeriod ?? false,
 			query.measure,
 			query.range,
 			query.grain,

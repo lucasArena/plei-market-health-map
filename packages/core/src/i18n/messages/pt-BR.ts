@@ -196,9 +196,31 @@ export const ptBR: Messages = {
 		neverPlayed: "Nenhum jogo realizado ainda",
 	},
 	drillDown: {
+		compare: "Comparar",
+		compareWeek: "Semana a semana",
+		compareMonth: "Mês a mês",
+		compareYear: "Ano a ano",
+		compareHelp:
+			"Compare o intervalo selecionado com uma janela de igual duração terminando uma semana, um mês ou um ano antes.",
+
+		change: "Variação",
+		changeNew: "Novo",
+		changeStable: "Estável",
+		changePrior: "{change} vs {days} dias anteriores",
+
+		noCompletedBuckets: "Nenhum intervalo completo neste período.",
+		bucketHelp:
+			"Somente intervalos completos. Semanas começam na segunda. O primeiro pode ser parcial.",
+		time: "Data",
+		bucket: "Intervalo",
+		day: "Dia",
+		week: "Semana",
+		month: "Mês",
+		partial: "parcial",
+
 		appSessions: "Sessões do app",
-		registrations: "Cadastros",
-		uniqueUsers: "Usuários únicos",
+		registrations: "Novos usuários",
+		uniqueUsers: "Usuários ativos",
 		appActivityNote:
 			"A atividade do app não está vinculada a uma instalação ou departamento. Os filtros de departamento não se aplicam.",
 		sourceSwitch:
@@ -221,12 +243,30 @@ export const ptBR: Messages = {
 		help: "O agrupamento cria grupos. O segmento colore as partes de cada grupo.",
 		games: "Jogos realizados",
 		activeFacilities: "Instalações ativas",
-		scheduledGames: "Jogos programados",
+		scheduledGames: "Jogos agendados",
 		confirmationRate: "Taxa de confirmação",
-		uniquePlayers: "Jogadores únicos",
+		uniquePlayers: "Jogadores ativos",
 		activatedPlayers: "Jogadores ativados",
 		almostFilledRate: "Taxa de quase completos",
-		incidentGamesRate: "% de jogos com incidente",
+		incidentGamesRate: "Jogos com incidente",
+		avgDailyGames: "Média diária de jogos",
+		activeOrganizers: "Organizadores ativos",
+		measureTips: {
+			games: "Jogos que realmente aconteceram.",
+			avgDailyGames: "Jogos realizados divididos pelo número de dias.",
+			scheduledGames: "Jogos colocados na agenda, incluindo os cancelados depois.",
+			incidentGamesRate:
+				"Parte dos jogos realizados que recebeu uma avaliação baixa (menos de 3 estrelas).",
+			confirmationRate: "Parte dos jogos agendados que foi realizada.",
+			almostFilledRate:
+				"Parte dos jogos cancelados que ficou apenas 1 a 3 jogadores abaixo do mínimo.",
+			registrations: "Pessoas que confirmaram uma nova conta no app.",
+			uniqueUsers: "Pessoas que abriram o app pelo menos uma vez.",
+			activatedPlayers: "Jogadores que fizeram o primeiro jogo.",
+			uniquePlayers: "Pessoas diferentes que jogaram pelo menos um jogo.",
+			activeOrganizers: "Organizadores que receberam pelo menos um jogo.",
+			activeFacilities: "Instalações que receberam pelo menos um jogo.",
+		},
 		ratio: "{numerator} de {denominator}",
 		ratioWithErrors: "{numerator} de {denominator} · {errors} erros de dados",
 		almostFilledParts:

@@ -34,7 +34,7 @@ export class SampleMetricDrillDownRepository implements MetricDrillDownRepositor
 	async group(query: MetricDrillDownQuery): Promise<MetricDrillDownView> {
 		const days = DRILL_DOWN_RANGE_DAYS[query.range];
 		const { start, end } = statsWindow(query.today, days);
-		if (isAppActivityMeasure(query.measure))
+		if (query.previousPeriod || isAppActivityMeasure(query.measure) || query.slice === "time")
 			return {
 				measure: query.measure,
 				range: query.range,

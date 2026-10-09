@@ -90,3 +90,120 @@ describe("MapMetricSelect", () => {
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 	});
 });
+
+describe("nested Date selector", () => {
+	const nested = [
+		{ value: "market", label: "Market" },
+		{
+			value: "date",
+			label: "Date",
+			children: [
+				{ value: "date:day", label: "Day" },
+				{ value: "date:week", label: "Week" },
+				{ value: "date:month", label: "Month" },
+			],
+		},
+	];
+	it("opens an adjacent submenu and commits only a child selection", () => {
+		const onChange = vi.fn();
+		render(
+			<MapMetricSelect
+				label="Slice"
+				help="Group"
+				value="date:week"
+				options={nested}
+				onChange={onChange}
+			/>,
+		);
+		const trigger = screen.getByRole("combobox");
+		expect(trigger).toHaveTextContent("Date · Week");
+		fireEvent.click(trigger);
+		const date = screen.getByRole("option", { name: "Date" });
+		expect(date).toHaveFocus();
+		vi.spyOn(date, "getBoundingClientRect").mockReturnValue({
+			left: 900,
+			right: 1000,
+			top: 50,
+		} as DOMRect);
+		fireEvent.click(date);
+		expect(onChange).not.toHaveBeenCalled();
+		const week = screen.getByRole("option", { name: "Week" });
+		expect(week).toHaveFocus();
+		expect(screen.getByRole("listbox", { name: "Date" })).toHaveClass("map-glass");
+		expect(week).toHaveClass("rounded-md", "px-2", "py-1.5", "text-xs");
+		expect(week.querySelector("svg")).toHaveClass("size-3", "text-muted-foreground");
+		expect(screen.getByRole("listbox", { name: "Date" })).toHaveStyle({
+			left: "736px",
+			top: "50px",
+		});
+		fireEvent.pointerDown(week);
+		expect(screen.getByRole("listbox", { name: "Date" })).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("option", { name: "Month" }));
+		expect(onChange).toHaveBeenCalledWith("date:month");
+		expect(trigger).toHaveFocus();
+		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+	});
+	it("opens Date on hover without selecting or stealing focus and lets the pointer enter its submenu", () => {
+		const onChange = vi.fn();
+		render(
+			<MapMetricSelect
+				label="Slice"
+				help="Group"
+				value="market"
+				options={nested}
+				onChange={onChange}
+			/>,
+		);
+		fireEvent.click(screen.getByRole("combobox"));
+		const market = screen.getByRole("option", { name: "Market" });
+		const date = screen.getByRole("option", { name: "Date" });
+		fireEvent.mouseEnter(date);
+		expect(screen.getByRole("listbox", { name: "Date" })).toHaveClass("map-glass");
+		expect(market).toHaveFocus();
+		expect(onChange).not.toHaveBeenCalled();
+		fireEvent.mouseEnter(screen.getByRole("option", { name: "Week" }));
+		expect(screen.getByRole("listbox", { name: "Date" })).toBeInTheDocument();
+		fireEvent.mouseEnter(market);
+		expect(screen.queryByRole("listbox", { name: "Date" })).not.toBeInTheDocument();
+		fireEvent.mouseEnter(date);
+		fireEvent.click(screen.getByRole("option", { name: "Week" }));
+		expect(onChange).toHaveBeenCalledWith("date:week");
+	});
+
+	it("supports right/left, child arrows, two-step Escape and outside dismissal", () => {
+		render(
+			<MapMetricSelect
+				label="Slice"
+				help="Group"
+				value="market"
+				options={nested}
+				onChange={vi.fn()}
+			/>,
+		);
+		const trigger = screen.getByRole("combobox");
+		fireEvent.click(trigger);
+		const market = screen.getByRole("option", { name: "Market" });
+		fireEvent.keyDown(market, { key: "ArrowRight" });
+		expect(screen.queryByRole("listbox", { name: "Date" })).not.toBeInTheDocument();
+		fireEvent.keyDown(market, { key: "ArrowDown" });
+		const date = screen.getByRole("option", { name: "Date" });
+		expect(date).toHaveFocus();
+		fireEvent.keyDown(date, { key: "ArrowRight" });
+		const day = screen.getByRole("option", { name: "Day" });
+		expect(day).toHaveFocus();
+		fireEvent.keyDown(day, { key: "ArrowDown" });
+		expect(screen.getByRole("option", { name: "Week" })).toHaveFocus();
+		fireEvent.keyDown(day, { key: "ArrowLeft" });
+		expect(date).toHaveFocus();
+		fireEvent.click(date);
+		fireEvent.keyDown(screen.getByRole("option", { name: "Day" }), { key: "Escape" });
+		expect(date).toHaveFocus();
+		expect(screen.getByRole("listbox", { name: "Slice" })).toBeInTheDocument();
+		fireEvent.keyDown(date, { key: "Escape" });
+		expect(trigger).toHaveFocus();
+		fireEvent.click(trigger);
+		fireEvent.click(screen.getByRole("option", { name: "Date" }));
+		fireEvent.pointerDown(document.body);
+		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+	});
+});

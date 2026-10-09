@@ -48,6 +48,11 @@ export interface WarehouseDrillDownPlayerRow {
 	department: string | null;
 }
 
+export interface WarehouseDrillDownOrganizerRow {
+	location_id: number | string;
+	partner_id: number | string;
+}
+
 export interface WarehouseQueryable {
 	query<Row>(sql: string, values?: unknown[]): Promise<{ rows: Row[] }>;
 }
@@ -57,4 +62,15 @@ export interface WarehouseAppActivityRow {
 	region_name: string | null;
 	is_total: number;
 	value: number | string | null;
+}
+
+export interface WarehouseTimeRow {
+	bucket: string | null;
+	department: GameDepartment | null;
+	is_total: number;
+	value: number | string | null;
+	numerator: number | string;
+	denominator: number | string;
+	data_errors: number | string;
+	facility_ids: string[] | null;
 }
