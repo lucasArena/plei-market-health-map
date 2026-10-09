@@ -352,7 +352,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.context.mapNavigation).toBeNull();
 	});
 
-	it("consumes drill-down map navigation requests through the existing search behavior", async () => {
+	it("consumes Explore panel map navigation requests through the existing search behavior", async () => {
 		const container = document.createElement("div");
 		const { result } = renderHook(
 			() => {
@@ -406,6 +406,10 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.rules.selectedFacilityId).toBeNull();
 		act(() => result.current.context.setMapNavigation({ kind: "all" }));
 		expect(result.current.context.mapNavigation).toBeNull();
+		expect(result.current.context.scope).toEqual({ kind: "all" });
+		expect(mapState.instances[0]?.easeTo).toHaveBeenLastCalledWith(
+			expect.objectContaining({ center: MAP_CENTER, zoom: MAP_ZOOM }),
+		);
 	});
 
 	it("hides inactive facilities by default when there is no layers provider", async () => {

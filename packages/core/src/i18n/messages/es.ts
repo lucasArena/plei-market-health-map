@@ -280,9 +280,9 @@ export const es: Messages = {
 		sourceSwitch:
 			"La fuente de seguimiento cambió después del 29 de junio de 2026: Mixpanel + UXCam → Firebase Analytics. Este rango incluye ambas fuentes.",
 
-		title: "Desglose de métricas",
-		expand: "Ampliar desglose",
-		collapse: "Contraer desglose",
+		title: "Panel Explorar",
+		expand: "Ampliar panel Explorar",
+		collapse: "Contraer panel Explorar",
 		filteredBy: "Filtrado por",
 		supplyHidden: "La oferta está oculta. Actívala en Filtros para ver los resultados.",
 		selectionHelp:

@@ -275,9 +275,9 @@ export const en: Messages = {
 		sourceSwitch:
 			"Tracking source changed after June 29, 2026: Mixpanel + UXCam → Firebase Analytics. This range includes both sources.",
 
-		title: "Metric drill-down",
-		expand: "Expand drill-down",
-		collapse: "Collapse drill-down",
+		title: "Explore panel",
+		expand: "Expand Explore panel",
+		collapse: "Collapse Explore panel",
 		filteredBy: "Filtered by",
 		supplyHidden: "Supply is hidden. Turn it on in Filters to see results.",
 		selectionHelp: "Click a bar or row to select it. Click again to clear.",

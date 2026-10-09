@@ -3,9 +3,9 @@
 import { PeriodSwitch } from "@/presentation/components/inputs/PeriodSwitch/PeriodSwitchComponent";
 import { useAppHeaderRules } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.rules";
 import type { AppHeaderProps } from "@/presentation/components/layout/AppHeader/AppHeaderComponent.types";
+import { ExploreToggle } from "@/presentation/components/layout/ExploreToggle/ExploreToggleComponent";
 import { MapBrand } from "@/presentation/components/layout/MapBrand/MapBrandComponent";
 import { MarketSummaryToggle } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent";
-import { MetricDrillDownToggle } from "@/presentation/components/layout/MetricDrillDownToggle/MetricDrillDownToggleComponent";
 import { UserMenu } from "@/presentation/components/layout/UserMenu/UserMenuComponent";
 
 export function AppHeader({ user }: Readonly<AppHeaderProps>) {
@@ -20,7 +20,7 @@ export function AppHeader({ user }: Readonly<AppHeaderProps>) {
 			/>
 			<div className="flex items-center justify-end gap-2">
 				<PeriodSwitch />
-				<MetricDrillDownToggle />
+				<ExploreToggle />
 				<MarketSummaryToggle />
 			</div>
 			<UserMenu {...user} />

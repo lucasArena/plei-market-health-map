@@ -13,7 +13,7 @@ import {
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { createRef } from "react";
 import { renderWithMessages } from "@/application/test/render-with-messages";
-import { MetricDrillDownPanel } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent";
+import { ExplorePanel } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent";
 import type { MapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent.types";
 
 const navigate = vi.fn();
@@ -165,7 +165,7 @@ function setup(isOpen = true) {
 			<button type="button" ref={triggerRef}>
 				Trigger
 			</button>
-			<MetricDrillDownPanel {...props} />
+			<ExplorePanel {...props} />
 		</>,
 	);
 	return {
@@ -225,7 +225,7 @@ function select(name: string, value: string) {
 }
 beforeEach(() => localStorage.clear());
 
-describe("MetricDrillDownPanel", () => {
+describe("ExplorePanel", () => {
 	beforeEach(() => {
 		timeView = undefined;
 		gameDepartments = [];
@@ -347,19 +347,19 @@ describe("MetricDrillDownPanel", () => {
 		const { props, rerender } = setup();
 		select("Segment", "department");
 		gameDepartments = ["magic"];
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("button", { name: "Miami · Magic: 3" })).not.toHaveAttribute("title");
 		expect(screen.queryByRole("button", { name: /Organizers:/ })).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Miami · Magic: 3" }));
 		select("Slice", "facility");
 		gameDepartments = ["organizers"];
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("button", { name: "Arena · Organizers: 3" })).toBeInTheDocument();
 		gameDepartments = [];
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("button", { name: "Arena · Partnerships: 5" })).toBeInTheDocument();
 		showSupply = false;
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByText("No activity in this scope and period.")).toBeInTheDocument();
 	});
 
@@ -369,10 +369,10 @@ describe("MetricDrillDownPanel", () => {
 		expect(panel).toHaveClass("map-glass", "panel-slide-in");
 		const onClosed = vi.fn();
 		fireEvent(panel, new Event("webkitAnimationEnd", { bubbles: true }));
-		rerender(<MetricDrillDownPanel {...props} isOpen={false} isClosing onClosed={onClosed} />);
+		rerender(<ExplorePanel {...props} isOpen={false} isClosing onClosed={onClosed} />);
 		expect(panel).toHaveClass("panel-slide-out");
 		fireEvent(
-			screen.getByRole("button", { name: "Expand drill-down" }),
+			screen.getByRole("button", { name: "Expand Explore panel" }),
 			new Event("webkitAnimationEnd", { bubbles: true }),
 		);
 		expect(onClosed).not.toHaveBeenCalled();
@@ -385,16 +385,16 @@ describe("MetricDrillDownPanel", () => {
 		const bar = screen.getByRole("button", { name: "Miami · Magic: 3" });
 		expect(bar.style.height).toBe("20%");
 		expect(bar.style.width).toBe("");
-		fireEvent.click(screen.getByRole("button", { name: "Expand drill-down" }));
-		expect(screen.getByRole("button", { name: "Collapse drill-down" })).toHaveAttribute(
+		fireEvent.click(screen.getByRole("button", { name: "Expand Explore panel" }));
+		expect(screen.getByRole("button", { name: "Collapse Explore panel" })).toHaveAttribute(
 			"aria-pressed",
 			"true",
 		);
 		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("Department");
-		fireEvent.click(screen.getByRole("button", { name: "Collapse drill-down" }));
-		fireEvent.click(screen.getByRole("button", { name: "Expand drill-down" }));
+		fireEvent.click(screen.getByRole("button", { name: "Collapse Explore panel" }));
+		fireEvent.click(screen.getByRole("button", { name: "Expand Explore panel" }));
 		fireEvent.keyDown(document, { key: "Escape" });
-		expect(screen.getByRole("button", { name: "Expand drill-down" })).toHaveAttribute(
+		expect(screen.getByRole("button", { name: "Expand Explore panel" })).toHaveAttribute(
 			"aria-pressed",
 			"false",
 		);
@@ -562,7 +562,7 @@ describe("MetricDrillDownPanel", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Market" }));
 		expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute("aria-sort", "descending");
 	});
-	it("selects the market from its map icon and shows that market's drill-down for the same metric", () => {
+	it("selects the market from its map icon and shows that market in the Explore panel for the same metric", () => {
 		const { onClose, props, rerender } = setup();
 		select("Measure", "scheduled-games");
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Miami" }));
@@ -570,7 +570,7 @@ describe("MetricDrillDownPanel", () => {
 		expect(onClose).not.toHaveBeenCalled();
 
 		scope = { kind: "market", id: "miami", name: "Miami" };
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("button", { name: /All markets/ })).toBeInTheDocument();
 		expect(screen.getByRole("combobox", { name: "Measure" })).toHaveTextContent("Games scheduled");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Facility");
@@ -596,18 +596,18 @@ describe("MetricDrillDownPanel", () => {
 		const { rerender, props } = setup();
 		select("Segment", "department");
 		scope = { kind: "market", id: "miami", name: "Miami" };
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Facility");
 		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("Department");
 		period = "week";
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByText("No activity in this scope and period.")).toBeInTheDocument();
 		scope = { kind: "facility", id: "a", name: "Arena", marketName: "Miami" };
 		period = "month";
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(2);
 		scope = { kind: "all" };
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 	});
 	it("defaults the date range from the map period and supports longer ranges", () => {
@@ -616,20 +616,20 @@ describe("MetricDrillDownPanel", () => {
 		select("Date range", "90d");
 		expect(screen.getByRole("combobox", { name: "Date range" })).toHaveTextContent("90D");
 		period = "week";
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("combobox", { name: "Date range" })).toHaveTextContent("7D");
 	});
 	it("has no close button and focuses the expand button when it opens", () => {
 		setup();
 		expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Expand drill-down" })).toHaveFocus();
+		expect(screen.getByRole("button", { name: "Expand Explore panel" })).toHaveFocus();
 	});
 	it("retains selections while closed and closes with Escape, returning focus to the toggle", () => {
 		const { rerender, props, onClose } = setup();
 		select("Slice", "facility");
-		rerender(<MetricDrillDownPanel {...props} isOpen={false} />);
+		rerender(<ExplorePanel {...props} isOpen={false} />);
 		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Facility");
 		fireEvent.keyDown(document, { key: "Enter" });
 		expect(onClose).not.toHaveBeenCalled();
@@ -649,18 +649,18 @@ describe("MetricDrillDownPanel", () => {
 		expect(screen.queryByText(/1970/)).not.toBeInTheDocument();
 		pending = false;
 		failed = true;
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.queryByTestId("drill-down-skeleton")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 		expect(retry).toHaveBeenCalled();
 		failed = false;
 		data = [{ ...facility, gamesLast28Days: undefined, gamesByDepartment: undefined }];
-		rerender(<MetricDrillDownPanel {...props} />);
+		rerender(<ExplorePanel {...props} />);
 		expect(screen.getByRole("status")).toHaveTextContent("Some game counts are unavailable");
 		select("Segment", "department");
 		expect(screen.getAllByText("Unavailable").length).toBeGreaterThan(1);
 		data = [];
-		act(() => rerender(<MetricDrillDownPanel {...props} />));
+		act(() => rerender(<ExplorePanel {...props} />));
 		expect(screen.getByText("No activity in this scope and period.")).toBeInTheDocument();
 	});
 });
@@ -722,7 +722,7 @@ describe("app activity measures", () => {
 			expect.objectContaining({ marketId: "miami", facilityId: undefined }),
 		);
 		scope = { kind: "market", id: "miami", name: "Miami" };
-		result.rerender(<MetricDrillDownPanel {...result.props} />);
+		result.rerender(<ExplorePanel {...result.props} />);
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 	});
 });
@@ -875,12 +875,12 @@ describe("time slices", () => {
 		select("Slice", "time");
 		expect(screen.getByRole("region", { name: "Metric by group" })).toBeInTheDocument();
 		timeView = { ...timeView, start: "2026-10-01", end: "2026-09-30", rows: [] };
-		result.rerender(<MetricDrillDownPanel {...result.props} />);
+		result.rerender(<ExplorePanel {...result.props} />);
 		expect(screen.getByText("No completed buckets in this date range.")).toBeInTheDocument();
 	});
 });
 
-describe("drill-down changes", () => {
+describe("Explore panel changes", () => {
 	beforeEach(() => {
 		scope = { kind: "all" };
 		period = "month";

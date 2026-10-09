@@ -10,7 +10,7 @@ import {
 import {
 	CHART_TOOLTIP_CLASS,
 	DRILL_DOWN_COLORS,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
 
 /**
  * The whole Games module (label, number, pill, comparison, chart and rows) sits
@@ -24,7 +24,7 @@ export const GAMES_METRICS_CARD_CLASS = `flex flex-col gap-4 ${INSIGHT_CONTAINER
 export const GAMES_METRICS_SECONDARY_TEXT_CLASS = "text-[#525866]";
 
 /**
- * Sizes follow MetricDrillDownPanel (root font-size is 14px, so rem utilities scale with it).
+ * Sizes follow ExplorePanel (root font-size is 14px, so rem utilities scale with it).
  * Captions use 11px instead of the drill-down's text-xs (10.5px) to stay at or above 11px.
  */
 export const GAMES_METRICS_CAPTION_TEXT_CLASS = "text-[11px]";

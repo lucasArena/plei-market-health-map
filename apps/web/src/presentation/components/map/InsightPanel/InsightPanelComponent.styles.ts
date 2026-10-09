@@ -2,7 +2,7 @@ export const MARKET_SUMMARY_PANEL_CLASS =
 	"pointer-events-auto fixed top-[calc(var(--map-frame)+32px+8px)] right-[var(--map-frame)] z-30 flex max-h-[calc(100dvh-var(--map-frame)-32px-8px-var(--map-frame))] w-[min(28rem,calc(100vw-2*var(--map-frame)))] flex-col overflow-hidden max-sm:top-[calc(var(--map-frame)+80px)] max-sm:max-h-[calc(100dvh-2*var(--map-frame)-80px)] map-glass rounded-[var(--map-radius)] border shadow-[var(--map-shadow)]";
 
 /**
- * Flat sections, matching MetricDrillDownPanel: no cards, the panel background shows through,
+ * Flat sections, matching ExplorePanel: no cards, the panel background shows through,
  * modules sit on the panel's px-5 and are split by its border-border rule with its space-y-4 rhythm.
  */
 /**
@@ -15,7 +15,7 @@ export const PANEL_SECTIONS_CLASS =
 
 export const PANEL_SECTION_CLASS = "min-w-0";
 
-/** MetricDrillDownPanel's section heading (text-base font-semibold). */
+/** ExplorePanel's section heading (text-base font-semibold). */
 export const PANEL_SECTION_TITLE_CLASS = "text-base font-semibold text-foreground";
 
 /**
@@ -38,11 +38,11 @@ export const SCOPE_HEADING_ID = "market-summary-heading";
 /** The breadcrumb's current crumb; the heading is described by it. */
 export const SCOPE_CURRENT_CRUMB_ID = "market-summary-current-crumb";
 
-/** Shared panel header title (insight and drill-down panels). */
+/** Shared panel header title (insight and Explore panels). */
 export const PANEL_TITLE_CLASS = "truncate text-base font-semibold";
 
 /**
- * Shared panel header description line. The drill-down used text-xs
+ * Shared panel header description line. The Explore panel used text-xs
  * (10.5px, muted); raised to the 11px minimum and #525866 for contrast.
  */
 export const PANEL_DESCRIPTION_CLASS = "text-[11px] leading-4 text-[#525866]";

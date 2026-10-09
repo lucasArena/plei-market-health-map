@@ -24,18 +24,18 @@ import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { drillDownDatesPreference } from "@/infrastructure/cache/local-storage/drill-down-dates/drill-down-dates-preference";
-import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import {
 	DRILL_DOWN_COLORS,
 	drillDownOrganizerColor,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
 import type {
 	DrillDownChartRow,
 	DrillDownSort,
+	ExplorePanelProps,
+	ExploreSelection,
 	MetricDrillDownFocus,
-	MetricDrillDownPanelProps,
-	MetricDrillDownSelection,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.types";
+import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
@@ -62,13 +62,13 @@ const EMPTY_VIEW: MetricDrillDownView = {
 	kind: "count",
 };
 
-export function useMetricDrillDownPanelRules({
+export function useExplorePanelRules({
 	isOpen,
 	isClosing,
 	onClosed,
 	onClose,
 	triggerRef,
-}: MetricDrillDownPanelProps) {
+}: ExplorePanelProps) {
 	const { scope, period, setMapNavigation, setMetricFocus } = useMapScope();
 	const { messages, locale } = useMessages();
 	const facilitiesQuery = useFacilityListAll();
@@ -77,7 +77,7 @@ export function useMetricDrillDownPanelRules({
 	const showSupply = layers?.showActiveFacilities ?? true;
 	const departmentKey = gameDepartments?.join(",") ?? "";
 	const scopeKey = scope.kind === "all" ? "all" : `${scope.kind}:${scope.id}`;
-	const [selection, setSelection] = useState<MetricDrillDownSelection>({
+	const [selection, setSelection] = useState<ExploreSelection>({
 		measure: "games",
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",

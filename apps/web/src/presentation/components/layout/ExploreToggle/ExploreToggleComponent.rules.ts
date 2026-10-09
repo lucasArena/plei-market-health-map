@@ -2,11 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MetricDrillDownToggleView } from "@/presentation/components/layout/MetricDrillDownToggle/MetricDrillDownToggleComponent.types";
+import type { ExploreToggleView } from "@/presentation/components/layout/ExploreToggle/ExploreToggleComponent.types";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
-export function useMetricDrillDownToggleRules(): MetricDrillDownToggleView {
+export function useExploreToggleRules(): ExploreToggleView {
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const pathname = usePathname();
 	const isVisible = pathname === "/";
@@ -21,7 +21,7 @@ export function useMetricDrillDownToggleRules(): MetricDrillDownToggleView {
 		() => setState((current) => (current === "open" ? "closing" : "open")),
 		[],
 	);
-	useExclusiveSidePanel("metric-drill-down", isOpen && isVisible, close);
+	useExclusiveSidePanel("explore", isOpen && isVisible, close);
 	useEffect(() => {
 		if (!isVisible) setState("closed");
 	}, [isVisible]);
