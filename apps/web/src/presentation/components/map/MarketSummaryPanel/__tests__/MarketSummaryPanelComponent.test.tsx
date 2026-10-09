@@ -4,6 +4,12 @@ import { MarketSummaryPanel } from "@/presentation/components/map/MarketSummaryP
 
 const mockRules = vi.fn();
 
+vi.mock("@/presentation/components/map/FacilityOverview/FacilityOverviewComponent", () => ({
+	FacilityOverview: ({ facilityName }: { facilityName: string }) => (
+		<div data-testid="facility-overview">{facilityName}</div>
+	),
+}));
+
 vi.mock("@/presentation/components/map/MarketOverview/MarketOverviewComponent", () => ({
 	MarketOverview: ({ marketName }: { marketName: string }) => (
 		<div data-testid="market-overview">{marketName}</div>
@@ -90,6 +96,7 @@ function rulesWith(overrides: object = {}) {
 		playersTrend: null,
 		isUsersPending: false,
 		marketView: null,
+		facilityView: null,
 		gamesTitle: "Games the last 7 days",
 		userMetrics: [
 			{
@@ -253,6 +260,21 @@ describe("MarketSummaryPanel", () => {
 
 		expect(screen.getByTestId("market-overview-skeleton")).toBeInTheDocument();
 		expect(screen.queryByTestId("games-trend-skeleton")).not.toBeInTheDocument();
+	});
+
+	it("hands a selected facility to the facility view", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				isRedesigned: true,
+				facilityView: { id: "889", name: "Pegaso HTX", marketName: "Houston" },
+			}),
+		);
+
+		render(<MarketSummaryPanel {...PROPS} />);
+
+		expect(screen.getByTestId("facility-overview")).toHaveTextContent("Pegaso HTX");
+		expect(screen.queryByTestId("market-overview")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("market-summary-dates")).not.toBeInTheDocument();
 	});
 
 	it("hands a selected market to the market view and keeps the footer", () => {

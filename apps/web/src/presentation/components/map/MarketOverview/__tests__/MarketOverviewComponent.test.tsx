@@ -29,7 +29,8 @@ const HEADER = {
 		{ value: "month", label: "28D" },
 	],
 	comparison: { current: "Sep 9 – Oct 6, 2026", previous: "vs Aug 12 – Sep 8" },
-	facilitiesActive: "11 of 14 facilities active",
+	subtitle: null,
+	footnote: "11 of 14 facilities active",
 };
 
 const CARD = { label: "Games played", info: "Played games.", value: "48", change: null };
@@ -99,7 +100,7 @@ describe("MarketOverview", () => {
 
 	it("shows only the header until the summary loads", () => {
 		mockRules.mockReturnValue({
-			header: { ...HEADER, facilitiesActive: null },
+			header: { ...HEADER, footnote: null },
 			period: "month",
 			scorecardsTitle: "Scorecards",
 			sections: null,

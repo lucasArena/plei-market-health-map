@@ -264,6 +264,7 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 			breadcrumbLabel: messages.marketView.breadcrumb,
 			title: marketName,
 			level: messages.marketView.level,
+			subtitle: null,
 			periodLabel: messages.statsPeriods.switchLabel,
 			periodOptions: [
 				{ value: "week", label: messages.statsPeriods.week.short },
@@ -275,7 +276,7 @@ export function useMarketOverviewRules({ marketId, marketName }: MarketOverviewP
 				locale,
 				messages.marketSummary,
 			),
-			facilitiesActive: buildFacilitiesActive(
+			footnote: buildFacilitiesActive(
 				summary?.periods[period].scope,
 				messages.marketSummary,
 				formatters,

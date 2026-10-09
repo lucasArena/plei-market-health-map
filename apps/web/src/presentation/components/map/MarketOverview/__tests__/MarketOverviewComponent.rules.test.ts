@@ -278,7 +278,7 @@ describe("useMarketOverviewRules", () => {
 		expect(result.current.header).toMatchObject({
 			title: "Miami Metro",
 			level: "Market",
-			facilitiesActive: "84 of 142 facilities active",
+			footnote: "84 of 142 facilities active",
 		});
 		expect(result.current.sections?.scorecards.played.label).toBe("Games played");
 		expect(result.current.scorecardsTitle).toBe("Scorecards");
@@ -307,6 +307,6 @@ describe("useMarketOverviewRules", () => {
 
 		expect(mockUseMarketGameInsights).toHaveBeenCalledWith("miami", "month", false, ["magic"]);
 		expect(result.current.sections).toBeNull();
-		expect(result.current.header.facilitiesActive).toBeNull();
+		expect(result.current.header.footnote).toBeNull();
 	});
 });

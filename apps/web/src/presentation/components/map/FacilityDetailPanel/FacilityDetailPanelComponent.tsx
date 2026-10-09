@@ -8,6 +8,7 @@ import { WeeklyActivityChart } from "@/presentation/components/displays/WeeklyAc
 import { useFacilityDetailPanelRules } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.rules";
 import { PANEL_CLASS } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.styles";
 import type { FacilityDetailPanelProps } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
+import { FacilityOverview } from "@/presentation/components/map/FacilityOverview/FacilityOverviewComponent";
 import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesHeatmap/PopularTimesHeatmapComponent";
 
 const SKELETON_TILES = ["played", "confirmation", "players", "activated"];
@@ -35,8 +36,16 @@ function FacilityDetailSkeleton() {
 }
 
 export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
-	const { aiContext, handleAnimationEnd, isAiPending, isClosing, messages, status, view } =
-		useFacilityDetailPanelRules(props);
+	const {
+		aiContext,
+		handleAnimationEnd,
+		isAiPending,
+		isClosing,
+		messages,
+		overview,
+		status,
+		view,
+	} = useFacilityDetailPanelRules(props);
 
 	return (
 		<aside
@@ -53,7 +62,12 @@ export function FacilityDetailPanel(props: Readonly<FacilityDetailPanelProps>) {
 						{messages.failed}
 					</p>
 				)}
-				{status === "ready" && view && (
+				{status === "ready" && overview && (
+					<div className="p-5">
+						<FacilityOverview {...overview} />
+					</div>
+				)}
+				{status === "ready" && view && !overview && (
 					<div className="space-y-4 p-5">
 						<header className="flex items-center gap-3 pr-8">
 							<Avatar name={view.name} avatarUrl={view.avatarUrl} />

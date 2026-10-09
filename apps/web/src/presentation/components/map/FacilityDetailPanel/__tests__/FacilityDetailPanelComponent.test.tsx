@@ -10,6 +10,11 @@ vi.mock("@/presentation/components/displays/AiSummarySkeleton/AiSummarySkeletonC
 	),
 }));
 
+vi.mock("@/presentation/components/map/FacilityOverview/FacilityOverviewComponent", () => ({
+	FacilityOverview: ({ facilityName }: { facilityName: string }) => (
+		<div data-testid="facility-overview">{facilityName}</div>
+	),
+}));
 vi.mock("@/presentation/components/displays/AiSummary/AiSummaryComponent", () => ({
 	AiSummary: ({ fallback }: { fallback: string }) => <p>{fallback}</p>,
 }));
@@ -71,6 +76,7 @@ const VIEW = {
 
 function rulesWith(overrides: object = {}) {
 	return {
+		overview: null,
 		aiContext: { cacheKey: "v4:facility-889:2026-09-21:en", prompt: [] },
 		handleAnimationEnd: vi.fn(),
 		isAiPending: false,
@@ -202,5 +208,18 @@ describe("FacilityDetailPanel", () => {
 		render(<FacilityDetailPanel {...PROPS} />);
 
 		expect(screen.getByRole("alert")).toHaveTextContent("Could not load this facility.");
+	});
+
+	it("shows the redesigned facility view instead of the classic body", () => {
+		mockRules.mockReturnValue(
+			rulesWith({
+				overview: { facilityId: "889", facilityName: "Pegaso HTX", marketName: "Houston" },
+			}),
+		);
+
+		render(<FacilityDetailPanel {...PROPS} />);
+
+		expect(screen.getByTestId("facility-overview")).toHaveTextContent("Pegaso HTX");
+		expect(screen.queryByTestId("facility-stat-played")).not.toBeInTheDocument();
 	});
 });
