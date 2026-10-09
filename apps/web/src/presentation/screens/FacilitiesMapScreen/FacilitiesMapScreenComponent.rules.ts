@@ -1021,7 +1021,7 @@ export function useFacilitiesMapScreenRules() {
 		containerRef,
 		facilities,
 		sessionHeatmapLegend: isRegistrations
-			? messages.map.registrationHeatmapLegend
+			? formatMessage(messages.map.registrationHeatmapLegend, { days: period === "week" ? 7 : 28 })
 			: formatMessage(messages.map.sessionHeatmapLegend, {
 					span: messages.statsPeriods[period].span,
 				}),
@@ -1036,7 +1036,9 @@ export function useFacilitiesMapScreenRules() {
 		messages: isRegistrations
 			? {
 					...messages.map,
-					sessionHeatmapLegend: messages.map.registrationHeatmapLegend,
+					sessionHeatmapLegend: formatMessage(messages.map.registrationHeatmapLegend, {
+						days: period === "week" ? 7 : 28,
+					}),
 					sessionHeatmapContext: messages.map.registrationHeatmapContext,
 					sessionHeatmapLoading: messages.map.registrationHeatmapLoading,
 					sessionHeatmapNoActivity: messages.map.registrationHeatmapNoActivity,

@@ -1,78 +1,125 @@
-import { STATS_PERIOD_DAYS } from "@core/application/dtos/facility-detail-dto";
+import {
+	DRILL_DOWN_RANGE_DAYS,
+	getMetricDrillDownSchema,
+	isAppActivityMeasure,
+} from "@core/application/dtos/metric-drill-down-dto";
 import type {
-	MetricDrillDownInput,
-	MetricDrillDownRow,
+	GetMetricDrillDownInput,
 	MetricDrillDownView,
-} from "@core/application/services/get-metric-drill-down.types";
-import type { GameDepartment, GameDepartmentCounts } from "@core/domain";
-import { localDay, statsWindow } from "@core/domain";
+} from "@core/application/dtos/metric-drill-down-dto.types";
+import { ForbiddenError } from "@core/application/errors/forbidden-error";
+import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
+import type { MetricDrillDownQuery } from "@core/application/repositories/metric-drill-down-repository.types";
+import { toAverageDailyGamesView } from "@core/application/services/average-daily-games-view";
+import { drillDownComparisonWindow } from "@core/application/services/drill-down-comparison-window";
+import type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
+import { statsToday } from "@core/application/services/stats-today";
+import { addDays } from "@core/domain/shared/eastern-calendar";
 
-export const DRILL_DOWN_DEPARTMENTS = ["magic", "organizers", "partnerships"] as const;
+export {
+	aggregateCountDrillDown,
+	aggregateDistinctCountDrillDown,
+	aggregateDrillDownFromFacts,
+	aggregateRateDrillDown,
+	DRILL_DOWN_DEPARTMENTS,
+	distinctContributionsFromFacts,
+	drillDownRangeDays,
+	drillDownWindow,
+	factsFromFacilityPoints,
+	measureRateValue,
+	rateContributionsFromFacts,
+	rateFactParts,
+	rateValue,
+	scheduledFactsFrom,
+} from "@core/application/services/aggregate-metric-drill-down";
 
-function sumKnown(left: number | null, right: number | null): number | null {
-	if (left === null || right === null) return null;
-	return left + right;
-}
-function emptyDepartments(): GameDepartmentCounts {
-	return { magic: 0, organizers: 0, partnerships: 0 };
-}
-export function makeGetMetricDrillDown() {
-	return (input: MetricDrillDownInput): MetricDrillDownView => {
-		const { start, end } = statsWindow(
-			localDay(input.now, input.timeZone),
-			STATS_PERIOD_DAYS[input.period],
+export function makeGetMetricDrillDown({
+	drillDown,
+	clock,
+	enabledFeatureFlags,
+}: GetMetricDrillDownDeps) {
+	return async function getMetricDrillDown(
+		input: GetMetricDrillDownInput,
+	): Promise<MetricDrillDownView> {
+		const parsed = getMetricDrillDownSchema.safeParse(input);
+		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
+		const { enabled } = await enabledFeatureFlags();
+		if (!enabled.includes("metric-drill-down")) throw new ForbiddenError("metric drill-down");
+		const {
+			comparison,
+			measure,
+			range,
+			slice,
+			marketId,
+			facilityId,
+			department,
+			departments,
+			timeZone,
+			grain,
+		} = parsed.data;
+		const isAverage = measure === "avg-daily-games";
+		const finish = (view: MetricDrillDownView) =>
+			isAverage ? toAverageDailyGamesView(view) : view;
+		const query: MetricDrillDownQuery = {
+			measure: isAverage ? "games" : measure,
+			range,
+			slice: isAppActivityMeasure(measure) && slice !== "time" ? "market" : slice,
+			marketId,
+			facilityId: isAppActivityMeasure(measure) ? undefined : facilityId,
+			department: isAppActivityMeasure(measure) ? undefined : department,
+			departments: isAppActivityMeasure(measure) ? [] : departments,
+			grain,
+			today: statsToday(clock, timeZone),
+		};
+		const current = finish(await drillDown.group(query));
+		if (slice === "time") return current;
+		const window = drillDownComparisonWindow(query.today, DRILL_DOWN_RANGE_DAYS[range], comparison);
+		const previous = finish(
+			await drillDown.group({
+				...query,
+				today: addDays(window.end, 1),
+				previousPeriod: true,
+			}),
 		);
-		const facilities = [
-			...new Map(input.facilities.map((facility) => [facility.id, facility])).values(),
-		].filter(
-			(facility) =>
-				(!input.marketId || facility.marketId === input.marketId) &&
-				(!input.facilityId || facility.id === input.facilityId),
-		);
-		const rows = new Map<string, MetricDrillDownRow>();
-		let total: number | null = 0;
-		const selectedDepartments = input.gameDepartments?.length
-			? input.gameDepartments
-			: DRILL_DOWN_DEPARTMENTS;
-		for (const facility of facilities) {
-			const games = input.period === "week" ? facility.gamesLastWeek : facility.gamesLast28Days;
-			const rawDepartments =
-				input.period === "week" ? facility.gamesLastWeekByDepartment : facility.gamesByDepartment;
-			const departments = rawDepartments ? { ...rawDepartments } : undefined;
-			if (departments)
-				for (const department of DRILL_DOWN_DEPARTMENTS)
-					if (!selectedDepartments.includes(department)) departments[department] = 0;
-			const filteredGames = departments
-				? selectedDepartments.reduce((sum, department) => sum + departments[department], 0)
-				: null;
-			if (input.gameDepartments?.length && filteredGames === 0) continue;
-			let value: number | null = input.gameDepartments?.length ? filteredGames : (games ?? null);
-			if (input.department) value = departments?.[input.department] ?? null;
-			if (input.measure === "active-facilities")
-				value =
-					input.gameDepartments?.length && filteredGames === null
-						? null
-						: Number(input.period === "week" ? facility.isActiveLastWeek : facility.isActive);
-			total = sumKnown(total, value);
-			const groups =
-				input.slice === "department"
-					? selectedDepartments
-					: [input.slice === "market" ? facility.marketId : facility.id];
-			for (const id of groups) {
-				const isDepartment = input.slice === "department";
-				const name = { market: facility.marketName, facility: facility.name, department: id }[
-					input.slice
-				];
-				const row = rows.get(id) ?? { id, name, value: 0, departments: emptyDepartments() };
-				const groupValue = isDepartment ? (departments?.[id as GameDepartment] ?? null) : value;
-				row.value = sumKnown(row.value, groupValue);
-				if (!departments || !row.departments) row.departments = null;
-				else
-					for (const department of DRILL_DOWN_DEPARTMENTS)
-						row.departments[department] += departments[department];
-				rows.set(id, row);
-			}
-		}
-		return { total, rows: [...rows.values()], start, end };
+		const previousRows = new Map(previous.rows.map((row) => [row.id, row]));
+		const currentIds = new Set(current.rows.map((row) => row.id));
+		const rows = [
+			...current.rows,
+			...previous.rows
+				.filter((row) => !currentIds.has(row.id))
+				.map((row) => ({
+					...row,
+					value: current.total === null || current.kind === "rate" ? null : 0,
+					departments:
+						current.total !== null && current.kind !== "rate" && row.departments
+							? { magic: 0, organizers: 0, partnerships: 0 }
+							: null,
+					numerator: current.kind === "rate" ? 0 : undefined,
+					denominator: current.kind === "rate" ? 0 : undefined,
+					dataErrors: undefined,
+				})),
+		];
+		return {
+			...current,
+			previousTotal: previous.total,
+			previousStart: window.start,
+			previousEnd: window.end,
+			rows: rows.map((row) => {
+				const prior = previousRows.get(row.id);
+				return {
+					...row,
+					previousValue: prior
+						? prior.value
+						: previous.total === null || current.kind === "rate"
+							? null
+							: 0,
+					previousDepartments: prior
+						? prior.departments
+						: previous.total !== null && current.kind !== "rate"
+							? { magic: 0, organizers: 0, partnerships: 0 }
+							: null,
+				};
+			}),
+		};
 	};
 }

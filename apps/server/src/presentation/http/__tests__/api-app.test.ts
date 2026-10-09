@@ -14,6 +14,15 @@ function setup(access: AccessDecision = ALLOWED) {
 		getMarketGameInsights: vi.fn().mockResolvedValue([]),
 		getMarketSummary: vi.fn().mockResolvedValue({ scope: { facilityCount: 42 } }),
 		getMarketPlayerStats: vi.fn().mockResolvedValue({ uniquePlayersLast28Days: 900 }),
+		getMetricDrillDown: vi.fn().mockResolvedValue({
+			total: 10,
+			rows: [],
+			start: "2026-09-10",
+			end: "2026-10-07",
+			measure: "games",
+			range: "28d",
+			kind: "count",
+		}),
 		listAppSessionFilterOptions: vi
 			.fn()
 			.mockResolvedValue({ genders: ["Female"], skills: ["Advanced"], ages: [25] }),
@@ -251,6 +260,56 @@ describe("session demographics API", () => {
 	});
 });
 
+describe("metric drill-down route", () => {
+	it("forwards measure, range, slice, scope and departments", async () => {
+		const { get, services } = setup();
+		expect(
+			(
+				await get(
+					"/metric-drill-down?measure=games&range=90d&slice=facility&marketId=miami&facilityId=a&departments=magic,%20organizers&department=magic&segment=department&grain=range",
+				)
+			).status,
+		).toBe(200);
+		expect(services.getMetricDrillDown).toHaveBeenCalledWith({
+			measure: "games",
+			range: "90d",
+			slice: "facility",
+			segment: "department",
+			marketId: "miami",
+			facilityId: "a",
+			department: "magic",
+			grain: "range",
+			departments: ["magic", "organizers"],
+		});
+		await get(
+			"/metric-drill-down?measure=confirmation-rate&range=7d&slice=department&departments=magic",
+		);
+		expect(services.getMetricDrillDown).toHaveBeenLastCalledWith({
+			measure: "confirmation-rate",
+			range: "7d",
+			slice: "department",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			departments: ["magic"],
+		});
+		await get("/metric-drill-down?measure=games&range=28d&slice=market&departments=");
+		expect(services.getMetricDrillDown).toHaveBeenLastCalledWith({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			departments: [],
+		});
+	});
+});
+
 describe("viewer time zone", () => {
 	it("forwards ?tz= to every period endpoint so today follows the browser's zone", async () => {
 		const { get, services } = setup();
@@ -265,6 +324,9 @@ describe("viewer time zone", () => {
 		expect((await get(`/market-summary/insights?period=week&${tz}`)).status).toBe(200);
 		expect((await get(`/market-summary/players?${tz}`)).status).toBe(200);
 		expect((await get(`/app-session-heatmap?period=week&gender=Female&${tz}`)).status).toBe(200);
+		expect(
+			(await get(`/metric-drill-down?measure=games&range=28d&slice=market&${tz}`)).status,
+		).toBe(200);
 
 		expect(services.listFacilities).toHaveBeenCalledWith({ timeZone });
 		expect(services.getFacilityDetail).toHaveBeenCalledWith({ facilityId: "889", timeZone });
@@ -285,5 +347,16 @@ describe("viewer time zone", () => {
 			"week",
 			timeZone,
 		);
+		expect(services.getMetricDrillDown).toHaveBeenCalledWith({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: undefined,
+			marketId: undefined,
+			facilityId: undefined,
+			department: undefined,
+			grain: undefined,
+			timeZone,
+		});
 	});
 });

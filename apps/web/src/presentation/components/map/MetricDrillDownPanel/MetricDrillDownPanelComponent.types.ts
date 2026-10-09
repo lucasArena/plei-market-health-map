@@ -23,13 +23,20 @@ export interface MetricDrillDownFocus {
 	rowId: string;
 	department?: GameDepartment;
 }
-export type DrillDownSort = "count-desc" | "count-asc" | "name-asc" | "name-desc";
+export type DrillDownSort =
+	| "count-desc"
+	| "count-asc"
+	| "name-asc"
+	| "name-desc"
+	| "change-asc"
+	| "change-desc";
 
 export interface DrillDownChartBar {
 	id: GameDepartment | "total";
 	label: string;
 	value: number;
 	height: number;
+	isTop: boolean;
 	department?: GameDepartment;
 }
 export interface DrillDownChartRow extends MetricDrillDownRow {

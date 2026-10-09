@@ -175,6 +175,32 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		compare: string;
+		compareWeek: string;
+		compareMonth: string;
+		compareYear: string;
+		compareHelp: string;
+
+		change: string;
+		changeNew: string;
+		changeStable: string;
+		changePrior: string;
+
+		noCompletedBuckets: string;
+		bucketHelp: string;
+		time: string;
+		bucket: string;
+		day: string;
+		week: string;
+		month: string;
+		partial: string;
+
+		appSessions: string;
+		registrations: string;
+		uniqueUsers: string;
+		appActivityNote: string;
+		sourceSwitch: string;
+
 		title: string;
 		expand: string;
 		collapse: string;
@@ -184,21 +210,59 @@ export interface Messages {
 		measure: string;
 		slice: string;
 		segment: string;
+		range: string;
 		measureHelp: string;
 		sliceHelp: string;
 		segmentHelp: string;
+		rangeHelp: string;
 		help: string;
 		games: string;
 		activeFacilities: string;
+		scheduledGames: string;
+		confirmationRate: string;
+		uniquePlayers: string;
+		activatedPlayers: string;
+		almostFilledRate: string;
+		incidentGamesRate: string;
+		avgDailyGames: string;
+		activeOrganizers: string;
+		measureTips: Record<
+			| "games"
+			| "avgDailyGames"
+			| "scheduledGames"
+			| "incidentGamesRate"
+			| "confirmationRate"
+			| "almostFilledRate"
+			| "registrations"
+			| "uniqueUsers"
+			| "activatedPlayers"
+			| "uniquePlayers"
+			| "activeOrganizers"
+			| "activeFacilities",
+			string
+		>;
+		ratio: string;
+		ratioWithErrors: string;
+		almostFilledParts: string;
+		incidentRateParts: string;
+		confirmationParts: string;
+		rosterDataErrors: string;
+		reviewsLag: string;
 		market: string;
 		facility: string;
 		department: string;
 		none: string;
+		range7d: string;
+		range28d: string;
+		range90d: string;
+		range6m: string;
+		range12m: string;
 		selectedDepartmentHelp: string;
 		segmentUnavailable: string;
 		topTen: string;
 		chart: string;
 		value: string;
+		rate: string;
 		viewOnMap: string;
 		back: string;
 		allMarkets: string;
