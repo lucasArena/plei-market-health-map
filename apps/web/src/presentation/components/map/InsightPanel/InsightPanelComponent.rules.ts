@@ -305,6 +305,21 @@ export function buildMarketRows(
  * carry each facility's played / playedPrevious / changePercent); until it
  * loads, or for a facility without previous games, the pill is a dash.
  */
+export function marketFacilities(changes: MarketGameChangeView[]): MarketSummaryFacilityRankView[] {
+	return changes
+		.flatMap((market) =>
+			market.facilities
+				.filter((facility) => facility.played > 0 || facility.playedPrevious > 0)
+				.map((facility) => ({
+					id: facility.id,
+					name: facility.name,
+					marketName: market.name,
+					games: facility.played,
+				})),
+		)
+		.sort((a, b) => b.games - a.games || a.name.localeCompare(b.name));
+}
+
 export function buildFacilityRows(
 	facilities: MarketSummaryFacilityRankView[],
 	changes: MarketGameChangeView[] | undefined,
@@ -312,11 +327,13 @@ export function buildFacilityRows(
 	detailMessages: DetailMessages,
 	periodMessages: StatsPeriodMessages,
 	formatters: DetailFormatters,
+	isSingleMarket = false,
 ): MarketRankRowView[] {
 	const changeById = new Map(
 		(changes ?? []).flatMap((market) => market.facilities.map((row) => [row.id, row] as const)),
 	);
-	return facilities.map((facility, index) => {
+	const listed = isSingleMarket && changes?.length ? marketFacilities(changes) : facilities;
+	return listed.map((facility, index) => {
 		const value = formatGames(facility.games, detailMessages, formatters);
 		const change = changeById.get(facility.id);
 		const changePercent = change?.changePercent ?? null;
@@ -474,6 +491,7 @@ export function buildMarketSummaryViewModel(
 			detailMessages,
 			periodMessages,
 			formatters,
+			isSingleMarket,
 		),
 	};
 }
