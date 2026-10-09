@@ -846,7 +846,7 @@ describe("drill-down changes", () => {
 		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
 		expect(screen.getByText("↓ 100%").parentElement).toHaveClass("text-foreground");
 		expect(screen.getByText("(-10)")).not.toHaveAttribute("style");
-		expect(screen.getByText("stable →")).toBeInTheDocument();
+		expect(screen.getByText("→ Stable").parentElement).toHaveTextContent("→ Stable (0)");
 		expect(screen.getByText("↑ New")).toBeInTheDocument();
 		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Change" }));
@@ -871,6 +871,14 @@ describe("drill-down changes", () => {
 		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 50% (+4)");
 		expect(within(screen.getByRole("table")).getByText("↑ 50%").parentElement).toHaveTextContent(
 			"↑ 50% (+4)",
+		);
+	});
+	it("shows arrow, Stable and zero change in the headline and table", () => {
+		setup();
+		fireEvent.click(screen.getByText("Equal", { selector: "td" }));
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("→ Stable (0)");
+		expect(within(screen.getByRole("table")).getByText("→ Stable").parentElement).toHaveTextContent(
+			"→ Stable (0)",
 		);
 	});
 	it("shows the absolute decrease in the selected headline", () => {

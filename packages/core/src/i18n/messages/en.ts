@@ -201,7 +201,7 @@ export const en: Messages = {
 
 		change: "Change",
 		changeNew: "New",
-		changeStable: "stable",
+		changeStable: "Stable",
 		changePrior: "{change} vs prior {days} days",
 
 		noCompletedBuckets: "No completed buckets in this date range.",

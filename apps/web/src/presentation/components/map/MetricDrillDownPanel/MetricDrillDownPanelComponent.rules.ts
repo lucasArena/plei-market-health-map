@@ -242,12 +242,14 @@ export function useMetricDrillDownPanelRules({
 				: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`;
 		const label =
 			level === "stable"
-				? `${messages.drillDown.changeStable} ${arrow}`
+				? `${arrow} ${messages.drillDown.changeStable}`
 				: `${arrow} ${formattedChange}`;
 		const countLabel =
-			level === "stable" || view.kind === "rate"
-				? undefined
-				: `(${current > previous ? "+" : "-"}${number.format(Math.abs(current - previous))})`;
+			level === "stable"
+				? `(${number.format(0)})`
+				: view.kind === "rate"
+					? undefined
+					: `(${current > previous ? "+" : "-"}${number.format(Math.abs(current - previous))})`;
 		return {
 			label,
 			countLabel,
