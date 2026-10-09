@@ -6,6 +6,13 @@ import type {
 	DrillDownRange,
 	DrillDownSegment,
 } from "@market-health-map/core/application";
+import {
+	PANEL_BODY_CLASS,
+	PANEL_CONTENT_CLASS,
+	PANEL_DESCRIPTION_CLASS,
+	PANEL_HEADER_CLASS,
+	PANEL_TITLE_CLASS,
+} from "@/presentation/components/map/InsightPanel/InsightPanelComponent.styles";
 import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 import { useMetricDrillDownPanelRules } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.rules";
 import {
@@ -44,10 +51,13 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 			onAnimationEnd={rules.handleAnimationEnd}
 			className={`${props.isClosing ? "panel-slide-out pointer-events-none" : "panel-slide-in"} ${rules.isExpanded ? DRILL_DOWN_EXPANDED_PANEL_CLASS : DRILL_DOWN_PANEL_CLASS}`}
 		>
-			<div className="flex flex-wrap items-start justify-between gap-2 px-5 pt-5">
+			<header
+				data-testid="drill-down-header"
+				className={`${PANEL_HEADER_CLASS} flex flex-wrap items-start justify-between gap-2`}
+			>
 				<div className="min-w-0 flex-1 basis-36">
-					<h2 className="text-base font-semibold">{m.title}</h2>
-					<p className="text-xs text-muted-foreground">{rules.heading}</p>
+					<h2 className={PANEL_TITLE_CLASS}>{m.title}</h2>
+					<p className={PANEL_DESCRIPTION_CLASS}>{rules.heading}</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
 					<MapMetricSelect
@@ -108,8 +118,11 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						</svg>
 					</button>
 				</div>
-			</div>
-			<div className="min-h-0 shrink space-y-4 overflow-y-auto p-5 pt-3">
+			</header>
+			<div
+				data-testid="drill-down-body"
+				className={`${PANEL_BODY_CLASS} space-y-4 ${PANEL_CONTENT_CLASS}`}
+			>
 				{rules.showScopeBack && (
 					<button
 						type="button"
