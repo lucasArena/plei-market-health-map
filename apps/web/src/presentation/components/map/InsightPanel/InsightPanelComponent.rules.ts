@@ -833,6 +833,7 @@ export function useInsightPanelRules({ isClosing, onClose, onClosed }: InsightPa
 		facilityView,
 		handleAnimationEnd,
 		heading,
+		level: scope.kind,
 		isClosing,
 		isSummaryPending:
 			status === "ready" && ((isMarketScope && insightsQuery.isPending) || playerQuery.isPending),
