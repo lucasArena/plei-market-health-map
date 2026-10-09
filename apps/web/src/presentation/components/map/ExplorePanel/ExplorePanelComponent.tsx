@@ -6,15 +6,7 @@ import type {
 	DrillDownRange,
 	DrillDownSegment,
 } from "@market-health-map/core/application";
-import {
-	PANEL_BODY_CLASS,
-	PANEL_CONTENT_CLASS,
-	PANEL_DESCRIPTION_CLASS,
-	PANEL_HEADER_CLASS,
-	PANEL_TITLE_CLASS,
-} from "@/presentation/components/map/InsightPanel/InsightPanelComponent.styles";
-import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
-import { useMetricDrillDownPanelRules } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.rules";
+import { useExplorePanelRules } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.rules";
 import {
 	DRILL_DOWN_BAR_CLASS,
 	DRILL_DOWN_BAR_TOP_CLASS,
@@ -24,11 +16,19 @@ import {
 	DRILL_DOWN_PANEL_CLASS,
 	DRILL_DOWN_SKELETON_CLASS,
 	drillDownGlassColor,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
-import type { MetricDrillDownPanelProps } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
+import type { ExplorePanelProps } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.types";
+import {
+	PANEL_BODY_CLASS,
+	PANEL_CONTENT_CLASS,
+	PANEL_DESCRIPTION_CLASS,
+	PANEL_HEADER_CLASS,
+	PANEL_TITLE_CLASS,
+} from "@/presentation/components/map/InsightPanel/InsightPanelComponent.styles";
+import { MapMetricSelect } from "@/presentation/components/map/MapMetricSelect/MapMetricSelectComponent";
 
-export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>) {
-	const rules = useMetricDrillDownPanelRules(props);
+export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
+	const rules = useExplorePanelRules(props);
 	const {
 		messages: m,
 		selection,
@@ -42,7 +42,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 	if (!props.isOpen && !props.isClosing) return null;
 	return (
 		<aside
-			id="metric-drill-down-panel"
+			id="explore-panel"
 			ref={rules.panelRef}
 			aria-label={m.title}
 			aria-busy={rules.isLoading}

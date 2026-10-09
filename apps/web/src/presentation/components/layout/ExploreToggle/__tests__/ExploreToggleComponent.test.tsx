@@ -1,20 +1,20 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { useState } from "react";
 import { renderWithMessages } from "@/application/test/render-with-messages";
-import { MetricDrillDownToggle } from "@/presentation/components/layout/MetricDrillDownToggle/MetricDrillDownToggleComponent";
-import type { MetricDrillDownPanelProps } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
+import { ExploreToggle } from "@/presentation/components/layout/ExploreToggle/ExploreToggleComponent";
+import type { ExplorePanelProps } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.types";
 import { SidePanelProvider } from "@/presentation/components/providers/SidePanelProvider/SidePanelProviderComponent";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
 
 let path = "/";
 vi.mock("next/navigation", () => ({ usePathname: () => path }));
-vi.mock("@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent", () => ({
-	MetricDrillDownPanel: ({
+vi.mock("@/presentation/components/map/ExplorePanel/ExplorePanelComponent", () => ({
+	ExplorePanel: ({
 		isOpen,
 		isClosing,
 		onClosed,
 		onClose,
-	}: Pick<MetricDrillDownPanelProps, "isOpen" | "isClosing" | "onClosed" | "onClose">) =>
+	}: Pick<ExplorePanelProps, "isOpen" | "isClosing" | "onClosed" | "onClose">) =>
 		isOpen || isClosing ? (
 			<aside aria-label="Drill" data-closing={!!isClosing} onAnimationEnd={onClosed}>
 				<button type="button" onClick={onClose}>
@@ -35,13 +35,13 @@ function OtherPanel() {
 		</>
 	);
 }
-describe("MetricDrillDownToggle", () => {
+describe("ExploreToggle", () => {
 	beforeEach(() => {
 		path = "/";
 	});
 	it("opens and closes with accessible glass control", () => {
-		renderWithMessages(<MetricDrillDownToggle />);
-		const button = screen.getByRole("button", { name: "Metric drill-down" });
+		renderWithMessages(<ExploreToggle />);
+		const button = screen.getByRole("button", { name: "Explore panel" });
 		expect(button).toHaveClass("map-glass");
 		expect(button).toHaveAttribute("aria-expanded", "false");
 		fireEvent.click(button);
@@ -58,21 +58,21 @@ describe("MetricDrillDownToggle", () => {
 		expect(button).toHaveAttribute("aria-expanded", "false");
 	});
 	it("hides itself and closes the drawer off the map", () => {
-		const { rerender } = renderWithMessages(<MetricDrillDownToggle />);
-		fireEvent.click(screen.getByRole("button", { name: "Metric drill-down" }));
+		const { rerender } = renderWithMessages(<ExploreToggle />);
+		fireEvent.click(screen.getByRole("button", { name: "Explore panel" }));
 		path = "/admin";
-		rerender(<MetricDrillDownToggle />);
+		rerender(<ExploreToggle />);
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
 	it("shares the exclusive drawer slot with summary", () => {
 		renderWithMessages(
 			<SidePanelProvider>
-				<MetricDrillDownToggle />
+				<ExploreToggle />
 				<OtherPanel />
 			</SidePanelProvider>,
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Summary" }));
-		fireEvent.click(screen.getByRole("button", { name: "Metric drill-down" }));
+		fireEvent.click(screen.getByRole("button", { name: "Explore panel" }));
 		expect(screen.queryByRole("complementary", { name: "Summary" })).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Summary" }));
 		expect(screen.getByRole("complementary", { name: "Drill" })).toHaveAttribute(

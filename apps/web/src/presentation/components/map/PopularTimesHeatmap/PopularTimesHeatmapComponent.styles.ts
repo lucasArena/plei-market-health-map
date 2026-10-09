@@ -1,4 +1,4 @@
-import { GLASS_TOOLTIP_SURFACE_CLASS } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
+import { GLASS_TOOLTIP_SURFACE_CLASS } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
 
 export const HEATMAP_TOOLTIP_CLASS =
 	"pointer-events-none absolute bottom-full z-20 mb-1.5 w-max whitespace-nowrap rounded-md bg-pleiful-pitch-green-80 px-2 py-1 text-[10px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100";

@@ -1,12 +1,12 @@
 "use client";
 
+import { useExploreToggleRules } from "@/presentation/components/layout/ExploreToggle/ExploreToggleComponent.rules";
 import { MARKET_SUMMARY_TOGGLE_BASE_CLASS } from "@/presentation/components/layout/MarketSummaryToggle/MarketSummaryToggleComponent.styles";
-import { useMetricDrillDownToggleRules } from "@/presentation/components/layout/MetricDrillDownToggle/MetricDrillDownToggleComponent.rules";
-import { MetricDrillDownPanel } from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent";
+import { ExplorePanel } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent";
 
-export function MetricDrillDownToggle() {
+export function ExploreToggle() {
 	const { isOpen, isClosing, handleClosed, isVisible, close, toggle, label, triggerRef } =
-		useMetricDrillDownToggleRules();
+		useExploreToggleRules();
 	if (!isVisible) return null;
 	return (
 		<>
@@ -16,7 +16,7 @@ export function MetricDrillDownToggle() {
 				title={label}
 				aria-label={label}
 				aria-expanded={isOpen}
-				aria-controls="metric-drill-down-panel"
+				aria-controls="explore-panel"
 				aria-pressed={isOpen}
 				onClick={toggle}
 				className={MARKET_SUMMARY_TOGGLE_BASE_CLASS}
@@ -27,7 +27,7 @@ export function MetricDrillDownToggle() {
 					<rect x="17" y="8" width="3" height="12" rx="1.5" />
 				</svg>
 			</button>
-			<MetricDrillDownPanel
+			<ExplorePanel
 				isOpen={isOpen}
 				isClosing={isClosing}
 				onClosed={handleClosed}

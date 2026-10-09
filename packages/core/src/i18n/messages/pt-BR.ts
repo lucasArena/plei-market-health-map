@@ -279,9 +279,9 @@ export const ptBR: Messages = {
 		sourceSwitch:
 			"A fonte de rastreamento mudou após 29 de junho de 2026: Mixpanel + UXCam → Firebase Analytics. Este intervalo inclui ambas as fontes.",
 
-		title: "Detalhamento de métricas",
-		expand: "Expandir detalhamento",
-		collapse: "Recolher detalhamento",
+		title: "Painel Explorar",
+		expand: "Expandir painel Explorar",
+		collapse: "Recolher painel Explorar",
 		filteredBy: "Filtrado por",
 		supplyHidden: "Oferta está oculta. Ative-a em Filtros para ver os resultados.",
 		selectionHelp: "Clique em uma barra ou linha para selecionar. Clique novamente para limpar.",

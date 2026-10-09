@@ -7,14 +7,14 @@ import type {
 import type { GameDepartment } from "@market-health-map/core/domain";
 import type { RefObject } from "react";
 
-export interface MetricDrillDownPanelProps {
+export interface ExplorePanelProps {
 	isOpen: boolean;
 	isClosing?: boolean;
 	onClosed?(): void;
 	onClose(): void;
 	triggerRef: RefObject<HTMLButtonElement | null>;
 }
-export interface MetricDrillDownSelection {
+export interface ExploreSelection {
 	measure: DrillDownMeasure;
 	slice: DrillDownSlice;
 	segment: DrillDownSegment;

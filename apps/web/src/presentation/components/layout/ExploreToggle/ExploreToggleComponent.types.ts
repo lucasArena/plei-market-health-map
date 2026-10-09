@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-export interface MetricDrillDownToggleView {
+export interface ExploreToggleView {
 	label: string;
 	triggerRef: RefObject<HTMLButtonElement | null>;
 	isOpen: boolean;
