@@ -837,15 +837,15 @@ describe("drill-down changes", () => {
 	});
 	it("uses consistent rounding, colors and sorting with new and missing last", () => {
 		setup();
-		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 6.7% (+ 2)");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 6.7% (+2)");
 		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
 		expect(screen.getByText("↑ 20%").parentElement).toHaveClass("text-foreground");
 		expect(
-			within(screen.getByText("↑ 20%").parentElement as HTMLElement).getByText("(+ 2)"),
+			within(screen.getByText("↑ 20%").parentElement as HTMLElement).getByText("(+2)"),
 		).not.toHaveAttribute("style");
 		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
 		expect(screen.getByText("↓ 100%").parentElement).toHaveClass("text-foreground");
-		expect(screen.getByText("(- 10)")).not.toHaveAttribute("style");
+		expect(screen.getByText("(-10)")).not.toHaveAttribute("style");
 		expect(screen.getByText("stable →")).toBeInTheDocument();
 		expect(screen.getByText("↑ New")).toBeInTheDocument();
 		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
@@ -859,24 +859,24 @@ describe("drill-down changes", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
 		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
 		fireEvent.click(screen.getByText("Up", { selector: "td" }));
-		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 20% (+ 2)");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 20% (+2)");
 		expect(within(screen.getByRole("table")).getByText("↑ 20%").parentElement).toHaveTextContent(
-			"↑ 20% (+ 2)",
+			"↑ 20% (+2)",
 		);
 	});
 	it("compares the selected department against its own prior value", () => {
 		setup();
 		select("Segment", "department");
 		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
-		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 50% (+ 4)");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 50% (+4)");
 		expect(within(screen.getByRole("table")).getByText("↑ 50%").parentElement).toHaveTextContent(
-			"↑ 50% (+ 4)",
+			"↑ 50% (+4)",
 		);
 	});
 	it("shows the absolute decrease in the selected headline", () => {
 		setup();
 		fireEvent.click(screen.getByText("Down", { selector: "td" }));
-		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↓ 100% (- 10)");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↓ 100% (-10)");
 		expect(
 			within(screen.getByTestId("drill-down-headline-change")).getByText("↓ 100%"),
 		).toHaveStyle({ color: "#EF4444" });
@@ -884,14 +884,14 @@ describe("drill-down changes", () => {
 	it("shows new activity with its raw difference", () => {
 		setup();
 		fireEvent.click(screen.getByText("New market", { selector: "td" }));
-		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ New (+ 10)");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ New (+10)");
 	});
 	it("shows signed raw changes for distinct counts", () => {
 		if (!comparisonView) throw new Error("Missing fixture");
 		comparisonView = { ...comparisonView, kind: "distinct-count", total: 2, previousTotal: 1 };
 		setup();
 		select("Measure", "unique-players");
-		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 100% (+ 1)");
+		expect(screen.getByTestId("drill-down-headline-change")).toHaveTextContent("↑ 100% (+1)");
 	});
 	it("changes comparison independently from sorting and range", () => {
 		setup();

@@ -247,7 +247,7 @@ export function useMetricDrillDownPanelRules({
 		const countLabel =
 			level === "stable" || view.kind === "rate"
 				? undefined
-				: `(${current > previous ? "+" : "-"} ${number.format(Math.abs(current - previous))})`;
+				: `(${current > previous ? "+" : "-"}${number.format(Math.abs(current - previous))})`;
 		return {
 			label,
 			countLabel,
