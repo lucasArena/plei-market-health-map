@@ -505,3 +505,54 @@ describe("almost-filled and incident drill-down", () => {
 		});
 	});
 });
+
+it.each(["app-sessions", "registrations", "unique-users"] as const)(
+	"groups %s separately from facility data",
+	async (measure) => {
+		const query = vi.fn().mockResolvedValue({
+			rows: [
+				{ region_id: 10, region_name: "Miami", is_total: 0, value: "2" },
+				{ region_id: 20, region_name: "Houston", is_total: 0, value: "2" },
+				{ region_id: null, region_name: null, is_total: 1, value: "3" },
+			],
+		});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure,
+			range: "28d",
+			slice: "market",
+			departments: ["magic"],
+			today: "2026-10-08",
+			grain: "range",
+			marketId: "10",
+		});
+		expect(view.total).toBe(3);
+		expect(view.rows.map((row) => row.value)).toEqual([2, 2]);
+		expect(view.rows.every((row) => row.departments === null)).toBe(true);
+		expect(query).toHaveBeenCalledTimes(1);
+		expect(query.mock.calls[0]?.[1]).toEqual(["2026-09-10", "2026-10-08", "10"]);
+		const sql = query.mock.calls[0]?.[0];
+		expect(sql).toContain("GROUP BY GROUPING SETS");
+		expect(sql).toContain(
+			measure === "app-sessions" ? "SUM(a.q_sessions)" : "COUNT(DISTINCT a.player_id)",
+		);
+		expect(sql).not.toContain("department");
+	},
+);
+it("keeps unavailable app data unavailable and unassigned markets visible", async () => {
+	const query = vi.fn().mockResolvedValue({
+		rows: [{ region_id: null, region_name: null, is_total: 0, value: null }],
+	});
+	const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+		measure: "unique-users",
+		range: "7d",
+		slice: "market",
+		departments: [],
+		today: "2026-10-08",
+		grain: "range",
+	});
+	expect(view.total).toBeNull();
+	expect(view.rows).toEqual([
+		{ id: "unassigned", name: "Unassigned", value: null, departments: null },
+	]);
+	expect(query.mock.calls[0]?.[1]).toEqual(["2026-10-01", "2026-10-08", null]);
+});

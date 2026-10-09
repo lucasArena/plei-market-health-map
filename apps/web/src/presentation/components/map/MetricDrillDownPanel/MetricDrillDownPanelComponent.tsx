@@ -122,6 +122,9 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						value={selection.measure}
 						onChange={(value) => rules.setMeasure(value as DrillDownMeasure)}
 						options={[
+							{ value: "app-sessions", label: m.appSessions },
+							{ value: "registrations", label: m.registrations },
+							{ value: "unique-users", label: m.uniqueUsers },
 							{ value: "games", label: m.games },
 							{ value: "active-facilities", label: m.activeFacilities },
 							{ value: "scheduled-games", label: m.scheduledGames },
@@ -139,25 +142,35 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 						onChange={(value) => rules.setSlice(value as DrillDownSlice)}
 						options={[
 							{ value: "market", label: m.market },
-							{ value: "facility", label: m.facility },
+							...(!rules.isAppActivity ? [{ value: "facility", label: m.facility }] : []),
 							...(rules.canSliceByDepartment ? [{ value: "department", label: m.department }] : []),
 						]}
 					/>
-					<MapMetricSelect
-						label={m.segment}
-						help={m.segmentHelp}
-						value={segment}
-						disabled={!rules.canSegment}
-						descriptionId={!rules.canSegment ? "drill-down-segment-help" : undefined}
-						alignRight
-						onChange={(value) => rules.setSegment(value as DrillDownSegment)}
-						options={[
-							{ value: "none", label: m.none },
-							{ value: "department", label: m.department },
-						]}
-					/>
+					{!rules.isAppActivity && (
+						<MapMetricSelect
+							label={m.segment}
+							help={m.segmentHelp}
+							value={segment}
+							disabled={!rules.canSegment}
+							descriptionId={!rules.canSegment ? "drill-down-segment-help" : undefined}
+							alignRight
+							onChange={(value) => rules.setSegment(value as DrillDownSegment)}
+							options={[
+								{ value: "none", label: m.none },
+								{ value: "department", label: m.department },
+							]}
+						/>
+					)}
 				</div>
-				<p className="text-xs text-muted-foreground">{m.help}</p>
+				{rules.isAppActivity && (
+					<p className="text-xs text-muted-foreground">{m.appActivityNote}</p>
+				)}
+				{rules.showSourceSwitch && (
+					<p role="note" className="text-xs text-muted-foreground">
+						{m.sourceSwitch}
+					</p>
+				)}
+				{!rules.isAppActivity && <p className="text-xs text-muted-foreground">{m.help}</p>}
 				{rules.filteredDepartments.length > 0 && (
 					<div className="flex flex-wrap items-center gap-1.5 text-xs">
 						<span className="text-muted-foreground">{m.filteredBy}</span>
@@ -172,7 +185,7 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					</div>
 				)}
 				{!rules.showSupply && <p className="text-xs text-muted-foreground">{m.supplyHidden}</p>}
-				{!rules.canSegment && (
+				{!rules.canSegment && !rules.isAppActivity && (
 					<p id="drill-down-segment-help" className="text-xs text-muted-foreground">
 						{m.segmentUnavailable}
 					</p>

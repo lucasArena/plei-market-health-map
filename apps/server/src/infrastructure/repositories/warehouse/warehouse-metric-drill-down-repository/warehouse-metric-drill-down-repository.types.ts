@@ -51,3 +51,10 @@ export interface WarehouseDrillDownPlayerRow {
 export interface WarehouseQueryable {
 	query<Row>(sql: string, values?: unknown[]): Promise<{ rows: Row[] }>;
 }
+
+export interface WarehouseAppActivityRow {
+	region_id: number | string | null;
+	region_name: string | null;
+	is_total: number;
+	value: number | string | null;
+}

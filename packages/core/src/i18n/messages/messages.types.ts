@@ -175,6 +175,12 @@ export interface Messages {
 		neverPlayed: string;
 	};
 	drillDown: {
+		appSessions: string;
+		registrations: string;
+		uniqueUsers: string;
+		appActivityNote: string;
+		sourceSwitch: string;
+
 		title: string;
 		expand: string;
 		collapse: string;

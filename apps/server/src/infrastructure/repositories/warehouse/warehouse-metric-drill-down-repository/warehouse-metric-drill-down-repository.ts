@@ -8,7 +8,9 @@ import type {
 import {
 	aggregateCountDrillDown,
 	aggregateDrillDownFromFacts,
+	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_RANGE_DAYS,
+	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import {
 	asEntityId,
@@ -18,6 +20,7 @@ import {
 	type GameDepartmentCounts,
 	statsWindow,
 } from "@market-health-map/core/domain";
+import { appActivitySql } from "@server/infrastructure/repositories/warehouse/app-activity-sql/app-activity-sql";
 import { companyLogoUrl } from "@server/infrastructure/repositories/warehouse/company-logo-url/company-logo-url";
 import {
 	gameDepartmentCase,
@@ -33,6 +36,7 @@ import {
 	todayParameterSql,
 } from "@server/infrastructure/repositories/warehouse/warehouse-day/warehouse-day";
 import type {
+	WarehouseAppActivityRow,
 	WarehouseDrillDownLocationRow,
 	WarehouseDrillDownPlayerRow,
 	WarehouseDrillDownQualityRow,
@@ -291,6 +295,29 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 	async group(query: MetricDrillDownQuery): Promise<MetricDrillDownView> {
 		const days = DRILL_DOWN_RANGE_DAYS[query.range];
 		const { start, end } = statsWindow(query.today, days);
+		if (isAppActivityMeasure(query.measure)) {
+			const { rows } = await this.warehouse.query<WarehouseAppActivityRow>(
+				appActivitySql(query.measure === "registrations", query.measure === "app-sessions"),
+				[start, query.today, query.marketId ?? null],
+			);
+			const total = rows.find((row) => row.is_total === 1);
+			return {
+				measure: query.measure,
+				range: query.range,
+				kind: DRILL_DOWN_MEASURE_KIND[query.measure],
+				start,
+				end,
+				total: total?.value == null ? null : Number(total.value),
+				rows: rows
+					.filter((row) => row.is_total === 0)
+					.map((row) => ({
+						id: row.region_id == null ? "unassigned" : String(row.region_id),
+						name: row.region_name ?? "Unassigned",
+						value: row.value == null ? null : Number(row.value),
+						departments: null,
+					})),
+			};
+		}
 		if (query.measure === "games" || query.measure === "active-facilities")
 			return this.groupCounts(query, days, start, end);
 		const facilities = await this.listMergedFacilities();

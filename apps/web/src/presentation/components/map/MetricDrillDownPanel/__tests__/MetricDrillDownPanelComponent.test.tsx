@@ -4,8 +4,10 @@ import type {
 } from "@market-health-map/core/application";
 import {
 	aggregateDrillDownFromFacts,
+	DRILL_DOWN_MEASURE_KIND,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { createRef } from "react";
@@ -16,6 +18,7 @@ import type { MapScope } from "@/presentation/components/providers/MapScopeProvi
 const navigate = vi.fn();
 const retry = vi.fn();
 const setMetricFocus = vi.fn();
+const demandInputs = vi.fn();
 let scope: MapScope = { kind: "all" };
 let period = "month";
 const facility: FacilityPointView = {
@@ -58,6 +61,23 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 			"America/New_York",
 			input.range,
 		);
+		if (isAppActivityMeasure(input.measure)) {
+			demandInputs(input);
+			return {
+				data: {
+					measure: input.measure,
+					range: input.range,
+					kind: DRILL_DOWN_MEASURE_KIND[input.measure],
+					start,
+					end,
+					total: 3,
+					rows: [{ id: "miami", name: "Miami", value: 3, departments: null }],
+				},
+				isPending: false,
+				isError: false,
+				refetch: retry,
+			};
+		}
 		const view = aggregateDrillDownFromFacts({
 			facilities: factsFromFacilityPoints(data, input.range === "7d" ? "7d" : "28d").map(
 				(facility) => ({
@@ -138,6 +158,9 @@ function setup(isOpen = true) {
 }
 function select(name: string, value: string) {
 	const labels = {
+		"app-sessions": "App sessions",
+		registrations: "Registrations",
+		"unique-users": "Unique users",
 		games: "Games played",
 		"active-facilities": "Active facilities",
 		"scheduled-games": "Scheduled games",
@@ -522,5 +545,67 @@ describe("MetricDrillDownPanel", () => {
 		data = [];
 		act(() => rerender(<MetricDrillDownPanel {...props} />));
 		expect(screen.getByText("No activity in this scope and period.")).toBeInTheDocument();
+	});
+});
+
+describe("app activity measures", () => {
+	beforeEach(() => {
+		scope = { kind: "all" };
+		period = "month";
+		data = [facility];
+		pending = false;
+		failed = false;
+		gameDepartments = [];
+		showSupply = true;
+		demandInputs.mockClear();
+	});
+	it.each(["app-sessions", "registrations", "unique-users"])(
+		"resets facility and department slices for %s",
+		(measure) => {
+			gameDepartments = ["magic"];
+			setup();
+			select("Slice", "facility");
+			select("Segment", "department");
+			select("Measure", measure);
+			expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+			expect(screen.queryByRole("combobox", { name: "Segment" })).not.toBeInTheDocument();
+			expect(screen.getByText(/App activity isn’t linked/)).toHaveTextContent(
+				"Department filters don’t apply.",
+			);
+			fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
+			expect(screen.queryByRole("option", { name: "Facility" })).not.toBeInTheDocument();
+			expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
+			fireEvent.keyDown(screen.getByRole("combobox", { name: "Slice" }), { key: "Escape" });
+			select("Measure", "games");
+			select("Slice", "department");
+			select("Measure", measure);
+			expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
+			expect(demandInputs).toHaveBeenLastCalledWith(
+				expect.objectContaining({ departments: [], slice: "market" }),
+			);
+		},
+	);
+	it("loads app activity while supply is hidden and marks ranges spanning the source change", () => {
+		showSupply = false;
+		setup();
+		select("Measure", "unique-users");
+		expect(screen.queryByText(/Supply is hidden/)).not.toBeInTheDocument();
+		expect(screen.queryByRole("note")).not.toBeInTheDocument();
+		select("Date range", "6m");
+		expect(screen.getByRole("note")).toHaveTextContent("June 29, 2026");
+		select("Measure", "registrations");
+		expect(screen.queryByRole("note")).not.toBeInTheDocument();
+	});
+	it("uses the facility’s market for app measures and keeps that slice on scope changes", () => {
+		scope = { kind: "facility", id: "a", name: "Arena", marketName: "Miami" };
+		data = [facility];
+		const result = setup();
+		select("Measure", "app-sessions");
+		expect(demandInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ marketId: "miami", facilityId: undefined }),
+		);
+		scope = { kind: "market", id: "miami", name: "Miami" };
+		result.rerender(<MetricDrillDownPanel {...result.props} />);
+		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Market");
 	});
 });

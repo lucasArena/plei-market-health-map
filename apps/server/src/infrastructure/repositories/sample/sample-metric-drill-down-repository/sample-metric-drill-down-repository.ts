@@ -1,8 +1,10 @@
 import {
 	aggregateDrillDownFromFacts,
+	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_RANGE_DAYS,
 	type FacilityRepository,
 	factsFromFacilityPoints,
+	isAppActivityMeasure,
 	type MetricDrillDownQuery,
 	type MetricDrillDownRepository,
 	type MetricDrillDownView,
@@ -32,6 +34,16 @@ export class SampleMetricDrillDownRepository implements MetricDrillDownRepositor
 	async group(query: MetricDrillDownQuery): Promise<MetricDrillDownView> {
 		const days = DRILL_DOWN_RANGE_DAYS[query.range];
 		const { start, end } = statsWindow(query.today, days);
+		if (isAppActivityMeasure(query.measure))
+			return {
+				measure: query.measure,
+				range: query.range,
+				kind: DRILL_DOWN_MEASURE_KIND[query.measure],
+				start,
+				end,
+				total: null,
+				rows: [],
+			};
 		const points = (await this.facilities.listAll(query.today)).map(toFacilityPointView);
 		const facts = factsFromFacilityPoints(points, query.range === "7d" ? "7d" : "28d").map(
 			(facility) => ({

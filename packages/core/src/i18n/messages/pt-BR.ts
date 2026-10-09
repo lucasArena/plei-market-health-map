@@ -27,7 +27,7 @@ export const ptBR: Messages = {
 		gameDepartmentPartnerships: "Parcerias",
 		gameDepartmentsAll: "Todos os jogos",
 		layersRegistrations: "Cadastros de usuários",
-		registrationHeatmapLegend: "Cadastros por mercado · últimos 28 dias",
+		registrationHeatmapLegend: "Cadastros por mercado · últimos {days} dias",
 		registrationHeatmapContext:
 			"Totais por mercado posicionados na localização mediana das instalações",
 		registrationHeatmapLoading: "Carregando cadastros de usuários…",
@@ -196,6 +196,14 @@ export const ptBR: Messages = {
 		neverPlayed: "Nenhum jogo realizado ainda",
 	},
 	drillDown: {
+		appSessions: "Sessões do app",
+		registrations: "Cadastros",
+		uniqueUsers: "Usuários únicos",
+		appActivityNote:
+			"A atividade do app não está vinculada a uma instalação ou departamento. Os filtros de departamento não se aplicam.",
+		sourceSwitch:
+			"A fonte de rastreamento mudou após 29 de junho de 2026: Mixpanel + UXCam → Firebase Analytics. Este intervalo inclui ambas as fontes.",
+
 		title: "Detalhamento de métricas",
 		expand: "Expandir detalhamento",
 		collapse: "Recolher detalhamento",

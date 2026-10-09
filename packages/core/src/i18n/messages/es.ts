@@ -28,7 +28,7 @@ export const es: Messages = {
 		gameDepartmentPartnerships: "Alianzas",
 		gameDepartmentsAll: "Todos los partidos",
 		layersRegistrations: "Registros de usuarios",
-		registrationHeatmapLegend: "Registros por mercado · últimos 28 días",
+		registrationHeatmapLegend: "Registros por mercado · últimos {days} días",
 		registrationHeatmapContext:
 			"Totales por mercado situados en la ubicación mediana de las instalaciones",
 		registrationHeatmapLoading: "Cargando registros de usuarios…",
@@ -197,6 +197,14 @@ export const es: Messages = {
 		neverPlayed: "Aún no se jugaron partidos",
 	},
 	drillDown: {
+		appSessions: "Sesiones de la app",
+		registrations: "Registros",
+		uniqueUsers: "Usuarios únicos",
+		appActivityNote:
+			"La actividad de la app no está vinculada a una instalación ni a un departamento. Los filtros de departamento no se aplican.",
+		sourceSwitch:
+			"La fuente de seguimiento cambió después del 29 de junio de 2026: Mixpanel + UXCam → Firebase Analytics. Este rango incluye ambas fuentes.",
+
 		title: "Desglose de métricas",
 		expand: "Ampliar desglose",
 		collapse: "Contraer desglose",

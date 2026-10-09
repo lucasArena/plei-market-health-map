@@ -11,7 +11,9 @@ import type {
 import {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
+	crossesAppTrackingSourceSwitch,
 	DRILL_DOWN_DEPARTMENTS,
+	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
@@ -63,6 +65,12 @@ export function useMetricDrillDownPanelRules({
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
 	});
+	const isAppActivity = isAppActivityMeasure(selection.measure);
+	const effectiveSupply = isAppActivity || showSupply;
+	const activityMarketId =
+		scope.kind === "facility"
+			? facilitiesQuery.data?.find((facility) => facility.id === scope.id)?.marketId
+			: undefined;
 	const [range, setRangeState] = useState<DrillDownRange>(() => rangeFromPeriod(period));
 	const [previousPeriod, setPreviousPeriod] = useState(period);
 	if (previousPeriod !== period) {
@@ -81,7 +89,7 @@ export function useMetricDrillDownPanelRules({
 		setFocus(null);
 		setSelection((current) => ({
 			measure: current.measure,
-			slice: scope.kind === "all" ? "market" : "facility",
+			slice: isAppActivityMeasure(current.measure) || scope.kind === "all" ? "market" : "facility",
 			segment: current.segment,
 		}));
 	}
@@ -117,19 +125,25 @@ export function useMetricDrillDownPanelRules({
 		range,
 		slice: selection.slice,
 		segment: selection.segment,
-		marketId: scope.kind === "market" ? scope.id : undefined,
-		facilityId: scope.kind === "facility" ? scope.id : undefined,
-		departments: gameDepartments,
-		enabled: isOpen && showSupply,
+		marketId: {
+			[`${isAppActivity}`]: activityMarketId,
+			[`${scope.kind === "market"}`]: scope.kind === "market" ? scope.id : undefined,
+		}.true,
+		facilityId: !isAppActivity && scope.kind === "facility" ? scope.id : undefined,
+		departments: isAppActivity ? [] : gameDepartments,
+		enabled:
+			isOpen &&
+			effectiveSupply &&
+			(!isAppActivity || scope.kind !== "facility" || !!activityMarketId),
 	});
-	const view = showSupply ? (query.data ?? EMPTY_VIEW) : EMPTY_VIEW;
+	const view = effectiveSupply ? (query.data ?? EMPTY_VIEW) : EMPTY_VIEW;
 	const focusedRow = view.rows.find((row) => row.id === focus?.rowId);
 	const focusedValue = focus?.department
 		? (focusedRow?.departments?.[focus.department] ?? null)
 		: (focusedRow?.value ?? null);
 	const hasFocus = !!focusedRow;
 	useEffect(() => {
-		if (!focusedRow) {
+		if (!focusedRow || isAppActivity) {
 			setMetricFocus(null);
 			return;
 		}
@@ -137,7 +151,7 @@ export function useMetricDrillDownPanelRules({
 			.filter(
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
-					(scope.kind !== "facility" || facility.id === scope.id) &&
+					(isAppActivity || scope.kind !== "facility" || facility.id === scope.id) &&
 					(selection.slice !== "market" || facility.marketId === focusedRow.id) &&
 					(selection.slice !== "facility" || facility.id === focusedRow.id),
 			)
@@ -145,7 +159,15 @@ export function useMetricDrillDownPanelRules({
 		const department =
 			selection.slice === "department" ? (focusedRow.id as GameDepartment) : focus?.department;
 		setMetricFocus({ facilityIds, department });
-	}, [focusedRow, facilitiesQuery.data, scope, selection.slice, focus?.department, setMetricFocus]);
+	}, [
+		focusedRow,
+		facilitiesQuery.data,
+		scope,
+		selection.slice,
+		focus?.department,
+		setMetricFocus,
+		isAppActivity,
+	]);
 	useEffect(() => () => setMetricFocus(null), [setMetricFocus]);
 	function toggleFocus(row: MetricDrillDownRow, department?: GameDepartment) {
 		setFocus((current) =>
@@ -170,6 +192,9 @@ export function useMetricDrillDownPanelRules({
 		timeZone: "UTC",
 	});
 	const measureLabels = {
+		"app-sessions": messages.drillDown.appSessions,
+		registrations: messages.drillDown.registrations,
+		"unique-users": messages.drillDown.uniqueUsers,
 		games: messages.drillDown.games,
 		"active-facilities": messages.drillDown.activeFacilities,
 		"scheduled-games": messages.drillDown.scheduledGames,
@@ -289,7 +314,8 @@ export function useMetricDrillDownPanelRules({
 			...current,
 			measure,
 			slice:
-				!canSliceDrillDownByDepartment(measure) && current.slice === "department"
+				isAppActivityMeasure(measure) ||
+				(!canSliceDrillDownByDepartment(measure) && current.slice === "department")
 					? "market"
 					: current.slice,
 			segment: canSliceDrillDownByDepartment(measure) ? current.segment : "none",
@@ -316,14 +342,15 @@ export function useMetricDrillDownPanelRules({
 			.filter(
 				(facility) =>
 					(scope.kind !== "market" || facility.marketId === scope.id) &&
-					(scope.kind !== "facility" || facility.id === scope.id) &&
+					(isAppActivity || scope.kind !== "facility" || facility.id === scope.id) &&
 					(selection.slice === "market" ? facility.marketId === row.id : facility.id === row.id),
 			)
 			.map((facility) => facility.id);
 		setMapNavigation({ kind: "metric-focus", facilityIds });
 	}
 
-	const heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
+	let heading = scope.kind === "all" ? messages.drillDown.allMarkets : scope.name;
+	if (isAppActivity && scope.kind === "facility") heading = scope.marketName;
 	const headlineSource = focusedRow ?? view;
 	const headlineTemplate = headlinePartsTemplates[selection.measure];
 	const headlineParts =
@@ -382,8 +409,13 @@ export function useMetricDrillDownPanelRules({
 		rowName,
 		departmentNames,
 		departments: selectedDepartments,
-		filteredDepartments: gameDepartments ?? [],
-		showSupply,
+		filteredDepartments: isAppActivity ? [] : (gameDepartments ?? []),
+		isAppActivity,
+		showSourceSwitch:
+			isAppActivity &&
+			selection.measure !== "registrations" &&
+			crossesAppTrackingSourceSwitch(view.start, view.end),
+		showSupply: effectiveSupply,
 		viewOnMap,
 		heading,
 		expandButtonRef,
@@ -391,8 +423,8 @@ export function useMetricDrillDownPanelRules({
 		sort,
 		setSort,
 		dateRange: `${date.format(new Date(`${view.start}T00:00:00Z`))} – ${date.format(new Date(`${view.end}T00:00:00Z`))}`,
-		isLoading: showSupply && query.isPending,
-		isError: showSupply && query.isError,
+		isLoading: effectiveSupply && query.isPending,
+		isError: effectiveSupply && query.isError,
 		retry: () => void query.refetch(),
 		isEmpty: view.rows.length === 0 || view.total === 0,
 		incomplete:

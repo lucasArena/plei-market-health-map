@@ -26,7 +26,7 @@ export const en: Messages = {
 		gameDepartmentPartnerships: "Partnerships",
 		gameDepartmentsAll: "All games",
 		layersRegistrations: "User registrations",
-		registrationHeatmapLegend: "Registrations per market · last 28 days",
+		registrationHeatmapLegend: "Registrations per market · last {days} days",
 		registrationHeatmapContext: "Market totals placed at the median facility location",
 		registrationHeatmapLoading: "Loading user registrations…",
 		registrationHeatmapNoActivity: "No registrations in the current map view",
@@ -192,6 +192,14 @@ export const en: Messages = {
 		neverPlayed: "No games played yet",
 	},
 	drillDown: {
+		appSessions: "App sessions",
+		registrations: "Registrations",
+		uniqueUsers: "Unique users",
+		appActivityNote:
+			"App activity isn’t linked to a facility or department. Department filters don’t apply.",
+		sourceSwitch:
+			"Tracking source changed after June 29, 2026: Mixpanel + UXCam → Firebase Analytics. This range includes both sources.",
+
 		title: "Metric drill-down",
 		expand: "Expand drill-down",
 		collapse: "Collapse drill-down",

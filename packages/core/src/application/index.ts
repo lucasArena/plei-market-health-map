@@ -110,6 +110,7 @@ export type {
 export {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
+	crossesAppTrackingSourceSwitch,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_MEASURE_KINDS,
@@ -119,6 +120,7 @@ export {
 	DRILL_DOWN_SEGMENTS,
 	DRILL_DOWN_SLICES,
 	getMetricDrillDownSchema,
+	isAppActivityMeasure,
 } from "@core/application/dtos/metric-drill-down-dto";
 export type {
 	DrillDownGrain,

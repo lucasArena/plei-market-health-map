@@ -1,6 +1,7 @@
 import {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
+	crossesAppTrackingSourceSwitch,
 } from "@core/application/dtos/metric-drill-down-dto";
 import type { DrillDownMeasure } from "@core/application/dtos/metric-drill-down-dto.types";
 import { ForbiddenError } from "@core/application/errors/forbidden-error";
@@ -674,4 +675,46 @@ describe("drill-down window helpers", () => {
 			)[0],
 		).toMatchObject({ games: null, gamesByDepartment: null });
 	});
+});
+
+it.each(["app-sessions", "registrations", "unique-users"] as const)(
+	"normalizes %s to market and ignores supply filters",
+	async (measure) => {
+		const group = vi.fn().mockResolvedValue({});
+		const get = makeGetMetricDrillDown({
+			drillDown: { group },
+			clock: new FixedClock(new Date("2026-10-08T12:00:00Z")),
+			enabledFeatureFlags: async () => ({ enabled: ["metric-drill-down"] }),
+		});
+		await get({
+			measure,
+			range: "7d",
+			slice: "department",
+			facilityId: "a",
+			marketId: "miami",
+			department: "magic",
+			departments: ["magic"],
+		});
+		expect(group).toHaveBeenCalledWith(
+			expect.objectContaining({
+				measure,
+				slice: "market",
+				facilityId: undefined,
+				marketId: "miami",
+				department: undefined,
+				departments: [],
+			}),
+		);
+		expect(canSliceDrillDownByDepartment(measure)).toBe(false);
+		expect(canSegmentDrillDown(measure, "market")).toBe(false);
+	},
+);
+
+it.each([
+	["2026-06-29", "2026-06-30", true],
+	["2026-06-28", "2026-06-29", false],
+	["2026-06-30", "2026-07-01", false],
+	["2026-01-01", "2026-10-07", true],
+])("marks the tracking switch for %s through %s", (start, end, expected) => {
+	expect(crossesAppTrackingSourceSwitch(String(start), String(end))).toBe(expected);
 });

@@ -6,6 +6,10 @@ import {
 	type StatsPeriod,
 } from "@market-health-map/core/application";
 import { addDays } from "@market-health-map/core/domain";
+import {
+	REGISTRATION_PERIOD_PREDICATE,
+	REGISTRATION_REGIONS_CTE,
+} from "@server/infrastructure/repositories/warehouse/app-activity-sql/app-activity-sql";
 import type {
 	WarehouseAppSessionFilterRow,
 	WarehouseAppSessionHeatmapRow,
@@ -36,23 +40,12 @@ WHERE date >= $1::date
   AND NOT (ABS(lat) < 0.01 AND ABS(lng) < 0.01)
 GROUP BY 1, 2`;
 
-export const REGISTRATION_HEATMAP_LAST_28D_SQL = `
-WITH region_coordinates AS (
-  SELECT region_id,
-    percentile_cont(0.5) WITHIN GROUP (ORDER BY location_latitude) AS lat,
-    percentile_cont(0.5) WITHIN GROUP (ORDER BY location_longitude) AS lng
-  FROM plei_gold.dim_location
-  WHERE location_latitude BETWEEN -90 AND 90
-    AND location_longitude BETWEEN -180 AND 180
-    AND NOT (ABS(location_latitude) < 0.01 AND ABS(location_longitude) < 0.01)
-  GROUP BY region_id
-)
+export const REGISTRATION_HEATMAP_SQL = `
+WITH ${REGISTRATION_REGIONS_CTE}
 SELECT c.lat, c.lng, COUNT(DISTINCT p.player_id)::bigint AS session_weight
 FROM plei_gold.dim_player p
 JOIN region_coordinates c ON c.region_id = p.region_id
-WHERE p.confirmed_at >= $1::date - 28
-  AND p.confirmed_at < $1::date
-  AND p.players_type = 'pleiapp_player'
+WHERE ${REGISTRATION_PERIOD_PREDICATE}
 GROUP BY c.lat, c.lng`;
 
 export function toAppSessionHeatmapCell(
@@ -97,7 +90,7 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 	): Promise<AppSessionHeatmapCellView[]> {
 		const isRegistrations = filters.metric === "registrations";
 		const predicates: string[] = [];
-		const values: unknown[] = isRegistrations ? [today] : sessionWindow(period, today);
+		const values: unknown[] = sessionWindow(period, today);
 		for (const [column, value, operator] of [
 			["NULLIF(TRIM(p.gender::text), '')", filters.gender, "="],
 			["NULLIF(TRIM(p.skill_description::text), '')", filters.skill, "="],
@@ -112,7 +105,7 @@ export class WarehouseAppSessionHeatmapRepository implements AppSessionHeatmapRe
 					: `${column} ${operator} $${values.length}`,
 			);
 		}
-		let sql = isRegistrations ? REGISTRATION_HEATMAP_LAST_28D_SQL : APP_SESSION_HEATMAP_SQL;
+		let sql = isRegistrations ? REGISTRATION_HEATMAP_SQL : APP_SESSION_HEATMAP_SQL;
 		if (predicates.length) {
 			if (isRegistrations) {
 				sql = sql.replace(

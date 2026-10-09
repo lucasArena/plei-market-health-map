@@ -76,3 +76,20 @@ describe("SampleMetricDrillDownRepository", () => {
 		expect(incidentRate.numerator).not.toBeNull();
 	});
 });
+
+it.each(["app-sessions", "registrations", "unique-users"] as const)(
+	"does not fabricate %s without warehouse data",
+	async (measure) => {
+		const repository = new SampleMetricDrillDownRepository(new SampleFacilityRepository());
+		expect(
+			await repository.group({
+				measure,
+				range: "7d",
+				slice: "market",
+				departments: [],
+				today: "2026-10-08",
+				grain: "range",
+			}),
+		).toMatchObject({ measure, total: null, rows: [] });
+	},
+);

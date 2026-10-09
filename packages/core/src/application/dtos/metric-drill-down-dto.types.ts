@@ -12,6 +12,9 @@ export const DRILL_DOWN_RANGE_DAYS = {
 } as const satisfies Record<DrillDownRange, number>;
 
 export const DRILL_DOWN_MEASURES = [
+	"app-sessions",
+	"registrations",
+	"unique-users",
 	"games",
 	"active-facilities",
 	"scheduled-games",
@@ -33,6 +36,9 @@ export const DRILL_DOWN_MEASURE_KINDS = ["count", "distinct-count", "rate"] as c
 export type DrillDownMeasureKind = (typeof DRILL_DOWN_MEASURE_KINDS)[number];
 
 export const DRILL_DOWN_MEASURE_KIND = {
+	"app-sessions": "count",
+	registrations: "distinct-count",
+	"unique-users": "distinct-count",
 	games: "count",
 	"active-facilities": "count",
 	"scheduled-games": "count",

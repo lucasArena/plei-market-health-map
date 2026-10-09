@@ -36,7 +36,7 @@ export const getMetricDrillDownSchema = z
 		grain: z.enum(DRILL_DOWN_GRAINS).default("range"),
 	})
 	.superRefine((value, context) => {
-		if (!canSliceDrillDownByDepartment(value.measure) && value.slice === "department") {
+		if (value.measure === "active-facilities" && value.slice === "department") {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["slice"],
@@ -46,7 +46,7 @@ export const getMetricDrillDownSchema = z
 	});
 
 export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolean {
-	return measure !== "active-facilities";
+	return measure !== "active-facilities" && !isAppActivityMeasure(measure);
 }
 
 export function canSegmentDrillDown(
@@ -54,4 +54,12 @@ export function canSegmentDrillDown(
 	slice: (typeof DRILL_DOWN_SLICES)[number],
 ): boolean {
 	return canSliceDrillDownByDepartment(measure) && slice !== "department";
+}
+
+export function isAppActivityMeasure(measure: DrillDownMeasure): boolean {
+	return ["app-sessions", "registrations", "unique-users"].includes(measure);
+}
+
+export function crossesAppTrackingSourceSwitch(start: string, end: string): boolean {
+	return start <= "2026-06-29" && end > "2026-06-29";
 }

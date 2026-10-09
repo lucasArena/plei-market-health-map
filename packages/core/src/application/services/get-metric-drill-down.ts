@@ -1,4 +1,7 @@
-import { getMetricDrillDownSchema } from "@core/application/dtos/metric-drill-down-dto";
+import {
+	getMetricDrillDownSchema,
+	isAppActivityMeasure,
+} from "@core/application/dtos/metric-drill-down-dto";
 import type {
 	GetMetricDrillDownInput,
 	MetricDrillDownView,
@@ -51,11 +54,11 @@ export function makeGetMetricDrillDown({
 		return drillDown.group({
 			measure,
 			range,
-			slice,
+			slice: isAppActivityMeasure(measure) ? "market" : slice,
 			marketId,
-			facilityId,
-			department,
-			departments,
+			facilityId: isAppActivityMeasure(measure) ? undefined : facilityId,
+			department: isAppActivityMeasure(measure) ? undefined : department,
+			departments: isAppActivityMeasure(measure) ? [] : departments,
 			grain,
 			today: statsToday(clock, timeZone),
 		});
