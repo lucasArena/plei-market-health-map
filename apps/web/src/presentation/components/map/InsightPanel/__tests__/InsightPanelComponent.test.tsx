@@ -147,6 +147,7 @@ const FACILITY_CRUMBS = [
 
 function rulesWith(overrides: object = {}) {
 	return {
+		bodyRef: { current: null },
 		aiContext: { cacheKey: "v4:all-markets-all:2026-09-21:en", prompt: [] },
 		detailMessages: EN_MESSAGES.facilityDetail,
 		facilityView: null,

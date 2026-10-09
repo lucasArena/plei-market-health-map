@@ -34,6 +34,7 @@ import { PopularTimesHeatmap } from "@/presentation/components/map/PopularTimesH
 export function InsightPanel(props: Readonly<InsightPanelProps>) {
 	const {
 		aiContext,
+		bodyRef,
 		detailMessages,
 		facilityView,
 		locale,
@@ -90,7 +91,7 @@ export function InsightPanel(props: Readonly<InsightPanelProps>) {
 					</div>
 				</div>
 			</header>
-			<div data-testid="market-summary-body" className={PANEL_BODY_CLASS}>
+			<div ref={bodyRef} data-testid="market-summary-body" className={PANEL_BODY_CLASS}>
 				{status === "loading" && <InsightPanelSkeleton level={level} />}
 				{status === "error" && (
 					<p role="alert" className={`${PANEL_CONTENT_CLASS} text-sm text-destructive`}>

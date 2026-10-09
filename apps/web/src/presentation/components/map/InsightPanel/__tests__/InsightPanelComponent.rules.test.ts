@@ -740,6 +740,31 @@ describe("useInsightPanelRules", () => {
 		heading.remove();
 	});
 
+	it("scrolls the panel back to the top when the level changes, not on first open", () => {
+		const body = document.createElement("div");
+		mockScope = { kind: "all" };
+		const { result, rerender } = renderRules();
+		result.current.bodyRef.current = body;
+		body.scrollTop = 400;
+		rerender({ isClosing: false });
+		expect(body.scrollTop).toBe(400);
+
+		mockScope = { kind: "market", id: "mia", name: "Miami Metro" };
+		rerender({ isClosing: false });
+		expect(body.scrollTop).toBe(0);
+
+		body.scrollTop = 250;
+		mockScope = {
+			kind: "facility",
+			id: "889",
+			name: "Pegaso HTX",
+			marketName: "Miami Metro",
+			marketId: "mia",
+		};
+		rerender({ isClosing: false });
+		expect(body.scrollTop).toBe(0);
+	});
+
 	it("navigates crumbs, market rows and facility rows through the shared map navigation", () => {
 		mockScope = {
 			kind: "facility",
