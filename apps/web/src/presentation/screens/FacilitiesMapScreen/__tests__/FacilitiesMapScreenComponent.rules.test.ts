@@ -306,7 +306,7 @@ describe("useFacilitiesMapScreenRules", () => {
 				marketName: "Austin",
 			}),
 		);
-		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["f1"]);
+		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["f1", "other"]);
 		act(() => result.current.context.setMapNavigation({ kind: "all" }));
 		expect(result.current.rules.shownFacilities).toHaveLength(2);
 		expect(mapState.instances[0]?.easeTo).toHaveBeenLastCalledWith(
