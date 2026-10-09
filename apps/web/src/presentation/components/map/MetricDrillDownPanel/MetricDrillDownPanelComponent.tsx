@@ -75,9 +75,9 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 							selectedLabel={rules.comparisonLabel}
 							onChange={(value) => rules.setComparison(value as DrillDownComparison)}
 							options={[
-								{ value: "year", label: "YoY", tooltip: m.compareYear },
-								{ value: "month", label: "MoM", tooltip: m.compareMonth },
 								{ value: "week", label: "WoW", tooltip: m.compareWeek },
+								{ value: "month", label: "MoM", tooltip: m.compareMonth },
+								{ value: "year", label: "YoY", tooltip: m.compareYear },
 							]}
 						/>
 					)}
