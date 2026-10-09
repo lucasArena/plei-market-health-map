@@ -200,8 +200,6 @@ export const es: Messages = {
 		change: "Cambio",
 		changeNew: "Nuevo",
 		changeStable: "Estable",
-		changeUp: "sube {value}",
-		changeDown: "baja {value}",
 		changePrior: "{change} vs los {days} días anteriores",
 
 		noCompletedBuckets: "No hay intervalos completos en este período.",

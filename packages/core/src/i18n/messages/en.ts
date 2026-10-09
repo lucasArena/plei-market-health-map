@@ -194,9 +194,7 @@ export const en: Messages = {
 	drillDown: {
 		change: "Change",
 		changeNew: "New",
-		changeStable: "Stable",
-		changeUp: "up {value}",
-		changeDown: "down {value}",
+		changeStable: "stable",
 		changePrior: "{change} vs prior {days} days",
 
 		noCompletedBuckets: "No completed buckets in this date range.",

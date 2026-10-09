@@ -112,7 +112,10 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 					)}
 					<p className="text-xs">{rules.measureLabel}</p>
 					{!rules.isTime && !rules.isLoading && !rules.isError && (
-						<p className={`mt-1 text-xs tabular-nums ${rules.headlineChange.className}`}>
+						<p
+							style={{ color: rules.headlineChange.color }}
+							className={`mt-1 text-xs tabular-nums ${rules.headlineChange.className}`}
+						>
 							{rules.headlineChange.label}
 						</p>
 					)}
@@ -526,6 +529,9 @@ export function MetricDrillDownPanel(props: Readonly<MetricDrillDownPanelProps>)
 												</td>
 												{!rules.isTime && (
 													<td
+														style={{
+															color: rules.changeDisplay(row.value, row.previousValue).color,
+														}}
 														className={`px-2 text-right whitespace-nowrap tabular-nums ${rules.changeDisplay(row.value, row.previousValue).className}`}
 													>
 														{rules.changeDisplay(row.value, row.previousValue).label}

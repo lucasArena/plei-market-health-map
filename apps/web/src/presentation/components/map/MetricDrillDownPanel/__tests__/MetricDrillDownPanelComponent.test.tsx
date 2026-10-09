@@ -826,6 +826,7 @@ describe("drill-down changes", () => {
 				{ id: "stable", name: "Equal", value: 10, previousValue: 10, departments: null },
 				{ id: "new", name: "New market", value: 10, previousValue: 0, departments: null },
 				{ id: "missing", name: "Missing", value: null, previousValue: null, departments: null },
+				{ id: "empty", name: "Empty region", value: 0, previousValue: 0, departments: null },
 			],
 		};
 	});
@@ -834,11 +835,12 @@ describe("drill-down changes", () => {
 	});
 	it("uses consistent rounding, colors and sorting with new and missing last", () => {
 		setup();
-		expect(screen.getByText("↑ up 6.7% vs prior 28 days")).toBeInTheDocument();
-		expect(screen.getByText("↑ up 20%")).toHaveClass("text-pleiful-pitch-green-50");
-		expect(screen.getByText("↓ down 100%")).toHaveClass("text-pleiful-sangria-50");
-		expect(screen.getByText("→ Stable")).toBeInTheDocument();
+		expect(screen.getByText("↑ 6.7% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 20%")).toHaveClass("text-pleiful-pitch-green-50");
+		expect(screen.getByText("↓ 100%")).toHaveStyle({ color: "#EF4444" });
+		expect(screen.getByText("stable →")).toBeInTheDocument();
 		expect(screen.getByText("↑ New")).toBeInTheDocument();
+		expect(screen.queryByText("Empty region")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Change" }));
 		const names = () =>
 			within(screen.getByRole("table"))
@@ -849,14 +851,14 @@ describe("drill-down changes", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Change ↓" }));
 		expect(names()).toEqual(["Down", "Equal", "Up", "Missing", "New market"]);
 		fireEvent.click(screen.getByText("Up", { selector: "td" }));
-		expect(screen.getByText("↑ up 20% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 20% vs prior 28 days")).toBeInTheDocument();
 	});
 	it("compares the selected department against its own prior value", () => {
 		setup();
 		select("Segment", "department");
 		fireEvent.click(screen.getByRole("button", { name: "Up · Magic: 12" }));
-		expect(screen.getByText("↑ up 50% vs prior 28 days")).toBeInTheDocument();
-		expect(screen.getByText("↑ up 50%")).toBeInTheDocument();
+		expect(screen.getByText("↑ 50% vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 50%")).toBeInTheDocument();
 	});
 	it("uses points for rates and keeps unavailable comparisons unavailable", () => {
 		if (!comparisonView) throw new Error("Missing fixture");
@@ -877,8 +879,8 @@ describe("drill-down changes", () => {
 			],
 		};
 		setup();
-		expect(screen.getByText("↑ up 2.1 pts vs prior 28 days")).toBeInTheDocument();
-		expect(screen.getByText("↑ up 2.1 pts")).toBeInTheDocument();
+		expect(screen.getByText("↑ 2.1 pts vs prior 28 days")).toBeInTheDocument();
+		expect(screen.getByText("↑ 2.1 pts")).toBeInTheDocument();
 	});
 	it("shows the source-switch note when the previous app window crosses the transition", () => {
 		if (!comparisonView) throw new Error("Missing fixture");

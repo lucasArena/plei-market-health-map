@@ -21,6 +21,7 @@ import type { GameDepartment } from "@market-health-map/core/domain";
 import { classifyGamesTrend } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
 import { type AnimationEvent, useEffect, useRef, useState } from "react";
+import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import type {
 	DrillDownChartRow,
@@ -221,22 +222,18 @@ export function useMetricDrillDownPanelRules({
 				: classifyGamesTrend(current, previous);
 		const className = {
 			up: "text-pleiful-pitch-green-50",
-			down: "text-pleiful-sangria-50",
+			down: "",
 			stable: "text-muted-foreground",
 		}[level];
 		const value = changeValue(current, previous);
+		const arrow = { up: "↑", down: "↓", stable: "→" }[level];
 		const label =
-			value === null
-				? messages.drillDown.changeNew
-				: level === "stable"
-					? messages.drillDown.changeStable
-					: formatMessage(
-							level === "up" ? messages.drillDown.changeUp : messages.drillDown.changeDown,
-							{
-								value: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`,
-							},
-						);
-		return { label: `${{ up: "↑", down: "↓", stable: "→" }[level]} ${label}`, className };
+			level === "stable"
+				? `${messages.drillDown.changeStable} ${arrow}`
+				: value === null
+					? `${arrow} ${messages.drillDown.changeNew}`
+					: `${arrow} ${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Math.abs(value))}${view.kind === "rate" ? " pts" : "%"}`;
+		return { label, className, color: level === "down" ? PLEIFUL_COLORS.negative[50] : undefined };
 	}
 	const date = new Intl.DateTimeFormat(locale, {
 		year: "numeric",
@@ -307,6 +304,9 @@ export function useMetricDrillDownPanelRules({
 			: isTime
 				? bucketLabel(row)
 				: row.name;
+	const availableRows = view.rows.filter(
+		(row) => isTime || view.kind === "rate" || row.value !== 0 || row.previousValue !== 0,
+	);
 	const visibleRows = hasFocus
 		? [
 				{
@@ -318,7 +318,7 @@ export function useMetricDrillDownPanelRules({
 						: focusedRow.previousValue,
 				},
 			]
-		: view.rows;
+		: availableRows;
 	const rows = [...visibleRows].sort((a, b) => {
 		if (sort === "name-asc") return rowName(a).localeCompare(rowName(b), locale);
 		if (sort === "name-desc") return rowName(b).localeCompare(rowName(a), locale);
@@ -520,7 +520,7 @@ export function useMetricDrillDownPanelRules({
 		toggleExpanded,
 		handleAnimationEnd,
 		view,
-		chartTruncated: !isTime && !hasFocus && view.rows.length > 10,
+		chartTruncated: !isTime && !hasFocus && availableRows.length > 10,
 		headlineValue: hasFocus ? focusedValue : view.total,
 		headlineParts,
 		dataErrorsMessage:

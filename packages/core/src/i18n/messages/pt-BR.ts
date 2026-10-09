@@ -199,8 +199,6 @@ export const ptBR: Messages = {
 		change: "Variação",
 		changeNew: "Novo",
 		changeStable: "Estável",
-		changeUp: "alta de {value}",
-		changeDown: "queda de {value}",
 		changePrior: "{change} vs {days} dias anteriores",
 
 		noCompletedBuckets: "Nenhum intervalo completo neste período.",

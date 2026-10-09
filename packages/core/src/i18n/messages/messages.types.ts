@@ -178,8 +178,6 @@ export interface Messages {
 		change: string;
 		changeNew: string;
 		changeStable: string;
-		changeUp: string;
-		changeDown: string;
 		changePrior: string;
 
 		noCompletedBuckets: string;
