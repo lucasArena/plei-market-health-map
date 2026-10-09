@@ -19,6 +19,7 @@ export function metricDrillDownController(services: () => ApiServices) {
 	return new Hono().get("/", async (context) =>
 		ok(
 			await services().getMetricDrillDown({
+				comparison: context.req.query("comparison") as GetMetricDrillDownInput["comparison"],
 				measure: context.req.query("measure") as GetMetricDrillDownInput["measure"],
 				range: context.req.query("range") as GetMetricDrillDownInput["range"],
 				slice: context.req.query("slice") as GetMetricDrillDownInput["slice"],

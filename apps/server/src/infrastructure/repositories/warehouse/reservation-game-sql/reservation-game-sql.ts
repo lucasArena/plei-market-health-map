@@ -2,8 +2,14 @@ export const OPERATIONAL_CANCELLATION_REASONS_SQL =
 	"cancellation_reason in ('Recurring game series', 'Operational changes')";
 
 export function isOperationalCancellationSql(alias: string): string {
+	return `coalesce(${alias}.status = 'cancelled'
+      and ${alias}.${OPERATIONAL_CANCELLATION_REASONS_SQL}, false)`;
+}
+
+export function isEligibleCancellationSql(alias: string): string {
 	return `${alias}.status = 'cancelled'
-      and ${alias}.${OPERATIONAL_CANCELLATION_REASONS_SQL}`;
+      and coalesce(${alias}.cancellation_reason, 'Not enough players')
+        not in ('Recurring game series', 'Operational changes')`;
 }
 
 export function isPlayedGameSql(alias: string): string {

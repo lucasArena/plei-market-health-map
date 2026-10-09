@@ -110,6 +110,8 @@ export type {
 export {
 	canSegmentDrillDown,
 	canSliceDrillDownByDepartment,
+	crossesAppTrackingSourceSwitch,
+	DRILL_DOWN_COMPARISONS,
 	DRILL_DOWN_GRAINS,
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_MEASURE_KINDS,
@@ -119,8 +121,10 @@ export {
 	DRILL_DOWN_SEGMENTS,
 	DRILL_DOWN_SLICES,
 	getMetricDrillDownSchema,
+	isAppActivityMeasure,
 } from "@core/application/dtos/metric-drill-down-dto";
 export type {
+	DrillDownComparison,
 	DrillDownGrain,
 	DrillDownMeasure,
 	DrillDownMeasureKind,
@@ -209,7 +213,9 @@ export type {
 	AggregateCountDrillDownInput,
 	DistinctCountContribution,
 	DrillDownFacilityFact,
+	DrillDownRateMeasure,
 	RateContribution,
+	RateFactParts,
 } from "@core/application/services/aggregate-metric-drill-down.types";
 export { makeGetAppMetrics } from "@core/application/services/get-app-metrics";
 export { makeGetFacilityDetail } from "@core/application/services/get-facility-detail";
@@ -231,6 +237,7 @@ export {
 	makeGetMetricDrillDown,
 	measureRateValue,
 	rateContributionsFromFacts,
+	rateFactParts,
 	rateValue,
 	scheduledFactsFrom,
 } from "@core/application/services/get-metric-drill-down";

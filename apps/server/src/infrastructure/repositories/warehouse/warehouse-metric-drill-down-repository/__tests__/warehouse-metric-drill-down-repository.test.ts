@@ -1,17 +1,32 @@
-import { asEntityId, Facility } from "@market-health-map/core/domain";
+import {
+	asEntityId,
+	Facility,
+	GAME_DEPARTMENTS,
+	type GameDepartment,
+} from "@market-health-map/core/domain";
 import {
 	metricDrillDownLocationsSql,
+	organizerFactsFrom,
 	playerFactsFrom,
+	qualityFactsFrom,
 	reservationFactsFrom,
 	toDrillDownFacility,
 	toDrillDownFacilityFact,
 	WarehouseMetricDrillDownRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository";
-import type { WarehouseDrillDownLocationRow } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
+import type {
+	WarehouseDrillDownLocationRow,
+	WarehouseDrillDownQualityRow,
+	WarehouseQualityCount,
+	WarehouseQueryable,
+} from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-repository.types";
 import {
 	metricDrillDownFacilitiesSql,
+	metricDrillDownOrganizerSql,
 	metricDrillDownPlayerSql,
+	metricDrillDownQualitySql,
 	metricDrillDownReservationSql,
+	QUALITY_COUNTS,
 } from "@server/infrastructure/repositories/warehouse/warehouse-metric-drill-down-repository/warehouse-metric-drill-down-sql";
 
 const baseRow: WarehouseDrillDownLocationRow = {
@@ -31,6 +46,71 @@ const baseRow: WarehouseDrillDownLocationRow = {
 	company_id: null,
 	company_logo: null,
 };
+
+describe("active organizers", () => {
+	it("limits the query to organizer program partners with played games", () => {
+		const sql = metricDrillDownOrganizerSql(28, false);
+		expect(sql).toContain("select distinct r.location_id, r.partner_id");
+		expect(sql).toContain("op.partner_id is not null");
+		expect(sql).toContain("r.date_with_time::date >= b.today - 28");
+		expect(sql).not.toContain("any($3::text[])");
+		expect(metricDrillDownOrganizerSql(28, true)).toContain("any($3::text[])");
+	});
+
+	it("counts each organizer once per facility, market and in the total", async () => {
+		const other: WarehouseDrillDownLocationRow = {
+			...baseRow,
+			location_id: 9,
+			location_name: "Harbor",
+			address: "9 Bay",
+			location_latitude: 25.9,
+			location_longitude: -80.1,
+		};
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow, other] })
+			.mockResolvedValueOnce({
+				rows: [
+					{ location_id: 1, partner_id: 7 },
+					{ location_id: 1, partner_id: 8 },
+					{ location_id: 9, partner_id: 7 },
+				],
+			});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure: "active-organizers",
+			range: "28d",
+			slice: "market",
+			departments: ["organizers"],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(view.kind).toBe("distinct-count");
+		expect(view.total).toBe(2);
+		expect(view.rows.map((row) => row.value)).toEqual([2]);
+		expect(query.mock.calls[1]?.[1]).toEqual([[1, 9], "2026-10-08", ["organizers"]]);
+	});
+
+	it("reads no organizers when no facility is in scope", async () => {
+		const query = vi.fn().mockResolvedValueOnce({ rows: [] });
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure: "active-organizers",
+			range: "7d",
+			slice: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(view.total).toBe(0);
+		expect(query).toHaveBeenCalledTimes(1);
+	});
+
+	it("builds organizer facts for merged facilities", () => {
+		const facility = toDrillDownFacility(baseRow);
+		if (!facility) throw new Error("Missing fixture");
+		const [fact] = organizerFactsFrom([facility], [{ location_id: 1, partner_id: 7 }]);
+		expect(fact?.activeOrganizerIds).toEqual(["7"]);
+	});
+});
 
 describe("WarehouseMetricDrillDownRepository", () => {
 	it("groups games in SQL over the requested window with department case", () => {
@@ -370,4 +450,176 @@ describe("WarehouseMetricDrillDownRepository", () => {
 		expect(unassigned?.marketId).toBe("unassigned");
 		expect(unassigned?.toJSON().address).toBe("—");
 	});
+});
+
+function qualityRow(
+	locationId: number,
+	counts: Partial<Record<WarehouseQualityCount, number>>,
+	department: GameDepartment = "magic",
+): WarehouseDrillDownQualityRow {
+	const row: Record<string, number | string> = { location_id: locationId };
+	for (const name of QUALITY_COUNTS) {
+		row[name] = counts[name] ?? 0;
+		for (const each of GAME_DEPARTMENTS)
+			row[`${name}_${each}`] = each === department ? (counts[name] ?? 0) : 0;
+	}
+	return row as WarehouseDrillDownQualityRow;
+}
+
+describe("almost-filled and incident drill-down", () => {
+	it("follows the catalog definitions in SQL", () => {
+		const sql = metricDrillDownQualitySql(28, false);
+		expect(sql).toContain("coalesce(g.cancellation_reason, 'Not enough players')");
+		expect(sql).toContain("not in ('Recurring game series', 'Operational changes')");
+		expect(sql).toContain("from plei_gold.fct_payouts p");
+		expect(sql).toContain("count(*) as payout_rows");
+		expect(sql).toContain("ro.payout_rows = 1 and ro.real_player_count is not null");
+		expect(sql).toContain("g.min_player_count - ro.real_player_count between 1 and 3");
+		expect(sql).not.toContain("coalesce(ro.real_player_count, 0)");
+		expect(sql).not.toContain("p.deleted_at");
+		expect(sql).toContain("select distinct v.reservation_id");
+		expect(sql).toContain("v.rate < 3");
+		expect(sql).toContain("left join low_rating_games lrg");
+		expect(sql).toContain("count(distinct c.reservation_id) filter (where c.happened) as happened");
+		expect(sql).toContain("as incident_games_partnerships");
+		expect(sql).toContain("r.date_with_time::date >= b.today - 28");
+		expect(sql).not.toContain("$3::text[]");
+		expect(metricDrillDownQualitySql(7, true)).toContain("= any($3::text[])");
+	});
+
+	it("rates almost-filled games and reports missing rosters as data errors", async () => {
+		const quality = [
+			qualityRow(1, { almost_filled: 3, rostered_canceled: 10, missing_roster: 2 }),
+			qualityRow(2, { almost_filled: 1, rostered_canceled: 6 }, "organizers"),
+		];
+		const locations = [baseRow, { ...baseRow, location_id: 2, location_name: "Arena | B" }];
+		const query = vi.fn(async (sql: string) => ({
+			rows: sql.includes("fct_payouts") ? quality : locations,
+		})) as unknown as WarehouseQueryable["query"];
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		const view = await repository.group({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query).toHaveBeenCalledWith(metricDrillDownQualitySql(28, false), [
+			[1, 2],
+			"2026-10-08",
+		]);
+		expect(view).toMatchObject({
+			kind: "rate",
+			total: 25,
+			numerator: 4,
+			denominator: 16,
+			dataErrors: 2,
+			rows: [
+				{
+					id: "1",
+					value: 25,
+					numerator: 4,
+					denominator: 16,
+					dataErrors: 2,
+					departments: { magic: 30, organizers: 16.7, partnerships: null },
+				},
+			],
+		});
+		const byDepartment = await repository.group({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "department",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(byDepartment.rows).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ id: "magic", numerator: 3, denominator: 10, dataErrors: 2 }),
+				expect.objectContaining({ id: "organizers", dataErrors: 0 }),
+			]),
+		);
+	});
+
+	it("keeps unreviewed happened games in the incident rate", async () => {
+		const query = vi
+			.fn()
+			.mockResolvedValueOnce({ rows: [baseRow] })
+			.mockResolvedValueOnce({ rows: [qualityRow(1, { happened: 40, incident_games: 2 })] });
+		const repository = new WarehouseMetricDrillDownRepository({ query });
+		const rate = await repository.group({
+			measure: "incident-games-rate",
+			range: "7d",
+			slice: "market",
+			departments: ["magic"],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(query.mock.calls[1]?.[1]).toEqual([[1], "2026-10-08", ["magic"]]);
+		expect(rate).toMatchObject({ total: 5, numerator: 2, denominator: 40 });
+		expect(rate.dataErrors).toBeUndefined();
+	});
+
+	it("maps facilities without quality rows to zero counts", () => {
+		const [fact] = qualityFactsFrom([toDrillDownFacility(baseRow) as Facility], []);
+		expect(fact).toMatchObject({
+			games: 0,
+			almostFilled: 0,
+			rosteredCanceled: 0,
+			missingRoster: 0,
+			incidentGames: 0,
+		});
+	});
+});
+
+it.each(["app-sessions", "registrations", "unique-users"] as const)(
+	"groups %s separately from facility data",
+	async (measure) => {
+		const query = vi.fn().mockResolvedValue({
+			rows: [
+				{ region_id: 10, region_name: "Miami", is_total: 0, value: "2" },
+				{ region_id: 20, region_name: "Houston", is_total: 0, value: "2" },
+				{ region_id: null, region_name: null, is_total: 1, value: "3" },
+			],
+		});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure,
+			range: "28d",
+			slice: "market",
+			departments: ["magic"],
+			today: "2026-10-08",
+			grain: "range",
+			marketId: "10",
+		});
+		expect(view.total).toBe(3);
+		expect(view.rows.map((row) => row.value)).toEqual([2, 2]);
+		expect(view.rows.every((row) => row.departments === null)).toBe(true);
+		expect(query).toHaveBeenCalledTimes(1);
+		expect(query.mock.calls[0]?.[1]).toEqual(["2026-09-10", "2026-10-08", "10"]);
+		const sql = query.mock.calls[0]?.[0];
+		expect(sql).toContain("GROUP BY GROUPING SETS");
+		expect(sql).toContain(
+			measure === "app-sessions" ? "SUM(a.q_sessions)" : "COUNT(DISTINCT a.player_id)",
+		);
+		expect(sql).not.toContain("department");
+	},
+);
+it("keeps unavailable app data unavailable and unassigned markets visible", async () => {
+	const query = vi.fn().mockResolvedValue({
+		rows: [{ region_id: null, region_name: null, is_total: 0, value: null }],
+	});
+	const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+		measure: "unique-users",
+		range: "7d",
+		slice: "market",
+		departments: [],
+		today: "2026-10-08",
+		grain: "range",
+	});
+	expect(view.total).toBeNull();
+	expect(view.rows).toEqual([
+		{ id: "unassigned", name: "Unassigned", value: null, departments: null },
+	]);
+	expect(query.mock.calls[0]?.[1]).toEqual(["2026-10-01", "2026-10-08", null]);
 });

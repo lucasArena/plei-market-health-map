@@ -1418,7 +1418,9 @@ describe("useFacilitiesMapScreenRules", () => {
 			true,
 		);
 		expect(result.current.messages.sessionHeatmapLegend).toContain("Registrations per market");
-		expect(result.current.sessionHeatmapLegend).toBe(EN_MESSAGES.map.registrationHeatmapLegend);
+		expect(result.current.sessionHeatmapLegend).toBe(
+			EN_MESSAGES.map.registrationHeatmapLegend.replace("{days}", "7"),
+		);
 		expect(mapState.instances[0]?.setPaintProperty).toHaveBeenCalledWith(
 			APP_SESSION_HEATMAP_LAYER_ID,
 			"heatmap-intensity",

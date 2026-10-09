@@ -1,5 +1,6 @@
 import {
 	CONFIRMED_PLEIAPP_PLAYER_SQL,
+	isEligibleCancellationSql,
 	isOperationalCancellationSql,
 	isPlayedGameSql,
 	OPENED_GAME_PLAYER_TYPE_SQL,
@@ -11,7 +12,11 @@ describe("reservation-game-sql", () => {
 	it("keeps the facility-panel scheduled and player predicates", () => {
 		expect(OPERATIONAL_CANCELLATION_REASONS_SQL).toContain("Recurring game series");
 		expect(isOperationalCancellationSql("r")).toContain("r.status = 'cancelled'");
+		expect(isOperationalCancellationSql("r")).toMatch(/^coalesce\([\s\S]+, false\)$/);
 		expect(isPlayedGameSql("g")).toBe("g.confirmed and g.status <> 'cancelled'");
+		expect(isEligibleCancellationSql("g")).toContain(
+			"coalesce(g.cancellation_reason, 'Not enough players')",
+		);
 		expect(QUALIFYING_OPENED_GAME_SQL).toContain("valid_player");
 		expect(OPENED_GAME_PLAYER_TYPE_SQL).toContain("pleiapp_player");
 		expect(CONFIRMED_PLEIAPP_PLAYER_SQL).toContain("dim_player");

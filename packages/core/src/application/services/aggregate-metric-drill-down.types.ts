@@ -19,6 +19,29 @@ export interface DrillDownFacilityFact {
 	uniquePlayerIdsByDepartment?: Partial<Record<GameDepartment, readonly string[]>> | null;
 	activatedPlayerIds?: readonly string[];
 	activatedPlayerIdsByDepartment?: Partial<Record<GameDepartment, readonly string[]>> | null;
+	activeOrganizerIds?: readonly string[];
+	almostFilled?: number | null;
+	almostFilledByDepartment?: GameDepartmentCounts | null;
+	rosteredCanceled?: number | null;
+	rosteredCanceledByDepartment?: GameDepartmentCounts | null;
+	missingRoster?: number;
+	missingRosterByDepartment?: GameDepartmentCounts | null;
+	incidentGames?: number | null;
+	incidentGamesByDepartment?: GameDepartmentCounts | null;
+}
+
+export type DrillDownRateMeasure = Extract<
+	DrillDownMeasure,
+	"confirmation-rate" | "almost-filled-rate" | "incident-games-rate"
+>;
+
+export interface RateFactParts {
+	numerator: number | null;
+	denominator: number | null;
+	numeratorByDepartment: GameDepartmentCounts | null;
+	denominatorByDepartment: GameDepartmentCounts | null;
+	dataErrors?: number;
+	dataErrorsByDepartment?: GameDepartmentCounts | null;
 }
 
 export interface AggregateCountDrillDownInput {
@@ -46,6 +69,7 @@ export interface RateContribution {
 	name: string;
 	numerator: number | null;
 	denominator: number | null;
+	dataErrors?: number;
 	departments?: Partial<
 		Record<GameDepartment, { numerator: number | null; denominator: number | null }>
 	> | null;

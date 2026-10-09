@@ -46,6 +46,11 @@ describe("CachedMetricDrillDownRepository", () => {
 		expect(inner.group).toHaveBeenCalledTimes(1);
 		await repository.group({ ...query, range: "90d" });
 		expect(inner.group).toHaveBeenCalledTimes(2);
+		for (const grain of ["day", "week", "month"] as const) {
+			await repository.group({ ...query, slice: "time", grain });
+			await repository.group({ ...query, slice: "time", grain });
+		}
+		expect(inner.group).toHaveBeenCalledTimes(5);
 		expect(METRIC_DRILL_DOWN_LONG_RANGE_CACHE_TTL_MS).toBeGreaterThan(
 			METRIC_DRILL_DOWN_CACHE_TTL_MS,
 		);

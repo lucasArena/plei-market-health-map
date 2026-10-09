@@ -56,4 +56,40 @@ describe("SampleMetricDrillDownRepository", () => {
 		expect(rate.kind).toBe("rate");
 		expect(rate.rows.every((row) => row.value === null || row.value === 100)).toBe(true);
 	});
+
+	it("returns sample almost-filled and incident measures", async () => {
+		const repository = new SampleMetricDrillDownRepository(new SampleFacilityRepository());
+		const base = { range: "28d", departments: [], today: "2026-10-08", grain: "range" } as const;
+		const almostFilled = await repository.group({
+			...base,
+			measure: "almost-filled-rate",
+			slice: "department",
+		});
+		expect(almostFilled.kind).toBe("rate");
+		expect(almostFilled.dataErrors).toBe(0);
+		const incidentRate = await repository.group({
+			...base,
+			measure: "incident-games-rate",
+			slice: "market",
+		});
+		expect(incidentRate.kind).toBe("rate");
+		expect(incidentRate.numerator).not.toBeNull();
+	});
 });
+
+it.each(["app-sessions", "registrations", "unique-users"] as const)(
+	"does not fabricate %s without warehouse data",
+	async (measure) => {
+		const repository = new SampleMetricDrillDownRepository(new SampleFacilityRepository());
+		expect(
+			await repository.group({
+				measure,
+				range: "7d",
+				slice: "market",
+				departments: [],
+				today: "2026-10-08",
+				grain: "range",
+			}),
+		).toMatchObject({ measure, total: null, rows: [] });
+	},
+);
