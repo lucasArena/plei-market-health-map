@@ -17,6 +17,9 @@ describe("Breadcrumb", () => {
 		fireEvent.click(screen.getByRole("button", { name: "All markets" }));
 		expect(onSelect).toHaveBeenCalledOnce();
 		expect(screen.getByText("Miami Metro")).toHaveAttribute("aria-current", "page");
+		expect(screen.getByText("Miami Metro")).toHaveClass("truncate");
+		expect(screen.getByText("Miami Metro")).toHaveAttribute("title", "Miami Metro");
+		expect(screen.getByRole("button", { name: "All markets" })).toHaveClass("whitespace-nowrap");
 		expect(screen.getByRole("navigation", { name: "Location" })).toBeInTheDocument();
 	});
 });

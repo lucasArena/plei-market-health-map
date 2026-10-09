@@ -21,7 +21,7 @@ export interface ScopeHeaderView {
 
 export interface ScopeHeaderProps {
 	header: ScopeHeaderView;
-	period: StatsPeriod;
-	onPeriodChange: (period: StatsPeriod) => void;
+	period?: StatsPeriod;
+	onPeriodChange?: (period: StatsPeriod) => void;
 	testId: string;
 }
