@@ -507,14 +507,6 @@ export const en: Messages = {
 		descriptions: {
 			"insights-panel-v3":
 				"Open the redesigned insights panel on load, with a health strip, comparison dates and data freshness.",
-			"metric-drill-down":
-				"Explore games and active facilities by market, facility and department.",
-			"facility-games-layer":
-				"Show a Games supply selector with game counts in clusters and at each facility.",
-			"facility-games-trend":
-				"Show the games trend against the previous {days} days, with a Show trend switch under Games.",
-			"player-demographic-filters":
-				"Select app sessions or user registrations and filter demand by gender, skill level and age.",
 		},
 	},
 	offline: {

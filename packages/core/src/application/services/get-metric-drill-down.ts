@@ -7,7 +7,6 @@ import type {
 	GetMetricDrillDownInput,
 	MetricDrillDownView,
 } from "@core/application/dtos/metric-drill-down-dto.types";
-import { ForbiddenError } from "@core/application/errors/forbidden-error";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { MetricDrillDownQuery } from "@core/application/repositories/metric-drill-down-repository.types";
 import { toAverageDailyGamesView } from "@core/application/services/average-daily-games-view";
@@ -33,18 +32,12 @@ export {
 	scheduledFactsFrom,
 } from "@core/application/services/aggregate-metric-drill-down";
 
-export function makeGetMetricDrillDown({
-	drillDown,
-	clock,
-	enabledFeatureFlags,
-}: GetMetricDrillDownDeps) {
+export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownDeps) {
 	return async function getMetricDrillDown(
 		input: GetMetricDrillDownInput,
 	): Promise<MetricDrillDownView> {
 		const parsed = getMetricDrillDownSchema.safeParse(input);
 		if (!parsed.success) throw new InvalidRequestError(parsed.error.issues);
-		const { enabled } = await enabledFeatureFlags();
-		if (!enabled.includes("metric-drill-down")) throw new ForbiddenError("metric drill-down");
 		const {
 			comparison,
 			measure,

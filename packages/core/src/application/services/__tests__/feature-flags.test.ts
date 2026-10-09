@@ -104,15 +104,9 @@ describe("feature flags", () => {
 		).rejects.toBeInstanceOf(NotFoundError);
 	});
 
-	it("declares the games trend as depending on the games layer", () => {
-		expect(FEATURE_FLAG_KEYS).toEqual(
-			expect.arrayContaining([
-				"player-demographic-filters",
-				"facility-games-layer",
-				"facility-games-trend",
-			]),
-		);
-		expect(FEATURE_FLAG_REQUIREMENTS).toEqual({ "facility-games-trend": "facility-games-layer" });
+	it("declares only the flags still gating work in code", () => {
+		expect(FEATURE_FLAG_KEYS).toEqual(["insights-panel-v3"]);
+		expect(FEATURE_FLAG_REQUIREMENTS).toEqual({});
 		for (const [key, requires] of Object.entries(FEATURE_FLAG_REQUIREMENTS)) {
 			expect(FEATURE_FLAG_KEYS).toContain(key);
 			expect(FEATURE_FLAG_KEYS).toContain(requires);

@@ -1,5 +1,4 @@
 import {
-	FEATURE_FLAG_KEYS,
 	makeGetFacilityDetail,
 	makeGetMarketGameInsights,
 	makeGetMarketPlayerStats,
@@ -17,8 +16,6 @@ import {
 	toFacility,
 	WarehouseFacilityRepository,
 } from "@server/infrastructure/repositories/warehouse/warehouse-facility-repository/warehouse-facility-repository";
-
-const allFlagsOn = async () => ({ enabled: [...FEATURE_FLAG_KEYS] });
 
 const TODAY = "2026-10-08";
 const TEST_CLOCK = new FixedClock(new Date("2026-10-08T16:00:00Z"));
@@ -250,7 +247,6 @@ describe("ignored facilities downstream", () => {
 		const list = await makeListFacilities({
 			clock: TEST_CLOCK,
 			facilities: ignoredRepository(),
-			enabledFeatureFlags: allFlagsOn,
 		})();
 
 		expect(list.map((facility) => facility.name)).toEqual(["Phield House", "Ignite Sports Center"]);
@@ -360,7 +356,6 @@ it("exposes department counts through the facility map DTO", async () => {
 	const points = await makeListFacilities({
 		clock: TEST_CLOCK,
 		facilities: repository,
-		enabledFeatureFlags: allFlagsOn,
 	})();
 	expect(points[0]?.gamesByDepartment).toEqual({ magic: 6, organizers: 4, partnerships: 2 });
 	expect(points[0]?.gamesLast28Days).toBe(12);
@@ -416,7 +411,6 @@ describe("previous window games for the trend", () => {
 	it("exposes previous window games through the facility map DTO", async () => {
 		const listFacilities = makeListFacilities({
 			clock: TEST_CLOCK,
-			enabledFeatureFlags: allFlagsOn,
 			facilities: new WarehouseFacilityRepository({
 				query: vi.fn().mockResolvedValue({
 					rows: [

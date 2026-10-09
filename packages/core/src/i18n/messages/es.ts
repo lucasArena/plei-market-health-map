@@ -516,14 +516,6 @@ export const es: Messages = {
 		descriptions: {
 			"insights-panel-v3":
 				"Abrir el nuevo panel de insights al cargar, con franja de salud, fechas de comparación y actualización de los datos.",
-			"metric-drill-down":
-				"Explorar partidos e instalaciones activas por mercado, instalación y departamento.",
-			"facility-games-layer":
-				"Mostrar el selector de partidos con conteos por grupo e instalación.",
-			"facility-games-trend":
-				"Mostrar la tendencia de partidos frente a los {days} días anteriores, con la opción Mostrar tendencia en Partidos.",
-			"player-demographic-filters":
-				"Seleccionar sesiones o registros y filtrar la demanda por género, nivel y edad.",
 		},
 	},
 	offline: {

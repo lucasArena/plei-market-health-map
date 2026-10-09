@@ -2,12 +2,7 @@ import type { GameDepartment } from "@market-health-map/core/domain";
 import { renderHook } from "@testing-library/react";
 import { useMarketSummaryFilters } from "@/presentation/hooks/use-market/use-market-summary-filters";
 
-let mockFlagOn = true;
 let mockLayers: { gameDepartments: GameDepartment[] } | null = null;
-
-vi.mock("@/presentation/hooks/use-feature-flags/use-feature-flags", () => ({
-	useFeatureFlag: () => mockFlagOn,
-}));
 
 vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context", () => ({
 	useMapLayers: () => mockLayers,
@@ -15,7 +10,6 @@ vi.mock("@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.co
 
 describe("useMarketSummaryFilters", () => {
 	beforeEach(() => {
-		mockFlagOn = true;
 		mockLayers = null;
 	});
 
@@ -27,13 +21,9 @@ describe("useMarketSummaryFilters", () => {
 		expect(result.current).toEqual({ departments: ["magic", "partnerships"] });
 	});
 
-	it("ignores the filter while the games layer flag is off or outside the layers provider", () => {
-		mockLayers = { gameDepartments: ["magic"] };
-		mockFlagOn = false;
-		expect(renderHook(() => useMarketSummaryFilters()).result.current.departments).toEqual([]);
-
-		mockFlagOn = true;
+	it("has no department filter outside the layers provider", () => {
 		mockLayers = null;
+
 		expect(renderHook(() => useMarketSummaryFilters()).result.current.departments).toEqual([]);
 	});
 

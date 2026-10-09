@@ -64,20 +64,20 @@ describe("buildFeatureFlagRows", () => {
 
 	it("notes a flag's requirement and waits for it while it is off", () => {
 		const trend = {
-			key: "facility-games-trend",
+			key: "example-trend",
 			enabled: true,
 			updatedBy: null,
 			updatedAt: null,
-			requires: "facility-games-layer",
+			requires: "example-base",
 		};
-		const games = { key: "facility-games-layer", enabled: false, updatedBy: null, updatedAt: null };
+		const games = { key: "example-base", enabled: false, updatedBy: null, updatedAt: null };
 
 		const [, waiting] = buildFeatureFlagRows([games, trend], messages, formatters);
 		expect(waiting).toMatchObject({
 			enabled: true,
 			state: "on",
-			statusLabel: "On, waiting for facility-games-layer",
-			requirement: "Only takes effect while facility-games-layer is on.",
+			statusLabel: "On, waiting for example-base",
+			requirement: "Only takes effect while example-base is on.",
 		});
 
 		const [, active] = buildFeatureFlagRows(
@@ -94,7 +94,7 @@ describe("buildFeatureFlagRows", () => {
 		);
 		expect(off).toMatchObject({
 			statusLabel: "Off",
-			requirement: "Only takes effect while facility-games-layer is on.",
+			requirement: "Only takes effect while example-base is on.",
 		});
 	});
 });

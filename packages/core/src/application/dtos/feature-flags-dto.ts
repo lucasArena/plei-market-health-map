@@ -1,16 +1,8 @@
 import { z } from "zod";
 
-export const FEATURE_FLAG_KEYS = [
-	"metric-drill-down",
-	"insights-panel-v3",
-	"player-demographic-filters",
-	"facility-games-layer",
-	"facility-games-trend",
-] as const satisfies readonly string[];
+export const FEATURE_FLAG_KEYS = ["insights-panel-v3"] as const satisfies readonly string[];
 
-export const FEATURE_FLAG_REQUIREMENTS: Readonly<Record<string, string>> = {
-	"facility-games-trend": "facility-games-layer",
-};
+export const FEATURE_FLAG_REQUIREMENTS: Readonly<Record<string, string>> = {};
 
 export const setFeatureFlagSchema = z.object({
 	key: z.string().trim().min(1),

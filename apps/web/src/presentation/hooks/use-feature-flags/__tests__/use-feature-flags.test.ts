@@ -83,7 +83,7 @@ it("enables flags immediately in local development even when saved settings are 
 	stubFetch({ enabled: [] });
 	const { Wrapper } = createQueryWrapper();
 	const { result } = renderHook(
-		() => ({ flag: useFeatureFlag("player-demographic-filters"), query: useFeatureFlags() }),
+		() => ({ flag: useFeatureFlag("insights-panel-v3"), query: useFeatureFlags() }),
 		{ wrapper: Wrapper },
 	);
 	expect(result.current.flag).toBe(true);
@@ -97,7 +97,7 @@ it("honors saved flag settings in production builds including staging", async ()
 	stubFetch({ enabled: [] });
 	const { Wrapper } = createQueryWrapper();
 	const { result } = renderHook(
-		() => ({ flag: useFeatureFlag("player-demographic-filters"), query: useFeatureFlags() }),
+		() => ({ flag: useFeatureFlag("insights-panel-v3"), query: useFeatureFlags() }),
 		{ wrapper: Wrapper },
 	);
 	expect(result.current.flag).toBe(false);

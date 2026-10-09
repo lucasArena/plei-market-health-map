@@ -16,7 +16,6 @@ import {
 	MAP_LAYERS_DEFAULTS,
 } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.defaults";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
-import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-feature-flags";
 import { useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 
 function useRadiogroupKeys(rootRef: RefObject<HTMLElement | null>) {
@@ -41,24 +40,9 @@ function useRadiogroupKeys(rootRef: RefObject<HTMLElement | null>) {
 export function useMapLayersPanelRules() {
 	const { messages } = useMessages();
 	const layers = useMapLayers();
-	const showGamesSelector = useFeatureFlag("facility-games-layer");
-	const supplyMetric = showGamesSelector ? (layers?.supplyMetric ?? "games") : "facilities";
+	const supplyMetric = layers?.supplyMetric ?? "games";
 	const selectSupplyMetric = (value: string) =>
 		layers?.setSupplyMetric?.(value === "games" ? "games" : "facilities");
-	const showGamesTrendToggle = useFeatureFlag("facility-games-trend") && showGamesSelector;
-	const setShowGamesTrend = layers?.setShowGamesTrend;
-	useEffect(() => {
-		if (!showGamesTrendToggle) setShowGamesTrend?.(false);
-	}, [showGamesTrendToggle, setShowGamesTrend]);
-	const showDemographics = useFeatureFlag("player-demographic-filters");
-	const setSessionFilters = layers?.setSessionFilters;
-	const setDemandMetric = layers?.setDemandMetric;
-	useEffect(() => {
-		if (!showDemographics) {
-			setSessionFilters?.({});
-			setDemandMetric?.("sessions");
-		}
-	}, [showDemographics, setSessionFilters, setDemandMetric]);
 
 	const demandGroupRef = useRef<HTMLDivElement>(null);
 	const supplyGroupRef = useRef<HTMLDivElement>(null);
@@ -84,23 +68,21 @@ export function useMapLayersPanelRules() {
 	const showInactiveFacilities = layers?.showInactiveFacilities ?? localShowInactiveFacilities;
 	const showSessions = layers?.showSessions ?? localShowSessions;
 	const showGamesTrend = layers?.showGamesTrend ?? localShowGamesTrend;
-	const demandMetric = showDemographics ? (layers?.demandMetric ?? "sessions") : "sessions";
+	const demandMetric = layers?.demandMetric ?? "sessions";
 	const selectDemandMetric = (value: string) => {
 		layers?.setDemandMetric?.(value === "registrations" ? "registrations" : "sessions");
 	};
 	const isCustomized =
-		Boolean((showDemographics && layers?.demandFiltersPresent) || layers?.supplyFiltersPresent) ||
-		(showDemographics && demandMetric !== "sessions") ||
-		(showGamesSelector && supplyMetric !== "games") ||
-		(showGamesSelector && Boolean(layers?.gameDepartments?.length)) ||
+		Boolean(layers?.demandFiltersPresent || layers?.supplyFiltersPresent) ||
+		demandMetric !== "sessions" ||
+		supplyMetric !== "games" ||
+		Boolean(layers?.gameDepartments?.length) ||
 		isMapLayersCustomized({
 			showActiveFacilities,
 			showInactiveFacilities: supplyMetric === "games" ? false : showInactiveFacilities,
-			showGamesTrend: showGamesTrendToggle && supplyMetric === "games" ? showGamesTrend : false,
+			showGamesTrend: supplyMetric === "games" ? showGamesTrend : false,
 			showSessions,
-			sessionFilters: showDemographics
-				? (layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters)
-				: MAP_LAYERS_DEFAULTS.sessionFilters,
+			sessionFilters: layers?.sessionFilters ?? MAP_LAYERS_DEFAULTS.sessionFilters,
 		});
 
 	const expand = useCallback((next: boolean) => {
@@ -173,11 +155,8 @@ export function useMapLayersPanelRules() {
 		selectDemandMetric,
 		supplyGroupRef,
 		supplyKeys,
-		showGamesSelector,
-		showGamesTrendToggle,
 		supplyMetric,
 		selectSupplyMetric,
-		showDemographics,
 		cardMotion: motion,
 		closeOnEscape,
 		finishCardMotion: finishReveal,
