@@ -13,6 +13,13 @@ import {
 	organizerPartnersJoin,
 } from "@server/infrastructure/repositories/warehouse/game-department-sql/game-department-sql";
 import {
+	CONFIRMED_PLEIAPP_PLAYER_SQL,
+	isOperationalCancellationSql,
+	isPlayedGameSql,
+	OPENED_GAME_PLAYER_TYPE_SQL,
+	QUALIFYING_OPENED_GAME_SQL,
+} from "@server/infrastructure/repositories/warehouse/reservation-game-sql/reservation-game-sql";
+import {
 	inLastDaysSql,
 	inPreviousDaysSql,
 	MONTH_DAYS,
@@ -72,8 +79,7 @@ ${organizerPartners}games as (
     and r.date_with_time::date >= (select today - 56 from bounds)
     and r.date_with_time::date <= (select today + 7 from bounds)
     and not (
-      r.status = 'cancelled'
-      and r.cancellation_reason in ('Recurring game series', 'Operational changes')
+      ${isOperationalCancellationSql("r")}
     )${filter("    ")}
 ),
 last_played as (
@@ -81,7 +87,7 @@ last_played as (
     (
       select max(g.game_date)
       from games g
-      where g.confirmed and g.status <> 'cancelled' and g.game_date < (select today from bounds)
+      where ${isPlayedGameSql("g")} and g.game_date < (select today from bounds)
     ),
     (
       select max(r.date_with_time::date)
@@ -101,7 +107,7 @@ week_series as (
 weekly_activity as (
   select w.week_start,
     count(distinct g.reservation_id) filter (
-      where g.confirmed and g.status <> 'cancelled'
+      where ${isPlayedGameSql("g")}
         and g.game_date >= w.week_start and g.game_date < w.week_start + 7
     ) as games_played
   from week_series w
@@ -116,7 +122,7 @@ time_grid as (
 popular_times as (
   select t.day_of_week, t.time_period,
     count(distinct g.reservation_id) filter (
-      where g.confirmed and g.status <> 'cancelled'
+      where ${isPlayedGameSql("g")}
     ) as games_played
   from time_grid t
   left join games g
@@ -136,22 +142,22 @@ select
   (b.today - 1)::text as period_end,
   (b.today - ${WEEK_DAYS})::text as week_start,
   count(distinct g.reservation_id) filter (
-    where g.confirmed and g.status <> 'cancelled'
+    where ${isPlayedGameSql("g")}
       and ${inLastDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as played_last_week,
   count(distinct g.reservation_id) filter (
-    where g.confirmed and g.status <> 'cancelled'
+    where ${isPlayedGameSql("g")}
       and ${inPreviousDaysSql("g.game_date", "b.today", WEEK_DAYS)}
   ) as played_previous_week,
   count(distinct g.reservation_id) filter (
-    where g.confirmed and g.status <> 'cancelled'
+    where ${isPlayedGameSql("g")}
       and g.game_date >= b.today - 28 and g.game_date < b.today
   ) as played_last_28_days,
   count(distinct g.reservation_id) filter (
     where g.game_date >= b.today - 28 and g.game_date < b.today
   ) as scheduled_last_28_days,
   count(distinct g.reservation_id) filter (
-    where g.confirmed and g.status <> 'cancelled'
+    where ${isPlayedGameSql("g")}
       and g.game_date >= b.today - 56 and g.game_date < b.today - 28
   ) as played_previous_28_days,
   count(distinct g.reservation_id) filter (
@@ -217,14 +223,9 @@ ${departmentGames}facility_players as (
   where f.location_id = any($1::int[])
     and f.date_played >= ${todayParameterSql(2)} - ${MONTH_DAYS * 2}
     and f.date_played < ${todayParameterSql(2)}
-    and f.valid_player + 0 = 1 and f.confirmed_game + 0 = 1 and f.open_reservation_games + 0 = 1
-    and f.dropping_date_local is null and f.players_type || '' = 'pleiapp_player'${departmentFilter}
-    and exists (
-      select 1
-      from plei_gold.dim_player p
-      where p.player_id = f.player_id
-        and p.confirmed_at is not null and p.players_type = 'pleiapp_player'
-    )
+    and ${QUALIFYING_OPENED_GAME_SQL}
+    and ${OPENED_GAME_PLAYER_TYPE_SQL}${departmentFilter}
+    and ${CONFIRMED_PLEIAPP_PLAYER_SQL}
 )
 select
   count(distinct player_id) filter (

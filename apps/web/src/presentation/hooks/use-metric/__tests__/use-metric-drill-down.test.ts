@@ -55,6 +55,13 @@ describe("metricDrillDownPath", () => {
 		expect(path).not.toContain("department=");
 		expect(path).not.toContain("segment=");
 		expect(path).not.toContain("departments=");
+		expect(
+			metricDrillDownPath({
+				measure: "unique-players",
+				range: "12m",
+				slice: "department",
+			}),
+		).toContain("measure=unique-players");
 	});
 });
 
@@ -142,4 +149,26 @@ describe("useMetricDrillDown", () => {
 		expect(result.current.fetchStatus).toBe("idle");
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
+});
+
+it("sends calendar grain and separates cached day, week and month views", () => {
+	const input = { measure: "games", range: "12m", slice: "time", enabled: true } as const;
+	expect(metricDrillDownPath({ ...input, grain: "week" })).toContain("grain=week");
+	expect(metricDrillDownQueryKey({ ...input, grain: "day" })).not.toEqual(
+		metricDrillDownQueryKey({ ...input, grain: "week" }),
+	);
+	expect(metricDrillDownQueryKey({ ...input, grain: "month" })).not.toEqual(
+		metricDrillDownQueryKey({ ...input, grain: "week" }),
+	);
+});
+
+it("sends the comparison and separates cached comparison windows", () => {
+	const input = { measure: "games", range: "28d", slice: "market", enabled: true } as const;
+	expect(metricDrillDownPath({ ...input, comparison: "year" })).toContain("comparison=year");
+	expect(metricDrillDownQueryKey({ ...input, comparison: "week" })).not.toEqual(
+		metricDrillDownQueryKey({ ...input, comparison: "month" }),
+	);
+	expect(metricDrillDownQueryKey({ ...input, comparison: "year" })).not.toEqual(
+		metricDrillDownQueryKey({ ...input, comparison: "month" }),
+	);
 });

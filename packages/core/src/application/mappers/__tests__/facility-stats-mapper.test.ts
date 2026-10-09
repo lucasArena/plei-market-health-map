@@ -1,4 +1,5 @@
 import {
+	confirmationRate,
 	toPlayerPeriodView,
 	toReservationPeriodView,
 } from "@core/application/mappers/facility-stats-mapper";
@@ -32,6 +33,16 @@ const PLAYERS = {
 	activatedPlayersLast28Days: 24,
 	activatedPlayersPrevious28Days: 20,
 };
+
+describe("confirmationRate", () => {
+	it("is played divided by scheduled and stays empty without scheduled games", () => {
+		expect(confirmationRate(45, 60)).toBe(75);
+		expect(confirmationRate(212, 250)).toBe(84.8);
+		expect(confirmationRate(0, 0)).toBeNull();
+		expect(confirmationRate(10, 0)).toBeNull();
+		expect(confirmationRate(45, 60)).not.toBe(1 - 15 / 60);
+	});
+});
 
 describe("period views", () => {
 	it("compares the last completed week with the week before", () => {

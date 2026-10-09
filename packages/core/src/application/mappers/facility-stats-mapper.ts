@@ -24,7 +24,7 @@ function percentChange(current: number, previous: number): number | null {
 	return roundTo(((current - previous) / previous) * 100, 1);
 }
 
-function confirmationRate(played: number, scheduled: number): number | null {
+export function confirmationRate(played: number, scheduled: number): number | null {
 	if (scheduled <= 0) return null;
 	return roundTo((played / scheduled) * 100, 1);
 }
