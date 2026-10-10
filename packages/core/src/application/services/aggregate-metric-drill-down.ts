@@ -95,6 +95,18 @@ function mergeOrganizerCounts(
 	return [...byId.values()];
 }
 
+function hasFacilityMetricValue(value: number | null): boolean {
+	return value !== null && value !== 0;
+}
+
+function facilitySliceRows(
+	slice: DrillDownSlice,
+	rows: MetricDrillDownRow[],
+): MetricDrillDownRow[] {
+	if (slice !== "facility") return rows;
+	return rows.filter((row) => hasFacilityMetricValue(row.value));
+}
+
 function scopedFacilities(
 	facilities: readonly DrillDownFacilityFact[],
 	marketId?: string,
@@ -187,7 +199,7 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 	}
 	return {
 		total,
-		rows: [...rows.values()],
+		rows: facilitySliceRows(input.slice, [...rows.values()]),
 		start: input.start,
 		end: input.end,
 		measure: input.measure,
@@ -224,6 +236,7 @@ export function aggregateDistinctCountDrillDown(input: {
 	range: MetricDrillDownView["range"];
 	start: string;
 	end: string;
+	slice?: DrillDownSlice;
 }): MetricDrillDownView {
 	const selectedDepartments = input.gameDepartments?.length
 		? input.gameDepartments
@@ -281,18 +294,21 @@ export function aggregateDistinctCountDrillDown(input: {
 	}
 	return {
 		total: totalKeys.size,
-		rows: [...rows.values()].map((row) => ({
-			id: row.id,
-			name: row.name,
-			value: row.keys.size,
-			facilityIds: [...row.facilityIds],
-			departments: {
-				magic: row.departmentKeys.magic.size,
-				organizers: row.departmentKeys.organizers.size,
-				partnerships: row.departmentKeys.partnerships.size,
-			},
-			organizers: row.hasOrganizers ? contributionOrganizers(row.organizerKeys) : null,
-		})),
+		rows: facilitySliceRows(
+			input.slice ?? "market",
+			[...rows.values()].map((row) => ({
+				id: row.id,
+				name: row.name,
+				value: row.keys.size,
+				facilityIds: [...row.facilityIds],
+				departments: {
+					magic: row.departmentKeys.magic.size,
+					organizers: row.departmentKeys.organizers.size,
+					partnerships: row.departmentKeys.partnerships.size,
+				},
+				organizers: row.hasOrganizers ? contributionOrganizers(row.organizerKeys) : null,
+			})),
+		),
 		start: input.start,
 		end: input.end,
 		measure: input.measure,
@@ -324,6 +340,7 @@ export function aggregateRateDrillDown(input: {
 	range: MetricDrillDownView["range"];
 	start: string;
 	end: string;
+	slice?: DrillDownSlice;
 }): MetricDrillDownView {
 	const selectedDepartments = input.gameDepartments?.length
 		? input.gameDepartments
@@ -418,43 +435,46 @@ export function aggregateRateDrillDown(input: {
 		numerator: totalNumerator,
 		denominator: totalDenominator,
 		...(reportsDataErrors ? { dataErrors: totalDataErrors } : {}),
-		rows: [...rows.values()].map((row) => ({
-			id: row.id,
-			name: row.name,
-			value: measureRateValue(input.measure, row.numerator, row.denominator),
-			numerator: row.numerator,
-			denominator: row.denominator,
-			facilityIds: [...row.facilityIds],
-			...(reportsDataErrors ? { dataErrors: row.dataErrors } : {}),
-			departments: {
-				magic: measureRateValue(
-					input.measure,
-					row.departments.magic.numerator,
-					row.departments.magic.denominator,
-				),
-				organizers: measureRateValue(
-					input.measure,
-					row.departments.organizers.numerator,
-					row.departments.organizers.denominator,
-				),
-				partnerships: measureRateValue(
-					input.measure,
-					row.departments.partnerships.numerator,
-					row.departments.partnerships.denominator,
-				),
-			},
-			organizers: row.hasOrganizers
-				? [...row.organizers.entries()].map(([id, organizer]) => ({
-						id,
-						name: organizer.name,
-						value: measureRateValue(input.measure, organizer.numerator, organizer.denominator),
-						numerator: organizer.numerator,
-						denominator: organizer.denominator,
-						facilityIds: [...organizer.facilityIds],
-						...(reportsDataErrors ? { dataErrors: organizer.dataErrors } : {}),
-					}))
-				: null,
-		})),
+		rows: facilitySliceRows(
+			input.slice ?? "market",
+			[...rows.values()].map((row) => ({
+				id: row.id,
+				name: row.name,
+				value: measureRateValue(input.measure, row.numerator, row.denominator),
+				numerator: row.numerator,
+				denominator: row.denominator,
+				facilityIds: [...row.facilityIds],
+				...(reportsDataErrors ? { dataErrors: row.dataErrors } : {}),
+				departments: {
+					magic: measureRateValue(
+						input.measure,
+						row.departments.magic.numerator,
+						row.departments.magic.denominator,
+					),
+					organizers: measureRateValue(
+						input.measure,
+						row.departments.organizers.numerator,
+						row.departments.organizers.denominator,
+					),
+					partnerships: measureRateValue(
+						input.measure,
+						row.departments.partnerships.numerator,
+						row.departments.partnerships.denominator,
+					),
+				},
+				organizers: row.hasOrganizers
+					? [...row.organizers.entries()].map(([id, organizer]) => ({
+							id,
+							name: organizer.name,
+							value: measureRateValue(input.measure, organizer.numerator, organizer.denominator),
+							numerator: organizer.numerator,
+							denominator: organizer.denominator,
+							facilityIds: [...organizer.facilityIds],
+							...(reportsDataErrors ? { dataErrors: organizer.dataErrors } : {}),
+						}))
+					: null,
+			})),
+		),
 		start: input.start,
 		end: input.end,
 		measure: input.measure,
@@ -719,6 +739,7 @@ export function aggregateDrillDownFromFacts(
 			range: input.range,
 			start: input.start,
 			end: input.end,
+			slice: input.slice,
 		});
 	if (
 		input.measure === "unique-players" ||
@@ -739,6 +760,7 @@ export function aggregateDrillDownFromFacts(
 			range: input.range,
 			start: input.start,
 			end: input.end,
+			slice: input.slice,
 		});
 	const countFacts: Partial<Record<DrillDownMeasure, () => DrillDownFacilityFact[]>> = {
 		"scheduled-games": () => scheduledFactsFrom(input.facilities),

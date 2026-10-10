@@ -222,7 +222,7 @@ describe("getMetricDrillDown", () => {
 		const { getMetricDrillDown: none } = setup([zeroScheduled]);
 		await expect(
 			none({ measure: "confirmation-rate", range: "28d", slice: "facility" }),
-		).resolves.toMatchObject({ total: null, rows: [{ value: null }] });
+		).resolves.toMatchObject({ total: null, rows: [] });
 		const uniqueByDepartment = await getMetricDrillDown({
 			measure: "unique-players",
 			range: "28d",
@@ -272,6 +272,49 @@ describe("getMetricDrillDown", () => {
 				slice: "department",
 			}),
 		).rejects.toBeInstanceOf(InvalidRequestError);
+	});
+
+	it("omits facilities with no metric when grouping by facility", async () => {
+		const empty: DrillDownFacilityFact = {
+			...facility,
+			id: "z",
+			name: "Empty",
+			games: 0,
+			scheduled: 0,
+			uniquePlayerIds: [],
+			activatedPlayerIds: [],
+			gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+			scheduledByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+			uniquePlayerIdsByDepartment: { magic: [], organizers: [], partnerships: [] },
+			activatedPlayerIdsByDepartment: { magic: [], organizers: [], partnerships: [] },
+		};
+		const { getMetricDrillDown } = setup([facility, empty]);
+		const games = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(games.total).toBe(10);
+		expect(games.rows.map((row) => row.id)).toEqual(["a"]);
+		await expect(
+			getMetricDrillDown({ measure: "games", range: "28d", slice: "market" }),
+		).resolves.toMatchObject({
+			total: 10,
+			rows: [{ id: "miami", value: 10 }],
+		});
+		const rate = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(rate.rows.map((row) => [row.id, row.value])).toEqual([["a", 83.3]]);
+		const unique = await getMetricDrillDown({
+			measure: "unique-players",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(unique.rows.map((row) => row.id)).toEqual(["a"]);
+		expect(unique.total).toBe(2);
 	});
 });
 

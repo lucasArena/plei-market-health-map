@@ -54,7 +54,8 @@ describe("SampleMetricDrillDownRepository", () => {
 			grain: "range",
 		});
 		expect(rate.kind).toBe("rate");
-		expect(rate.rows.every((row) => row.value === null || row.value === 100)).toBe(true);
+		expect(rate.rows.length).toBeGreaterThan(0);
+		expect(rate.rows.every((row) => row.value === 100)).toBe(true);
 		const organizers = await repository.group({
 			measure: "games",
 			range: "28d",
