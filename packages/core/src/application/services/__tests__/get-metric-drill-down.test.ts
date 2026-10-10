@@ -479,11 +479,7 @@ describe("almost-filled and incident measures", () => {
 		});
 		expect(view.total).toBeNull();
 		expect(view.dataErrors).toBe(0);
-		expect(view.rows[0]?.departments).toEqual({
-			magic: null,
-			organizers: null,
-			partnerships: null,
-		});
+		expect(view.rows).toEqual([]);
 	});
 
 	it("rates incident games over happened games and rejects the removed count", async () => {
