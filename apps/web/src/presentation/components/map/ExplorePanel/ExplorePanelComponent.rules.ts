@@ -542,18 +542,20 @@ export function useExplorePanelRules({
 				bars: segmentBars
 					.flatMap((legend) => {
 						const group = valuedGroups.get(legend.id);
-						const value = group?.value;
-						if (value == null) return [];
+						if (!group || group.value == null) return [];
 						return [
 							{
 								id: legend.id,
 								groupId: legend.id,
 								color: segmentColor(legend.id),
-								label: [`${rowName(row)} · ${legend.name}: ${formatValue(value)}`, rateParts(group)]
+								label: [
+									`${rowName(row)} · ${legend.name}: ${formatValue(group.value)}`,
+									rateParts(group),
+								]
 									.filter(Boolean)
 									.join(" · "),
-								value,
-								height: (value / max) * 100,
+								value: group.value,
+								height: (group.value / max) * 100,
 							},
 						];
 					})
