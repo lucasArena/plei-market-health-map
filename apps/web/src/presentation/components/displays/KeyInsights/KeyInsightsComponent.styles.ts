@@ -10,7 +10,7 @@ export const INSIGHT_TONE_STYLE: Record<InsightTone, InsightToneStyle> = {
 		accent: "text-pleiful-moonlight-70",
 		fade: "from-pleiful-moonlight-5",
 		button: "border-pleiful-moonlight-10 text-pleiful-moonlight-70",
-		skeleton: "bg-pleiful-moonlight-10",
+		skeleton: "bg-pleiful-moonlight-10 dark:bg-foreground/[0.08]",
 	},
 	attention: {
 		box: "border border-[#fecaca] bg-[#fef2f2] dark:bg-red-950/60",
