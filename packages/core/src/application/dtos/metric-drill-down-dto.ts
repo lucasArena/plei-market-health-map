@@ -70,6 +70,13 @@ export const getMetricDrillDownSchema = z
 				message: "This measure cannot be sliced by organizer.",
 			});
 		}
+		if (value.segment === "facility" && value.slice === "facility") {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["segment"],
+				message: "Facility groups cannot be segmented by facility.",
+			});
+		}
 	});
 
 export function canSliceDrillDownByDepartment(measure: DrillDownMeasure): boolean {
@@ -89,6 +96,13 @@ export function canSegmentDrillDown(
 	slice: (typeof DRILL_DOWN_SLICES)[number],
 ): boolean {
 	return canSliceDrillDownByDepartment(measure) && slice !== "department" && slice !== "organizer";
+}
+
+export function canSegmentDrillDownByFacility(
+	measure: DrillDownMeasure,
+	slice: (typeof DRILL_DOWN_SLICES)[number],
+): boolean {
+	return !isAppActivityMeasure(measure) && slice !== "facility";
 }
 
 export function needsOrganizerDimension(

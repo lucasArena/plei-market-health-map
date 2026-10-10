@@ -1,6 +1,7 @@
 import {
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_RANGE_DAYS,
+	type MetricDrillDownFacilitySegment,
 	type MetricDrillDownOrganizer,
 	type MetricDrillDownQuery,
 	type MetricDrillDownView,
@@ -37,6 +38,7 @@ export function timeDrillDownWindow(query: MetricDrillDownQuery) {
 export function timeDrillDownView(
 	query: MetricDrillDownQuery,
 	results: readonly WarehouseTimeRow[],
+	facilityNames: ReadonlyMap<string, string> = new Map(),
 ): MetricDrillDownView {
 	const { start, until, end } = timeDrillDownWindow(query);
 	const kind =
@@ -56,7 +58,13 @@ export function timeDrillDownView(
 			: {};
 	const byBucket = new Map(
 		results
-			.filter((row) => row.department === null && !row.organizer_id && row.is_total === 0)
+			.filter(
+				(row) =>
+					row.department === null &&
+					!row.organizer_id &&
+					!row.segment_facility_id &&
+					row.is_total === 0,
+			)
 			.map((row) => [row.bucket, row]),
 	);
 	const departments = new Map(
@@ -76,6 +84,18 @@ export function timeDrillDownView(
 			...parts(row),
 		});
 		organizersByBucket.set(row.bucket, organizers);
+	}
+	const facilitiesByBucket = new Map<string, MetricDrillDownFacilitySegment[]>();
+	for (const row of results) {
+		if (!row.segment_facility_id || row.is_total === 1 || !row.bucket) continue;
+		const facilities = facilitiesByBucket.get(row.bucket) ?? [];
+		facilities.push({
+			id: row.segment_facility_id,
+			name: facilityNames.get(row.segment_facility_id) ?? row.segment_facility_id,
+			value: value(row),
+			...parts(row),
+		});
+		facilitiesByBucket.set(row.bucket, facilities);
 	}
 	const rows: MetricDrillDownView["rows"] = [];
 	for (
@@ -119,6 +139,7 @@ export function timeDrillDownView(
 				true: null,
 				[`${query.segment === "organizer"}`]: organizersByBucket.get(bucket) ?? [],
 			}.true,
+			...(query.segment === "facility" ? { facilities: facilitiesByBucket.get(bucket) ?? [] } : {}),
 		});
 	}
 	return {

@@ -34,7 +34,7 @@ export type DrillDownMeasure = (typeof DRILL_DOWN_MEASURES)[number];
 export const DRILL_DOWN_SLICES = ["market", "facility", "department", "organizer", "time"] as const;
 export type DrillDownSlice = (typeof DRILL_DOWN_SLICES)[number];
 
-export const DRILL_DOWN_SEGMENTS = ["none", "department", "organizer"] as const;
+export const DRILL_DOWN_SEGMENTS = ["none", "department", "organizer", "facility"] as const;
 export type DrillDownSegment = (typeof DRILL_DOWN_SEGMENTS)[number];
 
 export const DRILL_DOWN_MEASURE_KINDS = ["count", "distinct-count", "rate"] as const;
@@ -90,6 +90,16 @@ export interface MetricDrillDownOrganizer {
 	facilityIds?: string[];
 }
 
+export interface MetricDrillDownFacilitySegment {
+	id: string;
+	name: string;
+	value: number | null;
+	previousValue?: number | null;
+	numerator?: number | null;
+	denominator?: number | null;
+	dataErrors?: number;
+}
+
 export interface MetricDrillDownRow {
 	previousValue?: number | null;
 	previousDepartments?: Record<GameDepartment, number | null> | null;
@@ -104,6 +114,7 @@ export interface MetricDrillDownRow {
 	value: number | null;
 	departments: Record<GameDepartment, number | null> | null;
 	organizers?: MetricDrillDownOrganizer[] | null;
+	facilities?: MetricDrillDownFacilitySegment[] | null;
 	numerator?: number | null;
 	denominator?: number | null;
 	dataErrors?: number;

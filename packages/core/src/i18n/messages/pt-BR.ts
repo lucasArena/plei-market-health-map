@@ -64,6 +64,7 @@ export const ptBR: Messages = {
 		sessionHeatmapMidValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",
 		layersBrand: "Market Health Map",
+		layersTooltip: "Painel de controle",
 		layersHeading: "Camadas",
 		layersFacilities: "Instalações",
 		layersDemand: "Demanda",
@@ -279,9 +280,9 @@ export const ptBR: Messages = {
 		sourceSwitch:
 			"A fonte de rastreamento mudou após 29 de junho de 2026: Mixpanel + UXCam → Firebase Analytics. Este intervalo inclui ambas as fontes.",
 
-		title: "Detalhamento de métricas",
-		expand: "Expandir detalhamento",
-		collapse: "Recolher detalhamento",
+		title: "Painel Explorar",
+		expand: "Expandir painel Explorar",
+		collapse: "Voltar ao mapa",
 		filteredBy: "Filtrado por",
 		supplyHidden: "Oferta está oculta. Ative-a em Filtros para ver os resultados.",
 		selectionHelp: "Clique em uma barra ou linha para selecionar. Clique novamente para limpar.",
@@ -346,7 +347,10 @@ export const ptBR: Messages = {
 		selectedOrganizerHelp:
 			"Exibindo o organizador selecionado. Volte para comparar organizadores novamente.",
 		segmentUnavailable:
-			"Segmentos por departamento e organizador estão disponíveis ao agrupar por mercado, instalação ou data. Grupos de organizadores contam apenas parceiros do Programa de Organizadores, não Magic.",
+			"Segmentos por departamento e organizador estão disponíveis ao agrupar por mercado, instalação ou data, e segmentos por instalação em qualquer agrupamento exceto Instalação. Grupos de organizadores contam apenas parceiros do Programa de Organizadores, não Magic.",
+		facilitySegmentTop:
+			"As cores e colunas mostram as {count} maiores instalações. Passe o cursor sobre uma parte cinza de uma barra para ver as demais.",
+		otherFacilities: "Outras instalações",
 		topTen: "10 maiores",
 		chart: "Métrica por grupo",
 		value: "Quantidade",
@@ -363,6 +367,7 @@ export const ptBR: Messages = {
 			"Algumas contagens de jogos estão indisponíveis. Totais com dados ausentes não são exibidos.",
 	},
 	marketSummary: {
+		tooltip: "Painel de insights",
 		open: "Resumo do mercado",
 		close: "Fechar resumo do mercado",
 		label: "Resumo do mercado",

@@ -5,6 +5,7 @@ import {
 } from "@core/application/dtos/metric-drill-down-dto";
 import type {
 	GetMetricDrillDownInput,
+	MetricDrillDownFacilitySegment,
 	MetricDrillDownOrganizer,
 	MetricDrillDownView,
 } from "@core/application/dtos/metric-drill-down-dto.types";
@@ -69,7 +70,7 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 			today: statsToday(clock, timeZone),
 		};
 		const current = finish(await drillDown.group(query));
-		if (slice === "time") return current;
+		if (slice === "time") return withoutEmptyFacilities(current, slice);
 		const window = drillDownComparisonWindow(query.today, DRILL_DOWN_RANGE_DAYS[range], comparison);
 		const previous = finish(
 			await drillDown.group({
@@ -92,53 +93,96 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 							? { magic: 0, organizers: 0, partnerships: 0 }
 							: null,
 					organizers: row.organizers?.map((organizer) => ({ ...organizer, value: 0 })) ?? null,
+					facilities: row.facilities?.map((facility) => ({ ...facility, value: 0 })),
 					numerator: current.kind === "rate" ? 0 : undefined,
 					denominator: current.kind === "rate" ? 0 : undefined,
 					dataErrors: undefined,
 				})),
 		];
-		return {
-			...current,
-			previousTotal: previous.total,
-			previousStart: window.start,
-			previousEnd: window.end,
-			rows: rows.map((row) => {
-				const prior = previousRows.get(row.id);
-				return {
-					...row,
-					previousValue: prior
-						? prior.value
-						: previous.total === null || current.kind === "rate"
-							? null
-							: 0,
-					previousDepartments: prior
-						? prior.departments
-						: previous.total !== null && current.kind !== "rate"
-							? { magic: 0, organizers: 0, partnerships: 0 }
-							: null,
-					organizers: withPreviousOrganizers(
-						row.organizers,
-						prior?.organizers,
-						previous.total,
-						current.kind,
-					),
-				};
-			}),
-		};
+		return withoutEmptyFacilities(
+			{
+				...current,
+				previousTotal: previous.total,
+				previousStart: window.start,
+				previousEnd: window.end,
+				rows: rows.map((row) => {
+					const prior = previousRows.get(row.id);
+					return {
+						...row,
+						previousValue: prior
+							? prior.value
+							: previous.total === null || current.kind === "rate"
+								? null
+								: 0,
+						previousDepartments: prior
+							? prior.departments
+							: previous.total !== null && current.kind !== "rate"
+								? { magic: 0, organizers: 0, partnerships: 0 }
+								: null,
+						organizers: withPreviousValues(
+							row.organizers,
+							prior?.organizers,
+							previous.total,
+							current.kind,
+						),
+						...(row.facilities !== undefined
+							? {
+									facilities: withPreviousValues(
+										row.facilities,
+										prior?.facilities,
+										previous.total,
+										current.kind,
+									),
+								}
+							: {}),
+					};
+				}),
+			},
+			slice,
+		);
 	};
 }
 
-function withPreviousOrganizers(
-	current: MetricDrillDownOrganizer[] | null | undefined,
-	prior: MetricDrillDownOrganizer[] | null | undefined,
+export function hasDrillDownValue(value: number | null | undefined): boolean {
+	return value != null && value !== 0;
+}
+
+/**
+ * Facilities with no value for the selected measure (null or 0) add nothing to the chart or the
+ * table, so they are dropped from Facility slices and Facility segments. Totals are untouched.
+ */
+export function withoutEmptyFacilities(
+	view: MetricDrillDownView,
+	slice: MetricDrillDownQuery["slice"],
+): MetricDrillDownView {
+	const rows =
+		slice === "facility" ? view.rows.filter((row) => hasDrillDownValue(row.value)) : view.rows;
+	return {
+		...view,
+		rows: rows.map((row) =>
+			row.facilities
+				? {
+						...row,
+						facilities: row.facilities.filter((facility) => hasDrillDownValue(facility.value)),
+					}
+				: row,
+		),
+	};
+}
+
+function withPreviousValues<
+	Group extends MetricDrillDownOrganizer | MetricDrillDownFacilitySegment,
+>(
+	current: Group[] | null | undefined,
+	prior: Group[] | null | undefined,
 	previousTotal: number | null | undefined,
 	kind: MetricDrillDownView["kind"],
-): MetricDrillDownOrganizer[] | null | undefined {
+): Group[] | null | undefined {
 	if (!current) return current;
-	const previousById = new Map((prior ?? []).map((organizer) => [organizer.id, organizer]));
+	const previousById = new Map((prior ?? []).map((group) => [group.id, group]));
 	const missing = previousTotal === null || kind === "rate" ? null : 0;
-	return current.map((organizer) => ({
-		...organizer,
-		previousValue: previousById.get(organizer.id)?.value ?? missing,
+	return current.map((group) => ({
+		...group,
+		previousValue: previousById.get(group.id)?.value ?? missing,
 	}));
 }

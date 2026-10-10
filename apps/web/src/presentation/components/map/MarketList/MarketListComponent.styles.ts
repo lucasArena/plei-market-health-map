@@ -3,13 +3,13 @@ import {
 	INSIGHT_CONTAINER_CLASS,
 	MODULE_ROW_DIVIDER_CLASS,
 } from "@/presentation/components/displays/StatTiles/StatTilesComponent.styles";
-import type { StatDirection } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
-import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 import {
 	DRILL_DOWN_TABLE_HEADER_CELL_CLASS,
 	DRILL_DOWN_TABLE_HEADER_TEXT_CLASS,
 	DRILL_DOWN_TABLE_NUMBER_CELL_CLASS,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
+import type { StatDirection } from "@/presentation/components/map/FacilityDetailPanel/FacilityDetailPanelComponent.types";
+import { MAP_SEARCH_OPTION_HOVER_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 /**
  * Hover/focus of the map cluster card rows and the search results

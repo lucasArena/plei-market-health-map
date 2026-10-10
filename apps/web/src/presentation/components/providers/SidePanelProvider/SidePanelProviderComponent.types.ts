@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type SidePanelId = "facility-detail" | "market-summary" | "metric-drill-down";
+export type SidePanelId = "facility-detail" | "market-summary" | "explore";
 
 export interface SidePanelContextValue {
 	activePanel: SidePanelId | null;

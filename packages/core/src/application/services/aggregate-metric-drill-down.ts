@@ -4,6 +4,7 @@ import {
 } from "@core/application/dtos/metric-drill-down-dto";
 import type {
 	DrillDownMeasure,
+	DrillDownSegment,
 	DrillDownSlice,
 	MetricDrillDownOrganizer,
 	MetricDrillDownRow,
@@ -182,6 +183,11 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 					facility.id,
 					(organizer) => organizerCountValue(organizer, input.measure),
 				);
+			if (input.segment === "facility")
+				row.facilities = [
+					...(row.facilities ?? []),
+					{ id: facility.id, name: facility.name, value: group.groupValue },
+				];
 			rows.set(group.id, row);
 		}
 	}
@@ -218,6 +224,7 @@ function addFacilityIds(target: Set<string>, incoming?: readonly string[]): void
 export function aggregateDistinctCountDrillDown(input: {
 	contributions: readonly DistinctCountContribution[];
 	sliceKeys: (contribution: DistinctCountContribution) => readonly { id: string; name: string }[];
+	segment?: DrillDownSegment;
 	department?: GameDepartment;
 	gameDepartments?: readonly GameDepartment[];
 	measure: DrillDownMeasure;
@@ -238,6 +245,7 @@ export function aggregateDistinctCountDrillDown(input: {
 			hasOrganizers: boolean;
 			departmentKeys: Record<GameDepartment, Set<string>>;
 			organizerKeys: Map<string, { name: string; keys: Set<string>; facilityIds: Set<string> }>;
+			facilityKeys: Map<string, { name: string; keys: Set<string> }>;
 		}
 	>();
 	const totalKeys = new Set<string>();
@@ -258,8 +266,17 @@ export function aggregateDistinctCountDrillDown(input: {
 					string,
 					{ name: string; keys: Set<string>; facilityIds: Set<string> }
 				>(),
+				facilityKeys: new Map<string, { name: string; keys: Set<string> }>(),
 			};
 			for (const key of keys) row.keys.add(key);
+			if (contribution.facility) {
+				const current = row.facilityKeys.get(contribution.facility.id) ?? {
+					name: contribution.facility.name,
+					keys: new Set<string>(),
+				};
+				for (const key of keys) current.keys.add(key);
+				row.facilityKeys.set(contribution.facility.id, current);
+			}
 			addFacilityIds(row.facilityIds, contribution.facilityIds);
 			for (const department of selectedDepartments) {
 				for (const key of contribution.departments?.[department] ?? [])
@@ -292,6 +309,15 @@ export function aggregateDistinctCountDrillDown(input: {
 				partnerships: row.departmentKeys.partnerships.size,
 			},
 			organizers: row.hasOrganizers ? contributionOrganizers(row.organizerKeys) : null,
+			...(input.segment === "facility"
+				? {
+						facilities: [...row.facilityKeys.entries()].map(([id, facility]) => ({
+							id,
+							name: facility.name,
+							value: facility.keys.size,
+						})),
+					}
+				: {}),
 		})),
 		start: input.start,
 		end: input.end,
@@ -318,6 +344,7 @@ export function measureRateValue(
 
 export function aggregateRateDrillDown(input: {
 	contributions: readonly RateContribution[];
+	segment?: DrillDownSegment;
 	department?: GameDepartment;
 	gameDepartments?: readonly GameDepartment[];
 	measure: DrillDownMeasure;
@@ -348,6 +375,10 @@ export function aggregateRateDrillDown(input: {
 					dataErrors: number;
 					facilityIds: Set<string>;
 				}
+			>;
+			facilities: Map<
+				string,
+				{ name: string; numerator: number | null; denominator: number | null; dataErrors: number }
 			>;
 		}
 	>();
@@ -380,10 +411,23 @@ export function aggregateRateDrillDown(input: {
 				partnerships: { numerator: 0, denominator: 0 },
 			},
 			organizers: new Map(),
+			facilities: new Map(),
 		};
 		row.numerator = sumKnown(row.numerator, parts.numerator);
 		row.denominator = sumKnown(row.denominator, parts.denominator);
 		row.dataErrors += contribution.dataErrors ?? 0;
+		if (contribution.facility) {
+			const current = row.facilities.get(contribution.facility.id) ?? {
+				name: contribution.facility.name,
+				numerator: 0,
+				denominator: 0,
+				dataErrors: 0,
+			};
+			current.numerator = sumKnown(current.numerator, parts.numerator);
+			current.denominator = sumKnown(current.denominator, parts.denominator);
+			current.dataErrors += contribution.dataErrors ?? 0;
+			row.facilities.set(contribution.facility.id, current);
+		}
 		totalDataErrors += contribution.dataErrors ?? 0;
 		addFacilityIds(row.facilityIds, contribution.facilityIds);
 		for (const department of selectedDepartments) {
@@ -454,6 +498,18 @@ export function aggregateRateDrillDown(input: {
 						...(reportsDataErrors ? { dataErrors: organizer.dataErrors } : {}),
 					}))
 				: null,
+			...(input.segment === "facility"
+				? {
+						facilities: [...row.facilities.entries()].map(([id, facility]) => ({
+							id,
+							name: facility.name,
+							value: measureRateValue(input.measure, facility.numerator, facility.denominator),
+							numerator: facility.numerator,
+							denominator: facility.denominator,
+							...(reportsDataErrors ? { dataErrors: facility.dataErrors } : {}),
+						})),
+					}
+				: {}),
 		})),
 		start: input.start,
 		end: input.end,
@@ -616,18 +672,20 @@ export function rateContributionsFromFacts(
 					: null;
 			const reportsErrors = parts.dataErrors !== undefined;
 			const organizers = rateOrganizersFrom(facility, measure, reportsErrors);
+			const origin = { id: facility.id, name: facility.name };
 			if (slice === "department")
 				return selectedDepartments.map((department) => ({
 					id: department,
 					name: department,
 					numerator: departments?.[department].numerator ?? null,
 					denominator: departments?.[department].denominator ?? null,
+					facility: origin,
 					facilityIds: [facility.id],
 					...(reportsErrors ? { dataErrors: parts.dataErrorsByDepartment?.[department] ?? 0 } : {}),
 				}));
 			if (slice === "organizer") {
 				if (!includesOrganizers(selectedDepartments)) return [];
-				return organizers ?? [];
+				return (organizers ?? []).map((organizer) => ({ ...organizer, facility: origin }));
 			}
 			return [
 				{
@@ -635,6 +693,7 @@ export function rateContributionsFromFacts(
 					name: slice === "market" ? facility.marketName : facility.name,
 					numerator: parts.numerator,
 					denominator: parts.denominator,
+					facility: origin,
 					facilityIds: [facility.id],
 					...(reportsErrors ? { dataErrors: parts.dataErrors } : {}),
 					departments,
@@ -677,11 +736,13 @@ export function distinctContributionsFromFacts(
 				partnerships: source?.partnerships ?? [],
 			};
 			const organizers = distinctOrganizersFrom(facility, measure);
+			const origin = { id: facility.id, name: facility.name };
 			if (slice === "department")
 				return selectedDepartments.map((department) => ({
 					id: department,
 					name: department,
 					memberKeys: departments[department],
+					facility: origin,
 					facilityIds: [facility.id],
 				}));
 			if (slice === "organizer") {
@@ -690,6 +751,7 @@ export function distinctContributionsFromFacts(
 					id: organizer.id,
 					name: organizer.name,
 					memberKeys: organizer.memberKeys,
+					facility: origin,
 					facilityIds: organizer.facilityIds,
 				}));
 			}
@@ -698,6 +760,7 @@ export function distinctContributionsFromFacts(
 					id: slice === "market" ? facility.marketId : facility.id,
 					name: slice === "market" ? facility.marketName : facility.name,
 					memberKeys,
+					facility: origin,
 					facilityIds: [facility.id],
 					departments,
 					...(organizers != null ? { organizers } : {}),
@@ -713,6 +776,7 @@ export function aggregateDrillDownFromFacts(
 	if (isRateMeasure(input.measure))
 		return aggregateRateDrillDown({
 			contributions: rateContributionsFromFacts(input.facilities, input.slice, input),
+			segment: input.segment,
 			department: input.department,
 			gameDepartments: input.gameDepartments,
 			measure: input.measure,
@@ -733,6 +797,7 @@ export function aggregateDrillDownFromFacts(
 				input,
 			),
 			sliceKeys: (contribution) => [{ id: contribution.id, name: contribution.name }],
+			segment: input.segment,
 			department: input.department,
 			gameDepartments: input.gameDepartments,
 			measure: input.measure,

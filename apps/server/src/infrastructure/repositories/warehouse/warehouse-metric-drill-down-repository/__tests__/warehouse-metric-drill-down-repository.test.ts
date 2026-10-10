@@ -425,6 +425,30 @@ describe("WarehouseMetricDrillDownRepository", () => {
 		expect(active).toMatchObject({ total: 1, range: "12m" });
 	});
 
+	it("splits market games into merged facilities when segmented by facility", async () => {
+		const query = vi.fn().mockResolvedValue({
+			rows: [
+				baseRow,
+				{ ...baseRow, location_id: 2, location_name: "Arena | B", games: 3 },
+				{ ...baseRow, location_id: 3, location_name: "Bay", games: 5 },
+			],
+		});
+		const view = await new WarehouseMetricDrillDownRepository({ query }).group({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		expect(view.rows[0]).toMatchObject({ id: "10", value: 20 });
+		expect(view.rows[0]?.facilities).toEqual([
+			expect.objectContaining({ name: "Arena", value: 15 }),
+			expect.objectContaining({ id: "3", name: "Bay", value: 5 }),
+		]);
+	});
+
 	it("maps warehouse rows onto facilities and facts for merge", () => {
 		const facility = toDrillDownFacility(baseRow);
 		expect(facility?.toJSON().metrics.gamesLast28Days).toBe(12);

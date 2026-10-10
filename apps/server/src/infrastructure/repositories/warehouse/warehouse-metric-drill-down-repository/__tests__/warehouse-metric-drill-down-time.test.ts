@@ -247,4 +247,62 @@ describe("calendar drill-down", () => {
 			expect.arrayContaining([expect.objectContaining({ id: "8", name: "Solo", facilityIds: [] })]),
 		);
 	});
+	it("groups time buckets by facility when segmented", () => {
+		const sql = metricDrillDownTimeSql({ ...query, segment: "facility" });
+		expect(sql).toContain("(a.bucket, a.facility_id)");
+		expect(sql).toContain("grouping(a.facility_id) = 0");
+		expect(sql).not.toContain("a.bucket, a.organizer_id");
+		expect(
+			metricDrillDownTimeSql({ ...query, measure: "unique-users", segment: "facility" }),
+		).not.toContain("a.bucket, a.facility_id");
+		const view = timeDrillDownView(
+			{ ...query, measure: "confirmation-rate", segment: "facility" },
+			[
+				result,
+				{ ...result, segment_facility_id: "a", value: "3", numerator: "3", denominator: "4" },
+				{ ...result, segment_facility_id: "b", value: "2", numerator: "1", denominator: "2" },
+				{ ...result, bucket: null, is_total: 1, value: "5" },
+			],
+			new Map([["a", "Arena"]]),
+		);
+		expect(view.rows[0]?.value).toBe(5);
+		expect(view.rows[0]?.facilities).toEqual([
+			{ id: "a", name: "Arena", value: 3, numerator: 3, denominator: 4, dataErrors: 1 },
+			{ id: "b", name: "b", value: 2, numerator: 1, denominator: 2, dataErrors: 1 },
+		]);
+		expect(view.rows[1]?.facilities).toEqual([]);
+		expect(timeDrillDownView(query, [result]).rows[0]?.facilities).toBeUndefined();
+	});
+	it("names facility segments from the merged facilities", async () => {
+		const location = {
+			location_id: 1,
+			location_name: "Arena",
+			address: "1 Main",
+			city: "Miami",
+			state: "FL",
+			region_id: 10,
+			region_name: "Miami",
+			location_latitude: 25.7,
+			location_longitude: -80.2,
+			games: 0,
+			magic_games: 0,
+			organizer_games: 0,
+			partnership_games: 0,
+			company_id: null,
+			company_logo: null,
+		};
+		const warehouse = {
+			query: vi
+				.fn()
+				.mockResolvedValueOnce({ rows: [location] })
+				.mockResolvedValueOnce({ rows: [{ ...result, segment_facility_id: "1", value: "4" }] }),
+		};
+		const view = await new WarehouseMetricDrillDownRepository(warehouse).group({
+			...query,
+			segment: "facility",
+		});
+		expect(view.rows[0]?.facilities).toEqual([
+			expect.objectContaining({ id: "1", name: "Arena", value: 4 }),
+		]);
+	});
 });

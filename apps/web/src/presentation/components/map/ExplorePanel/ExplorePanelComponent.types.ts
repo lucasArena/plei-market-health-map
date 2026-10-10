@@ -2,19 +2,21 @@ import type {
 	DrillDownMeasure,
 	DrillDownSegment,
 	DrillDownSlice,
+	MetricDrillDownFacilitySegment,
+	MetricDrillDownOrganizer,
 	MetricDrillDownRow,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
 import type { RefObject } from "react";
 
-export interface MetricDrillDownPanelProps {
+export interface ExplorePanelProps {
 	isOpen: boolean;
 	isClosing?: boolean;
 	onClosed?(): void;
 	onClose(): void;
 	triggerRef: RefObject<HTMLButtonElement | null>;
 }
-export interface MetricDrillDownSelection {
+export interface ExploreSelection {
 	measure: DrillDownMeasure;
 	slice: DrillDownSlice;
 	segment: DrillDownSegment;
@@ -22,7 +24,13 @@ export interface MetricDrillDownSelection {
 export interface MetricDrillDownFocus {
 	rowId: string;
 	department?: GameDepartment;
-	organizerId?: string;
+	groupId?: string;
+}
+export type DrillDownSegmentGroup = MetricDrillDownOrganizer | MetricDrillDownFacilitySegment;
+export interface DrillDownSegmentLegendItem {
+	id: string;
+	name: string;
+	value: number;
 }
 export type DrillDownSort =
 	| "count-desc"
@@ -40,8 +48,16 @@ export interface DrillDownChartBar {
 	isTop: boolean;
 	color: string;
 	department?: GameDepartment;
-	organizerId?: string;
+	groupId?: string;
 }
 export interface DrillDownChartRow extends MetricDrillDownRow {
 	bars: DrillDownChartBar[];
+}
+
+export interface PanelBox {
+	top: number;
+	left: number;
+	width: number;
+	height: number;
+	radius: string;
 }

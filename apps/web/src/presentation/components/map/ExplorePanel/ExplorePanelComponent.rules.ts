@@ -12,6 +12,7 @@ import type {
 } from "@market-health-map/core/application";
 import {
 	canSegmentDrillDown,
+	canSegmentDrillDownByFacility,
 	canSliceDrillDownByDepartment,
 	canSliceDrillDownByOrganizer,
 	crossesAppTrackingSourceSwitch,
@@ -21,21 +22,29 @@ import {
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { classifyGamesTrend } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
-import { type AnimationEvent, useEffect, useRef, useState } from "react";
+import { type AnimationEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { drillDownDatesPreference } from "@/infrastructure/cache/local-storage/drill-down-dates/drill-down-dates-preference";
-import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import {
 	DRILL_DOWN_COLORS,
+	DRILL_DOWN_FACILITY_SEGMENT_LIMIT,
+	DRILL_DOWN_OTHER_FACILITIES_COLOR,
+	DRILL_DOWN_RESIZE_EASING,
+	DRILL_DOWN_RESIZE_MS,
+	drillDownFacilityColor,
 	drillDownOrganizerColor,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
 import type {
 	DrillDownChartRow,
+	DrillDownSegmentGroup,
+	DrillDownSegmentLegendItem,
 	DrillDownSort,
+	ExplorePanelProps,
+	ExploreSelection,
 	MetricDrillDownFocus,
-	MetricDrillDownPanelProps,
-	MetricDrillDownSelection,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.types";
+	PanelBox,
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.types";
+import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
 import { useMessages } from "@/presentation/components/providers/MessagesProvider/MessagesProviderComponent";
 import { useFacilityListAll } from "@/presentation/hooks/use-facility/use-facility-list-all";
@@ -62,13 +71,13 @@ const EMPTY_VIEW: MetricDrillDownView = {
 	kind: "count",
 };
 
-export function useMetricDrillDownPanelRules({
+export function useExplorePanelRules({
 	isOpen,
 	isClosing,
 	onClosed,
 	onClose,
 	triggerRef,
-}: MetricDrillDownPanelProps) {
+}: ExplorePanelProps) {
 	const { scope, period, setMapNavigation, setMetricFocus } = useMapScope();
 	const { messages, locale } = useMessages();
 	const facilitiesQuery = useFacilityListAll();
@@ -77,7 +86,7 @@ export function useMetricDrillDownPanelRules({
 	const showSupply = layers?.showActiveFacilities ?? true;
 	const departmentKey = gameDepartments?.join(",") ?? "";
 	const scopeKey = scope.kind === "all" ? "all" : `${scope.kind}:${scope.id}`;
-	const [selection, setSelection] = useState<MetricDrillDownSelection>({
+	const [selection, setSelection] = useState<ExploreSelection>({
 		measure: "games",
 		slice: scope.kind === "all" ? "market" : "facility",
 		segment: "none",
@@ -119,7 +128,18 @@ export function useMetricDrillDownPanelRules({
 		}));
 	}
 	const [isExpanded, setExpanded] = useState(false);
-	const toggleExpanded = () => setExpanded((current) => !current);
+	const resizeFromRef = useRef<PanelBox | null>(null);
+	function changeExpanded(next: boolean) {
+		resizeFromRef.current = panelRef.current ? panelBox(panelRef.current) : null;
+		setExpanded(next);
+	}
+	const toggleExpanded = () => changeExpanded(!isExpanded);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs after each expand or collapse render
+	useLayoutEffect(() => {
+		const from = resizeFromRef.current;
+		resizeFromRef.current = null;
+		if (from && panelRef.current) animateExplorePanelResize(panelRef.current, from);
+	}, [isExpanded]);
 	function handleAnimationEnd(event: AnimationEvent<HTMLElement>) {
 		if (event.target === event.currentTarget && isClosing) onClosed?.();
 	}
@@ -130,13 +150,14 @@ export function useMetricDrillDownPanelRules({
 		if (!isOpen) return;
 		expandButtonRef.current?.focus();
 	}, [isOpen]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: changeExpanded only reads refs and isExpanded
 	useEffect(() => {
 		if (!isOpen) return;
 		function onKey(event: KeyboardEvent) {
-			if (event.key !== "Escape") return;
+			if (event.key !== "Escape" || event.defaultPrevented) return;
 			event.preventDefault();
 			if (isExpanded) {
-				setExpanded(false);
+				changeExpanded(false);
 				return;
 			}
 			onClose();
@@ -145,11 +166,24 @@ export function useMetricDrillDownPanelRules({
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
 	}, [isOpen, isExpanded, onClose, triggerRef]);
+	const canSegment = canSegmentDrillDown(selection.measure, selection.slice);
+	const canSegmentByFacility = canSegmentDrillDownByFacility(selection.measure, selection.slice);
+	const segment = {
+		none: true,
+		department: canSegment,
+		organizer: canSegment,
+		facility: canSegmentByFacility,
+	}[selection.segment]
+		? selection.segment
+		: "none";
+	const isGroupSegment = segment === "organizer" || segment === "facility";
+	const segmentGroupsOf = (row: MetricDrillDownRow): DrillDownSegmentGroup[] | null | undefined =>
+		segment === "facility" ? row.facilities : row.organizers;
 	const query = useMetricDrillDown({
 		measure: selection.measure,
 		range,
 		slice: selection.slice,
-		segment: selection.segment,
+		segment,
 		grain: isTime ? grain : "range",
 		comparison,
 		marketId: {
@@ -165,12 +199,18 @@ export function useMetricDrillDownPanelRules({
 	});
 	const view = effectiveSupply ? (query.data ?? EMPTY_VIEW) : EMPTY_VIEW;
 	const focusedRow = view.rows.find((row) => row.id === focus?.rowId);
-	const focusedOrganizer = focusedRow?.organizers?.find(
-		(organizer) => organizer.id === focus?.organizerId,
-	);
+	const focusedOrganizer =
+		segment === "organizer"
+			? focusedRow?.organizers?.find((organizer) => organizer.id === focus?.groupId)
+			: undefined;
+	const focusedFacility =
+		segment === "facility"
+			? focusedRow?.facilities?.find((facility) => facility.id === focus?.groupId)
+			: undefined;
+	const focusedGroup: DrillDownSegmentGroup | undefined = focusedOrganizer ?? focusedFacility;
 	const focusedValue = {
 		true: focusedRow?.value ?? null,
-		[`${!!focus?.organizerId}`]: focusedOrganizer?.value ?? null,
+		[`${!!focus?.groupId}`]: focusedGroup?.value ?? null,
 		[`${!!focus?.department}`]: focusedRow?.departments?.[focus?.department ?? "magic"] ?? null,
 	}.true;
 	const hasFocus = !!focusedRow;
@@ -179,14 +219,16 @@ export function useMetricDrillDownPanelRules({
 			setMetricFocus(null);
 			return;
 		}
-		const organizerFacilities = focusedOrganizer?.facilityIds ?? focusedRow.facilityIds ?? [];
+		const groupFacilities = focusedFacility
+			? [focusedFacility.id]
+			: (focusedOrganizer?.facilityIds ?? focusedRow.facilityIds ?? []);
 		const timeFacilities = {
 			true: focusedRow.facilityIds ?? [],
 			[`${!!focus?.department}`]:
 				focusedRow.departmentFacilityIds?.[focus?.department ?? "magic"] ??
 				focusedRow.facilityIds ??
 				[],
-			[`${!!focus?.organizerId}`]: organizerFacilities,
+			[`${!!focus?.groupId}`]: groupFacilities,
 		}.true;
 		const listedFacilities = (facilitiesQuery.data ?? [])
 			.filter(
@@ -200,22 +242,23 @@ export function useMetricDrillDownPanelRules({
 		const facilityIds = {
 			true: listedFacilities,
 			[`${isTime}`]: timeFacilities,
-			[`${selection.slice === "organizer" || !!focus?.organizerId}`]: organizerFacilities,
+			[`${selection.slice === "organizer" || !!focus?.groupId}`]: groupFacilities,
 		}.true;
 		const department = {
 			true: focus?.department,
 			[`${selection.slice === "department"}`]: focusedRow.id as GameDepartment,
-			[`${selection.slice === "organizer" || !!focus?.organizerId}`]: "organizers" as const,
+			[`${selection.slice === "organizer" || !!focusedOrganizer}`]: "organizers" as const,
 		}.true;
 		setMetricFocus({ facilityIds, department });
 	}, [
 		focusedRow,
 		focusedOrganizer,
+		focusedFacility,
 		facilitiesQuery.data,
 		scope,
 		selection.slice,
 		focus?.department,
-		focus?.organizerId,
+		focus?.groupId,
 		setMetricFocus,
 		isAppActivity,
 		isTime,
@@ -227,25 +270,23 @@ export function useMetricDrillDownPanelRules({
 	}, [comparison, range]);
 	function toggleFocus(
 		row: MetricDrillDownRow,
-		part?: { department?: GameDepartment; organizerId?: string },
+		part?: { department?: GameDepartment; groupId?: string },
 	) {
 		setFocus((current) =>
 			current?.rowId === row.id &&
 			current.department === part?.department &&
-			current.organizerId === part?.organizerId
+			current.groupId === part?.groupId
 				? null
-				: { rowId: row.id, department: part?.department, organizerId: part?.organizerId },
+				: { rowId: row.id, department: part?.department, groupId: part?.groupId },
 		);
 	}
 	const isSelected = (
 		row: MetricDrillDownRow,
-		part?: { department?: GameDepartment; organizerId?: string },
+		part?: { department?: GameDepartment; groupId?: string },
 	) =>
 		focus?.rowId === row.id &&
 		(part === undefined ||
-			(focus.department === part.department && focus.organizerId === part.organizerId));
-	const canSegment = canSegmentDrillDown(selection.measure, selection.slice);
-	const segment = canSegment ? selection.segment : "none";
+			(focus.department === part.department && focus.groupId === part.groupId));
 	const number = new Intl.NumberFormat(locale);
 	const rate = new Intl.NumberFormat(locale, {
 		minimumFractionDigits: 1,
@@ -377,11 +418,11 @@ export function useMetricDrillDownPanelRules({
 				{
 					...focusedRow,
 					...(focus?.department ? focusedRow.departmentParts?.[focus.department] : {}),
-					...(focusedOrganizer
+					...(focusedGroup
 						? {
-								numerator: focusedOrganizer.numerator,
-								denominator: focusedOrganizer.denominator,
-								dataErrors: focusedOrganizer.dataErrors,
+								numerator: focusedGroup.numerator,
+								denominator: focusedGroup.denominator,
+								dataErrors: focusedGroup.dataErrors,
 							}
 						: {}),
 					value: focusedValue,
@@ -389,7 +430,7 @@ export function useMetricDrillDownPanelRules({
 						true: focusedRow.previousValue,
 						[`${!!focus?.department}`]:
 							focusedRow.previousDepartments?.[focus?.department ?? "magic"] ?? null,
-						[`${!!focusedOrganizer}`]: focusedOrganizer?.previousValue ?? null,
+						[`${!!focusedGroup}`]: focusedGroup?.previousValue ?? null,
 					}.true,
 				},
 			]
@@ -418,8 +459,8 @@ export function useMetricDrillDownPanelRules({
 		? [...visibleRows].sort((a, b) => a.id.localeCompare(b.id))
 		: [...visibleRows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1)).slice(0, 10);
 	function selectedBarTotal(row: MetricDrillDownRow) {
-		if (segment === "organizer")
-			return (row.organizers ?? []).reduce((sum, organizer) => sum + (organizer.value ?? 0), 0);
+		if (isGroupSegment)
+			return (segmentGroupsOf(row) ?? []).reduce((sum, group) => sum + (group.value ?? 0), 0);
 		return Object.values(row.departments ?? {}).reduce<number>(
 			(sum, value) => sum + (value ?? 0),
 			0,
@@ -438,27 +479,35 @@ export function useMetricDrillDownPanelRules({
 	const appliedDepartments = gameDepartments?.length ? gameDepartments : DRILL_DOWN_DEPARTMENTS;
 	const selectedDepartments =
 		hasFocus && focus?.department ? [focus.department] : appliedDepartments;
-	const organizerLegend = (() => {
-		const byId = new Map<string, { id: string; name: string; value: number }>();
+	const segmentLegend = (() => {
+		const byId = new Map<string, DrillDownSegmentLegendItem>();
 		for (const row of availableRows) {
-			for (const organizer of row.organizers ?? []) {
-				const current = byId.get(organizer.id) ?? {
-					id: organizer.id,
-					name: organizer.name,
-					value: 0,
-				};
-				current.value += organizer.value ?? 0;
-				byId.set(organizer.id, current);
+			for (const group of segmentGroupsOf(row) ?? []) {
+				const current = byId.get(group.id) ?? { id: group.id, name: group.name, value: 0 };
+				current.value += group.value ?? 0;
+				byId.set(group.id, current);
 			}
 		}
 		return [...byId.values()].sort(
 			(left, right) => right.value - left.value || left.name.localeCompare(right.name, locale),
 		);
 	})();
-	const selectedOrganizers =
-		hasFocus && focus?.organizerId
-			? organizerLegend.filter((organizer) => organizer.id === focus.organizerId)
-			: organizerLegend;
+	const segmentColor = (id: string) => {
+		const index = segmentLegend.findIndex((group) => group.id === id);
+		return segment === "facility" ? drillDownFacilityColor(index) : drillDownOrganizerColor(index);
+	};
+	const hasOtherFacilities =
+		segment === "facility" && segmentLegend.length > DRILL_DOWN_FACILITY_SEGMENT_LIMIT;
+	const focusedLegend =
+		hasFocus && focus?.groupId
+			? segmentLegend.filter((group) => group.id === focus.groupId)
+			: undefined;
+	const segmentColumns =
+		focusedLegend ??
+		(segment === "facility"
+			? segmentLegend.slice(0, DRILL_DOWN_FACILITY_SEGMENT_LIMIT)
+			: segmentLegend);
+	const segmentBars = focusedLegend ?? segmentLegend;
 	const chartRows: DrillDownChartRow[] = topRows.map((row) => {
 		if (row.value === null) return { ...row, bars: [] };
 		if (segment === "department") {
@@ -492,25 +541,24 @@ export function useMetricDrillDownPanelRules({
 					})),
 			};
 		}
-		if (segment === "organizer") {
-			if (row.organizers == null) return { ...row, bars: [] };
+		if (isGroupSegment) {
+			const groups = segmentGroupsOf(row);
+			if (groups == null) return { ...row, bars: [] };
 			return {
 				...row,
-				bars: selectedOrganizers
+				bars: segmentBars
 					.flatMap((legend) => {
-						const organizer = row.organizers?.find((item) => item.id === legend.id);
-						const value = organizer?.value;
+						const group = groups.find((item) => item.id === legend.id);
+						const value = group?.value;
 						if (value == null) return [];
 						return [
 							{
 								id: legend.id,
-								organizerId: legend.id,
-								color: drillDownOrganizerColor(
-									organizerLegend.findIndex((item) => item.id === legend.id),
-								),
+								groupId: legend.id,
+								color: segmentColor(legend.id),
 								label: [
 									`${rowName(row)} · ${legend.name}: ${formatValue(value)}`,
-									rateParts(organizer ?? {}),
+									rateParts(group ?? {}),
 								]
 									.filter(Boolean)
 									.join(" · "),
@@ -557,16 +605,22 @@ export function useMetricDrillDownPanelRules({
 				(!canSliceDrillDownByDepartment(measure) && current.slice === "department")
 					? "market"
 					: current.slice,
-			segment: canSliceDrillDownByDepartment(measure) ? current.segment : "none",
+			segment:
+				isAppActivityMeasure(measure) ||
+				(current.segment !== "facility" && !canSliceDrillDownByDepartment(measure))
+					? "none"
+					: current.segment,
 		}));
 	}
 	function setSlice(slice: DrillDownSlice) {
 		setFocus(null);
-		setSelection((current) => ({
-			...current,
-			slice,
-			segment: slice === "department" || slice === "organizer" ? "none" : current.segment,
-		}));
+		setSelection((current) => {
+			const keepsSegment =
+				current.segment === "facility"
+					? slice !== "facility"
+					: slice !== "department" && slice !== "organizer";
+			return { ...current, slice, segment: keepsSegment ? current.segment : "none" };
+		});
 	}
 	function setSegment(next: DrillDownSegment) {
 		setFocus(null);
@@ -583,6 +637,7 @@ export function useMetricDrillDownPanelRules({
 		setRangeState(next);
 	}
 	function viewOnMap(row: MetricDrillDownRow) {
+		if (isExpanded) changeExpanded(false);
 		const isMarketRow =
 			selection.slice === "market" &&
 			(facilitiesQuery.data ?? []).some((facility) => facility.marketId === row.id);
@@ -614,7 +669,7 @@ export function useMetricDrillDownPanelRules({
 			denominator: undefined,
 			dataErrors: undefined,
 		},
-		[`${!!focusedOrganizer}`]: focusedOrganizer ?? view,
+		[`${!!focusedGroup}`]: focusedGroup ?? view,
 	}.true;
 	const headlineTemplate = headlinePartsTemplates[selection.measure];
 	const headlineParts =
@@ -632,7 +687,7 @@ export function useMetricDrillDownPanelRules({
 			[`${hasFocus}`]: focusedRow?.previousValue,
 			[`${hasFocus && !!focus?.department}`]:
 				focusedRow?.previousDepartments?.[focus?.department ?? "magic"],
-			[`${hasFocus && !!focusedOrganizer}`]: focusedOrganizer?.previousValue,
+			[`${hasFocus && !!focusedGroup}`]: focusedGroup?.previousValue,
 		}.true,
 	);
 	return {
@@ -658,6 +713,8 @@ export function useMetricDrillDownPanelRules({
 		range,
 		segment,
 		canSegment,
+		canSegmentByFacility,
+		isGroupSegment,
 		canSliceByDepartment: canSliceDrillDownByDepartment(selection.measure),
 		canSliceByOrganizer: canSliceDrillDownByOrganizer(selection.measure),
 		setMeasure,
@@ -687,7 +744,7 @@ export function useMetricDrillDownPanelRules({
 					{
 						true: "",
 						[`${!!focus?.department}`]: ` · ${departmentNames[focus?.department ?? "magic"]}`,
-						[`${!!focusedOrganizer}`]: ` · ${focusedOrganizer?.name ?? ""}`,
+						[`${!!focusedGroup}`]: ` · ${focusedGroup?.name ?? ""}`,
 					}.true
 				}`
 			: undefined,
@@ -702,9 +759,15 @@ export function useMetricDrillDownPanelRules({
 		rowName,
 		departmentNames,
 		departments: selectedDepartments,
-		organizers: selectedOrganizers,
-		organizerColor: (id: string) =>
-			drillDownOrganizerColor(organizerLegend.findIndex((organizer) => organizer.id === id)),
+		segmentColumns,
+		segmentColor,
+		segmentGroupsOf,
+		otherFacilitiesColor: hasOtherFacilities ? DRILL_DOWN_OTHER_FACILITIES_COLOR : undefined,
+		facilitySegmentNote: hasOtherFacilities
+			? formatMessage(messages.drillDown.facilitySegmentTop, {
+					count: number.format(DRILL_DOWN_FACILITY_SEGMENT_LIMIT),
+				})
+			: undefined,
 		filteredDepartments: isAppActivity ? [] : (gameDepartments ?? []),
 		isAppActivity,
 		sourceSwitchPosition: sourceSwitchPosition(chartRows),
@@ -736,7 +799,55 @@ export function useMetricDrillDownPanelRules({
 				(row) =>
 					row.value === null ||
 					(segment === "department" && row.departments === null) ||
-					(segment === "organizer" && row.organizers == null),
+					(isGroupSegment && segmentGroupsOf(row) == null),
 			),
 	};
+}
+
+function panelBox(panel: HTMLElement): PanelBox {
+	const rect = panel.getBoundingClientRect();
+	return {
+		top: rect.top,
+		left: rect.left,
+		width: rect.width,
+		height: rect.height,
+		radius: getComputedStyle(panel).borderRadius,
+	};
+}
+
+const RESIZE_ANIMATION_ID = "explore-panel-resize";
+
+/**
+ * FLIP-style resize: the panel has already rendered at its new size, so animate the real box
+ * (top, left, width and height, not a scale) from where it was. Content reflows every frame, so
+ * the chart and table widen with it. Interrupting starts from the current animated box.
+ */
+export function animateExplorePanelResize(panel: HTMLElement, from: PanelBox): void {
+	if (typeof panel.animate !== "function") return;
+	for (const animation of panel.getAnimations?.() ?? [])
+		if (animation.id === RESIZE_ANIMATION_ID) animation.cancel();
+	if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+	const to = panelBox(panel);
+	if (
+		from.top === to.top &&
+		from.left === to.left &&
+		from.width === to.width &&
+		from.height === to.height
+	)
+		return;
+	const frame = (box: PanelBox) => ({
+		top: `${box.top}px`,
+		left: `${box.left}px`,
+		width: `${box.width}px`,
+		height: `${box.height}px`,
+		borderRadius: box.radius,
+		right: "auto",
+		bottom: "auto",
+		maxHeight: "none",
+	});
+	panel.animate([frame(from), frame(to)], {
+		id: RESIZE_ANIMATION_ID,
+		duration: DRILL_DOWN_RESIZE_MS,
+		easing: DRILL_DOWN_RESIZE_EASING,
+	});
 }

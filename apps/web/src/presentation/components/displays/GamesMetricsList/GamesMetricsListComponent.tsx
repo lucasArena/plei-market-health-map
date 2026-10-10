@@ -44,7 +44,7 @@ import {
 import {
 	CHART_GRIDLINE_CLASS,
 	CHART_TICK_LABEL_POSITION_CLASS,
-} from "@/presentation/components/map/MetricDrillDownPanel/MetricDrillDownPanelComponent.styles";
+} from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
 
 const ICON_PROPS = {
 	viewBox: "0 0 24 24",

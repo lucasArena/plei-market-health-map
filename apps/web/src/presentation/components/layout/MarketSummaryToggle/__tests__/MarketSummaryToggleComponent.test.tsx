@@ -86,7 +86,7 @@ describe("MarketSummaryToggle", () => {
 		renderWithMessages(<MarketSummaryToggle />);
 
 		const button = screen.getByRole("button", { name: "Market summary" });
-		expect(button).toHaveAttribute("title", "Market summary");
+		expect(button).toHaveAttribute("title", "Insights panel");
 		expect(button).toHaveAttribute("aria-expanded", "false");
 		expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 		expect(panelProps).not.toHaveBeenCalled();

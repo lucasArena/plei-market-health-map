@@ -499,6 +499,7 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 				),
 				measure: query.measure,
 				slice: query.slice,
+				segment: query.segment,
 				marketId: query.marketId,
 				facilityId: query.facilityId,
 				department: query.department,
@@ -519,6 +520,7 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 				facilities: organizerFactsFrom(scoped, rows),
 				measure: query.measure,
 				slice: query.slice,
+				segment: query.segment,
 				marketId: query.marketId,
 				facilityId: query.facilityId,
 				department: query.department,
@@ -545,6 +547,7 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 				),
 				measure: query.measure,
 				slice: query.slice,
+				segment: query.segment,
 				marketId: query.marketId,
 				facilityId: query.facilityId,
 				department: query.department,
@@ -570,6 +573,7 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 			),
 			measure: query.measure,
 			slice: query.slice,
+			segment: query.segment,
 			marketId: query.marketId,
 			facilityId: query.facilityId,
 			department: query.department,
@@ -603,7 +607,11 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 			JSON.stringify(mapping),
 			query.marketId ?? null,
 		]);
-		return timeDrillDownView(query, rows);
+		return timeDrillDownView(
+			query,
+			rows,
+			new Map(facilities.map((facility) => [String(facility.id), facility.toJSON().name])),
+		);
 	}
 
 	private async groupCounts(
@@ -642,6 +650,7 @@ export class WarehouseMetricDrillDownRepository implements MetricDrillDownReposi
 			),
 			measure: query.measure,
 			slice: query.slice,
+			segment: query.segment,
 			marketId: query.marketId,
 			facilityId: query.facilityId,
 			department: query.department,

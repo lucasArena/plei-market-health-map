@@ -1,5 +1,6 @@
 import type {
 	DrillDownMeasure,
+	DrillDownSegment,
 	DrillDownSlice,
 	MetricDrillDownRow,
 	MetricDrillDownView,
@@ -62,6 +63,7 @@ export interface AggregateCountDrillDownInput {
 	facilities: readonly DrillDownFacilityFact[];
 	measure: DrillDownMeasure;
 	slice: DrillDownSlice;
+	segment?: DrillDownSegment;
 	marketId?: string;
 	facilityId?: string;
 	department?: GameDepartment;
@@ -71,10 +73,16 @@ export interface AggregateCountDrillDownInput {
 	range: MetricDrillDownView["range"];
 }
 
+export interface DrillDownContributionFacility {
+	id: string;
+	name: string;
+}
+
 export interface DistinctCountContribution {
 	id: string;
 	name: string;
 	memberKeys: readonly string[];
+	facility?: DrillDownContributionFacility;
 	facilityIds?: readonly string[];
 	departments?: Partial<Record<GameDepartment, readonly string[]>> | null;
 	organizers?:
@@ -93,6 +101,7 @@ export interface RateContribution {
 	numerator: number | null;
 	denominator: number | null;
 	dataErrors?: number;
+	facility?: DrillDownContributionFacility;
 	facilityIds?: readonly string[];
 	departments?: Partial<
 		Record<GameDepartment, { numerator: number | null; denominator: number | null }>

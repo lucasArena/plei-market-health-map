@@ -21,6 +21,13 @@ export function drillDownOrganizerColor(index: number): string {
 		PLEIFUL_COLORS.sky[50]
 	);
 }
+export const DRILL_DOWN_FACILITY_SEGMENT_LIMIT = DRILL_DOWN_ORGANIZER_COLORS.length;
+export const DRILL_DOWN_OTHER_FACILITIES_COLOR = PLEIFUL_COLORS.neutral[40];
+export function drillDownFacilityColor(index: number): string {
+	return index >= 0 && index < DRILL_DOWN_FACILITY_SEGMENT_LIMIT
+		? drillDownOrganizerColor(index)
+		: DRILL_DOWN_OTHER_FACILITIES_COLOR;
+}
 export const DRILL_DOWN_PANEL_CLASS = MARKET_SUMMARY_PANEL_CLASS;
 export const DRILL_DOWN_EXPAND_BUTTON_CLASS = `${SOFT_GLASS_CLASS} flex size-7 shrink-0 cursor-pointer items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
 export const DRILL_DOWN_BAR_CLASS =
@@ -29,10 +36,20 @@ export const DRILL_DOWN_BAR_TOP_CLASS = "rounded-t-[5px]";
 export function drillDownGlassColor(color: string): string {
 	return `color-mix(in srgb, ${color} 92%, transparent)`;
 }
-export const DRILL_DOWN_EXPANDED_PANEL_CLASS = `${MARKET_SUMMARY_PANEL_CLASS.replace(
-	"w-[min(28rem,calc(100vw-2*var(--map-frame)))]",
-	"w-[min(72rem,calc(100vw-2*var(--map-frame)))]",
-)} h-[calc(100dvh-2*var(--map-frame)-40px)] max-sm:h-[calc(100dvh-2*var(--map-frame)-80px)]`;
+/**
+ * Expanded is a focus view over the whole viewport, like Linear's. Same glass surface as the
+ * docked panel; `animateExplorePanelResize` grows the box between the two.
+ */
+export const DRILL_DOWN_EXPANDED_PANEL_CLASS =
+	"pointer-events-auto fixed inset-0 z-[60] flex h-dvh w-screen flex-col overflow-hidden map-glass rounded-none border-0 shadow-[var(--map-shadow)]";
+export const DRILL_DOWN_BACK_TO_MAP_BUTTON_CLASS = `${SOFT_GLASS_CLASS.replace("aria-pressed:text-foreground", "aria-pressed:text-foreground/60")} flex h-7 shrink-0 cursor-pointer items-center gap-1.5 px-2.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
+export const DRILL_DOWN_CHART_HEIGHT_CLASS = {
+	docked: "h-52",
+	expanded: "h-[clamp(20rem,45dvh,36rem)]",
+};
+/** Apple-like ease for the expand and collapse resize. */
+export const DRILL_DOWN_RESIZE_EASING = "cubic-bezier(0.32, 0.72, 0, 1)";
+export const DRILL_DOWN_RESIZE_MS = 360;
 
 export const DRILL_DOWN_SKELETON_CLASS =
 	"animate-pulse rounded bg-foreground/[0.07] motion-reduce:animate-none";

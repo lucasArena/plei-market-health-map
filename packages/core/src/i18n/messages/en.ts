@@ -62,6 +62,7 @@ export const en: Messages = {
 		sessionHeatmapMidValue: "{count} sessions in a shaded area",
 		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
 		layersBrand: "Market Health Map",
+		layersTooltip: "Control panel",
 		layersHeading: "Layers",
 		layersFacilities: "Facilities",
 		layersDemand: "Demand",
@@ -275,9 +276,9 @@ export const en: Messages = {
 		sourceSwitch:
 			"Tracking source changed after June 29, 2026: Mixpanel + UXCam → Firebase Analytics. This range includes both sources.",
 
-		title: "Metric drill-down",
-		expand: "Expand drill-down",
-		collapse: "Collapse drill-down",
+		title: "Explore panel",
+		expand: "Expand Explore panel",
+		collapse: "Back to map",
 		filteredBy: "Filtered by",
 		supplyHidden: "Supply is hidden. Turn it on in Filters to see results.",
 		selectionHelp: "Click a bar or row to select it. Click again to clear.",
@@ -339,7 +340,10 @@ export const en: Messages = {
 			"Showing the selected department. Go back to compare departments again.",
 		selectedOrganizerHelp: "Showing the selected organizer. Go back to compare organizers again.",
 		segmentUnavailable:
-			"Department and organizer segments are available when grouping by market, facility or date. Organizer groups count Organizer Program partners only, not Magic.",
+			"Department and organizer segments are available when grouping by market, facility or date, and facility segments for every grouping except Facility. Organizer groups count Organizer Program partners only, not Magic.",
+		facilitySegmentTop:
+			"Colors and columns show the {count} largest facilities. Hover a gray part of a bar to see the others.",
+		otherFacilities: "Other facilities",
 		topTen: "Top 10",
 		chart: "Metric by group",
 		value: "Count",
@@ -355,6 +359,7 @@ export const en: Messages = {
 		incomplete: "Some game counts are unavailable. Totals containing missing data are not shown.",
 	},
 	marketSummary: {
+		tooltip: "Insights panel",
 		open: "Market summary",
 		close: "Close market summary",
 		label: "Market summary",

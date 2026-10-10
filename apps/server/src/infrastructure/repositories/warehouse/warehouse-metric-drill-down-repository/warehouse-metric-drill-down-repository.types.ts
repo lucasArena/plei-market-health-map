@@ -90,6 +90,7 @@ export interface WarehouseTimeRow {
 	department: GameDepartment | null;
 	organizer_id?: string | null;
 	organizer_name?: string | null;
+	segment_facility_id?: string | null;
 	is_total: number;
 	value: number | string | null;
 	numerator: number | string;

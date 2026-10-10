@@ -19,6 +19,7 @@ export class InMemoryMetricDrillDownRepository implements MetricDrillDownReposit
 			facilities: this.facilities,
 			measure: query.measure,
 			slice: query.slice,
+			segment: query.segment,
 			marketId: query.marketId,
 			facilityId: query.facilityId,
 			department: query.department,

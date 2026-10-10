@@ -65,6 +65,7 @@ export const es: Messages = {
 		sessionHeatmapMidValue: "{count} sesiones en un área sombreada",
 		sessionHeatmapHighValue: "{count}+ sesiones en un área sombreada",
 		layersBrand: "Market Health Map",
+		layersTooltip: "Panel de control",
 		layersHeading: "Capas",
 		layersFacilities: "Sedes",
 		layersDemand: "Demanda",
@@ -280,9 +281,9 @@ export const es: Messages = {
 		sourceSwitch:
 			"La fuente de seguimiento cambió después del 29 de junio de 2026: Mixpanel + UXCam → Firebase Analytics. Este rango incluye ambas fuentes.",
 
-		title: "Desglose de métricas",
-		expand: "Ampliar desglose",
-		collapse: "Contraer desglose",
+		title: "Panel Explorar",
+		expand: "Ampliar panel Explorar",
+		collapse: "Volver al mapa",
 		filteredBy: "Filtrado por",
 		supplyHidden: "La oferta está oculta. Actívala en Filtros para ver los resultados.",
 		selectionHelp:
@@ -348,7 +349,10 @@ export const es: Messages = {
 		selectedOrganizerHelp:
 			"Se muestra el organizador seleccionado. Vuelve para comparar organizadores otra vez.",
 		segmentUnavailable:
-			"Los segmentos por departamento y organizador están disponibles al agrupar por mercado, instalación o fecha. Los grupos de organizadores cuentan solo socios del Programa de Organizadores, no Magic.",
+			"Los segmentos por departamento y organizador están disponibles al agrupar por mercado, instalación o fecha, y los segmentos por instalación en cualquier agrupación excepto Instalación. Los grupos de organizadores cuentan solo socios del Programa de Organizadores, no Magic.",
+		facilitySegmentTop:
+			"Los colores y las columnas muestran las {count} instalaciones más grandes. Pasa el cursor sobre una parte gris de una barra para ver las demás.",
+		otherFacilities: "Otras instalaciones",
 		topTen: "Los 10 mayores",
 		chart: "Métrica por grupo",
 		value: "Cantidad",
@@ -365,6 +369,7 @@ export const es: Messages = {
 			"Algunos recuentos no están disponibles. No se muestran totales con datos faltantes.",
 	},
 	marketSummary: {
+		tooltip: "Panel de información",
 		open: "Resumen del mercado",
 		close: "Cerrar resumen del mercado",
 		label: "Resumen del mercado",

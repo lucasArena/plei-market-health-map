@@ -1,7 +1,7 @@
 import type { SortIconProps } from "@/presentation/components/displays/SortIcon/SortIconComponent.types";
 
 /**
- * Staging's table sort icon (MetricDrillDownPanel on origin/staging): a 12px
+ * Staging's table sort icon (ExplorePanel on origin/staging): a 12px
  * chevron, 1.25 stroke, muted-foreground. The active column shows it at 80%
  * (up for ascending, down for descending); other columns hide it and show it at
  * 40% on hover or keyboard focus of the parent `group` button.
