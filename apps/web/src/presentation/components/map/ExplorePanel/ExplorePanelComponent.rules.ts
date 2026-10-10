@@ -22,13 +22,15 @@ import {
 import type { GameDepartment } from "@market-health-map/core/domain";
 import { classifyGamesTrend } from "@market-health-map/core/domain";
 import { formatMessage } from "@market-health-map/core/i18n";
-import { type AnimationEvent, useEffect, useRef, useState } from "react";
+import { type AnimationEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PLEIFUL_COLORS } from "@/application/constants/brand-colors";
 import { drillDownDatesPreference } from "@/infrastructure/cache/local-storage/drill-down-dates/drill-down-dates-preference";
 import {
 	DRILL_DOWN_COLORS,
 	DRILL_DOWN_FACILITY_SEGMENT_LIMIT,
 	DRILL_DOWN_OTHER_FACILITIES_COLOR,
+	DRILL_DOWN_RESIZE_EASING,
+	DRILL_DOWN_RESIZE_MS,
 	drillDownFacilityColor,
 	drillDownOrganizerColor,
 } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.styles";
@@ -40,6 +42,7 @@ import type {
 	ExplorePanelProps,
 	ExploreSelection,
 	MetricDrillDownFocus,
+	PanelBox,
 } from "@/presentation/components/map/ExplorePanel/ExplorePanelComponent.types";
 import { useMapLayers } from "@/presentation/components/map/MapLayersPanel/MapLayersPanelComponent.context";
 import { useMapScope } from "@/presentation/components/providers/MapScopeProvider/MapScopeProviderComponent";
@@ -125,7 +128,18 @@ export function useExplorePanelRules({
 		}));
 	}
 	const [isExpanded, setExpanded] = useState(false);
-	const toggleExpanded = () => setExpanded((current) => !current);
+	const resizeFromRef = useRef<PanelBox | null>(null);
+	function changeExpanded(next: boolean) {
+		resizeFromRef.current = panelRef.current ? panelBox(panelRef.current) : null;
+		setExpanded(next);
+	}
+	const toggleExpanded = () => changeExpanded(!isExpanded);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs after each expand or collapse render
+	useLayoutEffect(() => {
+		const from = resizeFromRef.current;
+		resizeFromRef.current = null;
+		if (from && panelRef.current) animateExplorePanelResize(panelRef.current, from);
+	}, [isExpanded]);
 	function handleAnimationEnd(event: AnimationEvent<HTMLElement>) {
 		if (event.target === event.currentTarget && isClosing) onClosed?.();
 	}
@@ -136,13 +150,14 @@ export function useExplorePanelRules({
 		if (!isOpen) return;
 		expandButtonRef.current?.focus();
 	}, [isOpen]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: changeExpanded only reads refs and isExpanded
 	useEffect(() => {
 		if (!isOpen) return;
 		function onKey(event: KeyboardEvent) {
-			if (event.key !== "Escape") return;
+			if (event.key !== "Escape" || event.defaultPrevented) return;
 			event.preventDefault();
 			if (isExpanded) {
-				setExpanded(false);
+				changeExpanded(false);
 				return;
 			}
 			onClose();
@@ -622,6 +637,7 @@ export function useExplorePanelRules({
 		setRangeState(next);
 	}
 	function viewOnMap(row: MetricDrillDownRow) {
+		if (isExpanded) changeExpanded(false);
 		const isMarketRow =
 			selection.slice === "market" &&
 			(facilitiesQuery.data ?? []).some((facility) => facility.marketId === row.id);
@@ -786,4 +802,52 @@ export function useExplorePanelRules({
 					(isGroupSegment && segmentGroupsOf(row) == null),
 			),
 	};
+}
+
+function panelBox(panel: HTMLElement): PanelBox {
+	const rect = panel.getBoundingClientRect();
+	return {
+		top: rect.top,
+		left: rect.left,
+		width: rect.width,
+		height: rect.height,
+		radius: getComputedStyle(panel).borderRadius,
+	};
+}
+
+const RESIZE_ANIMATION_ID = "explore-panel-resize";
+
+/**
+ * FLIP-style resize: the panel has already rendered at its new size, so animate the real box
+ * (top, left, width and height, not a scale) from where it was. Content reflows every frame, so
+ * the chart and table widen with it. Interrupting starts from the current animated box.
+ */
+export function animateExplorePanelResize(panel: HTMLElement, from: PanelBox): void {
+	if (typeof panel.animate !== "function") return;
+	for (const animation of panel.getAnimations?.() ?? [])
+		if (animation.id === RESIZE_ANIMATION_ID) animation.cancel();
+	if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+	const to = panelBox(panel);
+	if (
+		from.top === to.top &&
+		from.left === to.left &&
+		from.width === to.width &&
+		from.height === to.height
+	)
+		return;
+	const frame = (box: PanelBox) => ({
+		top: `${box.top}px`,
+		left: `${box.left}px`,
+		width: `${box.width}px`,
+		height: `${box.height}px`,
+		borderRadius: box.radius,
+		right: "auto",
+		bottom: "auto",
+		maxHeight: "none",
+	});
+	panel.animate([frame(from), frame(to)], {
+		id: RESIZE_ANIMATION_ID,
+		duration: DRILL_DOWN_RESIZE_MS,
+		easing: DRILL_DOWN_RESIZE_EASING,
+	});
 }

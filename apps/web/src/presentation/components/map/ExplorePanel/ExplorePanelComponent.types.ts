@@ -53,3 +53,11 @@ export interface DrillDownChartBar {
 export interface DrillDownChartRow extends MetricDrillDownRow {
 	bars: DrillDownChartBar[];
 }
+
+export interface PanelBox {
+	top: number;
+	left: number;
+	width: number;
+	height: number;
+	radius: string;
+}

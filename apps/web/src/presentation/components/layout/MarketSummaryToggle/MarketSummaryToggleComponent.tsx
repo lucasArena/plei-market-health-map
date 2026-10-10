@@ -27,7 +27,7 @@ export function MarketSummaryToggle() {
 				onPointerEnter={prefetchScope}
 				onFocus={prefetchScope}
 				aria-label={messages.open}
-				title={messages.open}
+				title={messages.tooltip}
 				aria-expanded={isActive}
 				aria-pressed={isActive}
 				className={MARKET_SUMMARY_TOGGLE_BASE_CLASS}

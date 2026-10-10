@@ -64,6 +64,7 @@ export const ptBR: Messages = {
 		sessionHeatmapMidValue: "{count} sessões em uma área sombreada",
 		sessionHeatmapHighValue: "{count}+ sessões em uma área sombreada",
 		layersBrand: "Market Health Map",
+		layersTooltip: "Painel de controle",
 		layersHeading: "Camadas",
 		layersFacilities: "Instalações",
 		layersDemand: "Demanda",
@@ -281,7 +282,7 @@ export const ptBR: Messages = {
 
 		title: "Painel Explorar",
 		expand: "Expandir painel Explorar",
-		collapse: "Recolher painel Explorar",
+		collapse: "Voltar ao mapa",
 		filteredBy: "Filtrado por",
 		supplyHidden: "Oferta está oculta. Ative-a em Filtros para ver os resultados.",
 		selectionHelp: "Clique em uma barra ou linha para selecionar. Clique novamente para limpar.",
@@ -366,6 +367,7 @@ export const ptBR: Messages = {
 			"Algumas contagens de jogos estão indisponíveis. Totais com dados ausentes não são exibidos.",
 	},
 	marketSummary: {
+		tooltip: "Painel de insights",
 		open: "Resumo do mercado",
 		close: "Fechar resumo do mercado",
 		label: "Resumo do mercado",

@@ -65,6 +65,7 @@ export const es: Messages = {
 		sessionHeatmapMidValue: "{count} sesiones en un área sombreada",
 		sessionHeatmapHighValue: "{count}+ sesiones en un área sombreada",
 		layersBrand: "Market Health Map",
+		layersTooltip: "Panel de control",
 		layersHeading: "Capas",
 		layersFacilities: "Sedes",
 		layersDemand: "Demanda",
@@ -282,7 +283,7 @@ export const es: Messages = {
 
 		title: "Panel Explorar",
 		expand: "Ampliar panel Explorar",
-		collapse: "Contraer panel Explorar",
+		collapse: "Volver al mapa",
 		filteredBy: "Filtrado por",
 		supplyHidden: "La oferta está oculta. Actívala en Filtros para ver los resultados.",
 		selectionHelp:
@@ -368,6 +369,7 @@ export const es: Messages = {
 			"Algunos recuentos no están disponibles. No se muestran totales con datos faltantes.",
 	},
 	marketSummary: {
+		tooltip: "Panel de información",
 		open: "Resumen del mercado",
 		close: "Cerrar resumen del mercado",
 		label: "Resumen del mercado",

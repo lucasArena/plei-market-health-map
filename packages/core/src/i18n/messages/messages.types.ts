@@ -51,6 +51,7 @@ export interface Messages {
 		sessionHeatmapHighValue: string;
 		layersBrand: string;
 		layersHeading: string;
+		layersTooltip: string;
 		layersFacilities: string;
 		layersDemand: string;
 		layersSupply: string;
@@ -328,6 +329,7 @@ export interface Messages {
 		incomplete: string;
 	};
 	marketSummary: {
+		tooltip: string;
 		open: string;
 		close: string;
 		label: string;

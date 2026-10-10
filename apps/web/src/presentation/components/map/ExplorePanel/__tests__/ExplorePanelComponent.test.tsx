@@ -456,12 +456,13 @@ describe("ExplorePanel", () => {
 		expect(bar.style.height).toBe("20%");
 		expect(bar.style.width).toBe("");
 		fireEvent.click(screen.getByRole("button", { name: "Expand Explore panel" }));
-		expect(screen.getByRole("button", { name: "Collapse Explore panel" })).toHaveAttribute(
+		expect(screen.getByRole("button", { name: "Back to map" })).toHaveAttribute(
 			"aria-pressed",
 			"true",
 		);
+		expect(screen.queryByRole("complementary", { name: "Layers" })).not.toBeInTheDocument();
 		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("Department");
-		fireEvent.click(screen.getByRole("button", { name: "Collapse Explore panel" }));
+		fireEvent.click(screen.getByRole("button", { name: "Back to map" }));
 		fireEvent.click(screen.getByRole("button", { name: "Expand Explore panel" }));
 		fireEvent.keyDown(document, { key: "Escape" });
 		expect(screen.getByRole("button", { name: "Expand Explore panel" })).toHaveAttribute(
@@ -648,9 +649,14 @@ describe("ExplorePanel", () => {
 	it("selects the market from its map icon and shows that market in the Explore panel for the same metric", () => {
 		const { onClose, props, rerender } = setup();
 		select("Measure", "scheduled-games");
+		fireEvent.click(screen.getByRole("button", { name: "Expand Explore panel" }));
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Miami" }));
 		expect(navigate).toHaveBeenLastCalledWith({ kind: "market", id: "miami", name: "Miami" });
 		expect(onClose).not.toHaveBeenCalled();
+		expect(screen.getByRole("button", { name: "Expand Explore panel" })).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
 
 		scope = { kind: "market", id: "miami", name: "Miami" };
 		rerender(<ExplorePanel {...props} />);
@@ -662,7 +668,12 @@ describe("ExplorePanel", () => {
 		);
 		expect(screen.queryByRole("button", { name: "View on map: Court" })).not.toBeInTheDocument();
 
+		fireEvent.click(screen.getByRole("button", { name: "Expand Explore panel" }));
 		fireEvent.click(screen.getByRole("button", { name: "View on map: Arena" }));
+		expect(screen.getByRole("button", { name: "Expand Explore panel" })).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
 		expect(navigate).toHaveBeenLastCalledWith({ kind: "metric-focus", facilityIds: ["a"] });
 		expect(onClose).not.toHaveBeenCalled();
 	});

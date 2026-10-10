@@ -62,6 +62,7 @@ export const en: Messages = {
 		sessionHeatmapMidValue: "{count} sessions in a shaded area",
 		sessionHeatmapHighValue: "{count}+ sessions in a shaded area",
 		layersBrand: "Market Health Map",
+		layersTooltip: "Control panel",
 		layersHeading: "Layers",
 		layersFacilities: "Facilities",
 		layersDemand: "Demand",
@@ -277,7 +278,7 @@ export const en: Messages = {
 
 		title: "Explore panel",
 		expand: "Expand Explore panel",
-		collapse: "Collapse Explore panel",
+		collapse: "Back to map",
 		filteredBy: "Filtered by",
 		supplyHidden: "Supply is hidden. Turn it on in Filters to see results.",
 		selectionHelp: "Click a bar or row to select it. Click again to clear.",
@@ -358,6 +359,7 @@ export const en: Messages = {
 		incomplete: "Some game counts are unavailable. Totals containing missing data are not shown.",
 	},
 	marketSummary: {
+		tooltip: "Insights panel",
 		open: "Market summary",
 		close: "Close market summary",
 		label: "Market summary",

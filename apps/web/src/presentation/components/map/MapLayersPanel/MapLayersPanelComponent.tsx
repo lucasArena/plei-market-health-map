@@ -258,6 +258,7 @@ export function MapLayersPanel() {
 				type="button"
 				aria-expanded={isExpanded}
 				aria-label={collapseLabel}
+				title={messages.layersTooltip}
 				onClick={toggleExpanded}
 				onKeyDown={closeOnEscape}
 				data-active={isCustomized}
