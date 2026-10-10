@@ -40,7 +40,7 @@ export const MARKET_LIST_HEADER_ROW_CLASS = `flex items-center gap-2.5 pr-2 pl-3
 /** Right-aligned tabular numbers, as in the drill-down value column. */
 export const MARKET_LIST_NUMBER_CELL_CLASS = `w-12 shrink-0 text-foreground ${DRILL_DOWN_TABLE_NUMBER_CELL_CLASS}`;
 
-export const MARKET_LIST_SECONDARY_TEXT_CLASS = "text-[#525866]";
+export const MARKET_LIST_SECONDARY_TEXT_CLASS = "text-[#525866] dark:text-muted-foreground";
 
 /**
  * Drill-down row: square, soft hover tint and primary focus outline. Two text lines

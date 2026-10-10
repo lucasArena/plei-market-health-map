@@ -264,7 +264,9 @@ export function MetricHero({
 			</h3>
 			<div data-testid={`${testIdPrefix}-hero`} className="flex flex-col gap-1">
 				<div className="flex items-center gap-2">
-					<p className="text-3xl font-semibold text-[#1d1d1f] tabular-nums">{hero.value}</p>
+					<p className="text-3xl font-semibold text-[#1d1d1f] dark:text-foreground tabular-nums">
+						{hero.value}
+					</p>
 					{showChange && <ChangePill change={hero.change} noPreviousLabel={noPreviousLabel} />}
 				</div>
 				<p

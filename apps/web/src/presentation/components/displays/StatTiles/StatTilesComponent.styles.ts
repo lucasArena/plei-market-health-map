@@ -29,7 +29,8 @@ export const STAT_TILE_CLASS: Record<StatTilesVariant, string> = {
  * Games rows). Based on the "Unique players" tile label (11px, regular, no
  * tracking or case change), with the panel's #525866 secondary color (7:1).
  */
-export const METRIC_LABEL_CLASS = "text-[11px] font-normal text-[#525866]";
+export const METRIC_LABEL_CLASS =
+	"text-[11px] font-normal text-[#525866] dark:text-muted-foreground";
 
 /** Compact metric line-height shared by the Games rows and the module headers: 11px label on 13px. */
 export const METRIC_LABEL_LEADING_CLASS = "leading-[13px]";
@@ -40,7 +41,7 @@ export const METRIC_LABEL_LEADING_CLASS = "leading-[13px]";
  * 18px line keeps the row height unchanged.
  */
 export const METRIC_VALUE_CLASS =
-	"text-[11px] leading-[18px] font-semibold text-[#1d1d1f] tabular-nums";
+	"text-[11px] leading-[18px] font-semibold text-[#1d1d1f] dark:text-foreground tabular-nums";
 
 /** The drawer cards keep text-xs. */
 export const STAT_TILE_LABEL_CLASS: Record<StatTilesVariant, string> = {
@@ -83,9 +84,9 @@ export const CHANGE_BADGE_CLASS =
 export type ChangeBadgeTone = "worse" | "better" | "flat";
 
 export const CHANGE_BADGE_TONE_CLASS: Record<ChangeBadgeTone, string> = {
-	worse: "border-[#ef4444]/40 bg-[#ef4444]/[0.16] text-[#b91c1c]",
-	better: "border-[#22c55e]/45 bg-[#22c55e]/[0.18] text-[#15703a]",
-	flat: "border-foreground/10 bg-foreground/[0.05] text-[#525866]",
+	worse: "border-[#ef4444]/40 bg-[#ef4444]/[0.16] text-[#b91c1c] dark:text-red-300",
+	better: "border-[#22c55e]/45 bg-[#22c55e]/[0.18] text-[#15703a] dark:text-green-300",
+	flat: "border-foreground/10 bg-foreground/[0.05] text-[#525866] dark:text-muted-foreground",
 };
 
 /** 9px arrow inside the change badge. */

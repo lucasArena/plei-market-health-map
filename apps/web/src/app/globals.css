@@ -8,8 +8,6 @@
  * cluster circles (CLUSTER_GLASS_* in FacilitiesMapScreenComponent.styles.ts),
  * a notch glassier: 24px blur with 2x saturation, a white top highlight
  * gradient, a soft white rim and an inset top light with a soft drop shadow.
- * The dark fills stay higher because the basemap stays light, and muted text
- * needs the extra fill to keep 4.5:1.
  *
  * - `glass`: small icon controls (header buttons, zoom).
  * - `glass-strong`: controls with text (search field, results list).
@@ -230,6 +228,18 @@
 }
 
 .dark {
+  color-scheme: dark;
+  --map-icon: #e5e7eb;
+  --map-glass: color-mix(in oklch, var(--background) 88%, transparent);
+  --map-shadow: 0 4px 14px -1px rgb(0 0 0 / 0.4), 0 2px 12px -2px rgb(0 0 0 / 0.4);
+  --marker-fill: rgba(23, 23, 23, 0.82);
+  --facility-marker-fill: rgba(23, 23, 23, 0.82);
+  --marker-highlight: var(--glass-highlight);
+  --marker-border: rgba(255, 255, 255, 0.3);
+  --marker-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 10px 24px rgba(0,0,0,0.4);
+  --marker-label: #f9fafb;
+  --marker-inactive-label: #d1d5db;
+  --marker-selected-ring: #f9fafb;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -748,4 +758,20 @@ button.map-icon-button[aria-expanded="true"]:hover {
 
 .games-trend-tip[data-trend-tip="stable"]::after {
   background-image: url("/icons/games-trend-stable.svg");
+}
+
+.dark .map-frame .maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+
+.dark .games-count-circle::before {
+  border-color: var(--marker-border);
+  box-shadow: var(--marker-shadow);
+  background: var(--games-circle-ring-image, url("/icons/games-trend-ring.svg")) center / 35px 35px no-repeat, var(--marker-highlight), var(--marker-fill);
+}
+
+.dark .games-trend-tip[data-trend-tip]::after {
+  border-color: var(--marker-border);
+  background-color: #262626;
+  box-shadow: var(--marker-shadow);
 }

@@ -16,8 +16,12 @@ function MetricValue({ metric }: Readonly<MetricValueProps>) {
 	}
 	return (
 		<dd className="flex items-baseline gap-1.5">
-			<span className="text-base font-semibold text-[#1d1d1f] tabular-nums">{metric.value}</span>
-			<span className="text-[11px] text-[#525866] tabular-nums">{metric.previous}</span>
+			<span className="text-base font-semibold text-[#1d1d1f] dark:text-foreground tabular-nums">
+				{metric.value}
+			</span>
+			<span className="text-[11px] text-[#525866] dark:text-muted-foreground tabular-nums">
+				{metric.previous}
+			</span>
 		</dd>
 	);
 }
@@ -30,7 +34,9 @@ export function MetricRows({ metrics, testId }: Readonly<MetricRowsProps>) {
 					<span aria-hidden="true" className="h-px bg-[rgba(60,60,67,0.12)]" />
 					<div className="flex items-center gap-3">
 						<div className="flex min-w-0 flex-1 flex-col gap-0.5">
-							<dt className="text-xs font-medium text-[#525866]">{metric.label}</dt>
+							<dt className="text-xs font-medium text-[#525866] dark:text-muted-foreground">
+								{metric.label}
+							</dt>
 							<MetricValue metric={metric} />
 						</div>
 						{metric.change && (

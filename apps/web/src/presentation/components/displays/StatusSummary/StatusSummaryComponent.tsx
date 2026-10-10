@@ -15,8 +15,8 @@ export function StatusSummary({ detail, headline, label, tone }: Readonly<Status
 				<span aria-hidden="true" className={`size-2 rounded-full ${style.dot}`} />
 				{label}
 			</span>
-			<p className="text-sm font-medium text-[#111827]">{headline}</p>
-			{detail && <p className="text-xs text-[#6b7280]">{detail}</p>}
+			<p className="text-sm font-medium text-[#111827] dark:text-foreground">{headline}</p>
+			{detail && <p className="text-xs text-[#6b7280] dark:text-muted-foreground">{detail}</p>}
 		</section>
 	);
 }

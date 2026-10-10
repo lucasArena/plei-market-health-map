@@ -21,7 +21,7 @@ export function ScoreCard({
 	return (
 		<section aria-label={label} data-testid={testId} className={SCORE_CARD_CLASS}>
 			<div className="flex items-center justify-between gap-2">
-				<p className="flex items-center gap-1 text-xs text-[#6b7280]">
+				<p className="flex items-center gap-1 text-xs text-[#6b7280] dark:text-muted-foreground">
 					{label}
 					<span title={info} aria-label={info} role="img" className="inline-flex">
 						<svg
@@ -39,21 +39,27 @@ export function ScoreCard({
 						</svg>
 					</span>
 				</p>
-				{aside && <p className="text-[11px] text-[#6b7280]">{aside}</p>}
+				{aside && <p className="text-[11px] text-[#6b7280] dark:text-muted-foreground">{aside}</p>}
 			</div>
 			{size === "primary" ? (
 				<div className="flex items-end gap-2.5">
-					<p className={`font-semibold text-[#111827] tabular-nums ${SCORE_VALUE_CLASS.primary}`}>
+					<p
+						className={`font-semibold text-[#111827] dark:text-foreground tabular-nums ${SCORE_VALUE_CLASS.primary}`}
+					>
 						{value}
 					</p>
 					<div className="flex flex-col pb-1.5 text-[13px]">
 						{changeText}
-						{caption && <p className="text-[11px] text-[#6b7280]">{caption}</p>}
+						{caption && (
+							<p className="text-[11px] text-[#6b7280] dark:text-muted-foreground">{caption}</p>
+						)}
 					</div>
 				</div>
 			) : (
 				<>
-					<p className={`font-semibold text-[#111827] tabular-nums ${SCORE_VALUE_CLASS.secondary}`}>
+					<p
+						className={`font-semibold text-[#111827] dark:text-foreground tabular-nums ${SCORE_VALUE_CLASS.secondary}`}
+					>
 						{value}
 					</p>
 					{change && (

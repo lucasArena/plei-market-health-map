@@ -89,7 +89,10 @@ vi.mock("maplibre-gl", () => {
 		getContainer = vi.fn(() => ({ clientWidth: 1000, clientHeight: 800 }));
 		getZoom = vi.fn(() => 4);
 		getBounds = vi.fn(() => ({ contains: () => true }));
-		getLayer = vi.fn((layerId: string) => ({ id: layerId }));
+		getLayer = vi.fn((layerId: string) =>
+			layerId === "facilities-logos" ? undefined : { id: layerId },
+		);
+		setStyle = vi.fn();
 		setLayoutProperty = vi.fn();
 		queryRenderedFeatures = vi.fn(() => []);
 		getSource = vi.fn(() => ({
@@ -118,7 +121,7 @@ const mockUseFacilities = vi.fn();
 const mockUsePleiLogoImages = vi.fn();
 
 vi.mock("@/presentation/hooks/use-map/use-plei-logo-images", () => ({
-	usePleiLogoImages: (map: unknown) => mockUsePleiLogoImages(map),
+	usePleiLogoImages: (map: unknown, revision: number) => mockUsePleiLogoImages(map, revision),
 }));
 
 vi.mock("@/presentation/hooks/use-facility/use-facility-list-all", () => ({
@@ -272,7 +275,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			},
 		);
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		act(() => result.current.context.setMetricFocus({ facilityIds: ["other"] }));
 		expect(result.current.rules.shownFacilities.map((item) => item.id)).toEqual(["other"]);
 		act(() => result.current.context.setMetricFocus(null));
@@ -324,7 +327,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			},
 		);
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		const camera = mapState.instances[0];
 		camera?.easeTo?.mockClear();
 		camera?.fitBounds?.mockClear();
@@ -374,7 +377,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			}),
 		);
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(result.current.rules.selectedFacilityId).toBe("f1");
 		expect(result.current.context.mapNavigation).toBeNull();
 		expect(mapState.instances[0]?.easeTo).toHaveBeenCalledWith(
@@ -418,7 +421,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([FACILITY]));
 	});
 
@@ -441,7 +444,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 		const { rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([played]));
 		mapState.setData.mockClear();
 		layersState.supplyMetric = "facilities";
@@ -472,7 +475,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 		const { rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(mapState.setData).toHaveBeenCalledWith(
 			toFacilityFeatureCollection([{ ...included, gamesLast28Days: 5 }]),
 		);
@@ -500,7 +503,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		layersState.showInactiveFacilities = false;
 		rerender();
 		expect(mapState.setData).toHaveBeenLastCalledWith(toFacilityFeatureCollection([FACILITY]));
@@ -523,12 +526,63 @@ describe("useFacilitiesMapScreenRules", () => {
 		);
 	});
 
+	it("restores layers, current data, visibility and selection across system theme changes", async () => {
+		const media = new EventTarget();
+		Object.assign(media, { matches: true });
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => media),
+		);
+		try {
+			const { result, rerender } = renderRules();
+			await waitFor(() => expect(mapState.instances).toHaveLength(1));
+			const map = mapState.instances[0];
+			expect(map?.options).toEqual(
+				expect.objectContaining({ style: "https://tiles.openfreemap.org/styles/dark" }),
+			);
+			act(() => mapState.handlers.get("style.load")?.());
+			act(() => result.current.selectSearchFacility(FACILITY));
+			for (const dark of [false, true, false]) {
+				act(() => {
+					Object.assign(media, { matches: dark });
+					media.dispatchEvent(new Event("change"));
+				});
+				expect(map?.setStyle).toHaveBeenLastCalledWith(
+					`https://tiles.openfreemap.org/styles/${dark ? "dark" : "positron"}`,
+					{ diff: false },
+				);
+				layersState.showSessions = false;
+				layersState.showActiveFacilities = false;
+				layersState.showInactiveFacilities = false;
+				rerender();
+				act(() => mapState.handlers.get("style.load")?.());
+				expect(result.current.selectedFacilityId).toBe(FACILITY.id);
+				expect(map?.setPaintProperty).toHaveBeenCalledWith(
+					FACILITIES_LAYER_ID,
+					"circle-stroke-width",
+					selectedRingWidth(FACILITY.id),
+				);
+				expect(map?.setLayoutProperty).toHaveBeenCalledWith(
+					APP_SESSION_HEATMAP_LAYER_ID,
+					"visibility",
+					"none",
+				);
+				expect(mapState.setData).toHaveBeenCalledWith(toFacilityFeatureCollection([]));
+			}
+			expect(map?.addSource).toHaveBeenCalledTimes(8);
+			expect(map?.addLayer).toHaveBeenCalledTimes(20);
+			expect(mockUsePleiLogoImages).toHaveBeenLastCalledWith(map, 4);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
 	it("creates the map, adds the dot layer on load and pushes the facilities", async () => {
 		const { result } = renderRules();
 
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		const map = mapState.instances[0];
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 
 		expect(mapState.setWorkerUrl).toHaveBeenCalledWith(
 			"http://localhost:3000/maplibre/maplibre-gl-worker.mjs",
@@ -548,7 +602,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			}),
 		);
 		await waitFor(() => expect(map?.addLayer).toHaveBeenCalledTimes(5));
-		expect(mockUsePleiLogoImages).toHaveBeenLastCalledWith(map);
+		expect(mockUsePleiLogoImages).toHaveBeenLastCalledWith(map, 1);
 		const addLayer = map?.addLayer;
 		if (!addLayer) throw new Error("Expected addLayer mock");
 		const layerIds = addLayer.mock.calls.map((call) => (call[0] as { id: string }).id);
@@ -601,7 +655,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("shows a hover card for a facility", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() =>
 			expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
 		);
@@ -640,7 +694,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("keeps the facility card anchored when the pointer moves inside the same dot", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() =>
 			expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
 		);
@@ -661,7 +715,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.supplyMetric = "games";
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		const event = { features: [{ properties: { id: "f1" } }], point: { x: 120, y: 80 } };
 		act(() => mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.(event));
 		expect(result.current.hovered).toMatchObject({ kind: "facility", facility: FACILITY });
@@ -676,7 +730,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		if (!map) throw new Error("map was not created");
 		expect(mapState.canvas.style.cursor).toBe(MAP_CURSOR.navigate);
 		expect(map?.options).toMatchObject({ dragPan: true });
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() => expect(mapState.handlers.has(`click:${FACILITIES_LAYER_ID}`)).toBe(true));
 		const event = (id: unknown) => ({ features: [{ properties: { id } }], point: { x: 1, y: 1 } });
 
@@ -751,7 +805,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("fits a searched city's bounds, or centers on it when it has none, and clears the scope", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		const map = mapState.instances[0];
 		const wichita = {
 			id: "R123",
@@ -783,7 +837,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("zooms to facilities and fits markets selected from search", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		const map = mapState.instances[0];
 		act(() => result.current.selectSearchFacility(FACILITY));
 		expect(result.current.selectedFacilityId).toBe("f1");
@@ -830,7 +884,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			},
 		);
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(result.current.scope).toEqual({ kind: "all" });
 
 		act(() => result.current.rules.selectSearchFacility(FACILITY));
@@ -877,7 +931,7 @@ describe("useFacilitiesMapScreenRules", () => {
 			},
 		);
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(result.current.rules.showsFacilityDrawer).toBe(false);
 
 		act(() => result.current.rules.selectFacility(FACILITY));
@@ -911,7 +965,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("zooms to search selections", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		const map = mapState.instances[0];
 		const secondFacility = {
 			...FACILITY,
@@ -964,7 +1018,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("lists a hovered cluster's facilities and zooms in on click", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() => expect(mapState.handlers.has(`mousemove:${CLUSTER_LAYER_ID}`)).toBe(true));
 		const map = mapState.instances[0];
 		const clusterEvent = (x: number, clusterId: unknown = 7) => ({
@@ -1054,7 +1108,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("keeps the cluster card open while the pointer moves onto it", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() => expect(mapState.handlers.has(`mousemove:${CLUSTER_LAYER_ID}`)).toBe(true));
 		const map = mapState.instances[0];
 		mapState.getClusterLeaves.mockResolvedValue([{ properties: { id: "f1" } }]);
@@ -1123,7 +1177,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		if (!map) throw new Error("map was not created");
 		map.getLayer = vi.fn(() => ({ id: APP_SESSION_HEATMAP_LAYER_ID }));
 		map.setLayoutProperty = vi.fn();
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 
 		expect(result.current.hasSessionHeatmap).toBe(true);
 		expect(result.current.isLegendShown).toBe(true);
@@ -1162,7 +1216,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		map.setLayoutProperty = vi.fn();
 		map.queryRenderedFeatures = vi.fn(() => []);
 		map.project = vi.fn(() => ({ x: 0, y: 0 }));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		const cluster = container.querySelector("[data-testid='cluster-glass']");
 		const facility = container.querySelector("[data-testid='facility-glass']");
 		if (!(cluster instanceof HTMLElement) || !(facility instanceof HTMLElement)) {
@@ -1224,7 +1278,7 @@ describe("useFacilitiesMapScreenRules", () => {
 	it("ignores cluster results that arrive after the pointer left", async () => {
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() => expect(mapState.handlers.has(`mousemove:${CLUSTER_LAYER_ID}`)).toBe(true));
 		let resolveLeaves: (value: unknown) => void = () => undefined;
 		mapState.getClusterLeaves.mockReturnValue(
@@ -1286,7 +1340,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUsePleiLogoImages.mockReturnValue(false);
 		renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await act(async () => undefined);
 
 		expect(mapState.instances[0]?.addLayer).toHaveBeenCalledTimes(4);
@@ -1297,7 +1351,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
 		const map = mapState.instances[0];
 
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() =>
 			expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
 		);
@@ -1323,7 +1377,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		await waitFor(() =>
 			expect(mapState.setData).toHaveBeenCalledWith(
 				expect.objectContaining({ features: [expect.objectContaining({ type: "Feature" })] }),
@@ -1402,7 +1456,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		mockUseAppSessionHeatmap.mockReturnValue({ data: undefined, isPending: true, isError: false });
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 
 		expect(result.current.hasSessionHeatmap).toBe(false);
 		expect(result.current.sessionLegendState).toBe("loading");
@@ -1415,7 +1469,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		expect(result.current.sessionLegendState).toBe("loading");
 
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 
 		expect(result.current.sessionLegendState).toBe("scale");
 	});
@@ -1428,7 +1482,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		});
 		const { result } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 
 		expect(result.current.sessionLegendState).toBe("empty");
 	});
@@ -1448,7 +1502,7 @@ describe("useFacilitiesMapScreenRules", () => {
 		layersState.sessionFilters = { gender: "Female", ageMin: 18 };
 		const { result, rerender } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		expect(mockUseAppSessionHeatmap).toHaveBeenLastCalledWith(
 			{ gender: "Female", ageMin: 18, metric: "registrations" },
 			"week",
@@ -1689,7 +1743,7 @@ describe("games trend", () => {
 			if (!instance) throw new Error("Expected a map");
 			const map = instance as Record<"addLayer" | "setLayoutProperty", ReturnType<typeof vi.fn>>;
 			map.setLayoutProperty = vi.fn();
-			act(() => mapState.handlers.get("load")?.());
+			act(() => mapState.handlers.get("style.load")?.());
 			await waitFor(() =>
 				expect(mapState.handlers.has(`mousemove:${FACILITIES_LAYER_ID}`)).toBe(true),
 			);
@@ -1897,7 +1951,7 @@ describe("period-aware map data", () => {
 	it("clears a pending hover dismiss timer on unmount", async () => {
 		const { unmount } = renderRules();
 		await waitFor(() => expect(mapState.instances).toHaveLength(1));
-		act(() => mapState.handlers.get("load")?.());
+		act(() => mapState.handlers.get("style.load")?.());
 		act(() =>
 			mapState.handlers.get(`mousemove:${FACILITIES_LAYER_ID}`)?.({
 				features: [{ properties: { id: "f1" } }],

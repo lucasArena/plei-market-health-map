@@ -1,7 +1,7 @@
 import { MAP_MENU_SURFACE_CLASS } from "@/presentation/components/map/MapSearch/MapSearchComponent.styles";
 
 export const SOFT_GLASS_CLASS =
-	"rounded-full border border-white/50 bg-white/25 text-foreground/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.6),0_1px_2px_rgb(0_0_0/0.03)] backdrop-blur-md transition-[background-color,color] duration-200 hover:bg-white/55 hover:text-foreground aria-expanded:bg-white/55 aria-expanded:text-foreground aria-pressed:bg-white/55 aria-pressed:text-foreground motion-reduce:transition-none dark:border-white/10 dark:bg-white/[0.06] dark:hover:bg-white/15 dark:aria-expanded:bg-white/15 dark:aria-pressed:bg-white/15";
+	"rounded-full border border-white/50 bg-white/25 text-foreground/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.6),0_1px_2px_rgb(0_0_0/0.03)] backdrop-blur-md transition-[background-color,color] duration-200 hover:bg-white/55 hover:text-foreground aria-expanded:bg-white/55 aria-expanded:text-foreground aria-pressed:bg-white/55 aria-pressed:text-foreground motion-reduce:transition-none dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_1px_2px_rgb(0_0_0/0.15)] dark:border-white/10 dark:bg-white/[0.06] dark:hover:bg-white/15 dark:aria-expanded:bg-white/15 dark:aria-pressed:bg-white/15";
 
 const FOCUS_CLASS =
 	"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";

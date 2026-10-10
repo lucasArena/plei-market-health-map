@@ -66,7 +66,7 @@ export function AiSummary(props: Readonly<AiSummaryProps>) {
 						type="button"
 						onClick={toggleExpanded}
 						aria-expanded={isExpanded}
-						className={`rounded-full border bg-white/90 px-3 py-1 text-xs font-medium shadow-sm transition-colors hover:bg-white ${isFlat ? AI_SUMMARY_FLAT_TOGGLE_CLASS : toneStyle.button}`}
+						className={`rounded-full border bg-white/90 dark:bg-card px-3 py-1 text-xs font-medium shadow-sm transition-colors hover:bg-white dark:hover:bg-accent ${isFlat ? AI_SUMMARY_FLAT_TOGGLE_CLASS : toneStyle.button}`}
 					>
 						{isExpanded ? messages.showLess : messages.showMore}
 					</button>

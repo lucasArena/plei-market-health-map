@@ -24,7 +24,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 	return (
 		<PanelSection title={messages.title} aside={count} testId="facilities-table">
 			<div className="space-y-1">
-				<div className="flex items-center gap-2.5 pr-2 pl-2.5 text-[11px] text-[#525866]">
+				<div className="flex items-center gap-2.5 pr-2 pl-2.5 text-[11px] text-[#525866] dark:text-muted-foreground">
 					<span aria-hidden="true" className="w-3 shrink-0" />
 					<span className="min-w-0 flex-1">{messages.columnFacility}</span>
 					<span className="w-10 shrink-0 text-right">{messages.columnGames}</span>
@@ -37,7 +37,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 							return (
 								<li
 									key={entry.key}
-									className="pt-1 pl-2.5 text-[11px] font-semibold tracking-[0.02em] text-[#525866] uppercase"
+									className="pt-1 pl-2.5 text-[11px] font-semibold tracking-[0.02em] text-[#525866] dark:text-muted-foreground uppercase"
 								>
 									{entry.label}
 								</li>
@@ -50,7 +50,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 										type="button"
 										onClick={toggleExpanded}
 										data-testid="facilities-table-gap"
-										className="flex w-full items-center gap-2 text-[11px] text-[#525866] hover:text-[#1d1d1f] focus-visible:outline-2"
+										className="flex w-full items-center gap-2 text-[11px] text-[#525866] dark:text-muted-foreground hover:text-[#1d1d1f] dark:text-foreground focus-visible:outline-2"
 									>
 										<span
 											aria-hidden="true"
@@ -77,7 +77,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 									type="button"
 									onClick={() => openFacility(row)}
 									aria-label={row.openLabel}
-									className="flex w-full items-center gap-2.5 rounded-xl py-1.5 pr-2 pl-2.5 text-left transition-[background-color,box-shadow] hover:bg-white hover:shadow-[0_0_0_0.5px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.9)] focus-visible:bg-white focus-visible:outline-2 focus-visible:outline-pleiful-pitch-green-50"
+									className="flex w-full items-center gap-2.5 rounded-xl py-1.5 pr-2 pl-2.5 text-left transition-[background-color,box-shadow] hover:bg-white dark:hover:bg-accent hover:shadow-[0_0_0_0.5px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.9)] focus-visible:bg-white dark:focus-visible:bg-accent focus-visible:outline-2 focus-visible:outline-pleiful-pitch-green-50"
 								>
 									<span aria-hidden="true" className="relative size-3 shrink-0">
 										<span className={`absolute inset-0 rounded-full ${statusStyle.halo}`} />
@@ -86,10 +86,10 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 										/>
 									</span>
 									<span className="flex min-w-0 flex-1 flex-col gap-px">
-										<span className="truncate text-[13px] leading-4 font-medium text-[#1d1d1f]">
+										<span className="truncate text-[13px] leading-4 font-medium text-[#1d1d1f] dark:text-foreground">
 											{row.name}
 										</span>
-										<span className="truncate text-[11px] leading-[14px] text-[#525866]">
+										<span className="truncate text-[11px] leading-[14px] text-[#525866] dark:text-muted-foreground">
 											<span className={`font-semibold ${statusStyle.label}`}>
 												{row.statusLabel}
 											</span>
@@ -97,7 +97,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 											{row.previousLabel}
 										</span>
 									</span>
-									<span className="w-10 shrink-0 text-right text-[13px] font-semibold text-[#1d1d1f] tabular-nums">
+									<span className="w-10 shrink-0 text-right text-[13px] font-semibold text-[#1d1d1f] dark:text-foreground tabular-nums">
 										{row.gamesLabel}
 									</span>
 									<span className="flex w-[58px] shrink-0 justify-center">
@@ -129,7 +129,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 										strokeLinecap="round"
 										strokeLinejoin="round"
 										aria-hidden="true"
-										className="h-2.5 w-1.5 shrink-0 text-[#525866]"
+										className="h-2.5 w-1.5 shrink-0 text-[#525866] dark:text-muted-foreground"
 									>
 										<path d="m1 1 4 4-4 4" />
 									</svg>
@@ -144,7 +144,7 @@ export function FacilitiesTable(props: Readonly<FacilitiesTableProps>) {
 							type="button"
 							onClick={toggleExpanded}
 							aria-expanded={isExpanded}
-							className="rounded-full border border-[#d3d5d8] bg-white/90 px-3 py-1 text-xs font-medium text-[#525866] shadow-sm transition-colors hover:bg-white"
+							className="rounded-full border border-[#d3d5d8] bg-white/90 dark:bg-card px-3 py-1 text-xs font-medium text-[#525866] dark:text-muted-foreground shadow-sm transition-colors hover:bg-white"
 						>
 							{expandLabel}
 						</button>

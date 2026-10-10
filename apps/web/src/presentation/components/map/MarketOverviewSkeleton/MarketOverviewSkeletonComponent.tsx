@@ -30,7 +30,7 @@ export function MarketOverviewSkeleton() {
 				<div className={`h-3 w-56 ${BAR}`} />
 				<div className={`h-2.5 w-32 ${BAR}`} />
 			</div>
-			<div className="animate-pulse space-y-2.5 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] px-3.5 py-3">
+			<div className="animate-pulse space-y-2.5 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] dark:bg-muted px-3.5 py-3">
 				<div className={`h-6 w-32 ${BAR}`} />
 				<div className={`h-3.5 w-11/12 ${BAR}`} />
 				<div className={`h-3 w-3/4 ${BAR}`} />

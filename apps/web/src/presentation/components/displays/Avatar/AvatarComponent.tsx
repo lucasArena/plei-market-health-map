@@ -23,6 +23,7 @@ export function Avatar({
 		account: appearanceClass,
 		muted: appearanceClass,
 	}[appearance];
+	const imageBackgroundClass = appearance === "account" ? "" : "dark:bg-white";
 	const imagePixels = { color: pixels, account: 32, muted: 20 }[appearance];
 	const backgroundColor = {
 		color: pickAvatarColor(name),
@@ -37,7 +38,7 @@ export function Avatar({
 				width={imagePixels}
 				height={imagePixels}
 				unoptimized
-				className={`${sizedClass} shrink-0 rounded-full object-cover`}
+				className={`${sizedClass} ${imageBackgroundClass} shrink-0 rounded-full object-cover`}
 			/>
 		);
 	}

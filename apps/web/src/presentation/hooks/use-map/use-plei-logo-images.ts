@@ -27,7 +27,8 @@ export async function loadPleiLogos(target: MarkerImageTarget): Promise<void> {
 	]);
 }
 
-export function usePleiLogoImages(target: MarkerImageTarget | null): boolean {
+export function usePleiLogoImages(target: MarkerImageTarget | null, revision = 0): boolean {
+	const [loadedRevision, setLoadedRevision] = useState(-1);
 	const [loadedTarget, setLoadedTarget] = useState<MarkerImageTarget | null>(null);
 
 	useEffect(() => {
@@ -35,13 +36,16 @@ export function usePleiLogoImages(target: MarkerImageTarget | null): boolean {
 		let isCancelled = false;
 		loadPleiLogos(target)
 			.then(() => {
-				if (!isCancelled) setLoadedTarget(target);
+				if (!isCancelled) {
+					setLoadedTarget(target);
+					setLoadedRevision(revision);
+				}
 			})
 			.catch(() => undefined);
 		return () => {
 			isCancelled = true;
 		};
-	}, [target]);
+	}, [target, revision]);
 
-	return target !== null && loadedTarget === target;
+	return target !== null && loadedTarget === target && loadedRevision === revision;
 }

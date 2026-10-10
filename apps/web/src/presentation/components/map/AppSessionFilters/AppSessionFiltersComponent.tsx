@@ -176,7 +176,7 @@ export function SessionFilterApply() {
 			<button
 				type="button"
 				onClick={rules.applyFilters}
-				className="w-full cursor-pointer rounded-md bg-black/5 px-2 py-1.5 text-xs font-medium text-black hover:bg-black/10"
+				className="w-full cursor-pointer rounded-md bg-black/5 dark:bg-foreground/5 px-2 py-1.5 text-xs font-medium text-black dark:text-foreground hover:bg-black/10 dark:hover:bg-foreground/10"
 			>
 				{rules.copy.apply}
 			</button>

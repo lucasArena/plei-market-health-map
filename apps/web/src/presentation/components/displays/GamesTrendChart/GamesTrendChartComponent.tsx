@@ -34,9 +34,13 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 
 	return (
 		<div className="space-y-3" data-testid={testId}>
-			{view.label && <p className="text-xs font-medium text-[#525866]">{view.label}</p>}
+			{view.label && (
+				<p className="text-xs font-medium text-[#525866] dark:text-muted-foreground">
+					{view.label}
+				</p>
+			)}
 			<div className="flex items-end gap-2.5">
-				<p className="text-[36px] leading-[42px] font-semibold tracking-[-0.02em] text-[#1d1d1f] tabular-nums">
+				<p className="text-[36px] leading-[42px] font-semibold tracking-[-0.02em] text-[#1d1d1f] dark:text-foreground tabular-nums">
 					{view.total}
 				</p>
 				<div className="flex flex-col items-start gap-[3px] pb-[5px]">
@@ -59,7 +63,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							{view.change.label}
 						</span>
 					)}
-					<p className="text-xs text-[#525866]">{view.comparison}</p>
+					<p className="text-xs text-[#525866] dark:text-muted-foreground">{view.comparison}</p>
 				</div>
 			</div>
 			<div className="flex flex-col gap-0.5">
@@ -125,15 +129,17 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 							/>
 							<span
 								aria-hidden="true"
-								className={`absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white ${colors.dot}`}
+								className={`absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white dark:border-border ${colors.dot}`}
 								style={{ left: toLeft(activePoint.x), top: toTop(activePoint.y) }}
 							/>
 							<span
 								data-testid="games-trend-tooltip"
-								className={`absolute z-10 flex items-center gap-1 rounded-full border border-white/90 bg-white/70 px-2 py-[3px] text-[11px] whitespace-nowrap shadow-[0_0_0_0.5px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-[6px] ${TOOLTIP_ALIGN_CLASS[align]} ${TOOLTIP_PLACEMENT_CLASS[placement]}`}
+								className={`absolute z-10 flex items-center gap-1 rounded-full border border-white/90 dark:border-border bg-white/70 dark:bg-card px-2 py-[3px] text-[11px] whitespace-nowrap shadow-[0_0_0_0.5px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-[6px] ${TOOLTIP_ALIGN_CLASS[align]} ${TOOLTIP_PLACEMENT_CLASS[placement]}`}
 								style={{ left: toLeft(activePoint.x), top: toTop(activePoint.y) }}
 							>
-								<span className="font-semibold text-[#1d1d1f]">{active.valueLabel}</span>
+								<span className="font-semibold text-[#1d1d1f] dark:text-foreground">
+									{active.valueLabel}
+								</span>
 								<span className="text-[rgba(60,60,67,0.6)]">{active.tooltipLabel}</span>
 							</span>
 						</>
@@ -149,7 +155,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 								onFocus={() => setActiveIndex(pointIndex)}
 								onMouseLeave={resetActive}
 								onBlur={resetActive}
-								className="h-full flex-1 cursor-default rounded-md outline-none focus-visible:bg-black/5"
+								className="h-full flex-1 cursor-default rounded-md outline-none focus-visible:bg-black/5 dark:bg-foreground/5"
 							/>
 						))}
 					</div>
@@ -158,7 +164,7 @@ export function GamesTrendChart(props: Readonly<GamesTrendChartProps>) {
 					{view.points.map((item) => (
 						<span
 							key={item.key}
-							className={`flex-1 text-center text-[11px] leading-[13px] tabular-nums ${item.isCurrentPeriod ? "font-semibold text-[#1d1d1f]" : "text-[rgba(60,60,67,0.6)]"}`}
+							className={`flex-1 text-center text-[11px] leading-[13px] tabular-nums ${item.isCurrentPeriod ? "font-semibold text-[#1d1d1f] dark:text-foreground" : "text-[rgba(60,60,67,0.6)]"}`}
 						>
 							{item.valueLabel}
 						</span>

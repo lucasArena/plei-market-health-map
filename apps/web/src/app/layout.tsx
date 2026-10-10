@@ -29,7 +29,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-	themeColor: "#ffffff",
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#ffffff" },
+		{ media: "(prefers-color-scheme: dark)", color: "#171717" },
+	],
 };
 
 export default async function RootLayout({
@@ -40,6 +43,9 @@ export default async function RootLayout({
 	const locale = await getRequestLocale();
 	return (
 		<html lang={locale} suppressHydrationWarning>
+			<head>
+				<script>{`document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches);`}</script>
+			</head>
 			<body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
 				<AppProviders locale={locale} messages={getMessages(locale)}>
 					{children}

@@ -52,7 +52,13 @@ export function MapSearch(props: MapSearchProps) {
 	return (
 		<div ref={rootRef} className={MAP_SEARCH_ROOT_CLASS}>
 			<div className={MAP_SEARCH_FIELD_CLASS}>
-				<Image src="/images/map-layers/search.svg" alt="" width={16} height={16} />
+				<Image
+					src="/images/map-layers/search.svg"
+					alt=""
+					width={16}
+					height={16}
+					className="dark:brightness-0 dark:invert"
+				/>
 				<input
 					aria-label={messages.searchPlaceholder}
 					aria-autocomplete="list"

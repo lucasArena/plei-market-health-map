@@ -441,7 +441,7 @@ export function Feedback(props: Readonly<FeedbackProps>) {
 								{isSubmitting && (
 									<span
 										aria-hidden="true"
-										className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+										className="size-3.5 animate-spin rounded-full border-2 border-white/40 dark:border-border border-t-white"
 									/>
 								)}
 								{isSubmitting ? messages.submitting : messages.submit}

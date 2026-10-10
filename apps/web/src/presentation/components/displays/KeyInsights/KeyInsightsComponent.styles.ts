@@ -10,13 +10,13 @@ export const INSIGHT_TONE_STYLE: Record<InsightTone, InsightToneStyle> = {
 		accent: "text-pleiful-moonlight-70",
 		fade: "from-pleiful-moonlight-5",
 		button: "border-pleiful-moonlight-10 text-pleiful-moonlight-70",
-		skeleton: "bg-pleiful-moonlight-10",
+		skeleton: "bg-pleiful-moonlight-10 dark:bg-foreground/[0.08]",
 	},
 	attention: {
-		box: "border border-[#fecaca] bg-[#fef2f2]",
-		accent: "text-[#b91c1c]",
+		box: "border border-[#fecaca] bg-[#fef2f2] dark:bg-red-950/60",
+		accent: "text-[#b91c1c] dark:text-red-300",
 		fade: "from-[#fef2f2]",
-		button: "border-[#d3d5d8] text-[#b91c1c]",
+		button: "border-[#d3d5d8] text-[#b91c1c] dark:text-red-300",
 		skeleton: "bg-[#fecaca]/60",
 	},
 	stable: {
@@ -27,10 +27,10 @@ export const INSIGHT_TONE_STYLE: Record<InsightTone, InsightToneStyle> = {
 		skeleton: "bg-[#e4e4e7]",
 	},
 	growing: {
-		box: "border border-[#bbf7d0] bg-[#f0fdf4]",
-		accent: "text-[#15803d]",
+		box: "border border-[#bbf7d0] bg-[#f0fdf4] dark:bg-green-950/60",
+		accent: "text-[#15803d] dark:text-green-300",
 		fade: "from-[#f0fdf4]",
-		button: "border-[#d3d5d8] text-[#15803d]",
+		button: "border-[#d3d5d8] text-[#15803d] dark:text-green-300",
 		skeleton: "bg-[#bbf7d0]/60",
 	},
 };
