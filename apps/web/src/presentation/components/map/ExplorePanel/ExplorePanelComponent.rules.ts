@@ -468,6 +468,7 @@ export function useExplorePanelRules({
 		const byId = new Map<string, DrillDownSegmentLegendItem>();
 		for (const row of availableRows) {
 			for (const group of segmentGroupsOf(row) ?? []) {
+				if (segment === "facility" && (group.value == null || group.value === 0)) continue;
 				const current = byId.get(group.id) ?? { id: group.id, name: group.name, value: 0 };
 				current.value += group.value ?? 0;
 				byId.set(group.id, current);
@@ -535,7 +536,7 @@ export function useExplorePanelRules({
 					.flatMap((legend) => {
 						const group = groups.find((item) => item.id === legend.id);
 						const value = group?.value;
-						if (value == null) return [];
+						if (value == null || (segment === "facility" && value === 0)) return [];
 						return [
 							{
 								id: legend.id,

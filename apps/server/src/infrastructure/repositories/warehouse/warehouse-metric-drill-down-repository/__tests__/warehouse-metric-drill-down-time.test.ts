@@ -261,6 +261,7 @@ describe("calendar drill-down", () => {
 				result,
 				{ ...result, segment_facility_id: "a", value: "3", numerator: "3", denominator: "4" },
 				{ ...result, segment_facility_id: "b", value: "2", numerator: "1", denominator: "2" },
+				{ ...result, segment_facility_id: "z", value: "0", numerator: "0", denominator: "0" },
 				{ ...result, bucket: null, is_total: 1, value: "5" },
 			],
 			new Map([["a", "Arena"]]),

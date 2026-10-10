@@ -1,6 +1,7 @@
 import {
 	DRILL_DOWN_MEASURE_KIND,
 	DRILL_DOWN_RANGE_DAYS,
+	hasFacilityMetricValue,
 	type MetricDrillDownFacilitySegment,
 	type MetricDrillDownOrganizer,
 	type MetricDrillDownQuery,
@@ -88,11 +89,13 @@ export function timeDrillDownView(
 	const facilitiesByBucket = new Map<string, MetricDrillDownFacilitySegment[]>();
 	for (const row of results) {
 		if (!row.segment_facility_id || row.is_total === 1 || !row.bucket) continue;
+		const segmentValue = value(row);
+		if (!hasFacilityMetricValue(segmentValue)) continue;
 		const facilities = facilitiesByBucket.get(row.bucket) ?? [];
 		facilities.push({
 			id: row.segment_facility_id,
 			name: facilityNames.get(row.segment_facility_id) ?? row.segment_facility_id,
-			value: value(row),
+			value: segmentValue,
 			...parts(row),
 		});
 		facilitiesByBucket.set(row.bucket, facilities);

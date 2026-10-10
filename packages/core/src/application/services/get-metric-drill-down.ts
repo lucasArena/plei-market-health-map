@@ -11,6 +11,7 @@ import type {
 } from "@core/application/dtos/metric-drill-down-dto.types";
 import { InvalidRequestError } from "@core/application/errors/invalid-request-error";
 import type { MetricDrillDownQuery } from "@core/application/repositories/metric-drill-down-repository.types";
+import { facilitySegmentsWithValues } from "@core/application/services/aggregate-metric-drill-down";
 import { toAverageDailyGamesView } from "@core/application/services/average-daily-games-view";
 import { drillDownComparisonWindow } from "@core/application/services/drill-down-comparison-window";
 import type { GetMetricDrillDownDeps } from "@core/application/services/get-metric-drill-down.types";
@@ -26,7 +27,9 @@ export {
 	distinctContributionsFromFacts,
 	drillDownRangeDays,
 	drillDownWindow,
+	facilitySegmentsWithValues,
 	factsFromFacilityPoints,
+	hasFacilityMetricValue,
 	measureRateValue,
 	organizerDisplayName,
 	rateContributionsFromFacts,
@@ -93,7 +96,7 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 							? { magic: 0, organizers: 0, partnerships: 0 }
 							: null,
 					organizers: row.organizers?.map((organizer) => ({ ...organizer, value: 0 })) ?? null,
-					facilities: row.facilities?.map((facility) => ({ ...facility, value: 0 })),
+					facilities: [],
 					numerator: current.kind === "rate" ? 0 : undefined,
 					denominator: current.kind === "rate" ? 0 : undefined,
 					dataErrors: undefined,
@@ -126,11 +129,13 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 					),
 					...(row.facilities !== undefined
 						? {
-								facilities: withPreviousValues(
-									row.facilities,
-									prior?.facilities,
-									previous.total,
-									current.kind,
+								facilities: facilitySegmentsWithValues(
+									withPreviousValues(
+										row.facilities,
+										prior?.facilities,
+										previous.total,
+										current.kind,
+									),
 								),
 							}
 						: {}),

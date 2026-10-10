@@ -403,6 +403,25 @@ describe("ExplorePanel", () => {
 			screen.getByRole("button", { name: "Miami · Facility 0: 10" }).getAttribute("style"),
 		).not.toContain("rgb(156, 163, 175)");
 	});
+	it("hides facilities with no games from the facility segment", () => {
+		data = [
+			facility,
+			{
+				...facility,
+				id: "z",
+				name: "Empty Yard",
+				gamesLast28Days: 0,
+				gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+			},
+		];
+		setup();
+		select("Segment", "facility");
+		expect(screen.getByRole("button", { name: "Miami · Arena: 10" })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /Empty Yard/ })).not.toBeInTheDocument();
+		expect(
+			within(screen.getByRole("table")).queryByRole("columnheader", { name: "Empty Yard" }),
+		).not.toBeInTheDocument();
+	});
 	it("can clear shared market scope after View on map", () => {
 		scope = { kind: "market", id: "miami", name: "Miami" };
 		setup();

@@ -1434,6 +1434,46 @@ describe("facility segment", () => {
 		]);
 	});
 
+	it("omits facilities with no metric from the segment", async () => {
+		const empty: DrillDownFacilityFact = {
+			...bay,
+			id: "z",
+			name: "Empty",
+			games: 0,
+			scheduled: 0,
+			uniquePlayerIds: [],
+			activatedPlayerIds: [],
+			gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+			scheduledByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+			uniquePlayerIdsByDepartment: { magic: [], organizers: [], partnerships: [] },
+			almostFilled: 0,
+			rosteredCanceled: 0,
+		};
+		const { getMetricDrillDown } = setup([arena, empty]);
+		const games = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(games.rows[0]?.value).toBe(10);
+		expect(games.rows[0]?.facilities?.map((facility) => facility.id)).toEqual(["a"]);
+		const rate = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(rate.rows[0]?.facilities?.map((facility) => facility.id)).toEqual(["a"]);
+		const unique = await getMetricDrillDown({
+			measure: "unique-players",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(unique.rows[0]?.facilities?.map((facility) => facility.id)).toEqual(["a"]);
+	});
+
 	it("leaves facilities out unless the facility segment is requested", async () => {
 		const { getMetricDrillDown } = setup([arena, bay]);
 		const view = await getMetricDrillDown({ measure: "games", range: "28d", slice: "market" });
@@ -1552,9 +1592,7 @@ describe("facility segment", () => {
 			slice: "market",
 			segment: "facility",
 		});
-		expect(view.rows.find((row) => row.id === "old")?.facilities).toEqual([
-			{ id: "z", name: "Zed", value: 0, previousValue: 6 },
-		]);
+		expect(view.rows.find((row) => row.id === "old")?.facilities).toEqual([]);
 		const average = await setup([arena, bay]).getMetricDrillDown({
 			measure: "avg-daily-games",
 			range: "28d",

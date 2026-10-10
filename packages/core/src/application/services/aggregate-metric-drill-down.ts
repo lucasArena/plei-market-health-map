@@ -55,6 +55,16 @@ function emptyDepartments(): Record<GameDepartment, number | null> {
 	return { magic: 0, organizers: 0, partnerships: 0 };
 }
 
+export function hasFacilityMetricValue(value: number | null | undefined): boolean {
+	return value != null && value !== 0;
+}
+
+export function facilitySegmentsWithValues<T extends { value: number | null }>(
+	segments: readonly T[] | null | undefined,
+): T[] {
+	return (segments ?? []).filter((segment) => hasFacilityMetricValue(segment.value));
+}
+
 export function organizerDisplayName(id: string, name?: string | null): string {
 	const trimmed = name?.trim();
 	return trimmed || `Organizer ${id}`;
@@ -183,7 +193,7 @@ export function aggregateCountDrillDown(input: AggregateCountDrillDownInput): Me
 					facility.id,
 					(organizer) => organizerCountValue(organizer, input.measure),
 				);
-			if (input.segment === "facility")
+			if (input.segment === "facility" && hasFacilityMetricValue(group.groupValue))
 				row.facilities = [
 					...(row.facilities ?? []),
 					{ id: facility.id, name: facility.name, value: group.groupValue },
@@ -311,11 +321,13 @@ export function aggregateDistinctCountDrillDown(input: {
 			organizers: row.hasOrganizers ? contributionOrganizers(row.organizerKeys) : null,
 			...(input.segment === "facility"
 				? {
-						facilities: [...row.facilityKeys.entries()].map(([id, facility]) => ({
-							id,
-							name: facility.name,
-							value: facility.keys.size,
-						})),
+						facilities: facilitySegmentsWithValues(
+							[...row.facilityKeys.entries()].map(([id, facility]) => ({
+								id,
+								name: facility.name,
+								value: facility.keys.size,
+							})),
+						),
 					}
 				: {}),
 		})),
@@ -500,14 +512,16 @@ export function aggregateRateDrillDown(input: {
 				: null,
 			...(input.segment === "facility"
 				? {
-						facilities: [...row.facilities.entries()].map(([id, facility]) => ({
-							id,
-							name: facility.name,
-							value: measureRateValue(input.measure, facility.numerator, facility.denominator),
-							numerator: facility.numerator,
-							denominator: facility.denominator,
-							...(reportsDataErrors ? { dataErrors: facility.dataErrors } : {}),
-						})),
+						facilities: facilitySegmentsWithValues(
+							[...row.facilities.entries()].map(([id, facility]) => ({
+								id,
+								name: facility.name,
+								value: measureRateValue(input.measure, facility.numerator, facility.denominator),
+								numerator: facility.numerator,
+								denominator: facility.denominator,
+								...(reportsDataErrors ? { dataErrors: facility.dataErrors } : {}),
+							})),
+						),
 					}
 				: {}),
 		})),
