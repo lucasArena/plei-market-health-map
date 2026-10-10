@@ -17,6 +17,7 @@ import {
 	canSliceDrillDownByOrganizer,
 	crossesAppTrackingSourceSwitch,
 	DRILL_DOWN_DEPARTMENTS,
+	hasFacilityMetricValue,
 	isAppActivityMeasure,
 } from "@market-health-map/core/application";
 import type { GameDepartment } from "@market-health-map/core/domain";
@@ -468,7 +469,7 @@ export function useExplorePanelRules({
 		const byId = new Map<string, DrillDownSegmentLegendItem>();
 		for (const row of availableRows) {
 			for (const group of segmentGroupsOf(row) ?? []) {
-				if (segment === "facility" && (group.value == null || group.value === 0)) continue;
+				if (segment === "facility" && !hasFacilityMetricValue(group.value)) continue;
 				const current = byId.get(group.id) ?? { id: group.id, name: group.name, value: 0 };
 				current.value += group.value ?? 0;
 				byId.set(group.id, current);
@@ -530,22 +531,25 @@ export function useExplorePanelRules({
 		if (isGroupSegment) {
 			const groups = segmentGroupsOf(row);
 			if (groups == null) return { ...row, bars: [] };
+			const valuedGroups = new Map(
+				(segment === "facility"
+					? groups.filter((group) => hasFacilityMetricValue(group.value))
+					: groups
+				).map((group) => [group.id, group]),
+			);
 			return {
 				...row,
 				bars: segmentBars
 					.flatMap((legend) => {
-						const group = groups.find((item) => item.id === legend.id);
+						const group = valuedGroups.get(legend.id);
 						const value = group?.value;
-						if (value == null || (segment === "facility" && value === 0)) return [];
+						if (value == null) return [];
 						return [
 							{
 								id: legend.id,
 								groupId: legend.id,
 								color: segmentColor(legend.id),
-								label: [
-									`${rowName(row)} · ${legend.name}: ${formatValue(value)}`,
-									rateParts(group ?? {}),
-								]
+								label: [`${rowName(row)} · ${legend.name}: ${formatValue(value)}`, rateParts(group)]
 									.filter(Boolean)
 									.join(" · "),
 								value,

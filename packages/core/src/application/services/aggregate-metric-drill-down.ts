@@ -56,7 +56,7 @@ function emptyDepartments(): Record<GameDepartment, number | null> {
 }
 
 export function hasFacilityMetricValue(value: number | null | undefined): boolean {
-	return value != null && value !== 0;
+	return value != null && Number(value) !== 0;
 }
 
 export function facilitySegmentsWithValues<T extends { value: number | null }>(

@@ -10,6 +10,7 @@ import { useExplorePanelRules } from "@/presentation/components/map/ExplorePanel
 import {
 	DRILL_DOWN_BAR_CLASS,
 	DRILL_DOWN_BAR_TOP_CLASS,
+	DRILL_DOWN_BAR_VALUE_CLASS,
 	DRILL_DOWN_COLORS,
 	DRILL_DOWN_EXPAND_BUTTON_CLASS,
 	DRILL_DOWN_EXPANDED_PANEL_CLASS,
@@ -476,7 +477,7 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 																				? "transparent"
 																				: drillDownGlassColor(bar.color),
 																	}}
-																	className={`${DRILL_DOWN_BAR_CLASS} ${bar.isTop ? DRILL_DOWN_BAR_TOP_CLASS : ""}`}
+																	className={`${DRILL_DOWN_BAR_CLASS} ${bar.value === 0 ? "pointer-events-none min-h-0" : DRILL_DOWN_BAR_VALUE_CLASS} ${bar.isTop ? DRILL_DOWN_BAR_TOP_CLASS : ""}`}
 																>
 																	<span
 																		aria-hidden="true"

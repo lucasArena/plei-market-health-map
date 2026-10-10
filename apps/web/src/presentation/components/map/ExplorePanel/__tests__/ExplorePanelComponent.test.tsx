@@ -254,6 +254,7 @@ describe("ExplorePanel", () => {
 		];
 		pending = false;
 		failed = false;
+		comparisonView = undefined;
 		navigate.mockClear();
 		retry.mockClear();
 	});
@@ -421,6 +422,39 @@ describe("ExplorePanel", () => {
 		expect(
 			within(screen.getByRole("table")).queryByRole("columnheader", { name: "Empty Yard" }),
 		).not.toBeInTheDocument();
+	});
+	it("does not paint a zero facility on a market bar when the API still lists it", () => {
+		comparisonView = {
+			total: 80,
+			previousTotal: 80,
+			rows: [
+				{
+					id: "dallas",
+					name: "Dallas / Fort Worth",
+					value: 80,
+					previousValue: 80,
+					departments: { magic: 0, organizers: 0, partnerships: 80 },
+					facilities: [
+						{ id: "city", name: "City Futsal", value: 80 },
+						{ id: "plano", name: "Plano Indoor Soccer Bazaar", value: 0 },
+					],
+				},
+			],
+			start: "2026-10-02",
+			end: "2026-10-08",
+			measure: "games",
+			range: "7d",
+			kind: "count",
+		};
+		setup();
+		select("Segment", "facility");
+		expect(
+			screen.getByRole("button", { name: "Dallas / Fort Worth · City Futsal: 80" }),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Plano Indoor Soccer Bazaar/ }),
+		).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /: 0$/ })).not.toBeInTheDocument();
 	});
 	it("can clear shared market scope after View on map", () => {
 		scope = { kind: "market", id: "miami", name: "Miami" };
