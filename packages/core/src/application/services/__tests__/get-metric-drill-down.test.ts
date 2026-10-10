@@ -22,12 +22,14 @@ import {
 	drillDownRangeDays,
 	drillDownWindow,
 	factsFromFacilityPoints,
+	hasDrillDownValue,
 	makeGetMetricDrillDown,
 	organizerDisplayName,
 	rateContributionsFromFacts,
 	rateFactParts,
 	rateValue,
 	scheduledFactsFrom,
+	withoutEmptyFacilities,
 } from "@core/application/services/get-metric-drill-down";
 import { FixedClock } from "@core/application/testing/fakes";
 import { InMemoryMetricDrillDownRepository } from "@core/application/testing/in-memory-metric-drill-down-repository";
@@ -223,6 +225,9 @@ describe("getMetricDrillDown", () => {
 		const { getMetricDrillDown: none } = setup([zeroScheduled]);
 		await expect(
 			none({ measure: "confirmation-rate", range: "28d", slice: "facility" }),
+		).resolves.toMatchObject({ total: null, rows: [] });
+		await expect(
+			none({ measure: "confirmation-rate", range: "28d", slice: "market" }),
 		).resolves.toMatchObject({ total: null, rows: [{ value: null }] });
 		const uniqueByDepartment = await getMetricDrillDown({
 			measure: "unique-players",
@@ -433,7 +438,7 @@ describe("almost-filled and incident measures", () => {
 		const view = await getMetricDrillDown({
 			measure: "almost-filled-rate",
 			range: "28d",
-			slice: "facility",
+			slice: "market",
 		});
 		expect(view.total).toBeNull();
 		expect(view.dataErrors).toBe(0);
@@ -1520,7 +1525,7 @@ describe("facility segment", () => {
 		]);
 	});
 
-	it("zeroes facilities of prior-only groups and divides them for daily averages", async () => {
+	it("drops the zeroed facilities of prior-only groups and divides the rest for daily averages", async () => {
 		const { getMetricDrillDown, drillDown } = setup([arena, bay]);
 		const current = await drillDown.group({
 			measure: "games",
@@ -1552,9 +1557,9 @@ describe("facility segment", () => {
 			slice: "market",
 			segment: "facility",
 		});
-		expect(view.rows.find((row) => row.id === "old")?.facilities).toEqual([
-			{ id: "z", name: "Zed", value: 0, previousValue: 6 },
-		]);
+		const old = view.rows.find((row) => row.id === "old");
+		expect(old).toMatchObject({ value: 0, previousValue: 6 });
+		expect(old?.facilities).toEqual([]);
 		const average = await setup([arena, bay]).getMetricDrillDown({
 			measure: "avg-daily-games",
 			range: "28d",
@@ -1565,5 +1570,121 @@ describe("facility segment", () => {
 			expect.objectContaining({ id: "a", value: 0.4, previousValue: 0.4 }),
 			expect.objectContaining({ id: "b", value: 0.1, previousValue: 0.1 }),
 		]);
+	});
+});
+
+describe("empty facilities", () => {
+	const plano: DrillDownFacilityFact = {
+		...facility,
+		id: "plano",
+		name: "Plano Indoor Soccer Bazaar",
+		marketId: "dallas",
+		marketName: "Dallas / Fort Worth",
+		games: 0,
+		gamesByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+		scheduled: 0,
+		scheduledByDepartment: { magic: 0, organizers: 0, partnerships: 0 },
+		uniquePlayerIds: [],
+		uniquePlayerIdsByDepartment: { magic: [], organizers: [], partnerships: [] },
+		activatedPlayerIds: [],
+		activatedPlayerIdsByDepartment: { magic: [], organizers: [], partnerships: [] },
+	};
+	const frisco: DrillDownFacilityFact = {
+		...facility,
+		id: "frisco",
+		name: "Frisco Fieldhouse",
+		marketId: "dallas",
+		marketName: "Dallas / Fort Worth",
+	};
+
+	it("keeps only facilities with a value when Slice is Facility", async () => {
+		const { getMetricDrillDown } = setup([plano, frisco]);
+		for (const measure of ["games", "scheduled-games", "unique-players"] as const) {
+			const view = await getMetricDrillDown({ measure, range: "28d", slice: "facility" });
+			expect(view.rows.map((row) => row.id)).toEqual(["frisco"]);
+		}
+		const rate = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "facility",
+		});
+		expect(rate.rows.map((row) => row.id)).toEqual(["frisco"]);
+	});
+
+	it("keeps the total when it drops empty facilities", async () => {
+		const { getMetricDrillDown } = setup([plano, frisco]);
+		const view = await getMetricDrillDown({ measure: "games", range: "28d", slice: "facility" });
+		expect(view.total).toBe(10);
+	});
+
+	it("keeps only facilities with a value when Segment is Facility", async () => {
+		const { getMetricDrillDown } = setup([plano, frisco]);
+		const games = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(games.rows).toHaveLength(1);
+		expect(games.rows[0]).toMatchObject({ id: "dallas", value: 10 });
+		expect(games.rows[0]?.facilities?.map((segment) => segment.id)).toEqual(["frisco"]);
+		const rate = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(rate.rows[0]?.facilities?.map((segment) => segment.id)).toEqual(["frisco"]);
+	});
+
+	it("drops empty facility segments in time buckets", async () => {
+		const { getMetricDrillDown, drillDown } = setup([frisco]);
+		vi.spyOn(drillDown, "group").mockResolvedValueOnce({
+			total: 4,
+			start: "2026-10-01",
+			end: "2026-10-07",
+			measure: "games",
+			range: "7d",
+			kind: "count",
+			rows: [
+				{
+					id: "2026-10-01",
+					name: "2026-10-01",
+					value: 4,
+					departments: null,
+					facilities: [
+						{ id: "frisco", name: "Frisco Fieldhouse", value: 4 },
+						{ id: "plano", name: "Plano Indoor Soccer Bazaar", value: 0 },
+						{ id: "empty", name: "Empty", value: null },
+					],
+				},
+			],
+		});
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "7d",
+			slice: "time",
+			segment: "facility",
+			grain: "day",
+		});
+		expect(view.rows[0]?.facilities?.map((segment) => segment.id)).toEqual(["frisco"]);
+	});
+
+	it("leaves other slices and rows without facility segments alone", () => {
+		const view = {
+			total: 0,
+			start: "2026-10-01",
+			end: "2026-10-07",
+			measure: "games" as const,
+			range: "7d" as const,
+			kind: "count" as const,
+			rows: [{ id: "dallas", name: "Dallas", value: 0, departments: null }],
+		};
+		expect(withoutEmptyFacilities(view, "market").rows).toEqual(view.rows);
+		expect(withoutEmptyFacilities(view, "facility").rows).toEqual([]);
+		expect(hasDrillDownValue(0)).toBe(false);
+		expect(hasDrillDownValue(null)).toBe(false);
+		expect(hasDrillDownValue(undefined)).toBe(false);
+		expect(hasDrillDownValue(0.5)).toBe(true);
 	});
 });
