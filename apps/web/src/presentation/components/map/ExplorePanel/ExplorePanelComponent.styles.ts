@@ -21,6 +21,13 @@ export function drillDownOrganizerColor(index: number): string {
 		PLEIFUL_COLORS.sky[50]
 	);
 }
+export const DRILL_DOWN_FACILITY_SEGMENT_LIMIT = DRILL_DOWN_ORGANIZER_COLORS.length;
+export const DRILL_DOWN_OTHER_FACILITIES_COLOR = PLEIFUL_COLORS.neutral[40];
+export function drillDownFacilityColor(index: number): string {
+	return index >= 0 && index < DRILL_DOWN_FACILITY_SEGMENT_LIMIT
+		? drillDownOrganizerColor(index)
+		: DRILL_DOWN_OTHER_FACILITIES_COLOR;
+}
 export const DRILL_DOWN_PANEL_CLASS = MARKET_SUMMARY_PANEL_CLASS;
 export const DRILL_DOWN_EXPAND_BUTTON_CLASS = `${SOFT_GLASS_CLASS} flex size-7 shrink-0 cursor-pointer items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
 export const DRILL_DOWN_BAR_CLASS =

@@ -311,6 +311,8 @@ export interface Messages {
 		selectedDepartmentHelp: string;
 		selectedOrganizerHelp: string;
 		segmentUnavailable: string;
+		facilitySegmentTop: string;
+		otherFacilities: string;
 		topTen: string;
 		chart: string;
 		value: string;

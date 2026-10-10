@@ -123,6 +123,7 @@ export type {
 } from "@core/application/dtos/market-summary-dto.types";
 export {
 	canSegmentDrillDown,
+	canSegmentDrillDownByFacility,
 	canSliceDrillDownByDepartment,
 	canSliceDrillDownByOrganizer,
 	crossesAppTrackingSourceSwitch,
@@ -148,6 +149,7 @@ export type {
 	DrillDownSegment,
 	DrillDownSlice,
 	GetMetricDrillDownInput,
+	MetricDrillDownFacilitySegment,
 	MetricDrillDownOrganizer,
 	MetricDrillDownRow,
 	MetricDrillDownView,

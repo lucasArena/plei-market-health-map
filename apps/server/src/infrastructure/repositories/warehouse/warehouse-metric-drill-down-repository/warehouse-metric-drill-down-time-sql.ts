@@ -29,6 +29,7 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 	const quality = measure === "almost-filled-rate" || measure === "incident-games-rate";
 	const player = measure === "unique-players" || measure === "activated-players";
 	const byOrganizer = query.segment === "organizer";
+	const byFacility = !app && query.segment === "facility";
 	let ctes = "";
 	let population: string;
 	let value = "count(distinct a.entity_id)";
@@ -123,11 +124,16 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
 		[`${byOrganizer}`]: `group by grouping sets ((a.bucket), (a.bucket, a.department), (a.bucket, a.organizer_id), (), (a.department), (a.organizer_id))
  having (grouping(a.department) = 1 or a.department is not null)
     and (grouping(a.organizer_id) = 1 or a.organizer_id is not null)`,
+		[`${byFacility}`]: `group by grouping sets ((a.bucket), (a.bucket, a.department), (a.bucket, a.facility_id), (), (a.department))
+ having (grouping(a.department) = 1 or a.department is not null)
+    and (grouping(a.facility_id) = 1 or a.facility_id is not null)`,
 	}.true;
-	const organizerColumns = {
+	const segmentColumns = {
 		true: "",
 		[`${byOrganizer}`]:
 			", case when grouping(a.organizer_id) = 0 then a.organizer_id end as organizer_id, max(pn.partner_name) as organizer_name",
+		[`${byFacility}`]:
+			", case when grouping(a.facility_id) = 0 then a.facility_id end as segment_facility_id",
 	}.true;
 	const organizerJoin = {
 		true: "",
@@ -141,7 +147,7 @@ export function metricDrillDownTimeSql(query: MetricDrillDownQuery): string {
  )
  select a.bucket::text, a.department, grouping(a.bucket) as is_total,
  ${value} as value, ${numerator} as numerator, ${denominator} as denominator, ${errors} as data_errors,
- array_agg(distinct a.facility_id) filter (where a.facility_id is not null${membership}) as facility_ids${organizerColumns}
+ array_agg(distinct a.facility_id) filter (where a.facility_id is not null${membership}) as facility_ids${segmentColumns}
  from activity a${organizerJoin}
  ${grouping}`;
 }

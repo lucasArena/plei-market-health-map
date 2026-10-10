@@ -27,6 +27,18 @@ function departmentsPerDay(
 	};
 }
 
+function groupsPerDay<Group extends { value: number | null; previousValue?: number | null }>(
+	groups: Group[] | null | undefined,
+	days: number,
+): Group[] | undefined {
+	return groups?.map((group) => ({
+		...group,
+		value: perDay(group.value, days),
+		previousValue:
+			group.previousValue === undefined ? undefined : perDay(group.previousValue, days),
+	}));
+}
+
 function rowPerDay(row: MetricDrillDownRow, fallbackDays: number): MetricDrillDownRow {
 	const days =
 		row.bucketStart && row.bucketEnd ? inclusiveDays(row.bucketStart, row.bucketEnd) : fallbackDays;
@@ -34,12 +46,8 @@ function rowPerDay(row: MetricDrillDownRow, fallbackDays: number): MetricDrillDo
 		...row,
 		value: perDay(row.value, days),
 		departments: departmentsPerDay(row.departments, days),
-		organizers: row.organizers?.map((organizer) => ({
-			...organizer,
-			value: perDay(organizer.value, days),
-			previousValue:
-				organizer.previousValue === undefined ? undefined : perDay(organizer.previousValue, days),
-		})),
+		organizers: groupsPerDay(row.organizers, days),
+		...(row.facilities !== undefined ? { facilities: groupsPerDay(row.facilities, days) } : {}),
 	};
 }
 

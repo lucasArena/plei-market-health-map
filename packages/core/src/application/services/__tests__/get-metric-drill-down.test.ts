@@ -1,5 +1,6 @@
 import {
 	canSegmentDrillDown,
+	canSegmentDrillDownByFacility,
 	canSliceDrillDownByDepartment,
 	canSliceDrillDownByOrganizer,
 	crossesAppTrackingSourceSwitch,
@@ -511,6 +512,7 @@ describe("almost-filled and incident measures", () => {
 				numerator: null,
 				denominator: null,
 				dataErrors: 0,
+				facility: { id: "b", name: "Bay" },
 				facilityIds: ["b"],
 			},
 		]);
@@ -833,12 +835,29 @@ describe("drill-down measure helpers", () => {
 	it("builds department contributions from facility facts", () => {
 		expect(
 			rateContributionsFromFacts([facility], "department", { gameDepartments: ["magic"] }),
-		).toEqual([{ id: "magic", name: "magic", numerator: 2, denominator: 3, facilityIds: ["a"] }]);
+		).toEqual([
+			{
+				id: "magic",
+				name: "magic",
+				numerator: 2,
+				denominator: 3,
+				facility: { id: "a", name: "Arena" },
+				facilityIds: ["a"],
+			},
+		]);
 		expect(
 			distinctContributionsFromFacts([facility], "department", "unique-players", {
 				gameDepartments: ["organizers"],
 			}),
-		).toEqual([{ id: "organizers", name: "organizers", memberKeys: ["p2"], facilityIds: ["a"] }]);
+		).toEqual([
+			{
+				id: "organizers",
+				name: "organizers",
+				memberKeys: ["p2"],
+				facility: { id: "a", name: "Arena" },
+				facilityIds: ["a"],
+			},
+		]);
 		expect(
 			distinctContributionsFromFacts(
 				[{ ...facility, activatedPlayerIds: undefined, activatedPlayerIdsByDepartment: null }],
@@ -850,6 +869,7 @@ describe("drill-down measure helpers", () => {
 				id: "a",
 				name: "Arena",
 				memberKeys: [],
+				facility: { id: "a", name: "Arena" },
 				facilityIds: ["a"],
 				departments: { magic: [], organizers: [], partnerships: [] },
 			},
@@ -893,6 +913,7 @@ describe("drill-down measure helpers", () => {
 				name: department,
 				numerator: null,
 				denominator: null,
+				facility: { id: "a", name: "Arena" },
 				facilityIds: ["a"],
 			})),
 		);
@@ -1349,5 +1370,200 @@ describe("active organizers", () => {
 			}),
 		).rejects.toBeInstanceOf(InvalidRequestError);
 		expect(canSliceDrillDownByDepartment("active-organizers")).toBe(false);
+	});
+});
+
+describe("facility segment", () => {
+	const bay: DrillDownFacilityFact = {
+		id: "b",
+		name: "Bay",
+		marketId: "miami",
+		marketName: "Miami",
+		games: 4,
+		gamesByDepartment: { magic: 1, organizers: 1, partnerships: 2 },
+		scheduled: 8,
+		scheduledByDepartment: { magic: 2, organizers: 2, partnerships: 4 },
+		uniquePlayerIds: ["p1", "p3"],
+		uniquePlayerIdsByDepartment: { magic: ["p1"], organizers: ["p3"], partnerships: [] },
+		organizers: [{ id: "club", name: "Club", games: 1, scheduled: 2 }],
+		almostFilled: 1,
+		rosteredCanceled: 2,
+		missingRoster: 1,
+	};
+	const arena: DrillDownFacilityFact = {
+		...facility,
+		organizers: [{ id: "club", name: "Club", games: 3, scheduled: 3 }],
+		almostFilled: 1,
+		rosteredCanceled: 4,
+		missingRoster: 0,
+	};
+
+	it("is offered for every slice but Facility and never for app activity", () => {
+		expect(canSegmentDrillDownByFacility("games", "market")).toBe(true);
+		expect(canSegmentDrillDownByFacility("active-facilities", "department")).toBe(true);
+		expect(canSegmentDrillDownByFacility("unique-players", "organizer")).toBe(true);
+		expect(canSegmentDrillDownByFacility("confirmation-rate", "time")).toBe(true);
+		expect(canSegmentDrillDownByFacility("games", "facility")).toBe(false);
+		expect(canSegmentDrillDownByFacility("app-sessions", "market")).toBe(false);
+	});
+
+	it("rejects segmenting facility groups by facility", async () => {
+		const { getMetricDrillDown } = setup([arena, bay]);
+		await expect(
+			getMetricDrillDown({
+				measure: "games",
+				range: "28d",
+				slice: "facility",
+				segment: "facility",
+			}),
+		).rejects.toBeInstanceOf(InvalidRequestError);
+	});
+
+	it("splits market counts into their facilities with previous values", async () => {
+		const { getMetricDrillDown } = setup([arena, bay]);
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(view.rows[0]?.value).toBe(14);
+		expect(view.rows[0]?.facilities).toEqual([
+			{ id: "a", name: "Arena", value: 10, previousValue: 10 },
+			{ id: "b", name: "Bay", value: 4, previousValue: 4 },
+		]);
+	});
+
+	it("leaves facilities out unless the facility segment is requested", async () => {
+		const { getMetricDrillDown } = setup([arena, bay]);
+		const view = await getMetricDrillDown({ measure: "games", range: "28d", slice: "market" });
+		expect(view.rows[0]?.facilities).toBeUndefined();
+	});
+
+	it("splits department and organizer groups into the facilities behind them", async () => {
+		const { getMetricDrillDown } = setup([arena, bay]);
+		const departments = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "department",
+			segment: "facility",
+		});
+		expect(departments.rows.find((row) => row.id === "partnerships")?.facilities).toEqual([
+			expect.objectContaining({ id: "a", value: 5 }),
+			expect.objectContaining({ id: "b", value: 2 }),
+		]);
+		const organizers = await getMetricDrillDown({
+			measure: "scheduled-games",
+			range: "28d",
+			slice: "organizer",
+			segment: "facility",
+		});
+		expect(organizers.rows).toEqual([
+			expect.objectContaining({
+				id: "club",
+				value: 5,
+				facilities: [
+					expect.objectContaining({ id: "a", value: 3 }),
+					expect.objectContaining({ id: "b", value: 2 }),
+				],
+			}),
+		]);
+	});
+
+	it("counts distinct players once per facility and once in the group", async () => {
+		const { getMetricDrillDown } = setup([arena, bay]);
+		const view = await getMetricDrillDown({
+			measure: "unique-players",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(view.rows[0]?.value).toBe(3);
+		expect(view.rows[0]?.facilities).toEqual([
+			{ id: "a", name: "Arena", value: 2, previousValue: 2 },
+			{ id: "b", name: "Bay", value: 2, previousValue: 2 },
+		]);
+		const magic = await getMetricDrillDown({
+			measure: "unique-players",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+			department: "magic",
+		});
+		expect(magic.rows[0]?.facilities).toEqual([
+			expect.objectContaining({ id: "a", value: 1 }),
+			expect.objectContaining({ id: "b", value: 1 }),
+		]);
+	});
+
+	it("rates each facility from its own numerator and denominator", async () => {
+		const { getMetricDrillDown } = setup([arena, bay]);
+		const confirmation = await getMetricDrillDown({
+			measure: "confirmation-rate",
+			range: "28d",
+			slice: "department",
+			segment: "facility",
+		});
+		expect(confirmation.rows.find((row) => row.id === "magic")?.facilities).toEqual([
+			expect.objectContaining({ id: "a", numerator: 2, denominator: 3, value: 66.7 }),
+			expect.objectContaining({ id: "b", numerator: 1, denominator: 2, value: 50 }),
+		]);
+		const almostFilled = await getMetricDrillDown({
+			measure: "almost-filled-rate",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(almostFilled.rows[0]?.facilities).toEqual([
+			expect.objectContaining({ id: "a", numerator: 1, denominator: 4, dataErrors: 0 }),
+			expect.objectContaining({ id: "b", numerator: 1, denominator: 2, dataErrors: 1 }),
+		]);
+	});
+
+	it("zeroes facilities of prior-only groups and divides them for daily averages", async () => {
+		const { getMetricDrillDown, drillDown } = setup([arena, bay]);
+		const current = await drillDown.group({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+			departments: [],
+			today: "2026-10-08",
+			grain: "range",
+		});
+		vi.spyOn(drillDown, "group")
+			.mockResolvedValueOnce(current)
+			.mockResolvedValueOnce({
+				...current,
+				rows: [
+					...current.rows,
+					{
+						id: "old",
+						name: "Old",
+						value: 6,
+						departments: null,
+						facilities: [{ id: "z", name: "Zed", value: 6 }],
+					},
+				],
+			});
+		const view = await getMetricDrillDown({
+			measure: "games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(view.rows.find((row) => row.id === "old")?.facilities).toEqual([
+			{ id: "z", name: "Zed", value: 0, previousValue: 6 },
+		]);
+		const average = await setup([arena, bay]).getMetricDrillDown({
+			measure: "avg-daily-games",
+			range: "28d",
+			slice: "market",
+			segment: "facility",
+		});
+		expect(average.rows[0]?.facilities).toEqual([
+			expect.objectContaining({ id: "a", value: 0.4, previousValue: 0.4 }),
+			expect.objectContaining({ id: "b", value: 0.1, previousValue: 0.1 }),
+		]);
 	});
 });

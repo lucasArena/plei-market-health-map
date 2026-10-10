@@ -5,6 +5,7 @@ import {
 } from "@core/application/dtos/metric-drill-down-dto";
 import type {
 	GetMetricDrillDownInput,
+	MetricDrillDownFacilitySegment,
 	MetricDrillDownOrganizer,
 	MetricDrillDownView,
 } from "@core/application/dtos/metric-drill-down-dto.types";
@@ -92,6 +93,7 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 							? { magic: 0, organizers: 0, partnerships: 0 }
 							: null,
 					organizers: row.organizers?.map((organizer) => ({ ...organizer, value: 0 })) ?? null,
+					facilities: row.facilities?.map((facility) => ({ ...facility, value: 0 })),
 					numerator: current.kind === "rate" ? 0 : undefined,
 					denominator: current.kind === "rate" ? 0 : undefined,
 					dataErrors: undefined,
@@ -116,29 +118,41 @@ export function makeGetMetricDrillDown({ drillDown, clock }: GetMetricDrillDownD
 						: previous.total !== null && current.kind !== "rate"
 							? { magic: 0, organizers: 0, partnerships: 0 }
 							: null,
-					organizers: withPreviousOrganizers(
+					organizers: withPreviousValues(
 						row.organizers,
 						prior?.organizers,
 						previous.total,
 						current.kind,
 					),
+					...(row.facilities !== undefined
+						? {
+								facilities: withPreviousValues(
+									row.facilities,
+									prior?.facilities,
+									previous.total,
+									current.kind,
+								),
+							}
+						: {}),
 				};
 			}),
 		};
 	};
 }
 
-function withPreviousOrganizers(
-	current: MetricDrillDownOrganizer[] | null | undefined,
-	prior: MetricDrillDownOrganizer[] | null | undefined,
+function withPreviousValues<
+	Group extends MetricDrillDownOrganizer | MetricDrillDownFacilitySegment,
+>(
+	current: Group[] | null | undefined,
+	prior: Group[] | null | undefined,
 	previousTotal: number | null | undefined,
 	kind: MetricDrillDownView["kind"],
-): MetricDrillDownOrganizer[] | null | undefined {
+): Group[] | null | undefined {
 	if (!current) return current;
-	const previousById = new Map((prior ?? []).map((organizer) => [organizer.id, organizer]));
+	const previousById = new Map((prior ?? []).map((group) => [group.id, group]));
 	const missing = previousTotal === null || kind === "rate" ? null : 0;
-	return current.map((organizer) => ({
-		...organizer,
-		previousValue: previousById.get(organizer.id)?.value ?? missing,
+	return current.map((group) => ({
+		...group,
+		previousValue: previousById.get(group.id)?.value ?? missing,
 	}));
 }

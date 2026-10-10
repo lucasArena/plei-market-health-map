@@ -339,7 +339,10 @@ export const en: Messages = {
 			"Showing the selected department. Go back to compare departments again.",
 		selectedOrganizerHelp: "Showing the selected organizer. Go back to compare organizers again.",
 		segmentUnavailable:
-			"Department and organizer segments are available when grouping by market, facility or date. Organizer groups count Organizer Program partners only, not Magic.",
+			"Department and organizer segments are available when grouping by market, facility or date, and facility segments for every grouping except Facility. Organizer groups count Organizer Program partners only, not Magic.",
+		facilitySegmentTop:
+			"Colors and columns show the {count} largest facilities. Hover a gray part of a bar to see the others.",
+		otherFacilities: "Other facilities",
 		topTen: "Top 10",
 		chart: "Metric by group",
 		value: "Count",

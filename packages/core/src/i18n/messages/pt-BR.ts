@@ -346,7 +346,10 @@ export const ptBR: Messages = {
 		selectedOrganizerHelp:
 			"Exibindo o organizador selecionado. Volte para comparar organizadores novamente.",
 		segmentUnavailable:
-			"Segmentos por departamento e organizador estão disponíveis ao agrupar por mercado, instalação ou data. Grupos de organizadores contam apenas parceiros do Programa de Organizadores, não Magic.",
+			"Segmentos por departamento e organizador estão disponíveis ao agrupar por mercado, instalação ou data, e segmentos por instalação em qualquer agrupamento exceto Instalação. Grupos de organizadores contam apenas parceiros do Programa de Organizadores, não Magic.",
+		facilitySegmentTop:
+			"As cores e colunas mostram as {count} maiores instalações. Passe o cursor sobre uma parte cinza de uma barra para ver as demais.",
+		otherFacilities: "Outras instalações",
 		topTen: "10 maiores",
 		chart: "Métrica por grupo",
 		value: "Quantidade",

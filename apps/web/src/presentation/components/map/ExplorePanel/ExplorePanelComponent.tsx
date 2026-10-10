@@ -254,13 +254,22 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 							label={m.segment}
 							help={m.segmentHelp}
 							value={segment}
-							disabled={!rules.canSegment}
-							descriptionId={!rules.canSegment ? "drill-down-segment-help" : undefined}
+							disabled={!rules.canSegment && !rules.canSegmentByFacility}
+							descriptionId={
+								!rules.canSegment && !rules.canSegmentByFacility
+									? "drill-down-segment-help"
+									: undefined
+							}
 							onChange={(value) => rules.setSegment(value as DrillDownSegment)}
 							options={[
 								{ value: "none", label: m.none },
-								{ value: "department", label: m.department },
-								{ value: "organizer", label: m.organizer },
+								...(rules.canSegment || !rules.canSegmentByFacility
+									? [
+											{ value: "department", label: m.department },
+											{ value: "organizer", label: m.organizer },
+										]
+									: []),
+								...(rules.canSegmentByFacility ? [{ value: "facility", label: m.facility }] : []),
 							]}
 						/>
 					)}
@@ -288,7 +297,7 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 					</div>
 				)}
 				{!rules.showSupply && <p className="text-xs text-muted-foreground">{m.supplyHidden}</p>}
-				{!rules.canSegment && !rules.isAppActivity && (
+				{!rules.canSegment && !rules.canSegmentByFacility && !rules.isAppActivity && (
 					<p id="drill-down-segment-help" className="text-xs text-muted-foreground">
 						{m.segmentUnavailable}
 					</p>
@@ -366,19 +375,32 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 										))}
 									</div>
 								)}
-								{segment === "organizer" && (
+								{rules.isGroupSegment && (
 									<div className="flex flex-wrap gap-3 text-[11px]">
-										{rules.organizers.map((organizer) => (
-											<span key={organizer.id} className="flex items-center gap-1">
+										{rules.segmentColumns.map((group) => (
+											<span key={group.id} className="flex items-center gap-1">
 												<span
 													aria-hidden="true"
 													className="size-2 rounded-full"
-													style={{ backgroundColor: rules.organizerColor(organizer.id) }}
+													style={{ backgroundColor: rules.segmentColor(group.id) }}
 												/>
-												{organizer.name}
+												{group.name}
 											</span>
 										))}
+										{rules.otherFacilitiesColor && (
+											<span className="flex items-center gap-1">
+												<span
+													aria-hidden="true"
+													className="size-2 rounded-full"
+													style={{ backgroundColor: rules.otherFacilitiesColor }}
+												/>
+												{m.otherFacilities}
+											</span>
+										)}
 									</div>
+								)}
+								{rules.facilitySegmentNote && (
+									<p className="text-xs text-muted-foreground">{rules.facilitySegmentNote}</p>
 								)}
 								<div className="overflow-x-auto pt-2 pb-3">
 									<div
@@ -439,12 +461,12 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 																	onClick={() =>
 																		rules.toggleFocus(row, {
 																			department: bar.department,
-																			organizerId: bar.organizerId,
+																			groupId: bar.groupId,
 																		})
 																	}
 																	aria-pressed={rules.isSelected(row, {
 																		department: bar.department,
-																		organizerId: bar.organizerId,
+																		groupId: bar.groupId,
 																	})}
 																	aria-label={bar.label}
 																	style={{
@@ -592,10 +614,10 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 														{departmentNames[department]}
 													</th>
 												))}
-											{segment === "organizer" &&
-												rules.organizers.map((organizer) => (
-													<th key={organizer.id} className="px-2 text-right">
-														{organizer.name}
+											{rules.isGroupSegment &&
+												rules.segmentColumns.map((group) => (
+													<th key={group.id} className="px-2 text-right">
+														{group.name}
 													</th>
 												))}
 											{selection.slice !== "department" && !rules.isTime && (
@@ -663,12 +685,16 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 															)}
 														</td>
 													))}
-												{segment === "organizer" &&
-													rules.organizers.map((organizer) => {
-														const cell = row.organizers?.find((item) => item.id === organizer.id);
+												{rules.isGroupSegment &&
+													rules.segmentColumns.map((group) => {
+														const cell = rules
+															.segmentGroupsOf(row)
+															?.find((item) => item.id === group.id);
 														return (
-															<td key={organizer.id} className="px-2 text-right tabular-nums">
-																{formatValue(cell?.value ?? null)}
+															<td key={group.id} className="px-2 text-right tabular-nums">
+																{cell || segment !== "facility"
+																	? formatValue(cell?.value ?? null)
+																	: "—"}
 																{cell && rules.rateParts(cell) && (
 																	<span className="block text-[10px] text-muted-foreground">
 																		{rules.rateParts(cell)}

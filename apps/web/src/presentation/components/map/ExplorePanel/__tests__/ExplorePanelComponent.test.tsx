@@ -145,6 +145,7 @@ vi.mock("@/presentation/hooks/use-metric/use-metric-drill-down", () => ({
 			),
 			measure: input.measure,
 			slice: input.slice,
+			segment: input.segment,
 			marketId: input.marketId,
 			facilityId: input.facilityId,
 			department: input.department,
@@ -315,7 +316,7 @@ describe("ExplorePanel", () => {
 	it("selects an organizer slice and segments markets by organizer, excluding Magic", () => {
 		setup();
 		select("Slice", "organizer");
-		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
+		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("None");
 		expect(screen.getByRole("button", { name: "Club: 5" })).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Club: 5" }));
 		expect(setMetricFocus).toHaveBeenLastCalledWith({
@@ -332,6 +333,75 @@ describe("ExplorePanel", () => {
 		});
 		expect(screen.getByText("4", { selector: "p" })).toBeInTheDocument();
 		expect(screen.getAllByText("Club").length).toBeGreaterThan(0);
+	});
+	it("segments markets by facility and filters Supply to the selected facility", () => {
+		setup();
+		select("Segment", "facility");
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ slice: "market", segment: "facility" }),
+		);
+		expect(screen.getByRole("button", { name: "Miami · Bay: 4" })).toBeInTheDocument();
+		const table = screen.getByRole("table");
+		expect(within(table).getByRole("columnheader", { name: "Court" })).toBeInTheDocument();
+		const miami = within(table).getByRole("row", { name: /Miami/ });
+		expect(within(miami).getAllByRole("cell")[5]).toHaveTextContent("—");
+		expect(screen.queryByText("Other facilities")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Miami · Arena: 10" }));
+		expect(setMetricFocus).toHaveBeenLastCalledWith({ facilityIds: ["a"], department: undefined });
+		expect(screen.getByText("10", { selector: "p" })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Miami · Bay: 4" })).not.toBeInTheDocument();
+		select("Slice", "facility");
+		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("None");
+		expect(comparisonInputs).toHaveBeenLastCalledWith(
+			expect.objectContaining({ slice: "facility", segment: "none" }),
+		);
+	});
+	it("keeps the facility segment on organizer and department slices", () => {
+		setup();
+		select("Segment", "facility");
+		select("Slice", "organizer");
+		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("Facility");
+		fireEvent.click(screen.getByRole("button", { name: "Club · Bay: 1" }));
+		expect(setMetricFocus).toHaveBeenLastCalledWith({
+			facilityIds: ["b"],
+			department: "organizers",
+		});
+		select("Slice", "department");
+		fireEvent.click(screen.getByRole("button", { name: "Magic · Arena: 2" }));
+		expect(setMetricFocus).toHaveBeenLastCalledWith({ facilityIds: ["a"], department: "magic" });
+		select("Measure", "confirmation-rate");
+		expect(screen.getByRole("combobox", { name: "Segment" })).toHaveTextContent("Facility");
+		expect(
+			screen.getByRole("button", { name: "Magic · Arena: 66.7% · 2 of 3" }),
+		).toBeInTheDocument();
+	});
+	it("colors the six largest facilities and grays out the rest", () => {
+		data = Array.from({ length: 8 }, (_, index) => ({
+			...facility,
+			id: `f${index}`,
+			name: `Facility ${index}`,
+			gamesLast28Days: 10 - index,
+			gamesByDepartment: { magic: 0, organizers: 0, partnerships: 10 - index },
+		}));
+		setup();
+		select("Segment", "facility");
+		expect(screen.getByText("Other facilities")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"Colors and columns show the 6 largest facilities. Hover a gray part of a bar to see the others.",
+			),
+		).toBeInTheDocument();
+		const table = screen.getByRole("table");
+		expect(within(table).getByRole("columnheader", { name: "Facility 5" })).toBeInTheDocument();
+		expect(
+			within(table).queryByRole("columnheader", { name: "Facility 6" }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Miami · Facility 7: 3" }).getAttribute("style"),
+		).toContain("rgb(156, 163, 175)");
+		expect(
+			screen.getByRole("button", { name: "Miami · Facility 0: 10" }).getAttribute("style"),
+		).not.toContain("rgb(156, 163, 175)");
 	});
 	it("can clear shared market scope after View on map", () => {
 		scope = { kind: "market", id: "miami", name: "Miami" };
@@ -477,12 +547,25 @@ describe("ExplorePanel", () => {
 		fireEvent.click(screen.getByRole("combobox", { name: "Slice" }));
 		expect(screen.queryByRole("option", { name: "Department" })).not.toBeInTheDocument();
 		expect(screen.getByRole("option", { name: "Organizer" })).toBeInTheDocument();
+		fireEvent.keyDown(screen.getByRole("combobox", { name: "Slice" }), { key: "Escape" });
+		fireEvent.click(screen.getByRole("combobox", { name: "Segment" }));
+		expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+			"None",
+			"Facility",
+		]);
+		fireEvent.keyDown(screen.getByRole("combobox", { name: "Segment" }), { key: "Escape" });
+		select("Slice", "facility");
 		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
 	});
 	it("offers department slices for game and player measures and hides them for active facilities", () => {
 		setup();
 		select("Slice", "department");
-		expect(screen.getByRole("combobox", { name: "Segment" })).toBeDisabled();
+		fireEvent.click(screen.getByRole("combobox", { name: "Segment" }));
+		expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+			"None",
+			"Facility",
+		]);
+		fireEvent.keyDown(screen.getByRole("combobox", { name: "Segment" }), { key: "Escape" });
 		expect(within(screen.getByRole("table")).getByText("Magic")).toBeInTheDocument();
 		select("Measure", "scheduled-games");
 		expect(screen.getByRole("combobox", { name: "Slice" })).toHaveTextContent("Department");

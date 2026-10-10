@@ -348,7 +348,10 @@ export const es: Messages = {
 		selectedOrganizerHelp:
 			"Se muestra el organizador seleccionado. Vuelve para comparar organizadores otra vez.",
 		segmentUnavailable:
-			"Los segmentos por departamento y organizador están disponibles al agrupar por mercado, instalación o fecha. Los grupos de organizadores cuentan solo socios del Programa de Organizadores, no Magic.",
+			"Los segmentos por departamento y organizador están disponibles al agrupar por mercado, instalación o fecha, y los segmentos por instalación en cualquier agrupación excepto Instalación. Los grupos de organizadores cuentan solo socios del Programa de Organizadores, no Magic.",
+		facilitySegmentTop:
+			"Los colores y las columnas muestran las {count} instalaciones más grandes. Pasa el cursor sobre una parte gris de una barra para ver las demás.",
+		otherFacilities: "Otras instalaciones",
 		topTen: "Los 10 mayores",
 		chart: "Métrica por grupo",
 		value: "Cantidad",
