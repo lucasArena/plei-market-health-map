@@ -455,7 +455,10 @@ export function ExplorePanel(props: Readonly<ExplorePanelProps>) {
 																	—
 																</span>
 															)}
-															{row.bars.map((bar) => (
+															{(segment === "facility"
+																? row.bars.filter((bar) => bar.value !== 0)
+																: row.bars
+															).map((bar) => (
 																<button
 																	key={bar.id}
 																	type="button"
