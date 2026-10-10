@@ -30,6 +30,7 @@ import { useFeatureFlag } from "@/presentation/hooks/use-feature-flags/use-featu
 import { usePleiLogoImages } from "@/presentation/hooks/use-map/use-plei-logo-images";
 import { PANEL_SLIDE_MS, useRevealMotion } from "@/presentation/hooks/use-map/use-reveal-motion";
 import { useExclusiveSidePanel } from "@/presentation/hooks/use-side-panel/use-exclusive-side-panel";
+import { systemPrefersDark, useSystemTheme } from "@/presentation/hooks/use-theme/use-system-theme";
 import {
 	clusterTrend,
 	facilitiesForIds,
@@ -93,6 +94,7 @@ import {
 	GAMES_CLUSTER_PROPERTIES,
 	MAP_CENTER,
 	MAP_CURSOR,
+	MAP_DARK_STYLE_URL,
 	MAP_STYLE_URL,
 	MAP_ZOOM,
 	MAPLIBRE_WORKER_URL,
@@ -149,7 +151,11 @@ export function useFacilitiesMapScreenRules() {
 		period,
 		mapLayers?.showSessions ?? true,
 	);
-	const [isMapReady, setIsMapReady] = useState(false);
+	const isDark = useSystemTheme();
+	const appliedThemeRef = useRef(false);
+	const styleRevisionRef = useRef(0);
+	const styleReadyRef = useRef(false);
+	const [isMapReady, setIsMapReady] = useState(0);
 	const [hovered, setHovered] = useState<MapHover | null>(null);
 	const [sessionScale, setSessionScale] = useState<SessionHeatmapScale>({ low: 0, high: 0 });
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
@@ -674,7 +680,7 @@ export function useFacilitiesMapScreenRules() {
 		);
 	}, [heatmapQuery.data, heatmapQuery.isError, isRegistrations]);
 
-	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null);
+	const areLogosLoaded = usePleiLogoImages(isMapReady ? mapRef.current : null, isMapReady);
 	useExclusiveSidePanel(
 		"facility-detail",
 		!isInsightIteration && selectedFacilityId !== null && !isPanelClosing,
@@ -692,7 +698,7 @@ export function useFacilitiesMapScreenRules() {
 			setWorkerUrl(new URL(MAPLIBRE_WORKER_URL, window.location.origin).href);
 			const created = new MapLibre({
 				container,
-				style: MAP_STYLE_URL,
+				style: systemPrefersDark() ? MAP_DARK_STYLE_URL : MAP_STYLE_URL,
 				center: MAP_CENTER,
 				zoom: MAP_ZOOM,
 				attributionControl: false,
@@ -702,7 +708,9 @@ export function useFacilitiesMapScreenRules() {
 			map = created;
 			created.getCanvas().style.cursor = MAP_CURSOR.navigate;
 			created.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
-			created.on("load", () => {
+			appliedThemeRef.current = systemPrefersDark();
+			mapRef.current = created;
+			created.on("style.load", () => {
 				created.addSource(APP_SESSION_HEATMAP_SOURCE_ID, {
 					type: "geojson",
 					data: EMPTY_HEATMAP,
@@ -748,7 +756,9 @@ export function useFacilitiesMapScreenRules() {
 					paint: FACILITY_DOT_PAINT,
 				});
 				mapRef.current = created;
-				setIsMapReady(true);
+				styleReadyRef.current = true;
+				styleRevisionRef.current += 1;
+				setIsMapReady(styleRevisionRef.current);
 			});
 		});
 
@@ -761,14 +771,24 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!map || appliedThemeRef.current === isDark) return;
+		appliedThemeRef.current = isDark;
+		styleReadyRef.current = false;
+		setIsMapReady(0);
+		handleHoverEnd();
+		map.setStyle(isDark ? MAP_DARK_STYLE_URL : MAP_STYLE_URL, { diff: false });
+	}, [isDark, handleHoverEnd]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		handleHoverEnd();
 		map.getSource<GeoJSONSource>(FACILITIES_SOURCE_ID)?.setData(featureCollection);
 	}, [featureCollection, handleHoverEnd, isMapReady]);
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		if (heatmapQuery.isError || !heatmapQuery.data) {
 			map.getSource<GeoJSONSource>(APP_SESSION_HEATMAP_SOURCE_ID)?.setData(EMPTY_HEATMAP);
 			setSessionScale((current) =>
@@ -781,7 +801,7 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		const showPointer = () => {
 			if (isDraggingRef.current) return;
 			map.getCanvas().style.cursor = MAP_CURSOR.interactive;
@@ -865,7 +885,7 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		const paint = isRegistrations ? REGISTRATION_HEATMAP_PAINT : APP_SESSION_HEATMAP_PAINT;
 		for (const property of ["heatmap-intensity", "heatmap-radius"] as const) {
 			map.setPaintProperty(APP_SESSION_HEATMAP_LAYER_ID, property, paint?.[property]);
@@ -874,29 +894,36 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		applyMapLayerVisibility(map, APP_SESSION_HEATMAP_LAYER_ID, showSessions);
 	}, [isMapReady, showSessions]);
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		const highlighted = isPanelClosing ? null : selectedFacilityId;
 		map.setPaintProperty(
 			FACILITIES_LAYER_ID,
 			"circle-stroke-color",
-			selectedRingColor(highlighted),
+			selectedRingColor(highlighted, isDark),
 		);
 		map.setPaintProperty(
 			FACILITIES_LAYER_ID,
 			"circle-stroke-width",
 			selectedRingWidth(highlighted),
 		);
-	}, [selectedFacilityId, isPanelClosing, isMapReady]);
+	}, [selectedFacilityId, isPanelClosing, isMapReady, isDark]);
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!areLogosLoaded || !map) return;
+		if (
+			!isMapReady ||
+			!styleReadyRef.current ||
+			!areLogosLoaded ||
+			!map ||
+			map.getLayer(FACILITIES_LOGO_LAYER_ID)
+		)
+			return;
 		map.addLayer({
 			id: FACILITIES_LOGO_LAYER_ID,
 			type: "symbol",
@@ -906,11 +933,11 @@ export function useFacilitiesMapScreenRules() {
 			paint: FACILITY_LOGO_PAINT,
 		});
 		applyMapLayerVisibility(map, FACILITIES_LOGO_LAYER_ID, showFacilitiesRef.current);
-	}, [areLogosLoaded]);
+	}, [areLogosLoaded, isMapReady]);
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		const turnedOn = showFacilities && !facilitiesWereShownRef.current;
 		const turnedOff = !showFacilities && facilitiesWereShownRef.current;
 		facilitiesWereShownRef.current = showFacilities;
@@ -994,7 +1021,7 @@ export function useFacilitiesMapScreenRules() {
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!isMapReady || !map) return;
+		if (!isMapReady || !styleReadyRef.current || !map) return;
 		return bindFacilityGlass(
 			map,
 			facilitiesGlassLiveRef,
@@ -1008,7 +1035,7 @@ export function useFacilitiesMapScreenRules() {
 	}, [isMapReady]);
 
 	useEffect(() => {
-		if (!isMapReady) return;
+		if (!isMapReady || !styleReadyRef.current) return;
 		showGamesRef.current = showGames;
 		mapRef.current?.setPaintProperty(
 			FACILITIES_LAYER_ID,
@@ -1020,7 +1047,7 @@ export function useFacilitiesMapScreenRules() {
 	}, [isMapReady, showGames]);
 
 	useEffect(() => {
-		if (!isMapReady) return;
+		if (!isMapReady || !styleReadyRef.current) return;
 		showTrendRef.current = showTrend;
 		refreshClusterMarkersRef.current();
 	}, [isMapReady, showTrend]);

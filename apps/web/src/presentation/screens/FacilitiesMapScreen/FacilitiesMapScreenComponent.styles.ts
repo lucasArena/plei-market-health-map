@@ -13,6 +13,7 @@ import type {
 } from "@/presentation/screens/FacilitiesMapScreen/FacilitiesMapScreenComponent.types";
 
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
+export const MAP_DARK_STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 export const MAP_CENTER: [number, number] = [-96.5, 38.5];
 export const MAP_ZOOM = 3.4;
@@ -50,18 +51,18 @@ export const CLUSTER_CIRCLE_RADIUS = (CLUSTER_OUTER_DIAMETER - CLUSTER_BORDER_WI
 export const CLUSTER_BORDER_COLOR = PLEIFUL_COLORS.success[30];
 export const CLUSTER_GLASS_BLUR = 18;
 export const CLUSTER_GLASS_SATURATE = 1.8;
-export const CLUSTER_GLASS_FILL = "rgba(255, 255, 255, 0.28)";
-export const FACILITY_GLASS_FILL = "rgba(255, 255, 255, 0.336)";
+export const CLUSTER_GLASS_FILL = "var(--marker-fill, rgba(255, 255, 255, 0.28))";
+export const FACILITY_GLASS_FILL = "var(--facility-marker-fill, rgba(255, 255, 255, 0.336))";
 export const CLUSTER_GLASS_HIGHLIGHT =
-	"linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.08) 46%, rgba(255,255,255,0.22) 100%)";
-export const CLUSTER_GLASS_BORDER = "rgba(255, 255, 255, 0.78)";
+	"var(--marker-highlight, linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.08) 46%, rgba(255,255,255,0.22) 100%))";
+export const CLUSTER_GLASS_BORDER = "var(--marker-border, rgba(255, 255, 255, 0.78))";
 export const CLUSTER_GLASS_STROKE = 2;
 export const CLUSTER_GLASS_STROKE_INSET = 3;
 export const CLUSTER_GLASS_SHADOW =
-	"inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 24px rgba(0,0,0,0.12)";
-export const CLUSTER_GLASS_LABEL = PLEIFUL_COLORS.neutral[90];
+	"var(--marker-shadow, inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 24px rgba(0,0,0,0.12))";
+export const CLUSTER_GLASS_LABEL = `var(--marker-label, ${PLEIFUL_COLORS.neutral[90]})`;
 export const CLUSTER_GLASS_INACTIVE_STROKE = "#898E99";
-export const CLUSTER_GLASS_INACTIVE_LABEL = PLEIFUL_COLORS.neutral[70];
+export const CLUSTER_GLASS_INACTIVE_LABEL = `var(--marker-inactive-label, ${PLEIFUL_COLORS.neutral[70]})`;
 export const CLUSTER_ACTIVE_COUNT_KEY = "activeCount";
 export const CLUSTER_ACTIVE_COUNT_EXPRESSION: ExpressionSpecification = [
 	"+",
@@ -70,14 +71,14 @@ export const CLUSTER_ACTIVE_COUNT_EXPRESSION: ExpressionSpecification = [
 export const FACILITY_GLASS_STROKE = 2;
 export const FACILITY_GLASS_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE}px ${CLUSTER_BORDER_COLOR}, 0 10px 24px rgba(0,0,0,0.12)`;
 export const FACILITY_GLASS_INACTIVE_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE}px ${PLEIFUL_COLORS.neutral[50]}, 0 10px 24px rgba(0,0,0,0.12)`;
-export const FACILITY_GLASS_SELECTED_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE + 1}px ${SELECTED_RING_COLOR}, 0 10px 24px rgba(0,0,0,0.12)`;
+export const FACILITY_GLASS_SELECTED_SHADOW = `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 ${FACILITY_GLASS_STROKE + 1}px var(--marker-selected-ring, ${SELECTED_RING_COLOR}), 0 10px 24px rgba(0,0,0,0.12)`;
 
 export const INACTIVE_GAMES_MARKER_STYLE: Readonly<InactiveGamesMarkerStyle> = {
 	opacity: 0.6,
 	ringWidth: 1.5,
 	ringStyle: "dashed",
 	ringColor: PLEIFUL_COLORS.neutral[50],
-	label: PLEIFUL_COLORS.neutral[60],
+	label: `var(--marker-inactive-label, ${PLEIFUL_COLORS.neutral[60]})`,
 };
 
 export const APP_SESSION_HEATMAP_SOURCE_ID = "app-session-heatmap";
@@ -189,8 +190,16 @@ export const REGISTRATION_HEATMAP_PAINT: HeatmapLayerSpecification["paint"] = {
 	"heatmap-radius": ["interpolate", ["linear"], ["zoom"], 3, 24, 8, 32, 12, 40, 16, 48],
 };
 
-export function selectedRingColor(facilityId: string | null): ExpressionSpecification {
-	return ["case", ["==", ["get", "id"], facilityId ?? ""], SELECTED_RING_COLOR, MARKER_RING_COLOR];
+export function selectedRingColor(
+	facilityId: string | null,
+	isDark = false,
+): ExpressionSpecification {
+	return [
+		"case",
+		["==", ["get", "id"], facilityId ?? ""],
+		isDark ? "#f9fafb" : SELECTED_RING_COLOR,
+		MARKER_RING_COLOR,
+	];
 }
 
 export function selectedRingWidth(facilityId: string | null): ExpressionSpecification {

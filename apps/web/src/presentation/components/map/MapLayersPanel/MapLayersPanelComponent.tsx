@@ -26,7 +26,7 @@ import {
 
 function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 	const track = {
-		[`${!checked}`]: "bg-[#e5e5e5]",
+		[`${!checked}`]: "bg-[#e5e5e5] dark:bg-muted-foreground",
 		[`${checked}`]: "bg-pleiful-pitch-green-80",
 	}.true as string;
 	const thumbShift = {
@@ -53,7 +53,7 @@ function LayerSwitch({ checked, label, onToggle }: Readonly<LayerSwitchProps>) {
 function MetricRadio({ label, name, value, selected, onSelect }: Readonly<LayerMetricRadioProps>) {
 	const ring = {
 		[`${!selected}`]: "border-muted-foreground/45",
-		[`${selected}`]: "border-pleiful-pitch-green-80",
+		[`${selected}`]: "border-pleiful-pitch-green-80 dark:border-pleiful-pitch-green-30",
 	}.true as string;
 
 	return (
@@ -74,7 +74,7 @@ function MetricRadio({ label, name, value, selected, onSelect }: Readonly<LayerM
 				className={`relative box-border size-4 shrink-0 rounded-full border bg-background ${ring}`}
 			>
 				{selected && (
-					<span className="absolute inset-[3px] rounded-full bg-pleiful-pitch-green-80" />
+					<span className="absolute inset-[3px] rounded-full bg-pleiful-pitch-green-80 dark:bg-pleiful-pitch-green-30" />
 				)}
 			</span>
 		</label>

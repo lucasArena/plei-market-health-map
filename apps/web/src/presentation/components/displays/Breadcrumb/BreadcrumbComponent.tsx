@@ -27,12 +27,16 @@ export function Breadcrumb({ items, label }: Readonly<BreadcrumbProps>) {
 							<button
 								type="button"
 								onClick={item.onSelect}
-								className="rounded whitespace-nowrap text-[#6b7280] hover:text-[#111827] hover:underline focus-visible:outline-2"
+								className="rounded whitespace-nowrap text-[#6b7280] dark:text-muted-foreground hover:text-[#111827] dark:text-foreground hover:underline focus-visible:outline-2"
 							>
 								{item.label}
 							</button>
 						) : (
-							<span aria-current="page" title={item.label} className="truncate text-[#111827]">
+							<span
+								aria-current="page"
+								title={item.label}
+								className="truncate text-[#111827] dark:text-foreground"
+							>
 								{item.label}
 							</span>
 						)}

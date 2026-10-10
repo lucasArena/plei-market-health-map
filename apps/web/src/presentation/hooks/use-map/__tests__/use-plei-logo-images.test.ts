@@ -119,3 +119,21 @@ describe("usePleiLogoImages", () => {
 		expect(result.current).toBe(false);
 	});
 });
+
+describe("logo style restoration", () => {
+	it("reloads both images for a new style on the same map", async () => {
+		Object.defineProperty(HTMLImageElement.prototype, "decode", {
+			configurable: true,
+			value: vi.fn().mockResolvedValue(undefined),
+		});
+		const map = target(false);
+		const { result, rerender } = renderHook(({ revision }) => usePleiLogoImages(map, revision), {
+			initialProps: { revision: 1 },
+		});
+		await waitFor(() => expect(result.current).toBe(true));
+		rerender({ revision: 2 });
+		expect(result.current).toBe(false);
+		await waitFor(() => expect(result.current).toBe(true));
+		expect(map.addImage).toHaveBeenCalledTimes(4);
+	});
+});

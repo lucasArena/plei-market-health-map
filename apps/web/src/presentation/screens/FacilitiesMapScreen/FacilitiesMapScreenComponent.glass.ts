@@ -486,11 +486,13 @@ export function syncFacilityGlass(
 				const color = badge.trend
 					? GAMES_TREND_COLORS[badge.trend]
 					: isSelected
-						? SELECTED_RING_COLOR
+						? `var(--marker-selected-ring, ${SELECTED_RING_COLOR})`
 						: badge.active
 							? CLUSTER_BORDER_COLOR
 							: CLUSTER_GLASS_INACTIVE_STROKE;
-				ring.style.border = `${width}px solid ${color}`;
+				ring.style.borderWidth = `${width}px`;
+				ring.style.borderStyle = "solid";
+				ring.style.borderColor = color;
 				ring.style.inset = `${CLUSTER_GLASS_STROKE_INSET}px`;
 			}
 		}

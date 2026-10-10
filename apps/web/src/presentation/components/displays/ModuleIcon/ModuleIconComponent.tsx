@@ -65,7 +65,7 @@ export function ModuleIcon({ name }: Readonly<ModuleIconProps>) {
 			strokeWidth={2}
 			strokeLinecap="round"
 			strokeLinejoin="round"
-			className="size-[14px] shrink-0 text-[#525866]"
+			className="size-[14px] shrink-0 text-[#525866] dark:text-muted-foreground"
 		>
 			{ICON_PATHS[name]}
 		</svg>

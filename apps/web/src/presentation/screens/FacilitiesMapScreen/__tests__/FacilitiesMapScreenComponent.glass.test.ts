@@ -49,7 +49,9 @@ describe("facility glass", () => {
 		applyFacilityGlassActivity(active, true);
 		expect(logo?.getAttribute("src")).toBe("/images/plei-logo.svg");
 		applyFacilityGlassActivity(active, false);
-		expect(active.style.backgroundColor).toBe("rgba(255, 255, 255, 0.336)");
+		expect(active.style.backgroundColor).toBe(
+			"var(--facility-marker-fill, rgba(255, 255, 255, 0.336))",
+		);
 		expect(active.style.backdropFilter).toBe("blur(18px) saturate(1.8)");
 		expect(logo).toBeInstanceOf(HTMLImageElement);
 		expect((logo as HTMLImageElement).style.filter).toBe("none");
@@ -109,11 +111,11 @@ describe("facility glass", () => {
 		);
 		expect(ring).toHaveStyle({ inset: "3px", border: "2px solid #86EFAC" });
 		applyClusterGlassActivity(node, false);
-		expect(node.style.backgroundColor).toBe("rgba(255, 255, 255, 0.28)");
+		expect(node.style.backgroundColor).toBe("var(--marker-fill, rgba(255, 255, 255, 0.28))");
 		expect(node.style.backdropFilter).toBe("blur(18px) saturate(1.8)");
-		expect(node.style.color).toBe("rgb(55, 65, 81)");
+		expect(node.style.color).toBe("var(--marker-inactive-label, #374151)");
 		expect(label).toBeInstanceOf(HTMLElement);
-		expect((label as HTMLElement).style.color).toBe("rgb(55, 65, 81)");
+		expect((label as HTMLElement).style.color).toBe("var(--marker-inactive-label, #374151)");
 		expect(ring).toBeInstanceOf(HTMLElement);
 		expect((ring as HTMLElement).style.borderColor).toBe("rgb(137, 142, 153)");
 	});
@@ -388,7 +390,7 @@ describe("facility glass", () => {
 		expect(inactive).toBeInstanceOf(HTMLElement);
 		expect(selected).toHaveStyle({
 			boxShadow:
-				"inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 3px #111827, 0 10px 24px rgba(0,0,0,0.12)",
+				"inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 3px var(--marker-selected-ring, #111827), 0 10px 24px rgba(0,0,0,0.12)",
 			pointerEvents: "none",
 		});
 		expect((inactive as HTMLElement).style.boxShadow).toBe(
@@ -595,7 +597,7 @@ describe("games trend on the glass ring", () => {
 		expect(ring?.style.borderStyle).toBe("dashed");
 		expect(ring?.style.borderWidth).toBe("1.5px");
 		expect(ring?.style.borderColor).toBe("rgb(107, 114, 128)");
-		expect(label?.style.color).toBe("rgb(75, 85, 99)");
+		expect(label?.style.color).toBe("var(--marker-inactive-label, #4B5563)");
 
 		syncFacilityGlass(host, [{ ...badge, noGames: true }], nodes, "f1");
 		expect(node?.style.boxShadow).toBe(CLUSTER_GLASS_SHADOW);
@@ -606,7 +608,7 @@ describe("games trend on the glass ring", () => {
 		expect(node?.dataset.inactive).toBeUndefined();
 		expect(node?.dataset.trendTip).toBe("stable");
 		expect(node?.style.opacity).toBe("");
-		expect(node?.style.border).toBe("1px solid rgba(255, 255, 255, 0.78)");
+		expect(node?.style.border).toBe("1px solid var(--marker-border, rgba(255, 255, 255, 0.78))");
 	});
 
 	it("dashes an inactive cluster's ring and restores the solid ring", () => {
@@ -686,7 +688,7 @@ describe("games trend on the glass ring", () => {
 			.get("f1")
 			?.querySelector<HTMLElement>("[data-testid='facility-glass-stroke']");
 		expect(ring?.style.display).not.toBe("none");
-		expect(ring?.style.borderColor).toBe("rgb(17, 24, 39)");
+		expect(ring?.style.borderColor).toBe("var(--marker-selected-ring, #111827)");
 		expect(ring?.style.borderWidth).toBe("3px");
 
 		syncFacilityGlass(host, [{ ...badge, active: false }], nodes);

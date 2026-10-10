@@ -19,7 +19,7 @@ function ChartPoints({ points, dotClass }: Readonly<ChartPointsProps>) {
 			style={{ left: point.left, top: point.top }}
 		>
 			<span
-				className={`absolute inset-1 rounded-full border-2 border-white shadow-sm transition-transform group-hover:scale-125 group-focus-visible:scale-125 ${dotClass}`}
+				className={`absolute inset-1 rounded-full border-2 border-white dark:border-border shadow-sm transition-transform group-hover:scale-125 group-focus-visible:scale-125 ${dotClass}`}
 			/>
 			<span role="tooltip" className={`${POINT_TOOLTIP_CLASS} ${point.tooltipClass}`}>
 				{point.tooltip}

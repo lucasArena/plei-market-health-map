@@ -11,9 +11,10 @@ export const BREADCRUMB_CURRENT_ITEM_CLASS = "flex min-w-0 shrink items-center g
 
 /** #525866 is 7:1 on the panel glass. */
 export const BREADCRUMB_LINK_CLASS =
-	"min-w-0 max-w-[9rem] cursor-pointer truncate rounded-sm text-[#525866] hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/60";
+	"min-w-0 max-w-[9rem] cursor-pointer truncate rounded-sm text-[#525866] dark:text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/60";
 
-export const BREADCRUMB_TEXT_CLASS = "min-w-0 max-w-[9rem] truncate text-[#525866]";
+export const BREADCRUMB_TEXT_CLASS =
+	"min-w-0 max-w-[9rem] truncate text-[#525866] dark:text-muted-foreground";
 
 /**
  * Plain text that inherits the host line's full font style and color (the
@@ -22,4 +23,4 @@ export const BREADCRUMB_TEXT_CLASS = "min-w-0 max-w-[9rem] truncate text-[#52586
  */
 export const BREADCRUMB_CURRENT_CLASS = "min-w-0 truncate";
 
-export const BREADCRUMB_SEPARATOR_CLASS = "shrink-0 text-[#525866]";
+export const BREADCRUMB_SEPARATOR_CLASS = "shrink-0 text-[#525866] dark:text-muted-foreground";

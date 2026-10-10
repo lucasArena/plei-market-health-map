@@ -21,7 +21,7 @@ import {
 export const GAMES_METRICS_CARD_CLASS = `flex flex-col gap-4 ${INSIGHT_CONTAINER_CLASS}`;
 
 /** 7:1 on the 90% white card; replaces the design's 60%-alpha greys, which fail AA. */
-export const GAMES_METRICS_SECONDARY_TEXT_CLASS = "text-[#525866]";
+export const GAMES_METRICS_SECONDARY_TEXT_CLASS = "text-[#525866] dark:text-muted-foreground";
 
 /**
  * Sizes follow MetricDrillDownPanel (root font-size is 14px, so rem utilities scale with it).
@@ -72,7 +72,7 @@ export const GAMES_CHART_VERTEX_CLASS = "absolute left-1/2 size-0";
 
 /** Centered on the vertex anchor: top/left 0, then −50% on both axes. */
 export const GAMES_CHART_DOT_CLASS =
-	"absolute top-0 left-0 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)] transition-transform group-hover:scale-125 group-focus-visible:scale-125 group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-1";
+	"absolute top-0 left-0 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white dark:border-border shadow-[0_0_0_1px_rgba(0,0,0,0.08)] transition-transform group-hover:scale-125 group-focus-visible:scale-125 group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-1";
 
 /** 25% shorter than the drill-down's h-52 (208px) plot. Gridlines, points and tooltips are %-based. */
 export const GAMES_CHART_PLOT_CLASS = "relative h-[117px]";
@@ -90,8 +90,8 @@ export const GAMES_CHART_LABEL_TEXT_CLASS = "text-[11px]";
 
 /** Tooltip change text on the glass tooltip over the white panel: worse #b91c1c (6.5:1), better #166534 (7.1:1). */
 export const GAMES_CHART_CHANGE_TEXT_CLASS: Record<GamesMetricToneValue, string> = {
-	worse: "text-[#b91c1c]",
-	better: "text-[#166534]",
+	worse: "text-[#b91c1c] dark:text-red-300",
+	better: "text-[#166534] dark:text-green-300",
 	flat: GAMES_METRICS_SECONDARY_TEXT_CLASS,
 };
 

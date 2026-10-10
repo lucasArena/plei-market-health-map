@@ -81,7 +81,7 @@ export function FeatureFlagsScreen() {
 											className={`flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors disabled:opacity-60 ${SWITCH_TRACK[row.state]}`}
 										>
 											<span
-												className={`size-4 rounded-full bg-white shadow transition ${SWITCH_THUMB[row.state]}`}
+												className={`size-4 rounded-full bg-white dark:bg-card shadow transition ${SWITCH_THUMB[row.state]}`}
 											/>
 										</button>
 										<span className="text-xs">{row.statusLabel}</span>

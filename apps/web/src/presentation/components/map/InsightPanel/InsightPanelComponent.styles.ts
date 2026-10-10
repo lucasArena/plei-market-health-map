@@ -45,4 +45,5 @@ export const PANEL_TITLE_CLASS = "truncate text-base font-semibold";
  * Shared panel header description line. The drill-down used text-xs
  * (10.5px, muted); raised to the 11px minimum and #525866 for contrast.
  */
-export const PANEL_DESCRIPTION_CLASS = "text-[11px] leading-4 text-[#525866]";
+export const PANEL_DESCRIPTION_CLASS =
+	"text-[11px] leading-4 text-[#525866] dark:text-muted-foreground";

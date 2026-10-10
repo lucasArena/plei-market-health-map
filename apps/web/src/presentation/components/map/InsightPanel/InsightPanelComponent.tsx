@@ -109,7 +109,7 @@ export function InsightPanel(props: Readonly<InsightPanelProps>) {
 									<Avatar name={facilityView.name} avatarUrl={facilityView.avatarUrl} />
 									<p
 										title={facilityView.address}
-										className="min-w-0 truncate text-[12px] leading-4 text-[#525866]"
+										className="min-w-0 truncate text-[12px] leading-4 text-[#525866] dark:text-muted-foreground"
 									>
 										{facilityView.address}
 									</p>
